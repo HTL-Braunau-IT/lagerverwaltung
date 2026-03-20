@@ -19,4 +19,4 @@ When building or styling web UI (components, pages, dashboards, layouts), create
 
 **Never:** Generic system fonts, predictable layouts, cookie-cutter patterns, or designs that lack context-specific character. Vary themes, fonts, and aesthetics; do not converge on the same choices every time.
 
-Match implementation to the vision: maximalist = elaborate code and effects; minimalist = restraint, precision, spacing and typography. Full reference: .agents/skills/frontend-design/SKILL.md
+Match implementation to the vision: maximalist = elaborate code and effects; minimalist = restraint, precision, spacing and typography.

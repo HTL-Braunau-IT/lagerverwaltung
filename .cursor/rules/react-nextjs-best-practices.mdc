@@ -30,4 +30,4 @@ const removeItem = useCallback((id: string) => {
 }, [])
 ```
 
-Full reference: .agents/skills/vercel-react-best-practices/AGENTS.md
+

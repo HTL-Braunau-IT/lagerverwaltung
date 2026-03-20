@@ -1,22 +1,17 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 import tseslint from "typescript-eslint";
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
-
-export default tseslint.config(
+export default defineConfig([
   {
-    ignores: [".next"],
+    ignores: [".next/**", "generated/**", "**/*.d.ts", "eslint.config.js"],
   },
-  ...compat.extends("next/core-web-vitals"),
+  ...nextVitals,
+  ...nextTypescript,
   {
     files: ["**/*.ts", "**/*.tsx"],
-    extends: [
-      ...tseslint.configs.recommended,
-      ...tseslint.configs.recommendedTypeChecked,
-      ...tseslint.configs.stylisticTypeChecked,
-    ],
+    ...tseslint.configs.recommendedTypeChecked[0],
     rules: {
       "@typescript-eslint/array-type": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
@@ -45,4 +40,4 @@ export default tseslint.config(
       },
     },
   },
-);
+]);
