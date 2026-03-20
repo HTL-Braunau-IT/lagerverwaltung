@@ -162,6 +162,37 @@ exports.Prisma.ProductScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CostCenterScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderScalarFieldEnum = {
+  id: 'id',
+  orderNumber: 'orderNumber',
+  userId: 'userId',
+  costCenterId: 'costCenterId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderCounterScalarFieldEnum = {
+  year: 'year',
+  lastNumber: 'lastNumber'
+};
+
+exports.Prisma.OrderItemScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  productId: 'productId',
+  quantity: 'quantity',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.ProductImageScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
@@ -181,6 +212,23 @@ exports.Prisma.CartScalarFieldEnum = {
 exports.Prisma.CartItemScalarFieldEnum = {
   id: 'id',
   cartId: 'cartId',
+  productId: 'productId',
+  quantity: 'quantity',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SavedCartScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SavedCartItemScalarFieldEnum = {
+  id: 'id',
+  savedCartId: 'savedCartId',
   productId: 'productId',
   quantity: 'quantity',
   createdAt: 'createdAt',
@@ -261,6 +309,12 @@ exports.BaseUnit = exports.$Enums.BaseUnit = {
   L: 'L'
 };
 
+exports.OrderStatus = exports.$Enums.OrderStatus = {
+  OPEN: 'OPEN',
+  PREPARING: 'PREPARING',
+  READY_FOR_PICKUP: 'READY_FOR_PICKUP'
+};
+
 exports.AppRole = exports.$Enums.AppRole = {
   ADMIN: 'ADMIN',
   TEACHER: 'TEACHER',
@@ -272,9 +326,15 @@ exports.Prisma.ModelName = {
   StorageLocation: 'StorageLocation',
   StorageRoom: 'StorageRoom',
   Product: 'Product',
+  CostCenter: 'CostCenter',
+  Order: 'Order',
+  OrderCounter: 'OrderCounter',
+  OrderItem: 'OrderItem',
   ProductImage: 'ProductImage',
   Cart: 'Cart',
   CartItem: 'CartItem',
+  SavedCart: 'SavedCart',
+  SavedCartItem: 'SavedCartItem',
   User: 'User',
   Account: 'Account',
   Session: 'Session',

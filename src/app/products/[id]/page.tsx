@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
@@ -37,6 +37,7 @@ function formatStock(value: unknown, baseUnit: string) {
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const productId = params.id;
   const [sessionId] = useState(() =>
     typeof window === "undefined" ? "" : getOrCreateSessionId(),
@@ -306,6 +307,12 @@ export default function ProductDetailPage() {
               <span className="text-slate-500">Zwischensumme</span>
               <span className="font-semibold text-sky-800">{formatPrice(cartTotal)}</span>
             </div>
+            <Link
+              href="/carts"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+            >
+              Zum Warenkorb
+            </Link>
           </div>
         </aside>
       </section>
@@ -327,11 +334,11 @@ export default function ProductDetailPage() {
               <button
                 onClick={() => {
                   setShowCartModal(false);
-                  document.getElementById("cart-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  router.push("/carts");
                 }}
                 className="flex-1 rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
               >
-                Zum Warenkorb
+                Zu Warenkoerben
               </button>
             </div>
           </div>

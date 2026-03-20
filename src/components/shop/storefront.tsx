@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -46,6 +47,7 @@ export function Storefront() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
+  const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [showCartModal, setShowCartModal] = useState(false);
 
   useEffect(() => {
@@ -212,6 +214,8 @@ export function Storefront() {
             const lowStock =
               decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
+            const quantityInput = quantitiesByProduct[product.id] ?? "1";
+            const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
             return (
               <article
                 key={product.id}
@@ -258,25 +262,91 @@ export function Storefront() {
                     {product.description ?? "Keine Beschreibung."}
                   </p>
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-3">
+                <div className="mt-2 space-y-2">
                   <p className="text-lg font-semibold text-sky-800">{formatPrice(product.price)}</p>
-                  <button
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setActiveAddProductId(product.id);
-                      addItemMutation.mutate({
-                        sessionId,
-                        productId: product.id,
-                        quantity: 1,
-                      });
-                    }}
-                    disabled={sessionId.length === 0 || addItemMutation.isPending}
-                    className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {addItemMutation.isPending && activeAddProductId === product.id
-                      ? "Wird hinzugefuegt..."
-                      : "In den Warenkorb"}
-                  </button>
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                    <div
+                      className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const parsedQuantity = Number(quantityInput);
+                          const currentQuantity =
+                            Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                              ? parsedQuantity
+                              : unitStep;
+                          const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
+                          setQuantitiesByProduct((prev) => ({
+                            ...prev,
+                            [product.id]: nextQuantity.toString(),
+                          }));
+                        }}
+                        className="h-10 w-8 rounded-l-xl border-r border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                        aria-label={`Menge fuer ${product.name} reduzieren`}
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min={unitStep}
+                        step={unitStep}
+                        value={quantityInput}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(event) => {
+                          setQuantitiesByProduct((prev) => ({
+                            ...prev,
+                            [product.id]: event.target.value,
+                          }));
+                        }}
+                        className="w-9 border-none bg-transparent text-center text-sm font-medium text-slate-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        aria-label={`Menge fuer ${product.name}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const parsedQuantity = Number(quantityInput);
+                          const currentQuantity =
+                            Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                              ? parsedQuantity
+                              : unitStep;
+                          const nextQuantity = currentQuantity + unitStep;
+                          setQuantitiesByProduct((prev) => ({
+                            ...prev,
+                            [product.id]: nextQuantity.toString(),
+                          }));
+                        }}
+                        className="h-10 w-8 border-l border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                        aria-label={`Menge fuer ${product.name} erhoehen`}
+                      >
+                        +
+                      </button>
+                      <span className="pr-2 text-xs text-slate-500">{product.baseUnit.toLowerCase()}</span>
+                    </div>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        const parsedQuantity = Number(quantityInput);
+                        const quantity =
+                          Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+                        setActiveAddProductId(product.id);
+                        addItemMutation.mutate({
+                          sessionId,
+                          productId: product.id,
+                          quantity,
+                        });
+                      }}
+                      disabled={sessionId.length === 0 || addItemMutation.isPending}
+                      className="shrink-0 whitespace-nowrap rounded-xl bg-sky-600 px-2.5 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {addItemMutation.isPending && activeAddProductId === product.id
+                        ? "Wird hinzugefuegt..."
+                        : "In den Warenkorb"}
+                    </button>
+                  </div>
                 </div>
               </article>
             );
@@ -353,6 +423,12 @@ export function Storefront() {
               <span className="text-slate-500">Zwischensumme</span>
               <span className="font-semibold text-sky-800">{formatPrice(cartTotal)}</span>
             </div>
+            <Link
+              href="/carts"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+            >
+              Zum Warenkorb
+            </Link>
           </div>
         </aside>
       </section>
@@ -374,11 +450,11 @@ export function Storefront() {
               <button
                 onClick={() => {
                   setShowCartModal(false);
-                  document.getElementById("cart-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  router.push("/carts");
                 }}
                 className="flex-1 rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
               >
-                Zum Warenkorb
+                Zu Warenkoerben
               </button>
             </div>
           </div>

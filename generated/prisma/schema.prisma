@@ -37,6 +37,12 @@ enum AppRole {
   STUDENT
 }
 
+enum OrderStatus {
+  OPEN
+  PREPARING
+  READY_FOR_PICKUP
+}
+
 model Category {
   id        String    @id @default(cuid())
   name      String
@@ -87,6 +93,8 @@ model Product {
   storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
   images            ProductImage[]
   cartItems         CartItem[]
+  savedCartItems    SavedCartItem[]
+  orderItems        OrderItem[]
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -94,6 +102,54 @@ model Product {
   @@index([categoryId])
   @@index([storageLocationId])
   @@index([quantityOnHand, minimumQuantity])
+}
+
+model CostCenter {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  orderNumber  String      @unique
+  userId       String
+  costCenterId String
+  status       OrderStatus @default(OPEN)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  costCenter   CostCenter  @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  items        OrderItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([costCenterId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderCounter {
+  year       Int @id
+  lastNumber Int
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Decimal  @db.Decimal(14, 3)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+
+  @@unique([orderId, productId])
+  @@index([orderId])
+  @@index([productId])
 }
 
 model ProductImage {
@@ -130,17 +186,46 @@ model CartItem {
   @@index([productId])
 }
 
+model SavedCart {
+  id        String          @id @default(cuid())
+  userId    String
+  name      String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     SavedCartItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model SavedCartItem {
+  id          String    @id @default(cuid())
+  savedCartId String
+  productId   String
+  quantity    Decimal   @default(1) @db.Decimal(14, 3)
+  savedCart   SavedCart @relation(fields: [savedCartId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([savedCartId, productId])
+  @@index([productId])
+}
+
 model User {
-  id            String    @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?     @unique
   emailVerified DateTime?
   image         String?
-  role          AppRole   @default(STUDENT)
+  role          AppRole     @default(STUDENT)
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  savedCarts    SavedCart[]
+  orders        Order[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Account {
