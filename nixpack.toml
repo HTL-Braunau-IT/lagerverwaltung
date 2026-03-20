@@ -2,6 +2,9 @@
 nixPkgs = ["nodejs_24", "npm"]
 nixpkgsArchive = "9dcb002ca1690658be4a04645215baea8b95f31d"
 
+[providers]
+node = "custom"
+
 [phases.install]
 cmds = ["npm install --frozen-lockfile"]
 
