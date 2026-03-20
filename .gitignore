@@ -8,7 +8,6 @@
 # testing
 /coverage
 
-/generated/prisma
 
 # database
 /prisma/db.sqlite
