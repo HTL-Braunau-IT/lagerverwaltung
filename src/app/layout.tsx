@@ -52,6 +52,14 @@ export default async function RootLayout({
                   >
                     Bestellhistorie
                   </Link>
+                  {session.user.role === "ADMIN" ? (
+                    <Link
+                      href="/backend"
+                      className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                    >
+                      Administration
+                    </Link>
+                  ) : null}
                   <Link
                     href="/api/auth/signout"
                     className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
