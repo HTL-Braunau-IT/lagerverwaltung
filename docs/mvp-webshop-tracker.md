@@ -26,9 +26,9 @@ Deliver a mobile-friendly internal webshop with searchable products, category fi
 - [x] Modern touch-friendly style foundation
 
 ### 4) Next Steps
-- [ ] Add database migration files
+- [X] Add database migration files
 - [ ] Add product image upload flow (dev local storage path)
-- [ ] Add product detail page and richer empty/error states
+- [x] Add product detail page and richer empty/error states
 - [ ] Add low-stock dedicated filter
 - [ ] Add basic internal checkout flow
 

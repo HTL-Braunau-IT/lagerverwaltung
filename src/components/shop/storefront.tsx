@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 
@@ -36,6 +38,8 @@ function formatStock(value: unknown, baseUnit: string) {
 }
 
 export function Storefront() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const utils = api.useUtils();
   const [sessionId] = useState(() =>
     typeof window === "undefined" ? "" : getOrCreateSessionId(),
@@ -43,6 +47,14 @@ export function Storefront() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("search") ?? "";
+    const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
+    setSearchInput(searchFromUrl);
+    setSearchTerm(searchFromUrl.trim());
+    setSelectedCategoryId(categoryFromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -84,6 +96,8 @@ export function Storefront() {
   }, [cartQuery.data?.items]);
 
   const cartItemsCount = cartQuery.data?.items.length ?? 0;
+  const hasProducts = (productQuery.data?.items.length ?? 0) > 0;
+  const hasActiveFilters = Boolean(searchTerm) || Boolean(selectedCategoryId);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -140,15 +154,52 @@ export function Storefront() {
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {productQuery.isLoading && (
-            <p className="col-span-full rounded-2xl border border-slate-200 bg-white p-4 text-slate-600">
-              Produkte werden geladen...
-            </p>
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-600">
+              <p className="text-sm font-medium text-slate-700">Produkte werden geladen...</p>
+              <p className="mt-1 text-sm text-slate-500">Bitte kurz warten.</p>
+            </div>
           )}
 
-          {!productQuery.isLoading && (productQuery.data?.items.length ?? 0) === 0 && (
-            <p className="col-span-full rounded-2xl border border-slate-200 bg-white p-4 text-slate-600">
-              Keine Produkte fuer diesen Filter gefunden.
-            </p>
+          {productQuery.error && (
+            <div className="col-span-full rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
+              <p className="text-sm font-semibold">Produkte konnten nicht geladen werden.</p>
+              <p className="mt-1 text-sm text-rose-800">
+                Pruefe die Verbindung und versuche es erneut.
+              </p>
+              <button
+                onClick={() => void productQuery.refetch()}
+                className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100"
+              >
+                Erneut laden
+              </button>
+            </div>
+          )}
+
+          {!productQuery.isLoading && !productQuery.error && !hasProducts && (
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-700">
+              <p className="text-sm font-semibold">
+                {hasActiveFilters
+                  ? "Keine Treffer fuer deine Suche."
+                  : "Aktuell sind keine Produkte verfuegbar."}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                {hasActiveFilters
+                  ? "Passe Suche oder Kategorie an, um weitere Produkte zu sehen."
+                  : "Sobald Produkte angelegt sind, erscheinen sie hier."}
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchTerm("");
+                    setSelectedCategoryId(undefined);
+                  }}
+                  className="mt-3 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+                >
+                  Filter zuruecksetzen
+                </button>
+              )}
+            </div>
           )}
 
           {productQuery.data?.items.map((product) => {
@@ -158,7 +209,16 @@ export function Storefront() {
             return (
               <article
                 key={product.id}
-                className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/products/${product.id}`)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    router.push(`/products/${product.id}`);
+                  }
+                }}
+                className="flex h-full cursor-pointer flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-300"
               >
                 <div>
                   <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
@@ -195,13 +255,14 @@ export function Storefront() {
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <p className="text-lg font-semibold text-sky-800">{formatPrice(product.price)}</p>
                   <button
-                    onClick={() =>
+                    onClick={(event) => {
+                      event.stopPropagation();
                       addItemMutation.mutate({
                         sessionId,
                         productId: product.id,
                         quantity: 1,
-                      })
-                    }
+                      });
+                    }}
                     disabled={sessionId.length === 0 || addItemMutation.isPending}
                     className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -217,7 +278,23 @@ export function Storefront() {
           <h2 className="text-base font-semibold text-slate-900">Warenkorb</h2>
           <p className="mt-1 text-xs text-slate-500">Aktuelle Produktpreise aktiviert</p>
           <div className="mt-4 space-y-3">
-            {(cartQuery.data?.items.length ?? 0) === 0 ? (
+            {cartQuery.isLoading && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>
+              </div>
+            )}
+            {cartQuery.error && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+                <p className="text-sm font-medium text-rose-900">Warenkorb konnte nicht geladen werden.</p>
+                <button
+                  onClick={() => void cartQuery.refetch()}
+                  className="mt-2 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm text-rose-800 transition hover:bg-rose-100"
+                >
+                  Erneut versuchen
+                </button>
+              </div>
+            )}
+            {!cartQuery.isLoading && !cartQuery.error && (cartQuery.data?.items.length ?? 0) === 0 ? (
               <p className="text-sm text-slate-500">Keine Artikel im Warenkorb.</p>
             ) : (
               cartQuery.data?.items.map((item) => (
