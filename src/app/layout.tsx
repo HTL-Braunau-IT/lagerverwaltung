@@ -45,12 +45,20 @@ export default async function RootLayout({
                 <p className="text-sm font-medium text-slate-700">
                   {`Angemeldet als ${session.user.email ?? "Benutzer"} (${roleLabels[session.user.role]})`}
                 </p>
-                <Link
-                  href="/api/auth/signout"
-                  className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
-                >
-                  Abmelden
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/orders"
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                  >
+                    Bestellhistorie
+                  </Link>
+                  <Link
+                    href="/api/auth/signout"
+                    className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                  >
+                    Abmelden
+                  </Link>
+                </div>
               </div>
             </header>
             {children}

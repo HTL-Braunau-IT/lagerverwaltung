@@ -261,6 +261,42 @@ export const cartRouter = createTRPCRouter({
       return result;
     }),
 
+  listMyOrders: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.order.findMany({
+      where: {
+        userId: ctx.session.user.id,
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        createdAt: true,
+        costCenter: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            quantity: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseUnit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }),
+
   listSavedCarts: protectedProcedure.query(async ({ ctx }) => {
     const savedCarts = await ctx.db.savedCart.findMany({
       where: { userId: ctx.session.user.id },
