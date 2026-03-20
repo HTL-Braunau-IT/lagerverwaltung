@@ -8,9 +8,11 @@ alwaysApply: false
 
 When building or styling web UI (components, pages, dashboards, layouts), create distinctive, production-grade interfaces that avoid generic "AI slop" aesthetics.
 
+
 **Before coding:** Pick a clear, bold aesthetic direction (e.g. brutally minimal, maximalist, retro-futuristic, organic, luxury, playful, editorial, brutalist, art deco, industrial). Commit to it and execute with precision.
 
 **Implement with:**
+- **Languag**: You must supply all User facing text in German Language only.
 - **Typography**: Distinctive, characterful fonts; avoid Inter, Roboto, Arial. Pair a display font with a refined body font.
 - **Color & theme**: Cohesive palette; CSS variables; dominant colors with sharp accents. No clichéd purple-on-white gradients.
 - **Motion**: Animations and micro-interactions; CSS-first, or Motion for React. Staggered reveals, scroll/hover surprises. One high-impact moment beats scattered tweaks.
