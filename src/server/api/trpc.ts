@@ -7,10 +7,12 @@
  * need to use are documented accordingly near the end.
  */
 import { initTRPC } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
+import { type auth } from "~/server/auth";
 
 /**
  * 1. CONTEXT
@@ -24,7 +26,12 @@ import { db } from "~/server/db";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
+type Session = Awaited<ReturnType<typeof auth>>;
+
+export const createTRPCContext = async (opts: {
+  headers: Headers;
+  session: Session;
+}) => {
   return {
     db,
     ...opts,
@@ -104,3 +111,37 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * are logged in.
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
+
+export const protectedProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        session: ctx.session,
+      },
+    });
+  });
+
+const requireRole = (roles: Array<"ADMIN" | "TEACHER" | "STUDENT">) =>
+  t.middleware(({ ctx, next }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+    if (!roles.includes(ctx.session.user.role)) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    return next();
+  });
+
+export const adminProcedure = protectedProcedure.use(
+  requireRole(["ADMIN"]),
+);
+
+export const teacherProcedure = protectedProcedure.use(
+  requireRole(["ADMIN", "TEACHER"]),
+);

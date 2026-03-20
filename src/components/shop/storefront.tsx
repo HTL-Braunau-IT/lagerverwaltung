@@ -41,14 +41,16 @@ export function Storefront() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = api.useUtils();
-  const [sessionId] = useState(() =>
-    typeof window === "undefined" ? "" : getOrCreateSessionId(),
-  );
+  const [sessionId, setSessionId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
+
+  useEffect(() => {
+    setSessionId(getOrCreateSessionId());
+  }, []);
 
   useEffect(() => {
     const searchFromUrl = searchParams.get("search") ?? "";

@@ -8,6 +8,14 @@ export const env = createEnv({
    */
   server: {
     DATABASE_URL: z.string().url(),
+    AUTH_SECRET: z.string().min(1),
+    AUTH_URL: z.string().url(),
+    AZURE_AD_TENANT_ID: z.string().min(1),
+    AZURE_AD_CLIENT_ID: z.string().min(1),
+    AZURE_AD_CLIENT_SECRET: z.string().min(1),
+    ROLE_ADMIN_GROUP_ID: z.string().min(1),
+    ROLE_TEACHER_GROUP_ID: z.string().min(1),
+    ROLE_STUDENT_GROUP_ID: z.string().min(1),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -28,6 +36,14 @@ export const env = createEnv({
    */
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    AUTH_URL: process.env.AUTH_URL,
+    AZURE_AD_TENANT_ID: process.env.AZURE_AD_TENANT_ID,
+    AZURE_AD_CLIENT_ID: process.env.AZURE_AD_CLIENT_ID,
+    AZURE_AD_CLIENT_SECRET: process.env.AZURE_AD_CLIENT_SECRET,
+    ROLE_ADMIN_GROUP_ID: process.env.ROLE_ADMIN_GROUP_ID,
+    ROLE_TEACHER_GROUP_ID: process.env.ROLE_TEACHER_GROUP_ID,
+    ROLE_STUDENT_GROUP_ID: process.env.ROLE_STUDENT_GROUP_ID,
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
