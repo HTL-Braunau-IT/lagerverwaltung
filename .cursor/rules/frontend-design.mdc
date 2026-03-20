@@ -1,0 +1,22 @@
+---
+description: Distinctive frontend design and aesthetics
+globs: **/*.tsx, **/*.ts, **/*.js
+alwaysApply: false
+---
+
+# Frontend Design
+
+When building or styling web UI (components, pages, dashboards, layouts), create distinctive, production-grade interfaces that avoid generic "AI slop" aesthetics.
+
+**Before coding:** Pick a clear, bold aesthetic direction (e.g. brutally minimal, maximalist, retro-futuristic, organic, luxury, playful, editorial, brutalist, art deco, industrial). Commit to it and execute with precision.
+
+**Implement with:**
+- **Typography**: Distinctive, characterful fonts; avoid Inter, Roboto, Arial. Pair a display font with a refined body font.
+- **Color & theme**: Cohesive palette; CSS variables; dominant colors with sharp accents. No clichéd purple-on-white gradients.
+- **Motion**: Animations and micro-interactions; CSS-first, or Motion for React. Staggered reveals, scroll/hover surprises. One high-impact moment beats scattered tweaks.
+- **Spatial composition**: Unexpected layouts, asymmetry, overlap, grid-breaking, generous whitespace or controlled density.
+- **Backgrounds & detail**: Atmosphere and depth—gradient meshes, noise, patterns, layered transparency, shadows, grain. Match the chosen aesthetic.
+
+**Never:** Generic system fonts, predictable layouts, cookie-cutter patterns, or designs that lack context-specific character. Vary themes, fonts, and aesthetics; do not converge on the same choices every time.
+
+Match implementation to the vision: maximalist = elaborate code and effects; minimalist = restraint, precision, spacing and typography. Full reference: .agents/skills/frontend-design/SKILL.md

@@ -1,0 +1,33 @@
+---
+description: React composition and compound components
+globs: **/*.tsx, **/*.ts, **/*.js
+alwaysApply: false
+---
+
+# React Composition Patterns
+
+When building or refactoring React components:
+
+- **Avoid boolean prop proliferation** (`isThread`, `isEditing`, …). Use composition and explicit variant components instead.
+- **Use compound components** with a shared context; subcomponents read state/actions from context, not props.
+- **Define a generic context interface** (`state`, `actions`, `meta`) so different providers can inject state; UI only depends on the interface.
+- **Lift state into provider components** so siblings (e.g. dialog actions) can access state/actions without prop drilling.
+- **Prefer composing `children`** over render props for structure; use render props when parent must pass data to the child.
+- **React 19**: use `ref` as a normal prop (no `forwardRef`); use `use(Context)` instead of `useContext(Context)`.
+
+**Example – compound component usage:**
+
+```tsx
+<Composer.Provider state={state} actions={actions} meta={meta}>
+  <Composer.Frame>
+    <Composer.Header />
+    <Composer.Input />
+    <Composer.Footer>
+      <Composer.Formatting />
+      <Composer.Submit />
+    </Composer.Footer>
+  </Composer.Frame>
+</Composer.Provider>
+```
+
+Full reference: .agents/skills/vercel-composition-patterns/AGENTS.md

@@ -1,0 +1,33 @@
+---
+description: React/Next.js performance and correctness
+globs: **/*.tsx, **/*.ts, **/*.js
+alwaysApply: false
+---
+
+# React & Next.js Best Practices
+
+When editing React/Next.js code, follow these high-impact practices:
+
+- **Waterfalls**: Defer `await` to the branch that needs it; use `Promise.all()` for independent work; in API routes start independent promises immediately; use Suspense for streaming.
+- **Bundle**: Avoid barrel imports (or use Next `optimizePackageImports`); dynamic import heavy components; defer analytics/third-party after hydration.
+- **Server**: Auth inside every Server Action; minimize RSC props (no duplicate serialization); use `React.cache()` for per-request dedup; use `after()` for non-blocking work.
+- **Client**: Passive listeners for scroll/touch; SWR for dedup; versioned, minimal localStorage.
+- **Re-render**: Derive state in render (no effect to sync props→state); functional `setState` when depending on previous state; `useRef` for transient values; put interaction logic in event handlers.
+- **Rendering**: Explicit conditional rendering (`count > 0 ? ... : null`), not `count && ...`; prefer `useTransition` over manual loading state.
+- **JS**: Use `.toSorted()` instead of `.sort()`; Set/Map for lookups; early return / length check before expensive compares.
+
+**Example – functional setState (avoids stale closures):**
+
+```typescript
+// ❌ BAD: stale closure risk
+const removeItem = useCallback((id: string) => {
+  setItems(items.filter(item => item.id !== id))
+}, [])
+
+// ✅ GOOD: always uses latest state
+const removeItem = useCallback((id: string) => {
+  setItems(curr => curr.filter(item => item.id !== id))
+}, [])
+```
+
+Full reference: .agents/skills/vercel-react-best-practices/AGENTS.md

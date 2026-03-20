@@ -1,0 +1,187 @@
+---
+description: PostgreSQL + Prisma schema design, queries, performance, and production practices
+globs: **/*.ts, **/*.js, **/*.sql, **/*.prisma, **/prisma/*.migration
+alwaysApply: false
+---
+
+# PostgreSQL + Prisma Best Practices
+
+When working with PostgreSQL and Prisma, design for correctness, performance, and high concurrency.
+
+## Schema Design
+
+- Think in PostgreSQL first, Prisma second.
+- Use correct types:
+  - Money → Decimal (Prisma) mapped to NUMERIC (Postgres)
+  - Never use Float/REAL for financial values
+- Always define:
+  - Primary keys (@id)
+  - Unique constraints (@unique)
+  - Defaults (@default)
+  - Timestamps (@updatedAt, now())
+- Enforce constraints at database level (NOT NULL, CHECK, FK)
+- Use explicit relation fields
+- Add indexes for frequently queried fields
+
+Example model:
+
+model Bet {
+  id        String   @id @default(cuid())
+  userId    String
+  stake     Decimal  @db.Numeric(12,2)
+  odds      Decimal  @db.Numeric(8,3)
+  status    BetStatus
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([status])
+}
+
+## Query Practices
+
+- Avoid N+1 queries → use include/select
+- Fetch only required fields
+- Prefer set-based operations over loops
+- Always paginate large datasets
+
+Good:
+
+await prisma.bet.findMany({
+  where: { status: "OPEN" },
+  select: { id: true, stake: true, odds: true }
+})
+
+## Transactions & Integrity
+
+- Always use transactions for:
+  - balance updates
+  - bet placement
+  - payouts
+- Ensure atomic operations
+
+Example:
+
+await prisma.$transaction(async (tx) => {
+  const user = await tx.user.findUnique({
+    where: { id: userId }
+  })
+
+  if (!user || user.balance.lt(stake)) {
+    throw new Error("Insufficient funds")
+  }
+
+  await tx.user.update({
+    where: { id: userId },
+    data: { balance: { decrement: stake } }
+  })
+
+  await tx.bet.create({
+    data: { userId, stake, odds }
+  })
+})
+
+## Concurrency (Critical)
+
+- Always assume high concurrency
+- Prevent race conditions:
+  - Use SELECT FOR UPDATE when needed
+  - Do not rely only on Prisma abstractions
+
+Example:
+
+await prisma.$queryRaw`
+  SELECT * FROM "User"
+  WHERE id = ${userId}
+  FOR UPDATE
+`
+
+- Keep transactions short
+
+## Performance
+
+- Add indexes in Prisma:
+
+@@index([userId, status])
+
+- Analyze queries with EXPLAIN ANALYZE
+- Avoid:
+  - SELECT *
+  - repeated queries in loops
+  - unnecessary subqueries
+
+- Use raw SQL for:
+  - aggregations
+  - window functions
+  - complex joins
+
+## PostgreSQL Features
+
+Use when appropriate:
+
+- CTEs (WITH)
+- Window functions
+- JSONB (only when needed)
+- UPSERT
+
+Example UPSERT:
+
+INSERT INTO users (id, email)
+VALUES (1, 'test@test.com')
+ON CONFLICT (id) DO UPDATE
+SET email = EXCLUDED.email;
+
+Partial index:
+
+CREATE INDEX idx_active_users
+ON users (id)
+WHERE status = 'active';
+
+## Security
+
+- Always use parameterized queries
+- Never concatenate SQL strings
+
+Bad:
+
+await prisma.$queryRawUnsafe("SELECT * FROM users WHERE email = '" + email + "'")
+
+Good:
+
+await prisma.$queryRaw`SELECT * FROM users WHERE email = ${email}`
+
+## Critical Rules
+
+- Never use floating point for money
+- Never update balances without a transaction
+- Never rely only on app logic → enforce in DB
+- Always design for auditability
+- Always assume concurrent writes
+
+## Migrations
+
+- Review migrations before applying
+- Add indexes manually if missing
+- Avoid destructive changes in production
+- Backup before major changes
+
+## Production
+
+- Use connection pooling (PgBouncer)
+- Monitor slow queries
+- Tune:
+  - shared_buffers
+  - work_mem
+- Run VACUUM and ANALYZE regularly
+
+## Advanced Tip
+
+- Prefer ledger-based systems for financial logic
+- Store immutable transaction records
+- Derive balances instead of mutating blindly
+
+## References
+
+PostgreSQL docs: https://www.postgresql.org/docs/
+Prisma docs: https://www.prisma.io/docs
