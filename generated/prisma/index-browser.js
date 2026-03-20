@@ -162,6 +162,16 @@ exports.Prisma.ProductScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ProductStockBookingScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  userId: 'userId',
+  quantityDelta: 'quantityDelta',
+  supplier: 'supplier',
+  note: 'note',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.CostCenterScalarFieldEnum = {
   id: 'id',
   code: 'code',
@@ -326,6 +336,7 @@ exports.Prisma.ModelName = {
   StorageLocation: 'StorageLocation',
   StorageRoom: 'StorageRoom',
   Product: 'Product',
+  ProductStockBooking: 'ProductStockBooking',
   CostCenter: 'CostCenter',
   Order: 'Order',
   OrderCounter: 'OrderCounter',

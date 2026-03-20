@@ -77,31 +77,49 @@ model StorageRoom {
 }
 
 model Product {
-  id                String          @id @default(cuid())
+  id                String                @id @default(cuid())
   name              String
-  sku               String          @unique
+  sku               String                @unique
   description       String?
-  price             Decimal         @db.Decimal(12, 2)
-  quantityOnHand    Decimal         @default(0) @db.Decimal(14, 3)
-  minimumQuantity   Decimal         @default(0) @db.Decimal(14, 3)
+  price             Decimal               @db.Decimal(12, 2)
+  quantityOnHand    Decimal               @default(0) @db.Decimal(14, 3)
+  minimumQuantity   Decimal               @default(0) @db.Decimal(14, 3)
   unitKind          UnitKind
   baseUnit          BaseUnit
-  unitStep          Decimal         @default(1) @db.Decimal(14, 3)
+  unitStep          Decimal               @default(1) @db.Decimal(14, 3)
   categoryId        String?
   storageLocationId String
-  category          Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
+  category          Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  storageLocation   StorageLocation       @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
   images            ProductImage[]
   cartItems         CartItem[]
   savedCartItems    SavedCartItem[]
   orderItems        OrderItem[]
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  stockBookings     ProductStockBooking[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   @@index([name])
   @@index([categoryId])
   @@index([storageLocationId])
   @@index([quantityOnHand, minimumQuantity])
+}
+
+model ProductStockBooking {
+  id            String   @id @default(cuid())
+  productId     String
+  userId        String
+  quantityDelta Decimal  @db.Decimal(14, 3)
+  supplier      String
+  note          String?
+  createdAt     DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model CostCenter {
@@ -214,18 +232,19 @@ model SavedCartItem {
 }
 
 model User {
-  id            String      @id @default(cuid())
+  id            String                @id @default(cuid())
   name          String?
-  email         String?     @unique
+  email         String?               @unique
   emailVerified DateTime?
   image         String?
-  role          AppRole     @default(STUDENT)
+  role          AppRole               @default(STUDENT)
   accounts      Account[]
   sessions      Session[]
   savedCarts    SavedCart[]
   orders        Order[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  stockBookings ProductStockBooking[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 }
 
 model Account {

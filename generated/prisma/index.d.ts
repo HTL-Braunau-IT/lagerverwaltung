@@ -34,6 +34,11 @@ export type StorageRoom = $Result.DefaultSelection<Prisma.$StorageRoomPayload>
  */
 export type Product = $Result.DefaultSelection<Prisma.$ProductPayload>
 /**
+ * Model ProductStockBooking
+ * 
+ */
+export type ProductStockBooking = $Result.DefaultSelection<Prisma.$ProductStockBookingPayload>
+/**
  * Model CostCenter
  * 
  */
@@ -325,6 +330,16 @@ export class PrismaClient<
     * ```
     */
   get product(): Prisma.ProductDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.productStockBooking`: Exposes CRUD operations for the **ProductStockBooking** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ProductStockBookings
+    * const productStockBookings = await prisma.productStockBooking.findMany()
+    * ```
+    */
+  get productStockBooking(): Prisma.ProductStockBookingDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.costCenter`: Exposes CRUD operations for the **CostCenter** model.
@@ -893,6 +908,7 @@ export namespace Prisma {
     StorageLocation: 'StorageLocation',
     StorageRoom: 'StorageRoom',
     Product: 'Product',
+    ProductStockBooking: 'ProductStockBooking',
     CostCenter: 'CostCenter',
     Order: 'Order',
     OrderCounter: 'OrderCounter',
@@ -921,7 +937,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "costCenter" | "order" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "account" | "session" | "verificationToken"
+      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "productStockBooking" | "costCenter" | "order" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "account" | "session" | "verificationToken"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1218,6 +1234,80 @@ export namespace Prisma {
           count: {
             args: Prisma.ProductCountArgs<ExtArgs>
             result: $Utils.Optional<ProductCountAggregateOutputType> | number
+          }
+        }
+      }
+      ProductStockBooking: {
+        payload: Prisma.$ProductStockBookingPayload<ExtArgs>
+        fields: Prisma.ProductStockBookingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ProductStockBookingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ProductStockBookingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          findFirst: {
+            args: Prisma.ProductStockBookingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ProductStockBookingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          findMany: {
+            args: Prisma.ProductStockBookingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>[]
+          }
+          create: {
+            args: Prisma.ProductStockBookingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          createMany: {
+            args: Prisma.ProductStockBookingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ProductStockBookingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>[]
+          }
+          delete: {
+            args: Prisma.ProductStockBookingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          update: {
+            args: Prisma.ProductStockBookingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          deleteMany: {
+            args: Prisma.ProductStockBookingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ProductStockBookingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ProductStockBookingUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>[]
+          }
+          upsert: {
+            args: Prisma.ProductStockBookingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductStockBookingPayload>
+          }
+          aggregate: {
+            args: Prisma.ProductStockBookingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateProductStockBooking>
+          }
+          groupBy: {
+            args: Prisma.ProductStockBookingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ProductStockBookingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ProductStockBookingCountArgs<ExtArgs>
+            result: $Utils.Optional<ProductStockBookingCountAggregateOutputType> | number
           }
         }
       }
@@ -2295,6 +2385,7 @@ export namespace Prisma {
     storageLocation?: StorageLocationOmit
     storageRoom?: StorageRoomOmit
     product?: ProductOmit
+    productStockBooking?: ProductStockBookingOmit
     costCenter?: CostCenterOmit
     order?: OrderOmit
     orderCounter?: OrderCounterOmit
@@ -2485,6 +2576,7 @@ export namespace Prisma {
     cartItems: number
     savedCartItems: number
     orderItems: number
+    stockBookings: number
   }
 
   export type ProductCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2492,6 +2584,7 @@ export namespace Prisma {
     cartItems?: boolean | ProductCountOutputTypeCountCartItemsArgs
     savedCartItems?: boolean | ProductCountOutputTypeCountSavedCartItemsArgs
     orderItems?: boolean | ProductCountOutputTypeCountOrderItemsArgs
+    stockBookings?: boolean | ProductCountOutputTypeCountStockBookingsArgs
   }
 
   // Custom InputTypes
@@ -2531,6 +2624,13 @@ export namespace Prisma {
    */
   export type ProductCountOutputTypeCountOrderItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OrderItemWhereInput
+  }
+
+  /**
+   * ProductCountOutputType without action
+   */
+  export type ProductCountOutputTypeCountStockBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProductStockBookingWhereInput
   }
 
 
@@ -2667,6 +2767,7 @@ export namespace Prisma {
     sessions: number
     savedCarts: number
     orders: number
+    stockBookings: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2674,6 +2775,7 @@ export namespace Prisma {
     sessions?: boolean | UserCountOutputTypeCountSessionsArgs
     savedCarts?: boolean | UserCountOutputTypeCountSavedCartsArgs
     orders?: boolean | UserCountOutputTypeCountOrdersArgs
+    stockBookings?: boolean | UserCountOutputTypeCountStockBookingsArgs
   }
 
   // Custom InputTypes
@@ -2713,6 +2815,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: OrderWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountStockBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProductStockBookingWhereInput
   }
 
 
@@ -6264,6 +6373,7 @@ export namespace Prisma {
     cartItems?: boolean | Product$cartItemsArgs<ExtArgs>
     savedCartItems?: boolean | Product$savedCartItemsArgs<ExtArgs>
     orderItems?: boolean | Product$orderItemsArgs<ExtArgs>
+    stockBookings?: boolean | Product$stockBookingsArgs<ExtArgs>
     _count?: boolean | ProductCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["product"]>
 
@@ -6330,6 +6440,7 @@ export namespace Prisma {
     cartItems?: boolean | Product$cartItemsArgs<ExtArgs>
     savedCartItems?: boolean | Product$savedCartItemsArgs<ExtArgs>
     orderItems?: boolean | Product$orderItemsArgs<ExtArgs>
+    stockBookings?: boolean | Product$stockBookingsArgs<ExtArgs>
     _count?: boolean | ProductCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProductIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6350,6 +6461,7 @@ export namespace Prisma {
       cartItems: Prisma.$CartItemPayload<ExtArgs>[]
       savedCartItems: Prisma.$SavedCartItemPayload<ExtArgs>[]
       orderItems: Prisma.$OrderItemPayload<ExtArgs>[]
+      stockBookings: Prisma.$ProductStockBookingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -6766,6 +6878,7 @@ export namespace Prisma {
     cartItems<T extends Product$cartItemsArgs<ExtArgs> = {}>(args?: Subset<T, Product$cartItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CartItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     savedCartItems<T extends Product$savedCartItemsArgs<ExtArgs> = {}>(args?: Subset<T, Product$savedCartItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SavedCartItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orderItems<T extends Product$orderItemsArgs<ExtArgs> = {}>(args?: Subset<T, Product$orderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    stockBookings<T extends Product$stockBookingsArgs<ExtArgs> = {}>(args?: Subset<T, Product$stockBookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7325,6 +7438,30 @@ export namespace Prisma {
   }
 
   /**
+   * Product.stockBookings
+   */
+  export type Product$stockBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    where?: ProductStockBookingWhereInput
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    cursor?: ProductStockBookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ProductStockBookingScalarFieldEnum | ProductStockBookingScalarFieldEnum[]
+  }
+
+  /**
    * Product without action
    */
   export type ProductDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7340,6 +7477,1137 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: ProductInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ProductStockBooking
+   */
+
+  export type AggregateProductStockBooking = {
+    _count: ProductStockBookingCountAggregateOutputType | null
+    _avg: ProductStockBookingAvgAggregateOutputType | null
+    _sum: ProductStockBookingSumAggregateOutputType | null
+    _min: ProductStockBookingMinAggregateOutputType | null
+    _max: ProductStockBookingMaxAggregateOutputType | null
+  }
+
+  export type ProductStockBookingAvgAggregateOutputType = {
+    quantityDelta: Decimal | null
+  }
+
+  export type ProductStockBookingSumAggregateOutputType = {
+    quantityDelta: Decimal | null
+  }
+
+  export type ProductStockBookingMinAggregateOutputType = {
+    id: string | null
+    productId: string | null
+    userId: string | null
+    quantityDelta: Decimal | null
+    supplier: string | null
+    note: string | null
+    createdAt: Date | null
+  }
+
+  export type ProductStockBookingMaxAggregateOutputType = {
+    id: string | null
+    productId: string | null
+    userId: string | null
+    quantityDelta: Decimal | null
+    supplier: string | null
+    note: string | null
+    createdAt: Date | null
+  }
+
+  export type ProductStockBookingCountAggregateOutputType = {
+    id: number
+    productId: number
+    userId: number
+    quantityDelta: number
+    supplier: number
+    note: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type ProductStockBookingAvgAggregateInputType = {
+    quantityDelta?: true
+  }
+
+  export type ProductStockBookingSumAggregateInputType = {
+    quantityDelta?: true
+  }
+
+  export type ProductStockBookingMinAggregateInputType = {
+    id?: true
+    productId?: true
+    userId?: true
+    quantityDelta?: true
+    supplier?: true
+    note?: true
+    createdAt?: true
+  }
+
+  export type ProductStockBookingMaxAggregateInputType = {
+    id?: true
+    productId?: true
+    userId?: true
+    quantityDelta?: true
+    supplier?: true
+    note?: true
+    createdAt?: true
+  }
+
+  export type ProductStockBookingCountAggregateInputType = {
+    id?: true
+    productId?: true
+    userId?: true
+    quantityDelta?: true
+    supplier?: true
+    note?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type ProductStockBookingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductStockBooking to aggregate.
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductStockBookings to fetch.
+     */
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ProductStockBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductStockBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductStockBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ProductStockBookings
+    **/
+    _count?: true | ProductStockBookingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ProductStockBookingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ProductStockBookingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ProductStockBookingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ProductStockBookingMaxAggregateInputType
+  }
+
+  export type GetProductStockBookingAggregateType<T extends ProductStockBookingAggregateArgs> = {
+        [P in keyof T & keyof AggregateProductStockBooking]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateProductStockBooking[P]>
+      : GetScalarType<T[P], AggregateProductStockBooking[P]>
+  }
+
+
+
+
+  export type ProductStockBookingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProductStockBookingWhereInput
+    orderBy?: ProductStockBookingOrderByWithAggregationInput | ProductStockBookingOrderByWithAggregationInput[]
+    by: ProductStockBookingScalarFieldEnum[] | ProductStockBookingScalarFieldEnum
+    having?: ProductStockBookingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ProductStockBookingCountAggregateInputType | true
+    _avg?: ProductStockBookingAvgAggregateInputType
+    _sum?: ProductStockBookingSumAggregateInputType
+    _min?: ProductStockBookingMinAggregateInputType
+    _max?: ProductStockBookingMaxAggregateInputType
+  }
+
+  export type ProductStockBookingGroupByOutputType = {
+    id: string
+    productId: string
+    userId: string
+    quantityDelta: Decimal
+    supplier: string
+    note: string | null
+    createdAt: Date
+    _count: ProductStockBookingCountAggregateOutputType | null
+    _avg: ProductStockBookingAvgAggregateOutputType | null
+    _sum: ProductStockBookingSumAggregateOutputType | null
+    _min: ProductStockBookingMinAggregateOutputType | null
+    _max: ProductStockBookingMaxAggregateOutputType | null
+  }
+
+  type GetProductStockBookingGroupByPayload<T extends ProductStockBookingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ProductStockBookingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ProductStockBookingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ProductStockBookingGroupByOutputType[P]>
+            : GetScalarType<T[P], ProductStockBookingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ProductStockBookingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    productId?: boolean
+    userId?: boolean
+    quantityDelta?: boolean
+    supplier?: boolean
+    note?: boolean
+    createdAt?: boolean
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["productStockBooking"]>
+
+  export type ProductStockBookingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    productId?: boolean
+    userId?: boolean
+    quantityDelta?: boolean
+    supplier?: boolean
+    note?: boolean
+    createdAt?: boolean
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["productStockBooking"]>
+
+  export type ProductStockBookingSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    productId?: boolean
+    userId?: boolean
+    quantityDelta?: boolean
+    supplier?: boolean
+    note?: boolean
+    createdAt?: boolean
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["productStockBooking"]>
+
+  export type ProductStockBookingSelectScalar = {
+    id?: boolean
+    productId?: boolean
+    userId?: boolean
+    quantityDelta?: boolean
+    supplier?: boolean
+    note?: boolean
+    createdAt?: boolean
+  }
+
+  export type ProductStockBookingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "userId" | "quantityDelta" | "supplier" | "note" | "createdAt", ExtArgs["result"]["productStockBooking"]>
+  export type ProductStockBookingInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type ProductStockBookingIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type ProductStockBookingIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $ProductStockBookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ProductStockBooking"
+    objects: {
+      product: Prisma.$ProductPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      productId: string
+      userId: string
+      quantityDelta: Prisma.Decimal
+      supplier: string
+      note: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["productStockBooking"]>
+    composites: {}
+  }
+
+  type ProductStockBookingGetPayload<S extends boolean | null | undefined | ProductStockBookingDefaultArgs> = $Result.GetResult<Prisma.$ProductStockBookingPayload, S>
+
+  type ProductStockBookingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ProductStockBookingFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ProductStockBookingCountAggregateInputType | true
+    }
+
+  export interface ProductStockBookingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ProductStockBooking'], meta: { name: 'ProductStockBooking' } }
+    /**
+     * Find zero or one ProductStockBooking that matches the filter.
+     * @param {ProductStockBookingFindUniqueArgs} args - Arguments to find a ProductStockBooking
+     * @example
+     * // Get one ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ProductStockBookingFindUniqueArgs>(args: SelectSubset<T, ProductStockBookingFindUniqueArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ProductStockBooking that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ProductStockBookingFindUniqueOrThrowArgs} args - Arguments to find a ProductStockBooking
+     * @example
+     * // Get one ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ProductStockBookingFindUniqueOrThrowArgs>(args: SelectSubset<T, ProductStockBookingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ProductStockBooking that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingFindFirstArgs} args - Arguments to find a ProductStockBooking
+     * @example
+     * // Get one ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ProductStockBookingFindFirstArgs>(args?: SelectSubset<T, ProductStockBookingFindFirstArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ProductStockBooking that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingFindFirstOrThrowArgs} args - Arguments to find a ProductStockBooking
+     * @example
+     * // Get one ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ProductStockBookingFindFirstOrThrowArgs>(args?: SelectSubset<T, ProductStockBookingFindFirstOrThrowArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ProductStockBookings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ProductStockBookings
+     * const productStockBookings = await prisma.productStockBooking.findMany()
+     * 
+     * // Get first 10 ProductStockBookings
+     * const productStockBookings = await prisma.productStockBooking.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const productStockBookingWithIdOnly = await prisma.productStockBooking.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ProductStockBookingFindManyArgs>(args?: SelectSubset<T, ProductStockBookingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ProductStockBooking.
+     * @param {ProductStockBookingCreateArgs} args - Arguments to create a ProductStockBooking.
+     * @example
+     * // Create one ProductStockBooking
+     * const ProductStockBooking = await prisma.productStockBooking.create({
+     *   data: {
+     *     // ... data to create a ProductStockBooking
+     *   }
+     * })
+     * 
+     */
+    create<T extends ProductStockBookingCreateArgs>(args: SelectSubset<T, ProductStockBookingCreateArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ProductStockBookings.
+     * @param {ProductStockBookingCreateManyArgs} args - Arguments to create many ProductStockBookings.
+     * @example
+     * // Create many ProductStockBookings
+     * const productStockBooking = await prisma.productStockBooking.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ProductStockBookingCreateManyArgs>(args?: SelectSubset<T, ProductStockBookingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ProductStockBookings and returns the data saved in the database.
+     * @param {ProductStockBookingCreateManyAndReturnArgs} args - Arguments to create many ProductStockBookings.
+     * @example
+     * // Create many ProductStockBookings
+     * const productStockBooking = await prisma.productStockBooking.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ProductStockBookings and only return the `id`
+     * const productStockBookingWithIdOnly = await prisma.productStockBooking.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ProductStockBookingCreateManyAndReturnArgs>(args?: SelectSubset<T, ProductStockBookingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ProductStockBooking.
+     * @param {ProductStockBookingDeleteArgs} args - Arguments to delete one ProductStockBooking.
+     * @example
+     * // Delete one ProductStockBooking
+     * const ProductStockBooking = await prisma.productStockBooking.delete({
+     *   where: {
+     *     // ... filter to delete one ProductStockBooking
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ProductStockBookingDeleteArgs>(args: SelectSubset<T, ProductStockBookingDeleteArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ProductStockBooking.
+     * @param {ProductStockBookingUpdateArgs} args - Arguments to update one ProductStockBooking.
+     * @example
+     * // Update one ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ProductStockBookingUpdateArgs>(args: SelectSubset<T, ProductStockBookingUpdateArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ProductStockBookings.
+     * @param {ProductStockBookingDeleteManyArgs} args - Arguments to filter ProductStockBookings to delete.
+     * @example
+     * // Delete a few ProductStockBookings
+     * const { count } = await prisma.productStockBooking.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ProductStockBookingDeleteManyArgs>(args?: SelectSubset<T, ProductStockBookingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProductStockBookings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ProductStockBookings
+     * const productStockBooking = await prisma.productStockBooking.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ProductStockBookingUpdateManyArgs>(args: SelectSubset<T, ProductStockBookingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProductStockBookings and returns the data updated in the database.
+     * @param {ProductStockBookingUpdateManyAndReturnArgs} args - Arguments to update many ProductStockBookings.
+     * @example
+     * // Update many ProductStockBookings
+     * const productStockBooking = await prisma.productStockBooking.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ProductStockBookings and only return the `id`
+     * const productStockBookingWithIdOnly = await prisma.productStockBooking.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ProductStockBookingUpdateManyAndReturnArgs>(args: SelectSubset<T, ProductStockBookingUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ProductStockBooking.
+     * @param {ProductStockBookingUpsertArgs} args - Arguments to update or create a ProductStockBooking.
+     * @example
+     * // Update or create a ProductStockBooking
+     * const productStockBooking = await prisma.productStockBooking.upsert({
+     *   create: {
+     *     // ... data to create a ProductStockBooking
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ProductStockBooking we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ProductStockBookingUpsertArgs>(args: SelectSubset<T, ProductStockBookingUpsertArgs<ExtArgs>>): Prisma__ProductStockBookingClient<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ProductStockBookings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingCountArgs} args - Arguments to filter ProductStockBookings to count.
+     * @example
+     * // Count the number of ProductStockBookings
+     * const count = await prisma.productStockBooking.count({
+     *   where: {
+     *     // ... the filter for the ProductStockBookings we want to count
+     *   }
+     * })
+    **/
+    count<T extends ProductStockBookingCountArgs>(
+      args?: Subset<T, ProductStockBookingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ProductStockBookingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ProductStockBooking.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ProductStockBookingAggregateArgs>(args: Subset<T, ProductStockBookingAggregateArgs>): Prisma.PrismaPromise<GetProductStockBookingAggregateType<T>>
+
+    /**
+     * Group by ProductStockBooking.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductStockBookingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ProductStockBookingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ProductStockBookingGroupByArgs['orderBy'] }
+        : { orderBy?: ProductStockBookingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ProductStockBookingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetProductStockBookingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ProductStockBooking model
+   */
+  readonly fields: ProductStockBookingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ProductStockBooking.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ProductStockBookingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    product<T extends ProductDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProductDefaultArgs<ExtArgs>>): Prisma__ProductClient<$Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ProductStockBooking model
+   */
+  interface ProductStockBookingFieldRefs {
+    readonly id: FieldRef<"ProductStockBooking", 'String'>
+    readonly productId: FieldRef<"ProductStockBooking", 'String'>
+    readonly userId: FieldRef<"ProductStockBooking", 'String'>
+    readonly quantityDelta: FieldRef<"ProductStockBooking", 'Decimal'>
+    readonly supplier: FieldRef<"ProductStockBooking", 'String'>
+    readonly note: FieldRef<"ProductStockBooking", 'String'>
+    readonly createdAt: FieldRef<"ProductStockBooking", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ProductStockBooking findUnique
+   */
+  export type ProductStockBookingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter, which ProductStockBooking to fetch.
+     */
+    where: ProductStockBookingWhereUniqueInput
+  }
+
+  /**
+   * ProductStockBooking findUniqueOrThrow
+   */
+  export type ProductStockBookingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter, which ProductStockBooking to fetch.
+     */
+    where: ProductStockBookingWhereUniqueInput
+  }
+
+  /**
+   * ProductStockBooking findFirst
+   */
+  export type ProductStockBookingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter, which ProductStockBooking to fetch.
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductStockBookings to fetch.
+     */
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductStockBookings.
+     */
+    cursor?: ProductStockBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductStockBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductStockBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductStockBookings.
+     */
+    distinct?: ProductStockBookingScalarFieldEnum | ProductStockBookingScalarFieldEnum[]
+  }
+
+  /**
+   * ProductStockBooking findFirstOrThrow
+   */
+  export type ProductStockBookingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter, which ProductStockBooking to fetch.
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductStockBookings to fetch.
+     */
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductStockBookings.
+     */
+    cursor?: ProductStockBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductStockBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductStockBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductStockBookings.
+     */
+    distinct?: ProductStockBookingScalarFieldEnum | ProductStockBookingScalarFieldEnum[]
+  }
+
+  /**
+   * ProductStockBooking findMany
+   */
+  export type ProductStockBookingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter, which ProductStockBookings to fetch.
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductStockBookings to fetch.
+     */
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ProductStockBookings.
+     */
+    cursor?: ProductStockBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductStockBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductStockBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductStockBookings.
+     */
+    distinct?: ProductStockBookingScalarFieldEnum | ProductStockBookingScalarFieldEnum[]
+  }
+
+  /**
+   * ProductStockBooking create
+   */
+  export type ProductStockBookingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ProductStockBooking.
+     */
+    data: XOR<ProductStockBookingCreateInput, ProductStockBookingUncheckedCreateInput>
+  }
+
+  /**
+   * ProductStockBooking createMany
+   */
+  export type ProductStockBookingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ProductStockBookings.
+     */
+    data: ProductStockBookingCreateManyInput | ProductStockBookingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProductStockBooking createManyAndReturn
+   */
+  export type ProductStockBookingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * The data used to create many ProductStockBookings.
+     */
+    data: ProductStockBookingCreateManyInput | ProductStockBookingCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ProductStockBooking update
+   */
+  export type ProductStockBookingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ProductStockBooking.
+     */
+    data: XOR<ProductStockBookingUpdateInput, ProductStockBookingUncheckedUpdateInput>
+    /**
+     * Choose, which ProductStockBooking to update.
+     */
+    where: ProductStockBookingWhereUniqueInput
+  }
+
+  /**
+   * ProductStockBooking updateMany
+   */
+  export type ProductStockBookingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ProductStockBookings.
+     */
+    data: XOR<ProductStockBookingUpdateManyMutationInput, ProductStockBookingUncheckedUpdateManyInput>
+    /**
+     * Filter which ProductStockBookings to update
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * Limit how many ProductStockBookings to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ProductStockBooking updateManyAndReturn
+   */
+  export type ProductStockBookingUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * The data used to update ProductStockBookings.
+     */
+    data: XOR<ProductStockBookingUpdateManyMutationInput, ProductStockBookingUncheckedUpdateManyInput>
+    /**
+     * Filter which ProductStockBookings to update
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * Limit how many ProductStockBookings to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * ProductStockBooking upsert
+   */
+  export type ProductStockBookingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ProductStockBooking to update in case it exists.
+     */
+    where: ProductStockBookingWhereUniqueInput
+    /**
+     * In case the ProductStockBooking found by the `where` argument doesn't exist, create a new ProductStockBooking with this data.
+     */
+    create: XOR<ProductStockBookingCreateInput, ProductStockBookingUncheckedCreateInput>
+    /**
+     * In case the ProductStockBooking was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ProductStockBookingUpdateInput, ProductStockBookingUncheckedUpdateInput>
+  }
+
+  /**
+   * ProductStockBooking delete
+   */
+  export type ProductStockBookingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    /**
+     * Filter which ProductStockBooking to delete.
+     */
+    where: ProductStockBookingWhereUniqueInput
+  }
+
+  /**
+   * ProductStockBooking deleteMany
+   */
+  export type ProductStockBookingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductStockBookings to delete
+     */
+    where?: ProductStockBookingWhereInput
+    /**
+     * Limit how many ProductStockBookings to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ProductStockBooking without action
+   */
+  export type ProductStockBookingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
   }
 
 
@@ -17342,6 +18610,7 @@ export namespace Prisma {
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     savedCarts?: boolean | User$savedCartsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
+    stockBookings?: boolean | User$stockBookingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -17384,6 +18653,7 @@ export namespace Prisma {
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     savedCarts?: boolean | User$savedCartsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
+    stockBookings?: boolean | User$stockBookingsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -17396,6 +18666,7 @@ export namespace Prisma {
       sessions: Prisma.$SessionPayload<ExtArgs>[]
       savedCarts: Prisma.$SavedCartPayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
+      stockBookings: Prisma.$ProductStockBookingPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -17804,6 +19075,7 @@ export namespace Prisma {
     sessions<T extends User$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     savedCarts<T extends User$savedCartsArgs<ExtArgs> = {}>(args?: Subset<T, User$savedCartsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SavedCartPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends User$ordersArgs<ExtArgs> = {}>(args?: Subset<T, User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    stockBookings<T extends User$stockBookingsArgs<ExtArgs> = {}>(args?: Subset<T, User$stockBookingsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductStockBookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -18327,6 +19599,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: OrderScalarFieldEnum | OrderScalarFieldEnum[]
+  }
+
+  /**
+   * User.stockBookings
+   */
+  export type User$stockBookingsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductStockBooking
+     */
+    select?: ProductStockBookingSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ProductStockBooking
+     */
+    omit?: ProductStockBookingOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ProductStockBookingInclude<ExtArgs> | null
+    where?: ProductStockBookingWhereInput
+    orderBy?: ProductStockBookingOrderByWithRelationInput | ProductStockBookingOrderByWithRelationInput[]
+    cursor?: ProductStockBookingWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ProductStockBookingScalarFieldEnum | ProductStockBookingScalarFieldEnum[]
   }
 
   /**
@@ -21628,6 +22924,19 @@ export namespace Prisma {
   export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
 
 
+  export const ProductStockBookingScalarFieldEnum: {
+    id: 'id',
+    productId: 'productId',
+    userId: 'userId',
+    quantityDelta: 'quantityDelta',
+    supplier: 'supplier',
+    note: 'note',
+    createdAt: 'createdAt'
+  };
+
+  export type ProductStockBookingScalarFieldEnum = (typeof ProductStockBookingScalarFieldEnum)[keyof typeof ProductStockBookingScalarFieldEnum]
+
+
   export const CostCenterScalarFieldEnum: {
     id: 'id',
     code: 'code',
@@ -22134,6 +23443,7 @@ export namespace Prisma {
     cartItems?: CartItemListRelationFilter
     savedCartItems?: SavedCartItemListRelationFilter
     orderItems?: OrderItemListRelationFilter
+    stockBookings?: ProductStockBookingListRelationFilter
   }
 
   export type ProductOrderByWithRelationInput = {
@@ -22157,6 +23467,7 @@ export namespace Prisma {
     cartItems?: CartItemOrderByRelationAggregateInput
     savedCartItems?: SavedCartItemOrderByRelationAggregateInput
     orderItems?: OrderItemOrderByRelationAggregateInput
+    stockBookings?: ProductStockBookingOrderByRelationAggregateInput
   }
 
   export type ProductWhereUniqueInput = Prisma.AtLeast<{
@@ -22183,6 +23494,7 @@ export namespace Prisma {
     cartItems?: CartItemListRelationFilter
     savedCartItems?: SavedCartItemListRelationFilter
     orderItems?: OrderItemListRelationFilter
+    stockBookings?: ProductStockBookingListRelationFilter
   }, "id" | "sku">
 
   export type ProductOrderByWithAggregationInput = {
@@ -22225,6 +23537,76 @@ export namespace Prisma {
     storageLocationId?: StringWithAggregatesFilter<"Product"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
+  }
+
+  export type ProductStockBookingWhereInput = {
+    AND?: ProductStockBookingWhereInput | ProductStockBookingWhereInput[]
+    OR?: ProductStockBookingWhereInput[]
+    NOT?: ProductStockBookingWhereInput | ProductStockBookingWhereInput[]
+    id?: StringFilter<"ProductStockBooking"> | string
+    productId?: StringFilter<"ProductStockBooking"> | string
+    userId?: StringFilter<"ProductStockBooking"> | string
+    quantityDelta?: DecimalFilter<"ProductStockBooking"> | Decimal | DecimalJsLike | number | string
+    supplier?: StringFilter<"ProductStockBooking"> | string
+    note?: StringNullableFilter<"ProductStockBooking"> | string | null
+    createdAt?: DateTimeFilter<"ProductStockBooking"> | Date | string
+    product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type ProductStockBookingOrderByWithRelationInput = {
+    id?: SortOrder
+    productId?: SortOrder
+    userId?: SortOrder
+    quantityDelta?: SortOrder
+    supplier?: SortOrder
+    note?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    product?: ProductOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type ProductStockBookingWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ProductStockBookingWhereInput | ProductStockBookingWhereInput[]
+    OR?: ProductStockBookingWhereInput[]
+    NOT?: ProductStockBookingWhereInput | ProductStockBookingWhereInput[]
+    productId?: StringFilter<"ProductStockBooking"> | string
+    userId?: StringFilter<"ProductStockBooking"> | string
+    quantityDelta?: DecimalFilter<"ProductStockBooking"> | Decimal | DecimalJsLike | number | string
+    supplier?: StringFilter<"ProductStockBooking"> | string
+    note?: StringNullableFilter<"ProductStockBooking"> | string | null
+    createdAt?: DateTimeFilter<"ProductStockBooking"> | Date | string
+    product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type ProductStockBookingOrderByWithAggregationInput = {
+    id?: SortOrder
+    productId?: SortOrder
+    userId?: SortOrder
+    quantityDelta?: SortOrder
+    supplier?: SortOrder
+    note?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: ProductStockBookingCountOrderByAggregateInput
+    _avg?: ProductStockBookingAvgOrderByAggregateInput
+    _max?: ProductStockBookingMaxOrderByAggregateInput
+    _min?: ProductStockBookingMinOrderByAggregateInput
+    _sum?: ProductStockBookingSumOrderByAggregateInput
+  }
+
+  export type ProductStockBookingScalarWhereWithAggregatesInput = {
+    AND?: ProductStockBookingScalarWhereWithAggregatesInput | ProductStockBookingScalarWhereWithAggregatesInput[]
+    OR?: ProductStockBookingScalarWhereWithAggregatesInput[]
+    NOT?: ProductStockBookingScalarWhereWithAggregatesInput | ProductStockBookingScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ProductStockBooking"> | string
+    productId?: StringWithAggregatesFilter<"ProductStockBooking"> | string
+    userId?: StringWithAggregatesFilter<"ProductStockBooking"> | string
+    quantityDelta?: DecimalWithAggregatesFilter<"ProductStockBooking"> | Decimal | DecimalJsLike | number | string
+    supplier?: StringWithAggregatesFilter<"ProductStockBooking"> | string
+    note?: StringNullableWithAggregatesFilter<"ProductStockBooking"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ProductStockBooking"> | Date | string
   }
 
   export type CostCenterWhereInput = {
@@ -22772,6 +24154,7 @@ export namespace Prisma {
     sessions?: SessionListRelationFilter
     savedCarts?: SavedCartListRelationFilter
     orders?: OrderListRelationFilter
+    stockBookings?: ProductStockBookingListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -22787,6 +24170,7 @@ export namespace Prisma {
     sessions?: SessionOrderByRelationAggregateInput
     savedCarts?: SavedCartOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
+    stockBookings?: ProductStockBookingOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -22805,6 +24189,7 @@ export namespace Prisma {
     sessions?: SessionListRelationFilter
     savedCarts?: SavedCartListRelationFilter
     orders?: OrderListRelationFilter
+    stockBookings?: ProductStockBookingListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -23226,6 +24611,7 @@ export namespace Prisma {
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateInput = {
@@ -23247,6 +24633,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductUpdateInput = {
@@ -23268,6 +24655,7 @@ export namespace Prisma {
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateInput = {
@@ -23289,6 +24677,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductCreateManyInput = {
@@ -23338,6 +24727,74 @@ export namespace Prisma {
     storageLocationId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingCreateInput = {
+    id?: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+    product: ProductCreateNestedOneWithoutStockBookingsInput
+    user: UserCreateNestedOneWithoutStockBookingsInput
+  }
+
+  export type ProductStockBookingUncheckedCreateInput = {
+    id?: string
+    productId: string
+    userId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ProductStockBookingUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    product?: ProductUpdateOneRequiredWithoutStockBookingsNestedInput
+    user?: UserUpdateOneRequiredWithoutStockBookingsNestedInput
+  }
+
+  export type ProductStockBookingUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingCreateManyInput = {
+    id?: string
+    productId: string
+    userId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ProductStockBookingUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CostCenterCreateInput = {
@@ -23870,6 +25327,7 @@ export namespace Prisma {
     sessions?: SessionCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -23885,6 +25343,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -23900,6 +25359,7 @@ export namespace Prisma {
     sessions?: SessionUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -23915,6 +25375,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -24399,6 +25860,12 @@ export namespace Prisma {
     none?: OrderItemWhereInput
   }
 
+  export type ProductStockBookingListRelationFilter = {
+    every?: ProductStockBookingWhereInput
+    some?: ProductStockBookingWhereInput
+    none?: ProductStockBookingWhereInput
+  }
+
   export type ProductImageOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -24412,6 +25879,10 @@ export namespace Prisma {
   }
 
   export type OrderItemOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ProductStockBookingOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -24516,6 +25987,54 @@ export namespace Prisma {
     _max?: NestedEnumBaseUnitFilter<$PrismaModel>
   }
 
+  export type ProductScalarRelationFilter = {
+    is?: ProductWhereInput
+    isNot?: ProductWhereInput
+  }
+
+  export type UserScalarRelationFilter = {
+    is?: UserWhereInput
+    isNot?: UserWhereInput
+  }
+
+  export type ProductStockBookingCountOrderByAggregateInput = {
+    id?: SortOrder
+    productId?: SortOrder
+    userId?: SortOrder
+    quantityDelta?: SortOrder
+    supplier?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ProductStockBookingAvgOrderByAggregateInput = {
+    quantityDelta?: SortOrder
+  }
+
+  export type ProductStockBookingMaxOrderByAggregateInput = {
+    id?: SortOrder
+    productId?: SortOrder
+    userId?: SortOrder
+    quantityDelta?: SortOrder
+    supplier?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ProductStockBookingMinOrderByAggregateInput = {
+    id?: SortOrder
+    productId?: SortOrder
+    userId?: SortOrder
+    quantityDelta?: SortOrder
+    supplier?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ProductStockBookingSumOrderByAggregateInput = {
+    quantityDelta?: SortOrder
+  }
+
   export type OrderListRelationFilter = {
     every?: OrderWhereInput
     some?: OrderWhereInput
@@ -24555,11 +26074,6 @@ export namespace Prisma {
     in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumOrderStatusFilter<$PrismaModel> | $Enums.OrderStatus
-  }
-
-  export type UserScalarRelationFilter = {
-    is?: UserWhereInput
-    isNot?: UserWhereInput
   }
 
   export type CostCenterScalarRelationFilter = {
@@ -24662,11 +26176,6 @@ export namespace Prisma {
   export type OrderScalarRelationFilter = {
     is?: OrderWhereInput
     isNot?: OrderWhereInput
-  }
-
-  export type ProductScalarRelationFilter = {
-    is?: ProductWhereInput
-    isNot?: ProductWhereInput
   }
 
   export type OrderItemOrderIdProductIdCompoundUniqueInput = {
@@ -25307,6 +26816,13 @@ export namespace Prisma {
     connect?: OrderItemWhereUniqueInput | OrderItemWhereUniqueInput[]
   }
 
+  export type ProductStockBookingCreateNestedManyWithoutProductInput = {
+    create?: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput> | ProductStockBookingCreateWithoutProductInput[] | ProductStockBookingUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutProductInput | ProductStockBookingCreateOrConnectWithoutProductInput[]
+    createMany?: ProductStockBookingCreateManyProductInputEnvelope
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+  }
+
   export type ProductImageUncheckedCreateNestedManyWithoutProductInput = {
     create?: XOR<ProductImageCreateWithoutProductInput, ProductImageUncheckedCreateWithoutProductInput> | ProductImageCreateWithoutProductInput[] | ProductImageUncheckedCreateWithoutProductInput[]
     connectOrCreate?: ProductImageCreateOrConnectWithoutProductInput | ProductImageCreateOrConnectWithoutProductInput[]
@@ -25333,6 +26849,13 @@ export namespace Prisma {
     connectOrCreate?: OrderItemCreateOrConnectWithoutProductInput | OrderItemCreateOrConnectWithoutProductInput[]
     createMany?: OrderItemCreateManyProductInputEnvelope
     connect?: OrderItemWhereUniqueInput | OrderItemWhereUniqueInput[]
+  }
+
+  export type ProductStockBookingUncheckedCreateNestedManyWithoutProductInput = {
+    create?: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput> | ProductStockBookingCreateWithoutProductInput[] | ProductStockBookingUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutProductInput | ProductStockBookingCreateOrConnectWithoutProductInput[]
+    createMany?: ProductStockBookingCreateManyProductInputEnvelope
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
   }
 
   export type DecimalFieldUpdateOperationsInput = {
@@ -25425,6 +26948,20 @@ export namespace Prisma {
     deleteMany?: OrderItemScalarWhereInput | OrderItemScalarWhereInput[]
   }
 
+  export type ProductStockBookingUpdateManyWithoutProductNestedInput = {
+    create?: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput> | ProductStockBookingCreateWithoutProductInput[] | ProductStockBookingUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutProductInput | ProductStockBookingCreateOrConnectWithoutProductInput[]
+    upsert?: ProductStockBookingUpsertWithWhereUniqueWithoutProductInput | ProductStockBookingUpsertWithWhereUniqueWithoutProductInput[]
+    createMany?: ProductStockBookingCreateManyProductInputEnvelope
+    set?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    disconnect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    delete?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    update?: ProductStockBookingUpdateWithWhereUniqueWithoutProductInput | ProductStockBookingUpdateWithWhereUniqueWithoutProductInput[]
+    updateMany?: ProductStockBookingUpdateManyWithWhereWithoutProductInput | ProductStockBookingUpdateManyWithWhereWithoutProductInput[]
+    deleteMany?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+  }
+
   export type ProductImageUncheckedUpdateManyWithoutProductNestedInput = {
     create?: XOR<ProductImageCreateWithoutProductInput, ProductImageUncheckedCreateWithoutProductInput> | ProductImageCreateWithoutProductInput[] | ProductImageUncheckedCreateWithoutProductInput[]
     connectOrCreate?: ProductImageCreateOrConnectWithoutProductInput | ProductImageCreateOrConnectWithoutProductInput[]
@@ -25479,6 +27016,48 @@ export namespace Prisma {
     update?: OrderItemUpdateWithWhereUniqueWithoutProductInput | OrderItemUpdateWithWhereUniqueWithoutProductInput[]
     updateMany?: OrderItemUpdateManyWithWhereWithoutProductInput | OrderItemUpdateManyWithWhereWithoutProductInput[]
     deleteMany?: OrderItemScalarWhereInput | OrderItemScalarWhereInput[]
+  }
+
+  export type ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput = {
+    create?: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput> | ProductStockBookingCreateWithoutProductInput[] | ProductStockBookingUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutProductInput | ProductStockBookingCreateOrConnectWithoutProductInput[]
+    upsert?: ProductStockBookingUpsertWithWhereUniqueWithoutProductInput | ProductStockBookingUpsertWithWhereUniqueWithoutProductInput[]
+    createMany?: ProductStockBookingCreateManyProductInputEnvelope
+    set?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    disconnect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    delete?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    update?: ProductStockBookingUpdateWithWhereUniqueWithoutProductInput | ProductStockBookingUpdateWithWhereUniqueWithoutProductInput[]
+    updateMany?: ProductStockBookingUpdateManyWithWhereWithoutProductInput | ProductStockBookingUpdateManyWithWhereWithoutProductInput[]
+    deleteMany?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+  }
+
+  export type ProductCreateNestedOneWithoutStockBookingsInput = {
+    create?: XOR<ProductCreateWithoutStockBookingsInput, ProductUncheckedCreateWithoutStockBookingsInput>
+    connectOrCreate?: ProductCreateOrConnectWithoutStockBookingsInput
+    connect?: ProductWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutStockBookingsInput = {
+    create?: XOR<UserCreateWithoutStockBookingsInput, UserUncheckedCreateWithoutStockBookingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutStockBookingsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type ProductUpdateOneRequiredWithoutStockBookingsNestedInput = {
+    create?: XOR<ProductCreateWithoutStockBookingsInput, ProductUncheckedCreateWithoutStockBookingsInput>
+    connectOrCreate?: ProductCreateOrConnectWithoutStockBookingsInput
+    upsert?: ProductUpsertWithoutStockBookingsInput
+    connect?: ProductWhereUniqueInput
+    update?: XOR<XOR<ProductUpdateToOneWithWhereWithoutStockBookingsInput, ProductUpdateWithoutStockBookingsInput>, ProductUncheckedUpdateWithoutStockBookingsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutStockBookingsNestedInput = {
+    create?: XOR<UserCreateWithoutStockBookingsInput, UserUncheckedCreateWithoutStockBookingsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutStockBookingsInput
+    upsert?: UserUpsertWithoutStockBookingsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutStockBookingsInput, UserUpdateWithoutStockBookingsInput>, UserUncheckedUpdateWithoutStockBookingsInput>
   }
 
   export type OrderCreateNestedManyWithoutCostCenterInput = {
@@ -25829,6 +27408,13 @@ export namespace Prisma {
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
   }
 
+  export type ProductStockBookingCreateNestedManyWithoutUserInput = {
+    create?: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput> | ProductStockBookingCreateWithoutUserInput[] | ProductStockBookingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutUserInput | ProductStockBookingCreateOrConnectWithoutUserInput[]
+    createMany?: ProductStockBookingCreateManyUserInputEnvelope
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+  }
+
   export type AccountUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -25855,6 +27441,13 @@ export namespace Prisma {
     connectOrCreate?: OrderCreateOrConnectWithoutUserInput | OrderCreateOrConnectWithoutUserInput[]
     createMany?: OrderCreateManyUserInputEnvelope
     connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+  }
+
+  export type ProductStockBookingUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput> | ProductStockBookingCreateWithoutUserInput[] | ProductStockBookingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutUserInput | ProductStockBookingCreateOrConnectWithoutUserInput[]
+    createMany?: ProductStockBookingCreateManyUserInputEnvelope
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
   }
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -25921,6 +27514,20 @@ export namespace Prisma {
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
+  export type ProductStockBookingUpdateManyWithoutUserNestedInput = {
+    create?: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput> | ProductStockBookingCreateWithoutUserInput[] | ProductStockBookingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutUserInput | ProductStockBookingCreateOrConnectWithoutUserInput[]
+    upsert?: ProductStockBookingUpsertWithWhereUniqueWithoutUserInput | ProductStockBookingUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: ProductStockBookingCreateManyUserInputEnvelope
+    set?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    disconnect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    delete?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    update?: ProductStockBookingUpdateWithWhereUniqueWithoutUserInput | ProductStockBookingUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: ProductStockBookingUpdateManyWithWhereWithoutUserInput | ProductStockBookingUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+  }
+
   export type AccountUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<AccountCreateWithoutUserInput, AccountUncheckedCreateWithoutUserInput> | AccountCreateWithoutUserInput[] | AccountUncheckedCreateWithoutUserInput[]
     connectOrCreate?: AccountCreateOrConnectWithoutUserInput | AccountCreateOrConnectWithoutUserInput[]
@@ -25975,6 +27582,20 @@ export namespace Prisma {
     update?: OrderUpdateWithWhereUniqueWithoutUserInput | OrderUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: OrderUpdateManyWithWhereWithoutUserInput | OrderUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
+  }
+
+  export type ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput> | ProductStockBookingCreateWithoutUserInput[] | ProductStockBookingUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: ProductStockBookingCreateOrConnectWithoutUserInput | ProductStockBookingCreateOrConnectWithoutUserInput[]
+    upsert?: ProductStockBookingUpsertWithWhereUniqueWithoutUserInput | ProductStockBookingUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: ProductStockBookingCreateManyUserInputEnvelope
+    set?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    disconnect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    delete?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
+    update?: ProductStockBookingUpdateWithWhereUniqueWithoutUserInput | ProductStockBookingUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: ProductStockBookingUpdateManyWithWhereWithoutUserInput | ProductStockBookingUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutAccountsInput = {
@@ -26314,6 +27935,7 @@ export namespace Prisma {
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutCategoryInput = {
@@ -26334,6 +27956,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutCategoryInput = {
@@ -26419,6 +28042,7 @@ export namespace Prisma {
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutStorageLocationInput = {
@@ -26439,6 +28063,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutStorageLocationInput = {
@@ -26699,6 +28324,34 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ProductStockBookingCreateWithoutProductInput = {
+    id?: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutStockBookingsInput
+  }
+
+  export type ProductStockBookingUncheckedCreateWithoutProductInput = {
+    id?: string
+    userId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ProductStockBookingCreateOrConnectWithoutProductInput = {
+    where: ProductStockBookingWhereUniqueInput
+    create: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput>
+  }
+
+  export type ProductStockBookingCreateManyProductInputEnvelope = {
+    data: ProductStockBookingCreateManyProductInput | ProductStockBookingCreateManyProductInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CategoryUpsertWithoutProductsInput = {
     update: XOR<CategoryUpdateWithoutProductsInput, CategoryUncheckedUpdateWithoutProductsInput>
     create: XOR<CategoryCreateWithoutProductsInput, CategoryUncheckedCreateWithoutProductsInput>
@@ -26868,6 +28521,211 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"OrderItem"> | Date | string
   }
 
+  export type ProductStockBookingUpsertWithWhereUniqueWithoutProductInput = {
+    where: ProductStockBookingWhereUniqueInput
+    update: XOR<ProductStockBookingUpdateWithoutProductInput, ProductStockBookingUncheckedUpdateWithoutProductInput>
+    create: XOR<ProductStockBookingCreateWithoutProductInput, ProductStockBookingUncheckedCreateWithoutProductInput>
+  }
+
+  export type ProductStockBookingUpdateWithWhereUniqueWithoutProductInput = {
+    where: ProductStockBookingWhereUniqueInput
+    data: XOR<ProductStockBookingUpdateWithoutProductInput, ProductStockBookingUncheckedUpdateWithoutProductInput>
+  }
+
+  export type ProductStockBookingUpdateManyWithWhereWithoutProductInput = {
+    where: ProductStockBookingScalarWhereInput
+    data: XOR<ProductStockBookingUpdateManyMutationInput, ProductStockBookingUncheckedUpdateManyWithoutProductInput>
+  }
+
+  export type ProductStockBookingScalarWhereInput = {
+    AND?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+    OR?: ProductStockBookingScalarWhereInput[]
+    NOT?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+    id?: StringFilter<"ProductStockBooking"> | string
+    productId?: StringFilter<"ProductStockBooking"> | string
+    userId?: StringFilter<"ProductStockBooking"> | string
+    quantityDelta?: DecimalFilter<"ProductStockBooking"> | Decimal | DecimalJsLike | number | string
+    supplier?: StringFilter<"ProductStockBooking"> | string
+    note?: StringNullableFilter<"ProductStockBooking"> | string | null
+    createdAt?: DateTimeFilter<"ProductStockBooking"> | Date | string
+  }
+
+  export type ProductCreateWithoutStockBookingsInput = {
+    id?: string
+    name: string
+    sku: string
+    description?: string | null
+    price: Decimal | DecimalJsLike | number | string
+    quantityOnHand?: Decimal | DecimalJsLike | number | string
+    minimumQuantity?: Decimal | DecimalJsLike | number | string
+    unitKind: $Enums.UnitKind
+    baseUnit: $Enums.BaseUnit
+    unitStep?: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    category?: CategoryCreateNestedOneWithoutProductsInput
+    storageLocation: StorageLocationCreateNestedOneWithoutProductsInput
+    images?: ProductImageCreateNestedManyWithoutProductInput
+    cartItems?: CartItemCreateNestedManyWithoutProductInput
+    savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
+    orderItems?: OrderItemCreateNestedManyWithoutProductInput
+  }
+
+  export type ProductUncheckedCreateWithoutStockBookingsInput = {
+    id?: string
+    name: string
+    sku: string
+    description?: string | null
+    price: Decimal | DecimalJsLike | number | string
+    quantityOnHand?: Decimal | DecimalJsLike | number | string
+    minimumQuantity?: Decimal | DecimalJsLike | number | string
+    unitKind: $Enums.UnitKind
+    baseUnit: $Enums.BaseUnit
+    unitStep?: Decimal | DecimalJsLike | number | string
+    categoryId?: string | null
+    storageLocationId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    images?: ProductImageUncheckedCreateNestedManyWithoutProductInput
+    cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
+    savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
+    orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+  }
+
+  export type ProductCreateOrConnectWithoutStockBookingsInput = {
+    where: ProductWhereUniqueInput
+    create: XOR<ProductCreateWithoutStockBookingsInput, ProductUncheckedCreateWithoutStockBookingsInput>
+  }
+
+  export type UserCreateWithoutStockBookingsInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    role?: $Enums.AppRole
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    savedCarts?: SavedCartCreateNestedManyWithoutUserInput
+    orders?: OrderCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutStockBookingsInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    role?: $Enums.AppRole
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
+    orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutStockBookingsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutStockBookingsInput, UserUncheckedCreateWithoutStockBookingsInput>
+  }
+
+  export type ProductUpsertWithoutStockBookingsInput = {
+    update: XOR<ProductUpdateWithoutStockBookingsInput, ProductUncheckedUpdateWithoutStockBookingsInput>
+    create: XOR<ProductCreateWithoutStockBookingsInput, ProductUncheckedCreateWithoutStockBookingsInput>
+    where?: ProductWhereInput
+  }
+
+  export type ProductUpdateToOneWithWhereWithoutStockBookingsInput = {
+    where?: ProductWhereInput
+    data: XOR<ProductUpdateWithoutStockBookingsInput, ProductUncheckedUpdateWithoutStockBookingsInput>
+  }
+
+  export type ProductUpdateWithoutStockBookingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    sku?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    minimumQuantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitKind?: EnumUnitKindFieldUpdateOperationsInput | $Enums.UnitKind
+    baseUnit?: EnumBaseUnitFieldUpdateOperationsInput | $Enums.BaseUnit
+    unitStep?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    category?: CategoryUpdateOneWithoutProductsNestedInput
+    storageLocation?: StorageLocationUpdateOneRequiredWithoutProductsNestedInput
+    images?: ProductImageUpdateManyWithoutProductNestedInput
+    cartItems?: CartItemUpdateManyWithoutProductNestedInput
+    savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
+    orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+  }
+
+  export type ProductUncheckedUpdateWithoutStockBookingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    sku?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    minimumQuantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitKind?: EnumUnitKindFieldUpdateOperationsInput | $Enums.UnitKind
+    baseUnit?: EnumBaseUnitFieldUpdateOperationsInput | $Enums.BaseUnit
+    unitStep?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    categoryId?: NullableStringFieldUpdateOperationsInput | string | null
+    storageLocationId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    images?: ProductImageUncheckedUpdateManyWithoutProductNestedInput
+    cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
+    savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
+    orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+  }
+
+  export type UserUpsertWithoutStockBookingsInput = {
+    update: XOR<UserUpdateWithoutStockBookingsInput, UserUncheckedUpdateWithoutStockBookingsInput>
+    create: XOR<UserCreateWithoutStockBookingsInput, UserUncheckedCreateWithoutStockBookingsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutStockBookingsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutStockBookingsInput, UserUncheckedUpdateWithoutStockBookingsInput>
+  }
+
+  export type UserUpdateWithoutStockBookingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
+    orders?: OrderUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutStockBookingsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+  }
+
   export type OrderCreateWithoutCostCenterInput = {
     id?: string
     orderNumber: string
@@ -26939,6 +28797,7 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutOrdersInput = {
@@ -26953,6 +28812,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutOrdersInput = {
@@ -27028,6 +28888,7 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutOrdersInput = {
@@ -27042,6 +28903,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type CostCenterUpsertWithoutOrdersInput = {
@@ -27130,6 +28992,7 @@ export namespace Prisma {
     images?: ProductImageCreateNestedManyWithoutProductInput
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutOrderItemsInput = {
@@ -27150,6 +29013,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedCreateNestedManyWithoutProductInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutOrderItemsInput = {
@@ -27217,6 +29081,7 @@ export namespace Prisma {
     images?: ProductImageUpdateManyWithoutProductNestedInput
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutOrderItemsInput = {
@@ -27237,6 +29102,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedUpdateManyWithoutProductNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductCreateWithoutImagesInput = {
@@ -27257,6 +29123,7 @@ export namespace Prisma {
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutImagesInput = {
@@ -27277,6 +29144,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutImagesInput = {
@@ -27313,6 +29181,7 @@ export namespace Prisma {
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutImagesInput = {
@@ -27333,6 +29202,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type CartItemCreateWithoutCartInput = {
@@ -27414,6 +29284,7 @@ export namespace Prisma {
     images?: ProductImageCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutCartItemsInput = {
@@ -27434,6 +29305,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedCreateNestedManyWithoutProductInput
     savedCartItems?: SavedCartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutCartItemsInput = {
@@ -27495,6 +29367,7 @@ export namespace Prisma {
     images?: ProductImageUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutCartItemsInput = {
@@ -27515,6 +29388,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type UserCreateWithoutSavedCartsInput = {
@@ -27529,6 +29403,7 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSavedCartsInput = {
@@ -27543,6 +29418,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSavedCartsInput = {
@@ -27599,6 +29475,7 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSavedCartsInput = {
@@ -27613,6 +29490,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type SavedCartItemUpsertWithWhereUniqueWithoutSavedCartInput = {
@@ -27670,6 +29548,7 @@ export namespace Prisma {
     images?: ProductImageCreateNestedManyWithoutProductInput
     cartItems?: CartItemCreateNestedManyWithoutProductInput
     orderItems?: OrderItemCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutSavedCartItemsInput = {
@@ -27690,6 +29569,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedCreateNestedManyWithoutProductInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutProductInput
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutProductInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutSavedCartItemsInput = {
@@ -27753,6 +29633,7 @@ export namespace Prisma {
     images?: ProductImageUpdateManyWithoutProductNestedInput
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutSavedCartItemsInput = {
@@ -27773,6 +29654,7 @@ export namespace Prisma {
     images?: ProductImageUncheckedUpdateManyWithoutProductNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type AccountCreateWithoutUserInput = {
@@ -27891,6 +29773,34 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ProductStockBookingCreateWithoutUserInput = {
+    id?: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+    product: ProductCreateNestedOneWithoutStockBookingsInput
+  }
+
+  export type ProductStockBookingUncheckedCreateWithoutUserInput = {
+    id?: string
+    productId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+  }
+
+  export type ProductStockBookingCreateOrConnectWithoutUserInput = {
+    where: ProductStockBookingWhereUniqueInput
+    create: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput>
+  }
+
+  export type ProductStockBookingCreateManyUserInputEnvelope = {
+    data: ProductStockBookingCreateManyUserInput | ProductStockBookingCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type AccountUpsertWithWhereUniqueWithoutUserInput = {
     where: AccountWhereUniqueInput
     update: XOR<AccountUpdateWithoutUserInput, AccountUncheckedUpdateWithoutUserInput>
@@ -27994,6 +29904,22 @@ export namespace Prisma {
     data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutUserInput>
   }
 
+  export type ProductStockBookingUpsertWithWhereUniqueWithoutUserInput = {
+    where: ProductStockBookingWhereUniqueInput
+    update: XOR<ProductStockBookingUpdateWithoutUserInput, ProductStockBookingUncheckedUpdateWithoutUserInput>
+    create: XOR<ProductStockBookingCreateWithoutUserInput, ProductStockBookingUncheckedCreateWithoutUserInput>
+  }
+
+  export type ProductStockBookingUpdateWithWhereUniqueWithoutUserInput = {
+    where: ProductStockBookingWhereUniqueInput
+    data: XOR<ProductStockBookingUpdateWithoutUserInput, ProductStockBookingUncheckedUpdateWithoutUserInput>
+  }
+
+  export type ProductStockBookingUpdateManyWithWhereWithoutUserInput = {
+    where: ProductStockBookingScalarWhereInput
+    data: XOR<ProductStockBookingUpdateManyMutationInput, ProductStockBookingUncheckedUpdateManyWithoutUserInput>
+  }
+
   export type UserCreateWithoutAccountsInput = {
     id?: string
     name?: string | null
@@ -28006,6 +29932,7 @@ export namespace Prisma {
     sessions?: SessionCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -28020,6 +29947,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -28050,6 +29978,7 @@ export namespace Prisma {
     sessions?: SessionUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -28064,6 +29993,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSessionsInput = {
@@ -28078,6 +30008,7 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -28092,6 +30023,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -28122,6 +30054,7 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -28136,6 +30069,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ProductCreateManyCategoryInput = {
@@ -28172,6 +30106,7 @@ export namespace Prisma {
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutCategoryInput = {
@@ -28192,6 +30127,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateManyWithoutCategoryInput = {
@@ -28244,6 +30180,7 @@ export namespace Prisma {
     cartItems?: CartItemUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutStorageLocationInput = {
@@ -28264,6 +30201,7 @@ export namespace Prisma {
     cartItems?: CartItemUncheckedUpdateManyWithoutProductNestedInput
     savedCartItems?: SavedCartItemUncheckedUpdateManyWithoutProductNestedInput
     orderItems?: OrderItemUncheckedUpdateManyWithoutProductNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateManyWithoutStorageLocationInput = {
@@ -28348,6 +30286,15 @@ export namespace Prisma {
     id?: string
     orderId: string
     quantity: Decimal | DecimalJsLike | number | string
+    createdAt?: Date | string
+  }
+
+  export type ProductStockBookingCreateManyProductInput = {
+    id?: string
+    userId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
     createdAt?: Date | string
   }
 
@@ -28441,6 +30388,33 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
     quantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingUpdateWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutStockBookingsNestedInput
+  }
+
+  export type ProductStockBookingUncheckedUpdateWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingUncheckedUpdateManyWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28610,6 +30584,15 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type ProductStockBookingCreateManyUserInput = {
+    id?: string
+    productId: string
+    quantityDelta: Decimal | DecimalJsLike | number | string
+    supplier: string
+    note?: string | null
+    createdAt?: Date | string
+  }
+
   export type AccountUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     type?: StringFieldUpdateOperationsInput | string
@@ -28720,6 +30703,33 @@ export namespace Prisma {
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    product?: ProductUpdateOneRequiredWithoutStockBookingsNestedInput
+  }
+
+  export type ProductStockBookingUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductStockBookingUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: StringFieldUpdateOperationsInput | string
+    quantityDelta?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplier?: StringFieldUpdateOperationsInput | string
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 
