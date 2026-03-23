@@ -103,7 +103,6 @@ export function Storefront() {
     }, 0);
   }, [cartQuery.data?.items]);
 
-  const cartItemsCount = cartQuery.data?.items.length ?? 0;
   const hasProducts = (productQuery.data?.items.length ?? 0) > 0;
   const hasActiveFilters = Boolean(searchTerm) || Boolean(selectedCategoryId);
 
@@ -114,9 +113,6 @@ export function Storefront() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-sky-700">HTL Lager</p>
             <h1 className="text-xl font-semibold text-slate-900 md:text-2xl">Schulshop</h1>
-          </div>
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
-            Warenkorb: {cartItemsCount} Artikel
           </div>
         </div>
         <div className="mt-4">
