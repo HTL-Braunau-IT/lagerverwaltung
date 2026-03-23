@@ -104,7 +104,7 @@ async function main() {
       unitStep: "1.000",
       categoryId: categories[0].id,
       storageLocationId: storageLocations[0].id,
-      imageUrl: "/data/uploads/pictures/seed-a4-copy-paper.jpg",
+      imageUrl: "/data/upload/pictures/seed-a4-copy-paper.jpg",
       imageAlt: "A4 copy paper package",
     },
     {
@@ -119,7 +119,7 @@ async function main() {
       unitStep: "1.000",
       categoryId: categories[0].id,
       storageLocationId: storageLocations[0].id,
-      imageUrl: "/data/uploads/pictures/seed-ballpoint-pens.jpg",
+      imageUrl: "/data/upload/pictures/seed-ballpoint-pens.jpg",
       imageAlt: "Pack of black ballpoint pens",
     },
     {
@@ -134,7 +134,7 @@ async function main() {
       unitStep: "1.000",
       categoryId: categories[0].id,
       storageLocationId: storageLocations[0].id,
-      imageUrl: "/data/uploads/pictures/seed-sticky-notes.jpg",
+      imageUrl: "/data/upload/pictures/seed-sticky-notes.jpg",
       imageAlt: "Colorful sticky note stack",
     },
     {
@@ -149,7 +149,7 @@ async function main() {
       unitStep: "0.500",
       categoryId: categories[1].id,
       storageLocationId: storageLocations[1].id,
-      imageUrl: "/data/uploads/pictures/seed-surface-cleaner.jpg",
+      imageUrl: "/data/upload/pictures/seed-surface-cleaner.jpg",
       imageAlt: "Bottle of surface cleaner",
     },
     {
@@ -164,7 +164,7 @@ async function main() {
       unitStep: "1.000",
       categoryId: categories[1].id,
       storageLocationId: storageLocations[1].id,
-      imageUrl: "/data/uploads/pictures/seed-microfiber-cloth.jpg",
+      imageUrl: "/data/upload/pictures/seed-microfiber-cloth.jpg",
       imageAlt: "Folded microfiber cloths",
     },
   ];
@@ -194,8 +194,8 @@ async function main() {
       categoryId: isOfficeSupply ? categories[0].id : categories[1].id,
       storageLocationId: isOfficeSupply ? storageLocations[0].id : storageLocations[1].id,
       imageUrl: isOfficeSupply
-        ? "/data/uploads/pictures/seed-a4-copy-paper.jpg"
-        : "/data/uploads/pictures/seed-surface-cleaner.jpg",
+        ? "/data/upload/pictures/seed-a4-copy-paper.jpg"
+        : "/data/upload/pictures/seed-surface-cleaner.jpg",
       imageAlt: isOfficeSupply ? "Office supply product image" : "Cleaning supply product image",
     };
   });

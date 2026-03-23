@@ -305,7 +305,9 @@ export function OrdersAdminPanel() {
                                         <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
                                         <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
                                         <td className="px-2.5 py-2 text-muted-foreground">
-                                          {item.product.storageLocation.code} - {item.product.storageLocation.name}
+                                          {item.product.storageLocation
+                                            ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                            : "-"}
                                         </td>
                                         <td className="px-2.5 py-2 text-foreground">
                                           {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}

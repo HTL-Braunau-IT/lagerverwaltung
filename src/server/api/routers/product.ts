@@ -26,7 +26,7 @@ const updateProductInput = z.object({
   baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "M2", "G", "KG", "ML", "L"]),
   unitStep: z.coerce.number().gt(0),
   categoryId: z.string().min(1).nullable(),
-  storageLocationId: z.string().min(1),
+  storageLocationId: z.string().min(1).nullable(),
   imageUrl: z.string().trim().url().nullable(),
   imageAltText: z.string().trim().nullable(),
 });
@@ -41,18 +41,25 @@ const backendBookStockInput = z.object({
 export const productRouter = createTRPCRouter({
   list: publicProcedure.input(listProductsInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
-    const where = {
-      ...(input.categoryId ? { categoryId: input.categoryId } : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" as const } },
-              { sku: { contains: search, mode: "insensitive" as const } },
-              { description: { contains: search, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
-    };
+    const andFilters: Array<Record<string, unknown>> = [];
+    if (input.categoryId) {
+      andFilters.push({
+        OR: [
+          { categoryId: input.categoryId },
+          { categories: { some: { categoryId: input.categoryId } } },
+        ],
+      });
+    }
+    if (search) {
+      andFilters.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { sku: { contains: search, mode: "insensitive" as const } },
+          { description: { contains: search, mode: "insensitive" as const } },
+        ],
+      });
+    }
+    const where = andFilters.length > 0 ? { AND: andFilters } : undefined;
 
     const items = await ctx.db.product.findMany({
       where,
@@ -255,6 +262,22 @@ export const productRouter = createTRPCRouter({
           }
         } else if (existingImage) {
           await tx.productImage.delete({ where: { id: existingImage.id } });
+        }
+
+        if (input.categoryId) {
+          await tx.productCategory.upsert({
+            where: {
+              productId_categoryId: {
+                productId: input.id,
+                categoryId: input.categoryId,
+              },
+            },
+            update: {},
+            create: {
+              productId: input.id,
+              categoryId: input.categoryId,
+            },
+          });
         }
 
         return updated;

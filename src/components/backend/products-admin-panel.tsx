@@ -60,7 +60,7 @@ function createInitialForm(product: {
   baseUnit: ProductFormState["baseUnit"];
   unitStep: unknown;
   categoryId: string | null;
-  storageLocationId: string;
+  storageLocationId: string | null;
   images: Array<{
     url: string;
     altText: string | null;
@@ -77,7 +77,7 @@ function createInitialForm(product: {
     baseUnit: product.baseUnit,
     unitStep: String(toNumber(product.unitStep)),
     categoryId: product.categoryId ?? "",
-    storageLocationId: product.storageLocationId,
+    storageLocationId: product.storageLocationId ?? "",
     imageUrl: firstImage?.url ?? "",
     imageAltText: firstImage?.altText ?? "",
   };
@@ -262,7 +262,9 @@ export function ProductsAdminPanel() {
             {sortedProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
               const form = formsById[product.id] ?? createInitialForm(product);
-              const locationText = `${product.storageLocation.code} - ${product.storageLocation.name}`;
+              const locationText = product.storageLocation
+                ? `${product.storageLocation.code} - ${product.storageLocation.name}`
+                : "-";
 
               return (
                 <Fragment key={product.id}>
@@ -479,6 +481,7 @@ export function ProductsAdminPanel() {
                               }
                               className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
                             >
+                              <option value="">Kein Lagerplatz</option>
                               {(storageLocationsQuery.data ?? []).map((storageLocation) => (
                                 <option key={storageLocation.id} value={storageLocation.id}>
                                   {storageLocation.code} - {storageLocation.name}
@@ -575,7 +578,7 @@ export function ProductsAdminPanel() {
                                 baseUnit: form.baseUnit,
                                 unitStep: Number(form.unitStep),
                                 categoryId: form.categoryId || null,
-                                storageLocationId: form.storageLocationId,
+                                storageLocationId: form.storageLocationId || null,
                                 imageUrl: form.imageUrl.trim() || null,
                                 imageAltText: form.imageAltText.trim() || null,
                               });
