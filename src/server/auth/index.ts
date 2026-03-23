@@ -53,6 +53,28 @@ const extractGroupsFromClaims = (
   return [];
 };
 
+const extractAzureObjectId = (
+  profile: unknown,
+  idTokenClaims: Record<string, unknown> | null,
+): string | null => {
+  const fromProfile = (profile as { oid?: unknown } | undefined)?.oid;
+  if (typeof fromProfile === "string" && fromProfile.trim().length > 0) {
+    return fromProfile.trim();
+  }
+
+  const fromClaims = idTokenClaims?.oid;
+  if (typeof fromClaims === "string" && fromClaims.trim().length > 0) {
+    return fromClaims.trim();
+  }
+
+  const fromSub = idTokenClaims?.sub;
+  if (typeof fromSub === "string" && fromSub.trim().length > 0) {
+    return fromSub.trim();
+  }
+
+  return null;
+};
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: { strategy: "database" },
@@ -116,6 +138,7 @@ export const authOptions: NextAuthOptions = {
 
       const idTokenClaims = decodeJwtPayload(account?.id_token);
       const groups = extractGroupsFromClaims(profile, idTokenClaims);
+      const azureAdObjectId = extractAzureObjectId(profile, idTokenClaims);
       const role = resolveRoleFromGroups(groups);
       if (!user.email) {
         return false;
@@ -141,7 +164,7 @@ export const authOptions: NextAuthOptions = {
 
       await db.user.updateMany({
         where: { email: user.email },
-        data: { role, emailVerified: new Date() },
+        data: { role, emailVerified: new Date(), azureAdObjectId },
       });
 
       return true;
@@ -149,8 +172,10 @@ export const authOptions: NextAuthOptions = {
     session({ session, user }) {
       if (session.user) {
         const role = (user as { role?: "ADMIN" | "TEACHER" | "STUDENT" }).role;
+        const azureAdObjectId = (user as { azureAdObjectId?: string | null }).azureAdObjectId;
         session.user.id = user.id;
         session.user.role = role ?? "STUDENT";
+        session.user.azureAdObjectId = azureAdObjectId ?? null;
       }
       return session;
     },

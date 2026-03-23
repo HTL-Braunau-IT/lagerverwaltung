@@ -1,16 +1,60 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { listTeachersFromGraph } from "~/server/graph/teachers";
+import {
+  aggregateProductRequirements,
+  assertSufficientStock,
+  calculatePartListMaxOrderable,
+} from "~/server/api/routers/utils/stock";
 
 const sessionInput = z.object({
   sessionId: z.string().min(1).max(128),
+});
+
+const submitForTeacherApprovalInput = sessionInput.extend({
+  teacherExternalId: z.string().min(1),
+});
+const addPartListInput = sessionInput.extend({
+  partListId: z.string().min(1),
+  quantity: z.coerce.number().positive(),
+});
+const cartItemLineInput = z.object({
+  productId: z.string().min(1),
+  sourcePartListId: z.string().min(1).nullable().optional(),
 });
 
 function formatOrderNumber(year: number, runningNumber: number) {
   return `${year}${runningNumber.toString().padStart(6, "0")}`;
 }
 
+function parseInsufficientStockMessage(message: string) {
+  if (!message.startsWith("INSUFFICIENT_STOCK:")) return null;
+  const [, productId, maxOrderableRaw] = message.split(":");
+  return {
+    productId: productId ?? "",
+    maxOrderable: Number(maxOrderableRaw ?? "0"),
+  };
+}
+
 export const cartRouter = createTRPCRouter({
+  listTeachersForCheckout: protectedProcedure.query(async ({ ctx }) => {
+    if (!["STUDENT", "ADMIN"].includes(ctx.session.user.role)) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+
+    try {
+      return await listTeachersFromGraph();
+    } catch (error) {
+      console.error("[cart.listTeachersForCheckout] graph lookup failed", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "TEACHER_DIRECTORY_UNAVAILABLE",
+      });
+    }
+  }),
+
   listCostCenters: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.costCenter.findMany({
       orderBy: [{ code: "asc" }, { name: "asc" }],
@@ -34,7 +78,14 @@ export const cartRouter = createTRPCRouter({
           select: {
             id: true,
             productId: true,
+            sourcePartListId: true,
             quantity: true,
+            sourcePartList: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             product: {
               select: {
                 id: true,
@@ -83,33 +134,120 @@ export const cartRouter = createTRPCRouter({
           select: { id: true, sessionId: true },
         });
 
-        await tx.cartItem.upsert({
+        const existingDirectLine = await tx.cartItem.findFirst({
           where: {
-            cartId_productId: {
-              cartId: cart.id,
-              productId: input.productId,
-            },
-          },
-          create: {
             cartId: cart.id,
             productId: input.productId,
-            quantity,
+            sourcePartListId: null,
           },
-          update: {
-            quantity: {
-              increment: quantity,
-            },
-          },
+          select: { id: true },
         });
+
+        if (existingDirectLine) {
+          await tx.cartItem.update({
+            where: { id: existingDirectLine.id },
+            data: {
+              quantity: {
+                increment: quantity,
+              },
+            },
+          });
+        } else {
+          await tx.cartItem.create({
+            data: {
+              cartId: cart.id,
+              productId: input.productId,
+              sourcePartListId: null,
+              quantity,
+            },
+          });
+        }
 
         return cart;
       });
     }),
 
+  addPartList: publicProcedure.input(addPartListInput).mutation(async ({ ctx, input }) => {
+    const requestedQuantity = Math.floor(input.quantity);
+    if (requestedQuantity < 1) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Menge muss mindestens 1 sein." });
+    }
+
+    return ctx.db.$transaction(async (tx) => {
+      const partList = await tx.partList.findUnique({
+        where: { id: input.partListId },
+        select: {
+          id: true,
+          name: true,
+          items: {
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            select: {
+              productId: true,
+              quantity: true,
+              product: {
+                select: {
+                  id: true,
+                  quantityOnHand: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!partList || partList.items.length === 0) {
+        return { ok: false as const, reason: "INVALID_PART_LIST" as const };
+      }
+
+      const maxOrderable = calculatePartListMaxOrderable(partList.items);
+      if (requestedQuantity > maxOrderable) {
+        return {
+          ok: false as const,
+          reason: "INSUFFICIENT_PART_LIST_STOCK" as const,
+          maxOrderable,
+          partListName: partList.name,
+        };
+      }
+
+      const cart = await tx.cart.upsert({
+        where: { sessionId: input.sessionId },
+        create: { sessionId: input.sessionId },
+        update: {},
+        select: { id: true },
+      });
+
+      for (const item of partList.items) {
+        const incrementQuantity = (Number(item.quantity) * requestedQuantity).toString();
+        await tx.cartItem.upsert({
+          where: {
+            cartId_productId_sourcePartListId: {
+              cartId: cart.id,
+              productId: item.productId,
+              sourcePartListId: partList.id,
+            },
+          },
+          create: {
+            cartId: cart.id,
+            productId: item.productId,
+            sourcePartListId: partList.id,
+            quantity: incrementQuantity,
+          },
+          update: {
+            quantity: {
+              increment: incrementQuantity,
+            },
+          },
+        });
+      }
+
+      return { ok: true as const };
+    });
+  }),
+
   setItemQuantity: publicProcedure
     .input(
       sessionInput.extend({
-        productId: z.string().min(1),
+        line: cartItemLineInput,
         quantity: z.number().nonnegative(),
       }),
     )
@@ -121,30 +259,40 @@ export const cartRouter = createTRPCRouter({
 
       if (!cart) return null;
 
+      const lineWhere = {
+        cartId: cart.id,
+        productId: input.line.productId,
+        ...(input.line.sourcePartListId
+          ? { sourcePartListId: input.line.sourcePartListId }
+          : { sourcePartListId: null }),
+      };
+
       if (input.quantity === 0) {
         await ctx.db.cartItem.deleteMany({
-          where: {
-            cartId: cart.id,
-            productId: input.productId,
-          },
+          where: lineWhere,
         });
       } else {
-        await ctx.db.cartItem.upsert({
-          where: {
-            cartId_productId: {
-              cartId: cart.id,
-              productId: input.productId,
-            },
-          },
-          create: {
-            cartId: cart.id,
-            productId: input.productId,
-            quantity: input.quantity.toString(),
-          },
-          update: {
-            quantity: input.quantity.toString(),
-          },
+        const existing = await ctx.db.cartItem.findFirst({
+          where: lineWhere,
+          select: { id: true },
         });
+        if (existing) {
+          await ctx.db.cartItem.update({
+            where: { id: existing.id },
+            data: {
+              quantity: input.quantity.toString(),
+            },
+          });
+        } else {
+          await ctx.db.cartItem.create({
+            data: {
+              cartId: cart.id,
+              productId: input.line.productId,
+              sourcePartListId: input.line.sourcePartListId ?? null,
+              quantity: input.quantity.toString(),
+            },
+          });
+        }
       }
 
       return { ok: true };
@@ -153,7 +301,7 @@ export const cartRouter = createTRPCRouter({
   removeItem: publicProcedure
     .input(
       sessionInput.extend({
-        productId: z.string().min(1),
+        line: cartItemLineInput,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -167,7 +315,8 @@ export const cartRouter = createTRPCRouter({
       await ctx.db.cartItem.deleteMany({
         where: {
           cartId: cart.id,
-          productId: input.productId,
+          productId: input.line.productId,
+          sourcePartListId: input.line.sourcePartListId ?? null,
         },
       });
 
@@ -207,6 +356,23 @@ export const cartRouter = createTRPCRouter({
 
         if (!costCenter) {
           return { ok: false as const, reason: "INVALID_COST_CENTER" as const };
+        }
+
+        try {
+          await assertSufficientStock(tx, aggregateProductRequirements(cart.items));
+        } catch (error) {
+          if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+            const parsed = parseInsufficientStockMessage(error.message);
+            if (parsed) {
+              return {
+                ok: false as const,
+                reason: "INSUFFICIENT_STOCK" as const,
+                productId: parsed.productId,
+                maxOrderable: parsed.maxOrderable,
+              };
+            }
+          }
+          throw error;
         }
 
         const year = new Date().getFullYear();
@@ -261,6 +427,112 @@ export const cartRouter = createTRPCRouter({
       return result;
     }),
 
+  submitForTeacherApproval: protectedProcedure
+    .input(submitForTeacherApprovalInput)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.session.user.role !== "STUDENT") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      let selectedTeacher:
+        | {
+            externalId: string;
+            displayName: string;
+            email: string;
+          }
+        | undefined;
+      try {
+        const teachers = await listTeachersFromGraph();
+        selectedTeacher = teachers.find(
+          (teacher: { externalId: string; displayName: string; email: string }) =>
+            teacher.externalId === input.teacherExternalId,
+        );
+      } catch (error) {
+        console.error("[cart.submitForTeacherApproval] graph lookup failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "TEACHER_DIRECTORY_UNAVAILABLE",
+        });
+      }
+
+      if (!selectedTeacher) {
+        return { ok: false as const, reason: "INVALID_TEACHER" as const };
+      }
+
+      const result = await ctx.db.$transaction(async (tx) => {
+        const cart = await tx.cart.findUnique({
+          where: { sessionId: input.sessionId },
+          select: {
+            id: true,
+            items: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                productId: true,
+                quantity: true,
+              },
+            },
+          },
+        });
+
+        if (!cart || cart.items.length === 0) {
+          return { ok: false as const, reason: "EMPTY_CART" as const };
+        }
+
+        try {
+          await assertSufficientStock(tx, aggregateProductRequirements(cart.items));
+        } catch (error) {
+          if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+            const parsed = parseInsufficientStockMessage(error.message);
+            if (parsed) {
+              return {
+                ok: false as const,
+                reason: "INSUFFICIENT_STOCK" as const,
+                productId: parsed.productId,
+                maxOrderable: parsed.maxOrderable,
+              };
+            }
+          }
+          throw error;
+        }
+
+        const teacherUser = await tx.user.findUnique({
+          where: { azureAdObjectId: selectedTeacher.externalId },
+          select: { id: true },
+        });
+
+        const request = await tx.orderRequest.create({
+          data: {
+            studentId: ctx.session.user.id,
+            teacherUserId: teacherUser?.id ?? null,
+            teacherExternalId: selectedTeacher.externalId,
+            teacherDisplayName: selectedTeacher.displayName,
+            teacherEmail: selectedTeacher.email,
+            status: "PENDING",
+            items: {
+              create: cart.items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+              })),
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        await tx.cartItem.deleteMany({
+          where: { cartId: cart.id },
+        });
+
+        return {
+          ok: true as const,
+          requestId: request.id,
+        };
+      });
+
+      return result;
+    }),
+
   listMyOrders: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.order.findMany({
       where: {
@@ -272,11 +544,63 @@ export const cartRouter = createTRPCRouter({
         orderNumber: true,
         status: true,
         createdAt: true,
+        sourceRequest: {
+          select: {
+            id: true,
+            status: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
         costCenter: {
           select: {
             id: true,
             code: true,
             name: true,
+          },
+        },
+        items: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            quantity: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseUnit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }),
+
+  listMySubmittedRequests: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.db.orderRequest.findMany({
+      where: {
+        studentId: ctx.session.user.id,
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        teacherDisplayName: true,
+        teacherEmail: true,
+        approvedOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            createdAt: true,
           },
         },
         items: {

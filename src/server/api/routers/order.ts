@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
+import { adminProcedure, createTRPCRouter, teacherProcedure } from "~/server/api/trpc";
+import { aggregateProductRequirements, assertSufficientStock } from "~/server/api/routers/utils/stock";
 
 const backendListOrdersInput = z.object({
   search: z.string().trim().optional(),
@@ -17,6 +18,19 @@ const backendUpdateOrderStatusInput = z.object({
   orderId: z.string().min(1),
   nextStatus: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]),
 });
+
+const teacherAssignedRequestByIdInput = z.object({
+  requestId: z.string().min(1),
+});
+
+const teacherApproveRequestInput = z.object({
+  requestId: z.string().min(1),
+  costCenterId: z.string().min(1),
+});
+
+function formatOrderNumber(year: number, runningNumber: number) {
+  return `${year}${runningNumber.toString().padStart(6, "0")}`;
+}
 
 const allowedTransitions: Record<"OPEN" | "PREPARING" | "READY_FOR_PICKUP", Array<"OPEN" | "PREPARING" | "READY_FOR_PICKUP">> =
   {
@@ -38,6 +52,8 @@ export const orderRouter = createTRPCRouter({
                 { orderNumber: { contains: search, mode: "insensitive" } },
                 { user: { name: { contains: search, mode: "insensitive" } } },
                 { user: { email: { contains: search, mode: "insensitive" } } },
+                { sourceRequest: { student: { name: { contains: search, mode: "insensitive" } } } },
+                { sourceRequest: { student: { email: { contains: search, mode: "insensitive" } } } },
                 { costCenter: { code: { contains: search, mode: "insensitive" } } },
                 { costCenter: { name: { contains: search, mode: "insensitive" } } },
               ],
@@ -57,6 +73,18 @@ export const orderRouter = createTRPCRouter({
             id: true,
             name: true,
             email: true,
+          },
+        },
+        sourceRequest: {
+          select: {
+            id: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         costCenter: {
@@ -90,6 +118,18 @@ export const orderRouter = createTRPCRouter({
             id: true,
             name: true,
             email: true,
+          },
+        },
+        sourceRequest: {
+          select: {
+            id: true,
+            student: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         costCenter: {
@@ -174,6 +214,8 @@ export const orderRouter = createTRPCRouter({
             },
           });
 
+          await assertSufficientStock(tx, aggregateProductRequirements(orderItems));
+
           await Promise.all(
             orderItems.map((item) =>
               tx.product.update({
@@ -198,6 +240,256 @@ export const orderRouter = createTRPCRouter({
             updatedAt: true,
           },
         });
+      });
+    }),
+
+  listAssignedRequests: teacherProcedure.query(async ({ ctx }) => {
+    const teacherWhere =
+      ctx.session.user.role === "ADMIN"
+        ? {}
+        : {
+            OR: [
+              { teacherUserId: ctx.session.user.id },
+              ...(ctx.session.user.azureAdObjectId
+                ? [{ teacherExternalId: ctx.session.user.azureAdObjectId }]
+                : []),
+            ],
+          };
+
+    return ctx.db.orderRequest.findMany({
+      where: {
+        ...teacherWhere,
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        teacherDisplayName: true,
+        teacherEmail: true,
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            quantity: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseUnit: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }),
+
+  getAssignedRequestById: teacherProcedure
+    .input(teacherAssignedRequestByIdInput)
+    .query(async ({ ctx, input }) => {
+      const request = await ctx.db.orderRequest.findUnique({
+        where: { id: input.requestId },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          teacherUserId: true,
+          teacherExternalId: true,
+          teacherDisplayName: true,
+          teacherEmail: true,
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          approvedOrder: {
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              createdAt: true,
+            },
+          },
+          items: {
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+            select: {
+              id: true,
+              quantity: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  baseUnit: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!request) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Anfrage wurde nicht gefunden.",
+        });
+      }
+
+      if (ctx.session.user.role !== "ADMIN") {
+        const allowed =
+          request.teacherUserId === ctx.session.user.id ||
+          (ctx.session.user.azureAdObjectId &&
+            request.teacherExternalId === ctx.session.user.azureAdObjectId);
+        if (!allowed) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+      }
+
+      return request;
+    }),
+
+  approveAssignedRequest: teacherProcedure
+    .input(teacherApproveRequestInput)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const request = await tx.orderRequest.findUnique({
+          where: { id: input.requestId },
+          select: {
+            id: true,
+            status: true,
+            teacherUserId: true,
+            teacherExternalId: true,
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                productId: true,
+                quantity: true,
+              },
+            },
+          },
+        });
+
+        if (!request) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Anfrage wurde nicht gefunden.",
+          });
+        }
+
+        if (ctx.session.user.role !== "ADMIN") {
+          const allowed =
+            request.teacherUserId === ctx.session.user.id ||
+            (ctx.session.user.azureAdObjectId &&
+              request.teacherExternalId === ctx.session.user.azureAdObjectId);
+          if (!allowed) {
+            throw new TRPCError({ code: "FORBIDDEN" });
+          }
+        }
+
+        if (request.status !== "PENDING") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Diese Anfrage wurde bereits bearbeitet.",
+          });
+        }
+
+        if (request.items.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Anfrage enthaelt keine Positionen.",
+          });
+        }
+
+        try {
+          await assertSufficientStock(tx, aggregateProductRequirements(request.items));
+        } catch (error) {
+          if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+            if (error.message.startsWith("INSUFFICIENT_STOCK:")) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Nicht genug Lagerbestand fuer mindestens ein Produkt.",
+              });
+            }
+          }
+          throw error;
+        }
+
+        const costCenter = await tx.costCenter.findUnique({
+          where: { id: input.costCenterId },
+          select: { id: true },
+        });
+        if (!costCenter) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Ungueltige Kostenstelle.",
+          });
+        }
+
+        const year = new Date().getFullYear();
+        const counter = await tx.orderCounter.upsert({
+          where: { year },
+          create: {
+            year,
+            lastNumber: 1,
+          },
+          update: {
+            lastNumber: { increment: 1 },
+          },
+          select: {
+            lastNumber: true,
+          },
+        });
+        const orderNumber = formatOrderNumber(year, counter.lastNumber);
+
+        const order = await tx.order.create({
+          data: {
+            orderNumber,
+            userId: ctx.session.user.id,
+            costCenterId: input.costCenterId,
+            status: "OPEN",
+            items: {
+              create: request.items.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+              })),
+            },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+          },
+        });
+
+        await tx.orderRequest.update({
+          where: { id: request.id },
+          data: {
+            status: "APPROVED",
+            teacherUserId:
+              request.teacherUserId ?? (ctx.session.user.role === "ADMIN" ? request.teacherUserId : ctx.session.user.id),
+            approvedOrderId: order.id,
+          },
+          select: { id: true },
+        });
+
+        return {
+          ok: true as const,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+        };
       });
     }),
 });

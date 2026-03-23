@@ -86,7 +86,10 @@ export function OrdersAdminPanel() {
   });
 
   const sortedOrders = useMemo(
-    () => (ordersQuery.data ?? []).toSorted((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    () =>
+      [...(ordersQuery.data ?? [])].sort(
+        (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+      ),
     [ordersQuery.data],
   );
 
@@ -101,7 +104,7 @@ export function OrdersAdminPanel() {
 
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
         <label htmlFor="backend-order-search" className="block text-xs text-muted-foreground">
-          Suche nach Bestellnummer, Kunde oder Kostenstelle
+          Suche nach Bestellnummer, Lehrer, Schueler oder Kostenstelle
           <Input
             id="backend-order-search"
             value={searchInput}
@@ -131,7 +134,7 @@ export function OrdersAdminPanel() {
           <TableHeader className="bg-muted/50">
             <tr>
               <TableHead>Bestellnummer</TableHead>
-              <TableHead>Kunde</TableHead>
+              <TableHead>Lehrer</TableHead>
               <TableHead>Kostenstelle</TableHead>
               <TableHead>Datum</TableHead>
               <TableHead>Status</TableHead>
@@ -175,7 +178,14 @@ export function OrdersAdminPanel() {
                     className="cursor-pointer"
                   >
                     <TableCell className="font-medium text-foreground">{order.orderNumber}</TableCell>
-                    <TableCell className="text-muted-foreground">{userLabel(order.user)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <p>{userLabel(order.user)}</p>
+                      {order.sourceRequest?.student ? (
+                        <p className="text-xs text-slate-500">
+                          Schueler: {userLabel(order.sourceRequest.student)}
+                        </p>
+                      ) : null}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {order.costCenter.code} - {order.costCenter.name}
                     </TableCell>
@@ -237,13 +247,18 @@ export function OrdersAdminPanel() {
                                 </p>
                               </div>
                               <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Kunde</p>
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Lehrer</p>
                                 <p className="mt-1 text-sm font-semibold text-foreground">
                                   {userLabel(expandedOrderQuery.data.user)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
                                 </p>
+                                {expandedOrderQuery.data.sourceRequest?.student ? (
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
+                                  </p>
+                                ) : null}
                               </div>
                               <div className="rounded-lg border border-border bg-card p-3">
                                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Erstellt</p>

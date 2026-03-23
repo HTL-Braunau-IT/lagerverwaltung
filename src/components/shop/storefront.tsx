@@ -54,9 +54,13 @@ export function Storefront() {
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
+  const [activeAddPartListId, setActiveAddPartListId] = useState<string | null>(null);
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
+  const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
+  const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [stickyTopOffset, setStickyTopOffset] = useState(144);
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
@@ -90,23 +94,48 @@ export function Storefront() {
   }, []);
 
   const categoryQuery = api.category.list.useQuery();
-  const productQuery = api.product.list.useQuery({
-    search: searchTerm || undefined,
-    categoryId: selectedCategoryId,
-    limit: 24,
-  });
+  const productQuery = api.product.list.useInfiniteQuery(
+    {
+      search: searchTerm || undefined,
+      categoryId: selectedCategoryId,
+      limit: 24,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
     {
       enabled: sessionId.length > 0,
     },
   );
+  const partListsQuery = api.partsList.listForShop.useQuery();
 
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
       setShowCartModal(true);
       setActiveAddProductId(null);
+    },
+  });
+  const addPartListMutation = api.cart.addPartList.useMutation({
+    onSuccess: async (result) => {
+      await utils.cart.get.invalidate({ sessionId });
+      setActiveAddPartListId(null);
+
+      if (result.ok) {
+        setPartListWarning(null);
+        setShowCartModal(true);
+        return;
+      }
+
+      if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
+        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfuegbar.`);
+        return;
+      }
+
+      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
 
@@ -123,16 +152,64 @@ export function Storefront() {
     }, 0);
   }, [cartQuery.data?.items]);
 
+  const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
   const cartItemsCount = cartQuery.data?.items.length ?? 0;
-  const hasProducts = (productQuery.data?.items.length ?? 0) > 0;
+  const groupedCartItems = useMemo(() => {
+    const standalone: typeof cartItems = [];
+    const partLists = new Map<string, { id: string; name: string; items: typeof cartItems }>();
+
+    for (const item of cartItems) {
+      if (!item.sourcePartListId || !item.sourcePartList) {
+        standalone.push(item);
+        continue;
+      }
+      const current = partLists.get(item.sourcePartListId) ?? {
+        id: item.sourcePartList.id,
+        name: item.sourcePartList.name,
+        items: [],
+      };
+      current.items.push(item);
+      partLists.set(item.sourcePartListId, current);
+    }
+
+    return { standalone, partLists: [...partLists.values()] };
+  }, [cartItems]);
+  const products = useMemo(
+    () => productQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    [productQuery.data?.pages],
+  );
+  const hasProducts = products.length > 0;
   const hasActiveFilters = Boolean(searchTerm) || Boolean(selectedCategoryId);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+    if (!productQuery.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        if (productQuery.isFetchingNextPage) return;
+        void productQuery.fetchNextPage();
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    productQuery.fetchNextPage,
+    productQuery.hasNextPage,
+    productQuery.isFetchingNextPage,
+    products.length,
+  ]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 rounded-2xl border border-border bg-card/95 p-4 shadow-sm backdrop-blur md:p-5"
-        style={{ top: `${appHeaderOffset + TOP_BANNER_GAP_PX}px` }}
+        className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5"
       >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -190,6 +267,71 @@ export function Storefront() {
               </Button>
             ))}
           </nav>
+
+          <div className="my-4 border-t border-border" />
+          <div>
+            <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
+            {partListWarning ? (
+              <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                {partListWarning}
+              </div>
+            ) : null}
+            {partListsQuery.isLoading ? (
+              <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
+            ) : null}
+            {partListsQuery.error ? (
+              <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
+            ) : null}
+            {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
+              <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
+            ) : null}
+            <div className="space-y-2">
+              {(partListsQuery.data ?? []).map((partList) => {
+                const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                return (
+                  <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
+                    <p className="truncate text-xs font-semibold text-foreground">{partList.name}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{partList.items.length} Produkte</p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={quantityInput}
+                        onChange={(event) =>
+                          setQuantitiesByPartList((prev) => ({
+                            ...prev,
+                            [partList.id]: event.target.value,
+                          }))
+                        }
+                        className="h-8 w-14 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                        aria-label={`Menge fuer Teileliste ${partList.name}`}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 flex-1 text-xs"
+                        onClick={() => {
+                          const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                          setPartListWarning(null);
+                          setActiveAddPartListId(partList.id);
+                          addPartListMutation.mutate({
+                            sessionId,
+                            partListId: partList.id,
+                            quantity: requestedQuantity,
+                          });
+                        }}
+                        disabled={sessionId.length === 0 || addPartListMutation.isPending}
+                      >
+                        {addPartListMutation.isPending && activeAddPartListId === partList.id
+                          ? "..."
+                          : "Hinzufuegen"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </aside>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -244,7 +386,7 @@ export function Storefront() {
             </div>
           )}
 
-          {productQuery.data?.items.map((product) => {
+          {products.map((product) => {
             const lowStock =
               decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
@@ -383,6 +525,16 @@ export function Storefront() {
               </Card>
             );
           })}
+
+          {productQuery.isFetchingNextPage && (
+            <div className="col-span-full rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              Weitere Produkte werden geladen...
+            </div>
+          )}
+
+          {!productQuery.isLoading && hasProducts && (
+            <div ref={loadMoreRef} className="col-span-full h-1 w-full" aria-hidden="true" />
+          )}
         </div>
 
         <aside
@@ -416,7 +568,60 @@ export function Storefront() {
             {!cartQuery.isLoading && !cartQuery.error && (cartQuery.data?.items.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Keine Artikel im Warenkorb.</p>
             ) : (
-              cartQuery.data?.items.map((item) => (
+              <>
+              {groupedCartItems.partLists.map((group) => (
+                <div key={group.id} className="rounded-xl border border-border bg-muted p-3">
+                  <p className="text-sm font-semibold text-foreground">{group.name}</p>
+                  <div className="mt-2 space-y-2">
+                    {group.items.map((item) => (
+                      <div key={item.id} className="rounded-lg border border-border bg-card/70 p-2">
+                        <p className="text-xs font-medium text-foreground">{item.product.name}</p>
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                          <p className="text-xs text-muted-foreground">{formatPrice(item.product.price)}</p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                                })
+                              }
+                              variant="outline"
+                              className="h-7 px-2"
+                            >
+                              -
+                            </Button>
+                            <span className="min-w-8 text-center text-xs text-foreground">
+                              {decimalToNumber(item.quantity)}
+                            </span>
+                            <Button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity: decimalToNumber(item.quantity) + 1,
+                                })
+                              }
+                              variant="outline"
+                              className="h-7 px-2"
+                            >
+                              +
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {groupedCartItems.standalone.map((item) => (
                 <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
                   <p className="text-sm font-medium text-foreground">{item.product.name}</p>
                   <div className="mt-2 flex items-center justify-between gap-3">
@@ -426,7 +631,10 @@ export function Storefront() {
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
-                            productId: item.productId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
                             quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                           })
                         }
@@ -442,7 +650,10 @@ export function Storefront() {
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
-                            productId: item.productId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
                             quantity: decimalToNumber(item.quantity) + 1,
                           })
                         }
@@ -454,7 +665,8 @@ export function Storefront() {
                     </div>
                   </div>
                 </div>
-              ))
+              ))}
+              </>
             )}
           </div>
           <div className="mt-4 border-t border-border pt-3">

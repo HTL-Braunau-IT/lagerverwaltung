@@ -1,5 +1,7 @@
 "use client";
 
+import { SessionProvider } from "next-auth/react";
+import { type Session } from "next-auth";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { httpBatchStreamLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
@@ -38,7 +40,10 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export function TRPCReactProvider(props: { children: React.ReactNode }) {
+export function TRPCReactProvider(props: {
+  children: React.ReactNode;
+  session?: Session | null;
+}) {
   const queryClient = getQueryClient();
 
   const [trpcClient] = useState(() =>
@@ -63,11 +68,13 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
-        {props.children}
-      </api.Provider>
-    </QueryClientProvider>
+    <SessionProvider session={props.session}>
+      <QueryClientProvider client={queryClient}>
+        <api.Provider client={trpcClient} queryClient={queryClient}>
+          {props.children}
+        </api.Provider>
+      </QueryClientProvider>
+    </SessionProvider>
   );
 }
 

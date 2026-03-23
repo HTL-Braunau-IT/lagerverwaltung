@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 import { api } from "~/trpc/react";
 
@@ -24,8 +25,22 @@ function formatStatus(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
   return "Abholbereit";
 }
 
+function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
+  if (status === "PENDING") return "Wartet auf Freigabe";
+  if (status === "APPROVED") return "Freigegeben";
+  return "Abgelehnt";
+}
+
+function userLabel(user: { name: string | null; email: string | null }) {
+  return user.name?.trim() || user.email?.trim() || "Unbekannt";
+}
+
 export default function OrdersPage() {
+  const { data: session } = useSession();
   const ordersQuery = api.cart.listMyOrders.useQuery();
+  const submittedRequestsQuery = api.cart.listMySubmittedRequests.useQuery(undefined, {
+    enabled: session?.user.role === "STUDENT",
+  });
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -46,10 +61,80 @@ export default function OrdersPage() {
           >
             Zu Warenkoerben
           </Link>
+          {session?.user.role === "TEACHER" || session?.user.role === "ADMIN" ? (
+            <Link
+              href="/teacher/orders"
+              className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
+            >
+              Zu Freigaben
+            </Link>
+          ) : null}
         </div>
       </header>
 
       <section className="space-y-4">
+        {session?.user.role === "STUDENT" && (
+          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">Meine Freigabeanfragen</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Hier siehst du den Status deiner an Lehrpersonen gesendeten Anfragen.
+            </p>
+
+            {submittedRequestsQuery.isLoading && (
+              <p className="mt-3 text-sm text-slate-600">Anfragen werden geladen...</p>
+            )}
+            {submittedRequestsQuery.error && (
+              <p className="mt-3 text-sm text-rose-700">
+                Freigabeanfragen konnten nicht geladen werden.
+              </p>
+            )}
+            {!submittedRequestsQuery.isLoading &&
+              !submittedRequestsQuery.error &&
+              (submittedRequestsQuery.data?.length ?? 0) === 0 && (
+                <p className="mt-3 text-sm text-slate-500">Noch keine Freigabeanfragen vorhanden.</p>
+              )}
+
+            <div className="mt-4 space-y-3">
+              {submittedRequestsQuery.data?.map((request) => {
+                const requestItemCount = request.items.reduce(
+                  (sum, item) => sum + decimalToNumber(item.quantity),
+                  0,
+                );
+
+                return (
+                  <div key={request.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          An Lehrperson: {request.teacherDisplayName}
+                        </p>
+                        <p className="text-xs text-slate-500">{request.teacherEmail}</p>
+                      </div>
+                      <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-800">
+                        {formatRequestStatus(request.status)}
+                      </span>
+                    </div>
+                    <div className="mt-2 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+                      <p>
+                        <span className="text-slate-500">Gesendet: </span>
+                        {formatOrderDate(request.createdAt)}
+                      </p>
+                      <p>
+                        <span className="text-slate-500">Artikel gesamt: </span>
+                        {requestItemCount}
+                      </p>
+                      <p>
+                        <span className="text-slate-500">Bestellung: </span>
+                        {request.approvedOrder?.orderNumber ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </article>
+        )}
+
         {ordersQuery.isLoading && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
             Bestellungen werden geladen...
@@ -86,6 +171,16 @@ export default function OrdersPage() {
                 <div>
                   <p className="text-sm text-slate-500">Bestellnummer</p>
                   <h2 className="text-lg font-semibold text-slate-900">{order.orderNumber}</h2>
+                  {order.sourceRequest ? (
+                    <div className="mt-2 space-y-1">
+                      <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
+                        Aus Schuelerfreigabe
+                      </span>
+                      <p className="text-xs text-slate-600">
+                        Schueler: {userLabel(order.sourceRequest.student)}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
                   {formatStatus(order.status)}

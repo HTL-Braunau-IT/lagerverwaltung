@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const entries = [
   { href: "/backend", label: "Produkte" },
   { href: "/backend/orders", label: "Bestellungen" },
+  { href: "/backend/parts-list", label: "Teilelisten" },
 ] as const;
 
 export function BackendSidebarNav() {

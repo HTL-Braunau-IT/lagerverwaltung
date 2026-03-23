@@ -185,9 +185,48 @@ exports.Prisma.OrderScalarFieldEnum = {
   orderNumber: 'orderNumber',
   userId: 'userId',
   costCenterId: 'costCenterId',
+  sourcePartListId: 'sourcePartListId',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PartListScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PartListItemScalarFieldEnum = {
+  id: 'id',
+  partListId: 'partListId',
+  productId: 'productId',
+  quantity: 'quantity',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderRequestScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  teacherUserId: 'teacherUserId',
+  teacherExternalId: 'teacherExternalId',
+  teacherDisplayName: 'teacherDisplayName',
+  teacherEmail: 'teacherEmail',
+  status: 'status',
+  approvedOrderId: 'approvedOrderId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderRequestItemScalarFieldEnum = {
+  id: 'id',
+  orderRequestId: 'orderRequestId',
+  productId: 'productId',
+  quantity: 'quantity',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.OrderCounterScalarFieldEnum = {
@@ -223,6 +262,7 @@ exports.Prisma.CartItemScalarFieldEnum = {
   id: 'id',
   cartId: 'cartId',
   productId: 'productId',
+  sourcePartListId: 'sourcePartListId',
   quantity: 'quantity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -249,6 +289,7 @@ exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   name: 'name',
   email: 'email',
+  azureAdObjectId: 'azureAdObjectId',
   emailVerified: 'emailVerified',
   image: 'image',
   role: 'role',
@@ -325,6 +366,12 @@ exports.OrderStatus = exports.$Enums.OrderStatus = {
   READY_FOR_PICKUP: 'READY_FOR_PICKUP'
 };
 
+exports.RequestStatus = exports.$Enums.RequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
 exports.AppRole = exports.$Enums.AppRole = {
   ADMIN: 'ADMIN',
   TEACHER: 'TEACHER',
@@ -339,6 +386,10 @@ exports.Prisma.ModelName = {
   ProductStockBooking: 'ProductStockBooking',
   CostCenter: 'CostCenter',
   Order: 'Order',
+  PartList: 'PartList',
+  PartListItem: 'PartListItem',
+  OrderRequest: 'OrderRequest',
+  OrderRequestItem: 'OrderRequestItem',
   OrderCounter: 'OrderCounter',
   OrderItem: 'OrderItem',
   ProductImage: 'ProductImage',

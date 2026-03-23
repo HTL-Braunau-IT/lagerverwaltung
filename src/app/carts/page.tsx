@@ -79,7 +79,27 @@ export default function CartsPage() {
     }, 0);
   }, [cartQuery.data?.items]);
 
-  const activeItems = cartQuery.data?.items ?? [];
+  const activeItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
+  const groupedCartItems = useMemo(() => {
+    const standalone: typeof activeItems = [];
+    const partLists = new Map<string, { id: string; name: string; items: typeof activeItems }>();
+
+    for (const item of activeItems) {
+      if (!item.sourcePartListId || !item.sourcePartList) {
+        standalone.push(item);
+        continue;
+      }
+      const current = partLists.get(item.sourcePartListId) ?? {
+        id: item.sourcePartList.id,
+        name: item.sourcePartList.name,
+        items: [],
+      };
+      current.items.push(item);
+      partLists.set(item.sourcePartListId, current);
+    }
+
+    return { standalone, partLists: [...partLists.values()] };
+  }, [activeItems]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -115,7 +135,64 @@ export default function CartsPage() {
             {!cartQuery.isLoading && activeItems.length === 0 && (
               <p className="text-sm text-slate-500">Keine Artikel im Warenkorb.</p>
             )}
-            {activeItems.map((item) => (
+            {groupedCartItems.partLists.map((group) => (
+              <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-sm font-semibold text-slate-900">{group.name}</p>
+                <div className="mt-2 space-y-2">
+                  {group.items.map((item) => (
+                    <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {formatPrice(item.product.price)} pro {item.product.baseUnit.toLowerCase()}
+                          </p>
+                        </div>
+                        <p className="text-sm font-semibold text-sky-800">
+                          {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
+                        </p>
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            setQuantityMutation.mutate({
+                              sessionId,
+                              line: {
+                                productId: item.productId,
+                                sourcePartListId: item.sourcePartListId,
+                              },
+                              quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                            })
+                          }
+                          className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
+                        >
+                          -
+                        </button>
+                        <span className="min-w-8 text-center text-sm text-slate-900">
+                          {decimalToNumber(item.quantity)}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setQuantityMutation.mutate({
+                              sessionId,
+                              line: {
+                                productId: item.productId,
+                                sourcePartListId: item.sourcePartListId,
+                              },
+                              quantity: decimalToNumber(item.quantity) + 1,
+                            })
+                          }
+                          className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {groupedCartItems.standalone.map((item) => (
               <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -133,7 +210,10 @@ export default function CartsPage() {
                     onClick={() =>
                       setQuantityMutation.mutate({
                         sessionId,
-                        productId: item.productId,
+                        line: {
+                          productId: item.productId,
+                          sourcePartListId: item.sourcePartListId,
+                        },
                         quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                       })
                     }
@@ -148,7 +228,10 @@ export default function CartsPage() {
                     onClick={() =>
                       setQuantityMutation.mutate({
                         sessionId,
-                        productId: item.productId,
+                        line: {
+                          productId: item.productId,
+                          sourcePartListId: item.sourcePartListId,
+                        },
                         quantity: decimalToNumber(item.quantity) + 1,
                       })
                     }

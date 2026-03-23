@@ -10,6 +10,23 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * @typedef {Object} SeedProduct
+ * @property {string} sku
+ * @property {string} name
+ * @property {string} description
+ * @property {string} price
+ * @property {string} quantityOnHand
+ * @property {string} minimumQuantity
+ * @property {import("../generated/prisma/index.js").UnitKind} unitKind
+ * @property {import("../generated/prisma/index.js").BaseUnit} baseUnit
+ * @property {string} unitStep
+ * @property {string} categoryId
+ * @property {string} storageLocationId
+ * @property {string} imageUrl
+ * @property {string} imageAlt
+ */
+
 async function main() {
   const storageRooms = await Promise.all([
     prisma.storageRoom.upsert({
@@ -73,6 +90,7 @@ async function main() {
     }),
   ]);
 
+  /** @type {SeedProduct[]} */
   const products = [
     {
       sku: "PRD-0001",
@@ -151,6 +169,39 @@ async function main() {
     },
   ];
 
+  const additionalProductCount = 150;
+  /** @type {SeedProduct[]} */
+  const additionalProducts = Array.from({ length: additionalProductCount }, (_, index) => {
+    const productNumber = index + 6;
+    const isOfficeSupply = index % 2 === 0;
+    const sku = `PRD-${String(productNumber).padStart(4, "0")}`;
+    const displayNumber = String(productNumber).padStart(3, "0");
+
+    return {
+      sku,
+      name: isOfficeSupply
+        ? `Office Supply Item ${displayNumber}`
+        : `Cleaning Supply Item ${displayNumber}`,
+      description: isOfficeSupply
+        ? `General office supply product ${displayNumber} for daily use.`
+        : `General cleaning supply product ${displayNumber} for facility maintenance.`,
+      price: (isOfficeSupply ? 1.5 + (index % 18) * 0.65 : 2.2 + (index % 20) * 0.8).toFixed(2),
+      quantityOnHand: String(25 + (index % 85)).padStart(1, "0") + ".000",
+      minimumQuantity: String(5 + (index % 18)).padStart(1, "0") + ".000",
+      unitKind: isOfficeSupply ? UnitKind.PIECE : UnitKind.VOLUME,
+      baseUnit: isOfficeSupply ? BaseUnit.PCS : BaseUnit.L,
+      unitStep: isOfficeSupply ? "1.000" : "0.500",
+      categoryId: isOfficeSupply ? categories[0].id : categories[1].id,
+      storageLocationId: isOfficeSupply ? storageLocations[0].id : storageLocations[1].id,
+      imageUrl: isOfficeSupply
+        ? "/data/uploads/pictures/seed-a4-copy-paper.jpg"
+        : "/data/uploads/pictures/seed-surface-cleaner.jpg",
+      imageAlt: isOfficeSupply ? "Office supply product image" : "Cleaning supply product image",
+    };
+  });
+
+  products.push(...additionalProducts);
+
   for (const product of products) {
     const { imageUrl, imageAlt, ...productData } = product;
 
@@ -185,7 +236,9 @@ async function main() {
     }
   }
 
-  console.log("Seed complete: 5 products, 2 categories, 2 storage locations, 2 cost centers, 2 storage rooms.");
+  console.log(
+    `Seed complete: ${products.length} products, 2 categories, 2 storage locations, 2 cost centers, 2 storage rooms.`,
+  );
 }
 
 main()

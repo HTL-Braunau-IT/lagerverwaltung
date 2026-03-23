@@ -196,7 +196,7 @@ export function ProductsAdminPanel() {
   });
 
   const sortedProducts = useMemo(
-    () => (productsQuery.data ?? []).toSorted((a, b) => a.name.localeCompare(b.name)),
+    () => [...(productsQuery.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
     [productsQuery.data],
   );
 

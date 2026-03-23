@@ -34,7 +34,7 @@ export default async function RootLayout({
     <html lang="de" className={inter.variable}>
       <body className="bg-background text-foreground antialiased">
         {session?.user ? (
-          <TRPCReactProvider>
+          <TRPCReactProvider session={session}>
             <header
               data-app-shell-header="true"
               className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur"
@@ -50,6 +50,14 @@ export default async function RootLayout({
                   >
                     Bestellhistorie
                   </Link>
+                  {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
+                    <Link
+                      href="/teacher/orders"
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                    >
+                      Freigaben
+                    </Link>
+                  ) : null}
                   {session.user.role === "ADMIN" ? (
                     <Link
                       href="/backend"

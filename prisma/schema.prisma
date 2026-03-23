@@ -43,6 +43,12 @@ enum OrderStatus {
     READY_FOR_PICKUP
 }
 
+enum RequestStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}
+
 model Category {
     id        String    @id @default(cuid())
     name      String
@@ -95,6 +101,8 @@ model Product {
     cartItems         CartItem[]
     savedCartItems    SavedCartItem[]
     orderItems        OrderItem[]
+    orderRequestItems OrderRequestItem[]
+    partListItems     PartListItem[]
     stockBookings     ProductStockBooking[]
     createdAt         DateTime        @default(now())
     updatedAt         DateTime        @updatedAt
@@ -138,17 +146,86 @@ model Order {
     orderNumber  String      @unique
     userId       String
     costCenterId String
+    sourcePartListId String?
     status       OrderStatus @default(OPEN)
     user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
     costCenter   CostCenter  @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+    sourcePartList PartList? @relation(fields: [sourcePartListId], references: [id], onDelete: SetNull)
     items        OrderItem[]
+    sourceRequest OrderRequest?
     createdAt    DateTime    @default(now())
     updatedAt    DateTime    @updatedAt
 
     @@index([userId])
     @@index([costCenterId])
+    @@index([sourcePartListId])
     @@index([status])
     @@index([createdAt])
+}
+
+model PartList {
+    id          String         @id @default(cuid())
+    name        String
+    description String?
+    items       PartListItem[]
+    cartItems   CartItem[]
+    orders      Order[]
+    createdAt   DateTime       @default(now())
+    updatedAt   DateTime       @updatedAt
+
+    @@unique([name])
+    @@index([createdAt])
+}
+
+model PartListItem {
+    id         String   @id @default(cuid())
+    partListId String
+    productId  String
+    quantity   Decimal  @db.Decimal(14, 3)
+    partList   PartList @relation(fields: [partListId], references: [id], onDelete: Cascade)
+    product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@unique([partListId, productId])
+    @@index([productId])
+}
+
+model OrderRequest {
+    id                 String          @id @default(cuid())
+    studentId          String
+    teacherUserId      String?
+    teacherExternalId  String
+    teacherDisplayName String
+    teacherEmail       String
+    status             RequestStatus   @default(PENDING)
+    approvedOrderId    String?         @unique
+    student            User            @relation("OrderRequestsAsStudent", fields: [studentId], references: [id], onDelete: Restrict)
+    teacher            User?           @relation("OrderRequestsAsTeacher", fields: [teacherUserId], references: [id], onDelete: SetNull)
+    approvedOrder      Order?          @relation(fields: [approvedOrderId], references: [id], onDelete: SetNull)
+    items              OrderRequestItem[]
+    createdAt          DateTime        @default(now())
+    updatedAt          DateTime        @updatedAt
+
+    @@index([studentId])
+    @@index([teacherUserId])
+    @@index([teacherExternalId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+model OrderRequestItem {
+    id             String       @id @default(cuid())
+    orderRequestId String
+    productId      String
+    quantity       Decimal      @db.Decimal(14, 3)
+    orderRequest   OrderRequest @relation(fields: [orderRequestId], references: [id], onDelete: Cascade)
+    product        Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+    createdAt      DateTime     @default(now())
+
+    @@index([orderRequestId])
+    @@index([productId])
+    @@unique([orderRequestId, productId])
 }
 
 model OrderCounter {
@@ -191,17 +268,20 @@ model Cart {
 }
 
 model CartItem {
-    id        String   @id @default(cuid())
-    cartId    String
-    productId String
-    quantity  Decimal  @default(1) @db.Decimal(14, 3)
-    cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-    product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id               String    @id @default(cuid())
+    cartId           String
+    productId        String
+    sourcePartListId String?
+    quantity         Decimal   @default(1) @db.Decimal(14, 3)
+    cart             Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    product          Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+    sourcePartList   PartList? @relation(fields: [sourcePartListId], references: [id], onDelete: SetNull)
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
 
-    @@unique([cartId, productId])
+    @@unique([cartId, productId, sourcePartListId])
     @@index([productId])
+    @@index([sourcePartListId])
 }
 
 model SavedCart {
@@ -235,6 +315,7 @@ model User {
     id            String    @id @default(cuid())
     name          String?
     email         String?   @unique
+    azureAdObjectId String? @unique
     emailVerified DateTime?
     image         String?
     role          AppRole   @default(STUDENT)
@@ -242,6 +323,8 @@ model User {
     sessions      Session[]
     savedCarts    SavedCart[]
     orders        Order[]
+    orderRequestsAsStudent OrderRequest[] @relation("OrderRequestsAsStudent")
+    orderRequestsAsTeacher OrderRequest[] @relation("OrderRequestsAsTeacher")
     stockBookings ProductStockBooking[]
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt

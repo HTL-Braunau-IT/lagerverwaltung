@@ -273,7 +273,10 @@ export default function ProductDetailPage() {
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
-                            productId: item.productId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
                             quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                           })
                         }
@@ -288,7 +291,10 @@ export default function ProductDetailPage() {
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
-                            productId: item.productId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
                             quantity: decimalToNumber(item.quantity) + 1,
                           })
                         }
