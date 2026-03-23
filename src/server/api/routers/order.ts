@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter, teacherProcedure } from "~/server/api/trpc";
 import { aggregateProductRequirements, assertSufficientStock } from "~/server/api/routers/utils/stock";
+import { notifyOrderStatusChanged, notifyTeacherRequestApproved } from "~/server/mail/order-events";
 
 const backendListOrdersInput = z.object({
   search: z.string().trim().optional(),
@@ -177,12 +178,19 @@ export const orderRouter = createTRPCRouter({
   backendUpdateStatus: adminProcedure
     .input(backendUpdateOrderStatusInput)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.$transaction(async (tx) => {
+      const result = await ctx.db.$transaction(async (tx) => {
         const order = await tx.order.findUnique({
           where: { id: input.orderId },
           select: {
             id: true,
             status: true,
+            orderNumber: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
           },
         });
 
@@ -194,7 +202,13 @@ export const orderRouter = createTRPCRouter({
         }
 
         if (order.status === input.nextStatus) {
-          return order;
+          return {
+            id: order.id,
+            status: order.status,
+            orderNumber: order.orderNumber,
+            user: order.user,
+            changed: false as const,
+          };
         }
 
         const possibleNextStatuses = allowedTransitions[order.status];
@@ -231,16 +245,40 @@ export const orderRouter = createTRPCRouter({
           );
         }
 
-        return tx.order.update({
+        const updated = await tx.order.update({
           where: { id: input.orderId },
           data: { status: input.nextStatus },
           select: {
             id: true,
             status: true,
             updatedAt: true,
+            orderNumber: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
           },
         });
+
+        return {
+          ...updated,
+          changed: true as const,
+        };
       });
+
+      if (result.changed) {
+        notifyOrderStatusChanged({
+          orderNumber: result.orderNumber,
+          status: result.status,
+          owner: result.user,
+        }).catch((error) => {
+          console.error("[mail.notifyOrderStatusChanged] status notification failed", error);
+        });
+      }
+
+      return result;
     }),
 
   listAssignedRequests: teacherProcedure.query(async ({ ctx }) => {
@@ -363,7 +401,7 @@ export const orderRouter = createTRPCRouter({
   approveAssignedRequest: teacherProcedure
     .input(teacherApproveRequestInput)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.$transaction(async (tx) => {
+      const result = await ctx.db.$transaction(async (tx) => {
         const request = await tx.orderRequest.findUnique({
           where: { id: input.requestId },
           select: {
@@ -371,6 +409,14 @@ export const orderRouter = createTRPCRouter({
             status: true,
             teacherUserId: true,
             teacherExternalId: true,
+            teacherDisplayName: true,
+            teacherEmail: true,
+            student: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
             items: {
               orderBy: [{ createdAt: "asc" }, { id: "asc" }],
               select: {
@@ -489,7 +535,31 @@ export const orderRouter = createTRPCRouter({
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
+          requestId: request.id,
+          teacherDisplayName: request.teacherDisplayName,
+          teacherEmail: request.teacherEmail,
+          studentName: request.student.name,
+          studentEmail: request.student.email,
         };
       });
+
+      if (result.ok) {
+        notifyTeacherRequestApproved({
+          requestId: result.requestId,
+          orderNumber: result.orderNumber,
+          teacher: {
+            name: result.teacherDisplayName,
+            email: result.teacherEmail,
+          },
+          student: {
+            name: result.studentName,
+            email: result.studentEmail,
+          },
+        }).catch((error) => {
+          console.error("[mail.notifyTeacherRequestApproved] approval notification failed", error);
+        });
+      }
+
+      return result;
     }),
 });
