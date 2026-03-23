@@ -341,6 +341,13 @@ export const cartRouter = createTRPCRouter({
               select: {
                 productId: true,
                 quantity: true,
+                product: {
+                  select: {
+                    name: true,
+                    price: true,
+                    baseUnit: true,
+                  },
+                },
               },
             },
           },
@@ -422,6 +429,12 @@ export const cartRouter = createTRPCRouter({
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
+          items: cart.items.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unit: item.product.baseUnit,
+            price: item.product.price,
+          })),
         };
       });
 
@@ -433,6 +446,7 @@ export const cartRouter = createTRPCRouter({
             email: ctx.session.user.email,
           },
           selfOrderByTeacher: ctx.session.user.role === "TEACHER",
+          items: result.items,
         }).catch((error) => {
           console.error("[mail.notifyOrderCreated] checkout notification failed", error);
         });
@@ -483,6 +497,13 @@ export const cartRouter = createTRPCRouter({
               select: {
                 productId: true,
                 quantity: true,
+                product: {
+                  select: {
+                    name: true,
+                    price: true,
+                    baseUnit: true,
+                  },
+                },
               },
             },
           },
@@ -541,6 +562,12 @@ export const cartRouter = createTRPCRouter({
         return {
           ok: true as const,
           requestId: request.id,
+          items: cart.items.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unit: item.product.baseUnit,
+            price: item.product.price,
+          })),
         };
       });
 
@@ -555,6 +582,7 @@ export const cartRouter = createTRPCRouter({
             name: ctx.session.user.name,
             email: ctx.session.user.email,
           },
+          items: result.items,
         }).catch((error) => {
           console.error("[mail.notifyStudentRequestCreated] request notification failed", error);
         });

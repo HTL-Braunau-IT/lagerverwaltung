@@ -191,6 +191,29 @@ export const orderRouter = createTRPCRouter({
                 email: true,
               },
             },
+            sourceRequest: {
+              select: {
+                student: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                quantity: true,
+                product: {
+                  select: {
+                    name: true,
+                    price: true,
+                    baseUnit: true,
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -207,6 +230,8 @@ export const orderRouter = createTRPCRouter({
             status: order.status,
             orderNumber: order.orderNumber,
             user: order.user,
+            requester: order.sourceRequest?.student ?? null,
+            items: order.items,
             changed: false as const,
           };
         }
@@ -259,6 +284,29 @@ export const orderRouter = createTRPCRouter({
                 email: true,
               },
             },
+            sourceRequest: {
+              select: {
+                student: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                quantity: true,
+                product: {
+                  select: {
+                    name: true,
+                    price: true,
+                    baseUnit: true,
+                  },
+                },
+              },
+            },
           },
         });
 
@@ -273,6 +321,13 @@ export const orderRouter = createTRPCRouter({
           orderNumber: result.orderNumber,
           status: result.status,
           owner: result.user,
+          requester: result.requester,
+          items: result.items.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unit: item.product.baseUnit,
+            price: item.product.price,
+          })),
         }).catch((error) => {
           console.error("[mail.notifyOrderStatusChanged] status notification failed", error);
         });
@@ -422,6 +477,13 @@ export const orderRouter = createTRPCRouter({
               select: {
                 productId: true,
                 quantity: true,
+                product: {
+                  select: {
+                    name: true,
+                    price: true,
+                    baseUnit: true,
+                  },
+                },
               },
             },
           },
@@ -540,6 +602,12 @@ export const orderRouter = createTRPCRouter({
           teacherEmail: request.teacherEmail,
           studentName: request.student.name,
           studentEmail: request.student.email,
+          items: request.items.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            unit: item.product.baseUnit,
+            price: item.product.price,
+          })),
         };
       });
 
@@ -555,6 +623,7 @@ export const orderRouter = createTRPCRouter({
             name: result.studentName,
             email: result.studentEmail,
           },
+          items: result.items,
         }).catch((error) => {
           console.error("[mail.notifyTeacherRequestApproved] approval notification failed", error);
         });

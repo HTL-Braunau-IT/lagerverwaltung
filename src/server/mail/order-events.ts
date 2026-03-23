@@ -12,6 +12,7 @@ type StudentRequestCreatedInput = {
   requestId: string;
   teacher: MaybeUser;
   student: MaybeUser;
+  items: OrderLineItem[];
 };
 
 type TeacherRequestApprovedInput = {
@@ -19,18 +20,29 @@ type TeacherRequestApprovedInput = {
   orderNumber: string;
   teacher: MaybeUser;
   student: MaybeUser;
+  items: OrderLineItem[];
 };
 
 type OrderCreatedInput = {
   orderNumber: string;
   owner: MaybeUser;
   selfOrderByTeacher: boolean;
+  items: OrderLineItem[];
 };
 
 type OrderStatusChangedInput = {
   orderNumber: string;
   status: OrderStatusEmail;
   owner: MaybeUser;
+  requester?: MaybeUser;
+  items: OrderLineItem[];
+};
+
+type OrderLineItem = {
+  name: string;
+  quantity: unknown;
+  unit?: string | null;
+  price?: unknown;
 };
 
 function recipientFromUser(user: MaybeUser): MailRecipient | null {
@@ -59,6 +71,26 @@ function opsBccRecipient() {
   return [{ email }];
 }
 
+function valueToText(value: unknown) {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return value.toString();
+  if (value && typeof value === "object" && "toString" in value && typeof value.toString === "function") {
+    return value.toString();
+  }
+  return "";
+}
+
+function formatLineItems(items: OrderLineItem[]) {
+  if (items.length === 0) return ["- (keine Positionen uebergeben)"];
+  return items.map((item) => {
+    const quantity = valueToText(item.quantity) || "?";
+    const priceRaw = valueToText(item.price);
+    const unit = item.unit?.trim() ? ` ${item.unit}` : "";
+    const priceText = priceRaw ? ` | Einzelpreis: ${priceRaw} EUR` : "";
+    return `- ${item.name}: Menge ${quantity}${unit}${priceText}`;
+  });
+}
+
 export async function notifyStudentRequestCreated(input: StudentRequestCreatedInput) {
   const teacher = recipientFromUser(input.teacher);
   if (!teacher) return { skipped: true as const };
@@ -69,7 +101,11 @@ export async function notifyStudentRequestCreated(input: StudentRequestCreatedIn
     makeGreeting(input.teacher.name),
     "",
     "eine Schuelerin oder ein Schueler hat eine neue Bestellanfrage zur Freigabe eingereicht.",
+    `Schueler/in: ${input.student.name ?? "-"} (${input.student.email ?? "-"})`,
     `Anfrage-ID: ${input.requestId}`,
+    "",
+    "Angefragte Artikel:",
+    ...formatLineItems(input.items),
     "",
     "Bitte pruefen und bearbeiten Sie die Anfrage im System.",
   ].join("\n");
@@ -94,8 +130,12 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
     makeGreeting(input.student.name),
     "",
     "deine Bestellanfrage wurde von der Lehrperson freigegeben.",
+    `Lehrperson: ${input.teacher.name ?? "-"} (${input.teacher.email ?? "-"})`,
     `Anfrage-ID: ${input.requestId}`,
     `Bestellnummer: ${input.orderNumber}`,
+    "",
+    "Freigegebene Artikel:",
+    ...formatLineItems(input.items),
     "",
     "Du bekommst weitere Updates, wenn sich der Bestellstatus aendert.",
   ].join("\n");
@@ -125,6 +165,9 @@ export async function notifyOrderCreated(input: OrderCreatedInput) {
       : "deine Bestellung wurde erfolgreich angelegt.",
     `Bestellnummer: ${input.orderNumber}`,
     "",
+    "Bestellte Artikel:",
+    ...formatLineItems(input.items),
+    "",
     "Du bekommst weitere Updates, wenn sich der Status aendert.",
   ].join("\n");
 
@@ -151,8 +194,12 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
     makeGreeting(input.owner.name),
     "",
     "der Status deiner Bestellung hat sich geaendert.",
+    `Besteller/in: ${input.requester?.name ?? input.owner.name ?? "-"} (${input.requester?.email ?? input.owner.email ?? "-"})`,
     `Bestellnummer: ${input.orderNumber}`,
     `Neuer Status: ${readableStatus}`,
+    "",
+    "Artikel in dieser Bestellung:",
+    ...formatLineItems(input.items),
   ].join("\n");
 
   await sendGraphMail({
