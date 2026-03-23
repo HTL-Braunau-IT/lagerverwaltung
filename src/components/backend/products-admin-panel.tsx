@@ -3,6 +3,10 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 const unitKinds = [
   { value: "PIECE", label: "Stueck" },
@@ -83,11 +87,11 @@ function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+    <div className="mt-4 rounded-lg border border-border bg-card p-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Letzte Buchungen
       </p>
-      {bookingsQuery.isLoading ? <p className="mt-2 text-sm text-slate-500">Verlauf wird geladen...</p> : null}
+      {bookingsQuery.isLoading ? <p className="mt-2 text-sm text-muted-foreground">Verlauf wird geladen...</p> : null}
       {bookingsQuery.error ? (
         <p className="mt-2 text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p>
       ) : null}
@@ -95,13 +99,13 @@ function BookingHistory({ productId }: { productId: string }) {
       !bookingsQuery.error &&
       (bookingsQuery.data?.bookings?.length ?? 0) === 0 &&
       (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">Noch keine Buchungen oder fertigen Auftraege vorhanden.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Noch keine Buchungen oder fertigen Auftraege vorhanden.</p>
       ) : null}
       <div className="mt-2 space-y-2">
         {(bookingsQuery.data?.bookings ?? []).map((booking) => (
           <div
             key={booking.id}
-            className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-700"
+            className="rounded-md border border-border bg-muted px-2.5 py-2 text-xs text-foreground"
           >
             <p>
               Menge: <span className="font-medium">{toNumber(booking.quantityDelta)}</span>
@@ -116,14 +120,14 @@ function BookingHistory({ productId }: { productId: string }) {
         ))}
       </div>
       <div className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           Fertige Auftraege (READY_FOR_PICKUP)
         </p>
         <div className="mt-2 space-y-2">
           {(bookingsQuery.data?.completedOrders ?? []).map((entry) => (
             <div
               key={entry.id}
-              className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-900"
+            className="rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-xs text-success"
             >
               <p>
                 Auftrag: <span className="font-medium">{entry.order.orderNumber}</span>
@@ -136,7 +140,7 @@ function BookingHistory({ productId }: { productId: string }) {
             </div>
           ))}
           {(bookingsQuery.data?.completedOrders.length ?? 0) === 0 ? (
-            <p className="text-sm text-slate-500">Keine fertigen Auftraege fuer dieses Produkt.</p>
+            <p className="text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
           ) : null}
         </div>
       </div>
@@ -197,61 +201,61 @@ export function ProductsAdminPanel() {
   );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <Card className="rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Produkte</h2>
-          <p className="text-sm text-slate-600">Produkte suchen, oeffnen und bearbeiten.</p>
+          <h2 className="text-xl font-semibold text-foreground">Produkte</h2>
+          <p className="text-sm text-muted-foreground">Produkte suchen, oeffnen und bearbeiten.</p>
         </div>
       </div>
 
       <div className="mb-4">
-        <label htmlFor="backend-product-search" className="mb-1 block text-xs text-slate-600">
+        <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
           Suche nach Name, SKU oder Beschreibung
+          <Input
+            id="backend-product-search"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="z. B. HDMI, Papier, sku-1002"
+            className="mt-1 h-10 rounded-xl"
+          />
         </label>
-        <input
-          id="backend-product-search"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="z. B. HDMI, Papier, sku-1002"
-          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-sky-300 focus:ring-2"
-        />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+      <div className="overflow-x-auto rounded-xl border border-border">
+        <Table>
+          <TableHeader className="bg-muted/50">
             <tr>
-              <th className="px-3 py-3">Name</th>
-              <th className="px-3 py-3">SKU</th>
-              <th className="px-3 py-3">Kategorie</th>
-              <th className="px-3 py-3">Lagerplatz</th>
-              <th className="px-3 py-3">Bestand</th>
-              <th className="px-3 py-3">Mindestbestand</th>
+              <TableHead>Name</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead>Kategorie</TableHead>
+              <TableHead>Lagerplatz</TableHead>
+              <TableHead>Bestand</TableHead>
+              <TableHead>Mindestbestand</TableHead>
             </tr>
-          </thead>
-          <tbody>
+          </TableHeader>
+          <TableBody>
             {productsQuery.isLoading ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   Produkte werden geladen...
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
             {productsQuery.error ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-rose-700">
+                <TableCell colSpan={6} className="text-destructive">
                   Produkte konnten nicht geladen werden.
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
             {!productsQuery.isLoading && !productsQuery.error && sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   Keine Produkte gefunden.
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
@@ -262,7 +266,7 @@ export function ProductsAdminPanel() {
 
               return (
                 <Fragment key={product.id}>
-                  <tr
+                  <TableRow
                     onClick={() => {
                       setExpandedRowId((current) => (current === product.id ? null : product.id));
                       setFormsById((current) => ({
@@ -270,17 +274,17 @@ export function ProductsAdminPanel() {
                         [product.id]: current[product.id] ?? createInitialForm(product),
                       }));
                     }}
-                    className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                    className="cursor-pointer"
                   >
-                    <td className="px-3 py-3 font-medium text-slate-900">{product.name}</td>
-                    <td className="px-3 py-3 text-slate-700">{product.sku}</td>
-                    <td className="px-3 py-3 text-slate-700">{product.category?.name ?? "-"}</td>
-                    <td className="px-3 py-3 text-slate-700">{locationText}</td>
-                    <td className="px-3 py-3 text-slate-700">{toNumber(product.quantityOnHand)}</td>
-                    <td className="px-3 py-3 text-slate-700">{toNumber(product.minimumQuantity)}</td>
-                  </tr>
+                    <TableCell className="font-medium text-foreground">{product.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{product.sku}</TableCell>
+                    <TableCell className="text-muted-foreground">{product.category?.name ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{locationText}</TableCell>
+                    <TableCell className="text-muted-foreground">{toNumber(product.quantityOnHand)}</TableCell>
+                    <TableCell className="text-muted-foreground">{toNumber(product.minimumQuantity)}</TableCell>
+                  </TableRow>
                   {isExpanded ? (
-                    <tr className="border-t border-slate-200 bg-slate-50/70">
+                    <tr className="border-t border-border bg-muted/30">
                       <td colSpan={6} className="px-3 py-4">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                           <label className="text-xs text-slate-600">
@@ -532,18 +536,18 @@ export function ProductsAdminPanel() {
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
-                          <button
+                          <Button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               setBookingProduct({ id: product.id, name: product.name });
                               setBookingError(null);
                             }}
-                            className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-800 hover:border-sky-400"
+                            variant="secondary"
                           >
                             Einbuchen
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
@@ -552,11 +556,11 @@ export function ProductsAdminPanel() {
                                 [product.id]: createInitialForm(product),
                               }));
                             }}
-                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400"
+                            variant="outline"
                           >
                             Zuruecksetzen
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
@@ -577,10 +581,10 @@ export function ProductsAdminPanel() {
                               });
                             }}
                             disabled={updateMutation.isPending}
-                            className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700 disabled:opacity-60"
+                            className="disabled:opacity-60"
                           >
                             {updateMutation.isPending ? "Speichert..." : "Speichern"}
-                          </button>
+                          </Button>
                         </div>
 
                         <BookingHistory productId={product.id} />
@@ -590,15 +594,15 @@ export function ProductsAdminPanel() {
                 </Fragment>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {bookingProduct ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Einbuchen</h3>
-            <p className="mt-1 text-sm text-slate-600">{bookingProduct.name}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="text-lg font-semibold text-foreground">Einbuchen</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{bookingProduct.name}</p>
 
             <div className="mt-4 space-y-3">
               <label className="block text-xs text-slate-600">
@@ -634,17 +638,17 @@ export function ProductsAdminPanel() {
             {bookingError ? <p className="mt-3 text-sm text-rose-700">{bookingError}</p> : null}
 
             <div className="mt-4 flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setBookingProduct(null);
                   setBookingError(null);
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400"
+                variant="outline"
               >
                 Abbrechen
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => {
                   const normalizedQuantity = bookingQuantityInput.trim().replace(",", ".");
@@ -669,14 +673,14 @@ export function ProductsAdminPanel() {
                   });
                 }}
                 disabled={stockBookingMutation.isPending}
-                className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-700 disabled:opacity-60"
+                className="disabled:opacity-60"
               >
                 {stockBookingMutation.isPending ? "Bucht..." : "Einbuchen"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       ) : null}
-    </section>
+    </Card>
   );
 }

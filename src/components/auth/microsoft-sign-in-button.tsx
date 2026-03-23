@@ -1,15 +1,15 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { Button } from "~/components/ui/button";
 
 export function MicrosoftSignInButton() {
   return (
-    <button
-      type="button"
+    <Button
       onClick={() => void signIn("azure-ad", { callbackUrl: "/" })}
-      className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-500"
+      className="mt-6 h-11 w-full rounded-xl text-sm font-semibold"
     >
       Mit Microsoft anmelden
-    </button>
+    </Button>
   );
 }

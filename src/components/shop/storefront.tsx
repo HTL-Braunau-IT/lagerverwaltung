@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
+const TOP_BANNER_GAP_PX = 24;
 
 function getOrCreateSessionId() {
   if (typeof window === "undefined") return "";
@@ -42,25 +47,18 @@ export function Storefront() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = api.useUtils();
-  const [sessionId, setSessionId] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchFromUrl = searchParams.get("search") ?? "";
+  const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
+  const [sessionId] = useState(() => getOrCreateSessionId());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(categoryFromUrl);
+  const [searchInput, setSearchInput] = useState(searchFromUrl);
+  const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [showCartModal, setShowCartModal] = useState(false);
-
-  useEffect(() => {
-    setSessionId(getOrCreateSessionId());
-  }, []);
-
-  useEffect(() => {
-    const searchFromUrl = searchParams.get("search") ?? "";
-    const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
-    setSearchInput(searchFromUrl);
-    setSearchTerm(searchFromUrl.trim());
-    setSelectedCategoryId(categoryFromUrl);
-  }, [searchParams]);
+  const headerRef = useRef<HTMLElement | null>(null);
+  const [stickyTopOffset, setStickyTopOffset] = useState(144);
+  const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -68,6 +66,28 @@ export function Storefront() {
     }, 250);
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
+
+  useEffect(() => {
+    const updateOffset = () => {
+      const height = headerRef.current?.offsetHeight ?? 0;
+      setStickyTopOffset(height + 16);
+    };
+
+    updateOffset();
+    window.addEventListener("resize", updateOffset);
+    return () => window.removeEventListener("resize", updateOffset);
+  }, []);
+
+  useEffect(() => {
+    const updateAppHeaderOffset = () => {
+      const appHeader = document.querySelector<HTMLElement>('[data-app-shell-header="true"]');
+      setAppHeaderOffset(appHeader?.offsetHeight ?? 0);
+    };
+
+    updateAppHeaderOffset();
+    window.addEventListener("resize", updateAppHeaderOffset);
+    return () => window.removeEventListener("resize", updateAppHeaderOffset);
+  }, []);
 
   const categoryQuery = api.category.list.useQuery();
   const productQuery = api.product.list.useQuery({
@@ -108,104 +128,118 @@ export function Storefront() {
   const hasActiveFilters = Boolean(searchTerm) || Boolean(selectedCategoryId);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="sticky top-0 z-10 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur md:p-5">
+    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 rounded-2xl border border-border bg-card/95 p-4 shadow-sm backdrop-blur md:p-5"
+        style={{ top: `${appHeaderOffset + TOP_BANNER_GAP_PX}px` }}
+      >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-sky-700">HTL Lager</p>
-            <h1 className="text-xl font-semibold text-slate-900 md:text-2xl">Schulshop</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">HTL Lager</p>
+            <h1 className="text-xl font-semibold text-foreground md:text-2xl">Schulshop</h1>
           </div>
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
+          <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-secondary-foreground">
             Warenkorb: {cartItemsCount} Artikel
           </div>
         </div>
         <div className="mt-4">
-          <label htmlFor="product-search" className="mb-2 block text-xs text-slate-600">
+          <label htmlFor="product-search" className="mb-2 block text-xs text-muted-foreground">
             Suche nach Name oder Beschreibung
           </label>
-          <input
+          <Input
             id="product-search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="z. B. HDMI-Kabel, A4 Papier..."
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+            className="h-10 rounded-xl"
           />
         </div>
       </header>
 
-      <section className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setSelectedCategoryId(undefined)}
-          className={`rounded-full border px-3 py-1.5 text-sm transition ${
-            selectedCategoryId === undefined
-              ? "border-sky-300 bg-sky-50 text-sky-800"
-              : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
-          }`}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_340px]">
+        <aside
+          className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
+          style={{
+            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+          }}
         >
-          Alle Kategorien
-        </button>
-        {categoryQuery.data?.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategoryId(category.id)}
-            className={`rounded-full border px-3 py-1.5 text-sm transition ${
-              selectedCategoryId === category.id
-                ? "border-sky-300 bg-sky-50 text-sky-800"
-                : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
-            }`}
-          >
-            {category.name} ({category._count.products})
-          </button>
-        ))}
-      </section>
+          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
+          <nav className="space-y-1">
+            <Button
+              onClick={() => setSelectedCategoryId(undefined)}
+              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
+              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                selectedCategoryId === undefined ? "" : "text-muted-foreground"
+              }`}
+            >
+              <span>Alle Kategorien</span>
+            </Button>
+            {categoryQuery.data?.map((category) => (
+              <Button
+                key={category.id}
+                onClick={() => setSelectedCategoryId(category.id)}
+                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
+                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
+                }`}
+              >
+                <span className="truncate">{category.name}</span>
+                <span className="text-xs">({category._count.products})</span>
+              </Button>
+            ))}
+          </nav>
+        </aside>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {productQuery.isLoading && (
-            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-600">
-              <p className="text-sm font-medium text-slate-700">Produkte werden geladen...</p>
-              <p className="mt-1 text-sm text-slate-500">Bitte kurz warten.</p>
+            <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
+              <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
+              <p className="mt-1 text-sm">Bitte kurz warten.</p>
             </div>
           )}
 
           {productQuery.error && (
-            <div className="col-span-full rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900">
+            <div className="col-span-full rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-destructive">
               <p className="text-sm font-semibold">Produkte konnten nicht geladen werden.</p>
-              <p className="mt-1 text-sm text-rose-800">
+              <p className="mt-1 text-sm">
                 Pruefe die Verbindung und versuche es erneut.
               </p>
-              <button
+              <Button
                 onClick={() => void productQuery.refetch()}
-                className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100"
+                variant="outline"
+                className="mt-3"
               >
                 Erneut laden
-              </button>
+              </Button>
             </div>
           )}
 
           {!productQuery.isLoading && !productQuery.error && !hasProducts && (
-            <div className="col-span-full rounded-2xl border border-slate-200 bg-white p-5 text-slate-700">
+            <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-semibold">
                 {hasActiveFilters
                   ? "Keine Treffer fuer deine Suche."
                   : "Aktuell sind keine Produkte verfuegbar."}
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm">
                 {hasActiveFilters
                   ? "Passe Suche oder Kategorie an, um weitere Produkte zu sehen."
                   : "Sobald Produkte angelegt sind, erscheinen sie hier."}
               </p>
               {hasActiveFilters && (
-                <button
+                <Button
                   onClick={() => {
                     setSearchInput("");
                     setSearchTerm("");
                     setSelectedCategoryId(undefined);
                   }}
-                  className="mt-3 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+                  variant="outline"
+                  className="mt-3"
                 >
                   Filter zuruecksetzen
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -217,7 +251,7 @@ export function Storefront() {
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
             return (
-              <article
+              <Card
                 key={product.id}
                 role="button"
                 tabIndex={0}
@@ -228,10 +262,10 @@ export function Storefront() {
                     router.push(`/products/${product.id}`);
                   }
                 }}
-                className="flex h-full cursor-pointer flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-sky-300"
+                className="flex h-full cursor-pointer flex-col justify-between rounded-2xl p-4 transition hover:border-primary/50"
               >
                 <div>
-                  <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
                     <img
                       src={previewImage?.url || "/pictures/placeholder.jpg"}
                       alt={previewImage?.altText ?? `${product.name} Produktbild`}
@@ -244,32 +278,28 @@ export function Storefront() {
                     />
                   </div>
                   <div className="mb-3 flex items-start justify-between gap-2">
-                    <h2 className="line-clamp-2 text-base font-semibold text-slate-900">{product.name}</h2>
+                    <h2 className="line-clamp-2 text-base font-semibold text-foreground">{product.name}</h2>
                     {lowStock ? (
-                      <span className="rounded-full bg-amber-100 px-2 py-1 text-xs text-amber-800">
-                        Niedriger Bestand
-                      </span>
+                      <Badge variant="destructive">Niedriger Bestand</Badge>
                     ) : (
-                      <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-800">
-                        Auf Lager
-                      </span>
+                      <Badge variant="success">Auf Lager</Badge>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
                   </p>
-                  <p className="mt-3 text-sm text-slate-600">
+                  <p className="mt-3 text-sm text-muted-foreground">
                     {product.description ?? "Keine Beschreibung."}
                   </p>
                 </div>
                 <div className="mt-2 space-y-2">
-                  <p className="text-lg font-semibold text-sky-800">{formatPrice(product.price)}</p>
+                  <p className="text-lg font-semibold text-primary">{formatPrice(product.price)}</p>
                   <div className="flex w-full flex-wrap items-center justify-end gap-2">
                     <div
                       className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <button
+                      <Button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -284,11 +314,12 @@ export function Storefront() {
                             [product.id]: nextQuantity.toString(),
                           }));
                         }}
-                        className="h-10 w-8 rounded-l-xl border-r border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                        variant="ghost"
+                        className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
                         aria-label={`Menge fuer ${product.name} reduzieren`}
                       >
                         -
-                      </button>
+                      </Button>
                       <input
                         type="number"
                         min={unitStep}
@@ -301,10 +332,10 @@ export function Storefront() {
                             [product.id]: event.target.value,
                           }));
                         }}
-                        className="w-9 border-none bg-transparent text-center text-sm font-medium text-slate-900 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="w-9 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         aria-label={`Menge fuer ${product.name}`}
                       />
-                      <button
+                      <Button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -319,14 +350,15 @@ export function Storefront() {
                             [product.id]: nextQuantity.toString(),
                           }));
                         }}
-                        className="h-10 w-8 border-l border-slate-200 text-slate-600 transition hover:bg-slate-50"
+                        variant="ghost"
+                        className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
                         aria-label={`Menge fuer ${product.name} erhoehen`}
                       >
                         +
-                      </button>
-                      <span className="pr-2 text-xs text-slate-500">{product.baseUnit.toLowerCase()}</span>
+                      </Button>
+                      <span className="pr-2 text-xs text-muted-foreground">{product.baseUnit.toLowerCase()}</span>
                     </div>
-                    <button
+                    <Button
                       onClick={(event) => {
                         event.stopPropagation();
                         const parsedQuantity = Number(quantityInput);
@@ -340,52 +372,57 @@ export function Storefront() {
                         });
                       }}
                       disabled={sessionId.length === 0 || addItemMutation.isPending}
-                      className="shrink-0 whitespace-nowrap rounded-xl bg-sky-600 px-2.5 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-10 shrink-0 whitespace-nowrap rounded-xl px-2.5"
                     >
                       {addItemMutation.isPending && activeAddProductId === product.id
                         ? "Wird hinzugefuegt..."
                         : "In den Warenkorb"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
-              </article>
+              </Card>
             );
           })}
         </div>
 
         <aside
           id="cart-panel"
-          className="h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-28"
+          className="self-start rounded-2xl border border-border bg-card p-4 shadow-sm lg:sticky lg:overflow-auto"
+          style={{
+            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+          }}
         >
-          <h2 className="text-base font-semibold text-slate-900">Warenkorb</h2>
-          <p className="mt-1 text-xs text-slate-500">Aktuelle Produktpreise aktiviert</p>
+          <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Aktuelle Produktpreise aktiviert</p>
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>
+              <div className="rounded-xl border border-border bg-muted p-3">
+                <p className="text-sm text-muted-foreground">Warenkorb wird geladen...</p>
               </div>
             )}
             {cartQuery.error && (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
-                <p className="text-sm font-medium text-rose-900">Warenkorb konnte nicht geladen werden.</p>
-                <button
+              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3">
+                <p className="text-sm font-medium text-destructive">Warenkorb konnte nicht geladen werden.</p>
+                <Button
                   onClick={() => void cartQuery.refetch()}
-                  className="mt-2 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm text-rose-800 transition hover:bg-rose-100"
+                  variant="outline"
+                  className="mt-2"
                 >
                   Erneut versuchen
-                </button>
+                </Button>
               </div>
             )}
             {!cartQuery.isLoading && !cartQuery.error && (cartQuery.data?.items.length ?? 0) === 0 ? (
-              <p className="text-sm text-slate-500">Keine Artikel im Warenkorb.</p>
+              <p className="text-sm text-muted-foreground">Keine Artikel im Warenkorb.</p>
             ) : (
               cartQuery.data?.items.map((item) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
+                <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
+                  <p className="text-sm font-medium text-foreground">{item.product.name}</p>
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-sm text-slate-700">{formatPrice(item.product.price)}</p>
+                    <p className="text-sm text-foreground">{formatPrice(item.product.price)}</p>
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
@@ -393,14 +430,15 @@ export function Storefront() {
                             quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                           })
                         }
-                        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
+                        variant="outline"
+                        className="h-8 px-2"
                       >
                         -
-                      </button>
-                      <span className="min-w-8 text-center text-sm text-slate-900">
+                      </Button>
+                      <span className="min-w-8 text-center text-sm text-foreground">
                         {decimalToNumber(item.quantity)}
                       </span>
-                      <button
+                      <Button
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
@@ -408,24 +446,25 @@ export function Storefront() {
                             quantity: decimalToNumber(item.quantity) + 1,
                           })
                         }
-                        className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
+                        variant="outline"
+                        className="h-8 px-2"
                       >
                         +
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
               ))
             )}
           </div>
-          <div className="mt-4 border-t border-slate-200 pt-3">
+          <div className="mt-4 border-t border-border pt-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Zwischensumme</span>
-              <span className="font-semibold text-sky-800">{formatPrice(cartTotal)}</span>
+              <span className="text-muted-foreground">Zwischensumme</span>
+              <span className="font-semibold text-primary">{formatPrice(cartTotal)}</span>
             </div>
             <Link
               href="/carts"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
             >
               Zum Warenkorb
             </Link>
@@ -434,28 +473,29 @@ export function Storefront() {
       </section>
 
       {showCartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Artikel hinzugefuegt</h3>
-            <p className="mt-1 text-sm text-slate-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-foreground">Artikel hinzugefuegt</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               Der Artikel wurde in den Warenkorb gelegt.
             </p>
             <div className="mt-4 flex gap-2">
-              <button
+              <Button
                 onClick={() => setShowCartModal(false)}
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+                variant="outline"
+                className="flex-1 rounded-xl"
               >
                 Weiter einkaufen
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowCartModal(false);
                   router.push("/carts");
                 }}
-                className="flex-1 rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
+                className="flex-1 rounded-xl"
               >
                 Zu Warenkoerben
-              </button>
+              </Button>
             </div>
           </div>
         </div>

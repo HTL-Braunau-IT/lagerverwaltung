@@ -1,24 +1,70 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif,
+  --font-sans: var(--font-sans-custom), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.98 0.003 264.542);
+  --foreground: oklch(0.2 0.034 264.665);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.034 264.665);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.034 264.665);
+  --primary: oklch(0.55 0.25 240);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.02 264.542);
+  --secondary-foreground: oklch(0.2 0.034 264.665);
+  --muted: oklch(0.96 0.02 264.542);
+  --muted-foreground: oklch(0.5 0.027 264.364);
+  --accent: oklch(0.96 0.02 264.542);
+  --accent-foreground: oklch(0.2 0.034 264.665);
+  --destructive: oklch(0.65 0.25 27.325);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.65 0.25 142);
+  --success-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.02 264.531);
+  --input: oklch(0.9 0.02 264.531);
+  --ring: oklch(0.55 0.25 240 / 30%);
 }
 
 @layer base {
-  body {
-    background:
-      radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 35%),
-      radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.12), transparent 45%),
-      #f8fafc;
+  * {
+    @apply border-border outline-ring/50;
   }
 
-  h1,
-  h2,
-  h3,
-  h4 {
-    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
-    letter-spacing: -0.02em;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans-custom), ui-sans-serif, system-ui, sans-serif;
   }
 }

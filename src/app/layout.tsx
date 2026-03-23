@@ -2,7 +2,7 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import Link from "next/link";
-import { Manrope, Sora } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-button";
 import { auth } from "~/server/auth";
@@ -14,14 +14,9 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const sora = Sora({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-display",
-});
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-body",
+  variable: "--font-sans-custom",
 });
 
 const roleLabels: Record<"ADMIN" | "TEACHER" | "STUDENT", string> = {
@@ -36,33 +31,36 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="de" className={`${sora.variable} ${manrope.variable}`}>
-      <body className="bg-slate-50 text-slate-900 antialiased">
+    <html lang="de" className={inter.variable}>
+      <body className="bg-background text-foreground antialiased">
         {session?.user ? (
           <TRPCReactProvider>
-            <header className="border-b border-slate-200 bg-white">
+            <header
+              data-app-shell-header="true"
+              className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur"
+            >
               <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-                <p className="text-sm font-medium text-slate-700">
+                <p className="text-sm font-medium text-muted-foreground">
                   {`Angemeldet als ${session.user.email ?? "Benutzer"} (${roleLabels[session.user.role]})`}
                 </p>
                 <div className="flex items-center gap-2">
                   <Link
                     href="/orders"
-                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     Bestellhistorie
                   </Link>
                   {session.user.role === "ADMIN" ? (
                     <Link
                       href="/backend"
-                      className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                      className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
                     >
                       Administration
                     </Link>
                   ) : null}
                   <Link
                     href="/api/auth/signout"
-                    className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
                   >
                     Abmelden
                   </Link>
@@ -72,12 +70,11 @@ export default async function RootLayout({
             {children}
           </TRPCReactProvider>
         ) : (
-          <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.22),transparent_42%),radial-gradient(circle_at_80%_80%,rgba(56,189,248,0.18),transparent_45%)]" />
-            <section className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-[0_24px_70px_-30px_rgba(2,132,199,0.55)] backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.22em] text-sky-700">HTL Lagerverwaltung</p>
-              <h1 className="mt-2 text-3xl font-semibold text-slate-900">Willkommen zur Materialausgabe</h1>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
+          <main className="flex min-h-screen items-center justify-center p-6">
+            <section className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">HTL Lagerverwaltung</p>
+              <h1 className="mt-2 text-3xl font-semibold text-foreground">Willkommen zur Materialausgabe</h1>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Melde dich mit deinem Microsoft-Schulkonto an, um Produkte zu sehen und Bestellungen zu verwalten.
               </p>
 

@@ -3,6 +3,11 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
@@ -12,17 +17,17 @@ const statusConfig: Record<
 > = {
   OPEN: {
     label: "Offen",
-    pillClassName: "border border-rose-200 bg-rose-50 text-rose-700",
+    pillClassName: "",
     nextStatus: "PREPARING",
   },
   PREPARING: {
     label: "In Vorbereitung",
-    pillClassName: "border border-amber-200 bg-amber-50 text-amber-700",
+    pillClassName: "",
     nextStatus: "READY_FOR_PICKUP",
   },
   READY_FOR_PICKUP: {
     label: "Abholbereit",
-    pillClassName: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+    pillClassName: "",
     nextStatus: null,
   },
 };
@@ -86,32 +91,32 @@ export function OrdersAdminPanel() {
   );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <Card className="rounded-2xl p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Bestellungen</h2>
-          <p className="text-sm text-slate-600">Bestellungen suchen, oeffnen und Status aktualisieren.</p>
+          <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
+          <p className="text-sm text-muted-foreground">Bestellungen suchen, oeffnen und Status aktualisieren.</p>
         </div>
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-order-search" className="block text-xs text-slate-600">
+        <label htmlFor="backend-order-search" className="block text-xs text-muted-foreground">
           Suche nach Bestellnummer, Kunde oder Kostenstelle
-          <input
+          <Input
             id="backend-order-search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder="z. B. 2026000001, max.mustermann, 4AH..."
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-sky-300 focus:ring-2"
+            className="mt-1 h-10 rounded-xl"
           />
         </label>
 
-        <label className="block text-xs text-slate-600">
+        <label className="block text-xs text-muted-foreground">
           Status
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as "ALL" | OrderStatus)}
-            className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none ring-sky-300 focus:ring-2"
+            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="ALL">Alle Status</option>
             <option value="OPEN">Offen</option>
@@ -121,40 +126,40 @@ export function OrdersAdminPanel() {
         </label>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+      <div className="overflow-x-auto rounded-xl border border-border">
+        <Table>
+          <TableHeader className="bg-muted/50">
             <tr>
-              <th className="px-3 py-3">Bestellnummer</th>
-              <th className="px-3 py-3">Kunde</th>
-              <th className="px-3 py-3">Kostenstelle</th>
-              <th className="px-3 py-3">Datum</th>
-              <th className="px-3 py-3">Status</th>
-              <th className="px-3 py-3">Aktion</th>
+              <TableHead>Bestellnummer</TableHead>
+              <TableHead>Kunde</TableHead>
+              <TableHead>Kostenstelle</TableHead>
+              <TableHead>Datum</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Aktion</TableHead>
             </tr>
-          </thead>
-          <tbody>
+          </TableHeader>
+          <TableBody>
             {ordersQuery.isLoading ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   Bestellungen werden geladen...
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
             {ordersQuery.error ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-rose-700">
+                <TableCell colSpan={6} className="text-destructive">
                   Bestellungen konnten nicht geladen werden.
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
             {!ordersQuery.isLoading && !ordersQuery.error && sortedOrders.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
+                <TableCell colSpan={6} className="text-muted-foreground">
                   Keine Bestellungen gefunden.
-                </td>
+                </TableCell>
               </tr>
             ) : null}
 
@@ -165,23 +170,32 @@ export function OrdersAdminPanel() {
 
               return (
                 <Fragment key={order.id}>
-                  <tr
+                  <TableRow
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
-                    className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                    className="cursor-pointer"
                   >
-                    <td className="px-3 py-3 font-medium text-slate-900">{order.orderNumber}</td>
-                    <td className="px-3 py-3 text-slate-700">{userLabel(order.user)}</td>
-                    <td className="px-3 py-3 text-slate-700">
+                    <TableCell className="font-medium text-foreground">{order.orderNumber}</TableCell>
+                    <TableCell className="text-muted-foreground">{userLabel(order.user)}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       {order.costCenter.code} - {order.costCenter.name}
-                    </td>
-                    <td className="px-3 py-3 text-slate-700">{formatDate(order.createdAt)}</td>
-                    <td className="px-3 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${status.pillClassName}`}>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatDate(order.createdAt)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          order.status === "READY_FOR_PICKUP"
+                            ? "success"
+                            : order.status === "OPEN"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                        className={status.pillClassName}
+                      >
                         {status.label}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -192,18 +206,20 @@ export function OrdersAdminPanel() {
                           });
                         }}
                         disabled={!nextStatus || updateStatusMutation.isPending}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-55"
+                        variant="outline"
+                        size="sm"
+                        className="disabled:cursor-not-allowed disabled:opacity-55"
                       >
                         {nextStatus ? `Zu ${statusConfig[nextStatus].label}` : "Final"}
-                      </button>
-                    </td>
-                  </tr>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
 
                   {isExpanded ? (
-                    <tr className="border-t border-slate-200 bg-slate-50/70">
+                    <tr className="border-t border-border bg-muted/30">
                       <td colSpan={6} className="px-3 py-4">
                         {expandedOrderQuery.isLoading ? (
-                          <p className="text-sm text-slate-500">Details werden geladen...</p>
+                          <p className="text-sm text-muted-foreground">Details werden geladen...</p>
                         ) : null}
                         {expandedOrderQuery.error ? (
                           <p className="text-sm text-rose-700">Details konnten nicht geladen werden.</p>
@@ -214,40 +230,40 @@ export function OrdersAdminPanel() {
                         expandedOrderQuery.data.id === order.id ? (
                           <div className="space-y-4">
                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-500">Bestellnummer</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                              <div className="rounded-lg border border-border bg-card p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Bestellnummer</p>
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                   {expandedOrderQuery.data.orderNumber}
                                 </p>
                               </div>
-                              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-500">Kunde</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                              <div className="rounded-lg border border-border bg-card p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Kunde</p>
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                   {userLabel(expandedOrderQuery.data.user)}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-muted-foreground">
                                   {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
                                 </p>
                               </div>
-                              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-500">Erstellt</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                              <div className="rounded-lg border border-border bg-card p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Erstellt</p>
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                   {formatDate(expandedOrderQuery.data.createdAt)}
                                 </p>
                               </div>
-                              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-500">Zuletzt aktualisiert</p>
-                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                              <div className="rounded-lg border border-border bg-card p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Zuletzt aktualisiert</p>
+                                <p className="mt-1 text-sm font-semibold text-foreground">
                                   {formatDate(expandedOrderQuery.data.updatedAt)}
                                 </p>
                               </div>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 bg-white p-3">
-                              <p className="text-sm font-semibold text-slate-900">Positionen</p>
-                              <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                            <div className="rounded-xl border border-border bg-card p-3">
+                              <p className="text-sm font-semibold text-foreground">Positionen</p>
+                              <div className="mt-3 overflow-x-auto rounded-lg border border-border">
                                 <table className="min-w-full border-collapse text-left text-xs">
-                                  <thead className="bg-slate-50 uppercase tracking-wide text-slate-500">
+                                  <thead className="bg-muted uppercase tracking-wide text-muted-foreground">
                                     <tr>
                                       <th className="px-2.5 py-2">Bild</th>
                                       <th className="px-2.5 py-2">Produkt</th>
@@ -259,27 +275,27 @@ export function OrdersAdminPanel() {
                                   </thead>
                                   <tbody>
                                     {expandedOrderQuery.data.items.map((item) => (
-                                      <tr key={item.id} className="border-t border-slate-200">
+                                      <tr key={item.id} className="border-t border-border">
                                         <td className="px-2.5 py-2">
                                           <img
                                             src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
                                             alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
-                                            className="h-10 w-10 rounded border border-slate-200 object-cover"
+                                            className="h-10 w-10 rounded border border-border object-cover"
                                             onError={(event) => {
                                               event.currentTarget.onerror = null;
                                               event.currentTarget.src = "/pictures/placeholder.jpg";
                                             }}
                                           />
                                         </td>
-                                        <td className="px-2.5 py-2 text-slate-800">{item.product.name}</td>
-                                        <td className="px-2.5 py-2 text-slate-600">{item.product.sku}</td>
-                                        <td className="px-2.5 py-2 text-slate-600">
+                                        <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
+                                        <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
+                                        <td className="px-2.5 py-2 text-muted-foreground">
                                           {item.product.storageLocation.code} - {item.product.storageLocation.name}
                                         </td>
-                                        <td className="px-2.5 py-2 text-slate-800">
+                                        <td className="px-2.5 py-2 text-foreground">
                                           {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
                                         </td>
-                                        <td className="px-2.5 py-2 text-slate-600">{formatDate(item.createdAt)}</td>
+                                        <td className="px-2.5 py-2 text-muted-foreground">{formatDate(item.createdAt)}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -294,9 +310,9 @@ export function OrdersAdminPanel() {
                 </Fragment>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
-    </section>
+    </Card>
   );
 }
