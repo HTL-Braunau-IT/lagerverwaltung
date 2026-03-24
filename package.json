@@ -16,7 +16,7 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "postinstall": "prisma generate",
     "lint": "eslint .",
-    "import:legacy:catalog": "node --env-file=.env scripts/import-legacy-catalog.mjs",
+    "import:legacy:catalog": "node scripts/import-legacy-catalog.mjs",
     "lint:fix": "eslint . --fix",
     "preview": "next build && next start",
     "start": "next start",
