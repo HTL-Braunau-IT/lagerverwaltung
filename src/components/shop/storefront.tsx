@@ -392,9 +392,7 @@ export function Storefront() {
               decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
             const hasImageError = failedProductImages.has(product.id);
-            const imageSrc = !previewImage?.url || hasImageError
-              ? "/pictures/placeholder.jpg"
-              : previewImage.url;
+            const showImagePlaceholder = !previewImage?.url || hasImageError;
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
             const stockOnHand = decimalToNumber(product.quantityOnHand);
@@ -418,22 +416,29 @@ export function Storefront() {
               >
                 <div>
                   <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
-                    <img
-                      src={imageSrc}
-                      alt={previewImage?.altText ?? `${product.name} Produktbild`}
-                      className="h-40 w-full object-cover"
-                      loading="lazy"
-                      onError={(event) => {
-                        if (!previewImage?.url) return;
-                        setFailedProductImages((prev) => {
-                          if (prev.has(product.id)) return prev;
-                          const next = new Set(prev);
-                          next.add(product.id);
-                          return next;
-                        });
-                        event.currentTarget.src = "/pictures/placeholder.jpg";
-                      }}
-                    />
+                    {showImagePlaceholder ? (
+                      <div
+                        className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
+                        aria-label={`${product.name} Platzhalterbild`}
+                      >
+                        Kein Produktbild
+                      </div>
+                    ) : (
+                      <img
+                        src={previewImage.url}
+                        alt={previewImage.altText ?? `${product.name} Produktbild`}
+                        className="h-40 w-full object-cover"
+                        loading="lazy"
+                        onError={() => {
+                          setFailedProductImages((prev) => {
+                            if (prev.has(product.id)) return prev;
+                            const next = new Set(prev);
+                            next.add(product.id);
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <h2 className="line-clamp-2 text-base font-semibold text-foreground">{product.name}</h2>
