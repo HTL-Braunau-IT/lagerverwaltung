@@ -1,9 +1,5 @@
-import { ProductsAdminPanel } from "~/components/backend/products-admin-panel";
+import { redirect } from "next/navigation";
 
 export default function BackendPage() {
-  return (
-    <section>
-      <ProductsAdminPanel />
-    </section>
-  );
+  redirect("/backend/orders");
 }
