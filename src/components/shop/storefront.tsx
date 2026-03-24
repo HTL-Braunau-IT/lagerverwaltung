@@ -9,7 +9,6 @@ import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 const TOP_BANNER_GAP_PX = 24;
@@ -59,9 +58,8 @@ export function Storefront() {
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
-  const headerRef = useRef<HTMLElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const [stickyTopOffset, setStickyTopOffset] = useState(144);
+  const stickyTopOffset = 16;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   useEffect(() => {
@@ -72,15 +70,8 @@ export function Storefront() {
   }, [searchInput]);
 
   useEffect(() => {
-    const updateOffset = () => {
-      const height = headerRef.current?.offsetHeight ?? 0;
-      setStickyTopOffset(height + 16);
-    };
-
-    updateOffset();
-    window.addEventListener("resize", updateOffset);
-    return () => window.removeEventListener("resize", updateOffset);
-  }, []);
+    setSearchInput(searchFromUrl);
+  }, [searchFromUrl]);
 
   useEffect(() => {
     const updateAppHeaderOffset = () => {
@@ -206,24 +197,6 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <header
-        ref={headerRef}
-        className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5"
-      >
-        <div>
-          <label htmlFor="product-search" className="mb-2 block text-xs text-muted-foreground">
-            Suche nach Name oder Beschreibung
-          </label>
-          <Input
-            id="product-search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="z. B. HDMI-Kabel, A4 Papier..."
-            className="h-10 rounded-xl"
-          />
-        </div>
-      </header>
-
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_340px]">
         <aside
           className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
