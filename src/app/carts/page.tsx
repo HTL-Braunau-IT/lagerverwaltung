@@ -330,6 +330,11 @@ export default function CartsPage() {
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkoerbe</h2>
+            {loadSavedCartMutation.error?.message === "MIXED_STORAGE_ROOMS" ? (
+              <p className="mt-2 text-sm text-rose-700">
+                Dieser Warenkorb enthaelt Produkte aus mehreren Lagerraeumen und kann nicht geladen werden.
+              </p>
+            ) : null}
             <div className="mt-3 space-y-3">
               {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkoerbe werden geladen...</p>}
               {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (

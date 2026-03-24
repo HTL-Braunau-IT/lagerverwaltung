@@ -187,6 +187,10 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
 
   const owner = recipientFromUser(input.owner);
   if (!owner) return { skipped: true as const };
+  const requester = recipientFromUser(input.requester ?? {});
+  const requesterIsOwner =
+    requester?.email.trim().toLowerCase() === owner.email.trim().toLowerCase();
+  const ccRecipients = requester && !requesterIsOwner ? [requester] : [];
 
   const readableStatus = statusLabel(input.status);
   const subject = `Statusupdate Bestellung ${input.orderNumber}: ${readableStatus}`;
@@ -204,6 +208,7 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
 
   await sendGraphMail({
     to: [owner],
+    cc: ccRecipients,
     bcc: opsBccRecipient(),
     subject,
     textBody: body,

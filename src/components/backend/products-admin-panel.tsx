@@ -41,6 +41,7 @@ type ProductFormState = {
   unitStep: string;
   isVisible: boolean;
   categoryIds: string[];
+  storageRoomId: string;
   storageLocationId: string;
   imageUrl: string;
   imageAltText: string;
@@ -73,6 +74,9 @@ function createInitialForm(product: {
     categoryId: string;
   }>;
   storageLocationId: string | null;
+  storageLocation: {
+    storageRoomId: string;
+  } | null;
   images: Array<{
     url: string;
     altText: string | null;
@@ -95,6 +99,7 @@ function createInitialForm(product: {
         ...(product.categoryId ? [product.categoryId] : []),
       ]),
     ),
+    storageRoomId: product.storageLocation?.storageRoomId ?? "",
     storageLocationId: product.storageLocationId ?? "",
     imageUrl: firstImage?.url ?? "",
     imageAltText: firstImage?.altText ?? "",
@@ -114,6 +119,7 @@ function createEmptyCreateForm(): ProductCreateFormState {
     unitStep: "1",
     isVisible: true,
     categoryIds: [],
+    storageRoomId: "",
     storageLocationId: "",
     imageUrl: "",
     imageAltText: "",
@@ -190,6 +196,7 @@ export function ProductsAdminPanel() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [storageRoomFilter, setStorageRoomFilter] = useState("");
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
@@ -218,6 +225,7 @@ export function ProductsAdminPanel() {
     {
       search: searchTerm || undefined,
       categoryId: categoryFilter || undefined,
+      storageRoomId: storageRoomFilter || undefined,
       storageLocationId: storageLocationFilter || undefined,
       limit: 100,
     },
@@ -226,6 +234,7 @@ export function ProductsAdminPanel() {
     },
   );
   const categoriesQuery = api.category.list.useQuery();
+  const storageRoomsQuery = api.storageRoom.list.useQuery();
   const storageLocationsQuery = api.storageLocation.list.useQuery();
 
   const updateMutation = api.product.backendUpdate.useMutation({
@@ -265,6 +274,23 @@ export function ProductsAdminPanel() {
       ),
     [productsQuery.data],
   );
+  const storageLocationsById = useMemo(() => {
+    return new Map((storageLocationsQuery.data ?? []).map((storageLocation) => [storageLocation.id, storageLocation]));
+  }, [storageLocationsQuery.data]);
+  const filteredStorageLocationsForList = useMemo(() => {
+    if (!storageRoomFilter) return storageLocationsQuery.data ?? [];
+    return (storageLocationsQuery.data ?? []).filter(
+      (storageLocation) => storageLocation.storageRoomId === storageRoomFilter,
+    );
+  }, [storageLocationsQuery.data, storageRoomFilter]);
+
+  useEffect(() => {
+    if (!storageRoomFilter || !storageLocationFilter) return;
+    const selectedLocation = storageLocationsById.get(storageLocationFilter);
+    if (!selectedLocation || selectedLocation.storageRoomId !== storageRoomFilter) {
+      setStorageLocationFilter("");
+    }
+  }, [storageRoomFilter, storageLocationFilter, storageLocationsById]);
   const canCreateProduct =
     createForm.name.trim().length > 0 &&
     createForm.sku.trim().length > 0 &&
@@ -276,6 +302,11 @@ export function ProductsAdminPanel() {
     Number(createForm.startingQuantity) >= 0 &&
     Number.isFinite(Number(createForm.unitStep)) &&
     Number(createForm.unitStep) > 0;
+  const selectedCreateRoomId =
+    createForm.storageRoomId || storageLocationsById.get(createForm.storageLocationId)?.storageRoomId || "";
+  const filteredStorageLocationsForCreate = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
+    selectedCreateRoomId ? storageLocation.storageRoomId === selectedCreateRoomId : true,
+  );
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
     if (!file.type.startsWith("image/")) {
@@ -324,7 +355,7 @@ export function ProductsAdminPanel() {
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-3">
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
         <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
           Suche nach Name, SKU oder Beschreibung
           <Input
@@ -351,6 +382,21 @@ export function ProductsAdminPanel() {
           </select>
         </label>
         <label className="mb-1 block text-xs text-muted-foreground">
+          Lagerraum
+          <select
+            value={storageRoomFilter}
+            onChange={(event) => setStorageRoomFilter(event.target.value)}
+            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Alle Lagerraeume</option>
+            {(storageRoomsQuery.data ?? []).map((storageRoom) => (
+              <option key={storageRoom.id} value={storageRoom.id}>
+                {storageRoom.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="mb-1 block text-xs text-muted-foreground">
           Lagerplatz
           <select
             value={storageLocationFilter}
@@ -358,9 +404,9 @@ export function ProductsAdminPanel() {
             className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">Alle Lagerplaetze</option>
-            {(storageLocationsQuery.data ?? []).map((storageLocation) => (
+            {filteredStorageLocationsForList.map((storageLocation) => (
               <option key={storageLocation.id} value={storageLocation.id}>
-                {storageLocation.code} - {storageLocation.name}
+                {storageLocation.code} - {storageLocation.name} ({storageLocation.storageRoom.name})
               </option>
             ))}
           </select>
@@ -411,6 +457,11 @@ export function ProductsAdminPanel() {
               const locationText = product.storageLocation
                 ? `${product.storageLocation.code} - ${product.storageLocation.name}`
                 : "-";
+              const selectedRoomId =
+                form.storageRoomId || storageLocationsById.get(form.storageLocationId)?.storageRoomId || "";
+              const filteredStorageLocationsForForm = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
+                selectedRoomId ? storageLocation.storageRoomId === selectedRoomId : true,
+              );
 
               return (
                 <Fragment key={product.id}>
@@ -651,7 +702,7 @@ export function ProductsAdminPanel() {
                             />
                           </label>
 
-                          <label className="text-xs text-slate-600">
+                          <label className="text-xs text-slate-600 md:row-span-2">
                             Kategorien
                             <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-lg border border-slate-300 bg-white px-2.5 py-2">
                               {(categoriesQuery.data ?? []).map((category) => (
@@ -683,20 +734,54 @@ export function ProductsAdminPanel() {
                           </label>
 
                           <label className="text-xs text-slate-600">
+                            Lagerraum
+                            <select
+                              value={selectedRoomId}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setFormsById((current) => ({
+                                  ...current,
+                                  [product.id]: {
+                                    ...form,
+                                    storageRoomId: event.target.value,
+                                    storageLocationId: "",
+                                  },
+                                }))
+                              }
+                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                            >
+                              <option value="">Kein Lagerraum</option>
+                              {(storageRoomsQuery.data ?? []).map((storageRoom) => (
+                                <option key={storageRoom.id} value={storageRoom.id}>
+                                  {storageRoom.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+
+                          <label className="text-xs text-slate-600">
                             Lagerplatz
                             <select
                               value={form.storageLocationId}
                               onClick={(event) => event.stopPropagation()}
                               onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, storageLocationId: event.target.value },
-                                }))
+                                setFormsById((current) => {
+                                  const selectedLocation = storageLocationsById.get(event.target.value);
+                                  return {
+                                    ...current,
+                                    [product.id]: {
+                                      ...form,
+                                      storageRoomId: selectedLocation?.storageRoomId ?? form.storageRoomId,
+                                      storageLocationId: event.target.value,
+                                    },
+                                  };
+                                })
                               }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                              disabled={!selectedRoomId}
+                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
                             >
-                              <option value="">Kein Lagerplatz</option>
-                              {(storageLocationsQuery.data ?? []).map((storageLocation) => (
+                              <option value="">{selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}</option>
+                              {filteredStorageLocationsForForm.map((storageLocation) => (
                                 <option key={storageLocation.id} value={storageLocation.id}>
                                   {storageLocation.code} - {storageLocation.name}
                                 </option>
@@ -997,7 +1082,7 @@ export function ProductsAdminPanel() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="text-xs text-muted-foreground md:row-span-2">
             Kategorien
             <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-xl border border-input bg-background px-3 py-2">
               {(categoriesQuery.data ?? []).map((category) => (
@@ -1024,16 +1109,45 @@ export function ProductsAdminPanel() {
             </div>
           </label>
           <label className="text-xs text-muted-foreground">
+            Lagerraum
+            <select
+              value={selectedCreateRoomId}
+              onChange={(event) =>
+                setCreateForm((current) => ({
+                  ...current,
+                  storageRoomId: event.target.value,
+                  storageLocationId: "",
+                }))
+              }
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+            >
+              <option value="">Kein Lagerraum</option>
+              {(storageRoomsQuery.data ?? []).map((storageRoom) => (
+                <option key={storageRoom.id} value={storageRoom.id}>
+                  {storageRoom.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
             Lagerplatz
             <select
               value={createForm.storageLocationId}
               onChange={(event) =>
-                setCreateForm((current) => ({ ...current, storageLocationId: event.target.value }))
+                setCreateForm((current) => {
+                  const selectedLocation = storageLocationsById.get(event.target.value);
+                  return {
+                    ...current,
+                    storageRoomId: selectedLocation?.storageRoomId ?? current.storageRoomId,
+                    storageLocationId: event.target.value,
+                  };
+                })
               }
+              disabled={!selectedCreateRoomId}
               className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
             >
-              <option value="">Kein Lagerplatz</option>
-              {(storageLocationsQuery.data ?? []).map((storageLocation) => (
+              <option value="">{selectedCreateRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}</option>
+              {filteredStorageLocationsForCreate.map((storageLocation) => (
                 <option key={storageLocation.id} value={storageLocation.id}>
                   {storageLocation.code} - {storageLocation.name}
                 </option>

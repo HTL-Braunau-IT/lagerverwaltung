@@ -13,6 +13,7 @@ const roleByGroup = {
 } as const;
 
 type AppRole = "ADMIN" | "TEACHER" | "STUDENT";
+type RoleSource = "token" | "graph-fallback" | "none";
 
 const resolveRoleFromGroups = (groups: unknown): "ADMIN" | "TEACHER" | "STUDENT" | null => {
   if (!Array.isArray(groups)) return null;
@@ -87,6 +88,58 @@ const hasGroupOverageClaim = (idTokenClaims: Record<string, unknown> | null): bo
   );
 };
 
+const resolveRoleAndAzureMetadata = async ({
+  profile,
+  account,
+  emailForLogs,
+}: {
+  profile: unknown;
+  account: { id_token?: string | null } | null | undefined;
+  emailForLogs: string | null;
+}): Promise<{
+  role: AppRole | null;
+  roleSource: RoleSource;
+  groupsInToken: number;
+  hasGroupOverage: boolean;
+  azureAdObjectId: string | null;
+  attemptedGraphFallback: boolean;
+}> => {
+  const idTokenClaims = decodeJwtPayload(account?.id_token);
+  const groups = extractGroupsFromClaims(profile, idTokenClaims);
+  const azureAdObjectId = extractAzureObjectId(profile, idTokenClaims);
+  const hasGroupOverage = hasGroupOverageClaim(idTokenClaims);
+
+  let role: AppRole | null = resolveRoleFromGroups(groups);
+  let roleSource: RoleSource = role ? "token" : "none";
+  const attemptedGraphFallback = Boolean(azureAdObjectId && (hasGroupOverage || groups.length === 0));
+
+  if (!role && attemptedGraphFallback && azureAdObjectId) {
+    try {
+      role = await resolveRoleFromGraphMembership(azureAdObjectId);
+      if (role) {
+        roleSource = "graph-fallback";
+      }
+    } catch (error) {
+      console.warn("[auth] Graph-Fallback zur Rollenaufloesung fehlgeschlagen", {
+        email: emailForLogs,
+        azureAdObjectId,
+        reason: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+        hasGroupOverage,
+        groupsInToken: groups.length,
+      });
+    }
+  }
+
+  return {
+    role,
+    roleSource,
+    groupsInToken: groups.length,
+    hasGroupOverage,
+    azureAdObjectId,
+    attemptedGraphFallback,
+  };
+};
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: { strategy: "database" },
@@ -104,103 +157,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, profile, account }) {
-      const userByEmail = user.email
-        ? await db.user.findUnique({
-            where: { email: user.email },
-            select: { id: true },
-          })
-        : null;
-
-      if (userByEmail && account?.provider && account.providerAccountId) {
-        await db.account.upsert({
-          where: {
-            provider_providerAccountId: {
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-            },
-          },
-          update: {
-            userId: userByEmail.id,
-            access_token: account.access_token ?? null,
-            refresh_token: account.refresh_token ?? null,
-            id_token: account.id_token ?? null,
-            scope: account.scope ?? null,
-            token_type: account.token_type ?? null,
-            expires_at: account.expires_at ?? null,
-            session_state:
-              typeof account.session_state === "string" ? account.session_state : null,
-          },
-          create: {
-            userId: userByEmail.id,
-            type: account.type,
-            provider: account.provider,
-            providerAccountId: account.providerAccountId,
-            access_token: account.access_token ?? null,
-            refresh_token: account.refresh_token ?? null,
-            id_token: account.id_token ?? null,
-            scope: account.scope ?? null,
-            token_type: account.token_type ?? null,
-            expires_at: account.expires_at ?? null,
-            session_state:
-              typeof account.session_state === "string" ? account.session_state : null,
-          },
-        });
+    async signIn({ user, account }) {
+      if (account && "ext_expires_in" in account) {
+        delete (account as Record<string, unknown>).ext_expires_in;
       }
-
-      const idTokenClaims = decodeJwtPayload(account?.id_token);
-      const groups = extractGroupsFromClaims(profile, idTokenClaims);
-      const azureAdObjectId = extractAzureObjectId(profile, idTokenClaims);
-      const hasGroupOverage = hasGroupOverageClaim(idTokenClaims);
-      let role: AppRole | null = resolveRoleFromGroups(groups);
-      let roleSource: "token" | "graph-fallback" | "none" = "none";
-      if (role) roleSource = "token";
       if (!user.email) {
+        console.warn("[auth] Sign-in abgelehnt: E-Mail fehlt", {
+          provider: account?.provider ?? "unknown",
+          hasUserId: Boolean(user.id),
+        });
         return false;
       }
-
-      if (!role && azureAdObjectId && (hasGroupOverage || groups.length === 0)) {
-        try {
-          role = await resolveRoleFromGraphMembership(azureAdObjectId);
-          if (role) {
-            roleSource = "graph-fallback";
-          }
-        } catch (error) {
-          console.warn("[auth] Graph-Fallback zur Rollenaufloesung fehlgeschlagen", {
-            email: user.email,
-            azureAdObjectId,
-            reason: error instanceof Error ? error.message : "UNKNOWN_ERROR",
-            hasGroupOverage,
-            groupsInToken: groups.length,
-          });
-        }
-      }
-
-      if (!role) {
-        console.warn("[auth] Keine passende Rollen-Gruppe gefunden", {
-          email: user.email,
-          groupsInToken: groups.length,
-          hasGroupOverage,
-          attemptedGraphFallback: Boolean(azureAdObjectId && (hasGroupOverage || groups.length === 0)),
-        });
-        // Do not block sign-in here, otherwise account linking/user creation can fail.
-        // Access control is enforced by app role checks in server procedures/routes.
-        return true;
-      }
-
-      await db.user.updateMany({
-        where: { email: user.email },
-        data: { role, emailVerified: new Date(), azureAdObjectId },
-      });
-
-      console.info("[auth] Rolle zugewiesen", {
-        email: user.email,
-        role,
-        source: roleSource,
-        groupsInToken: groups.length,
-        hasGroupOverage,
-      });
-
       return true;
     },
     session({ session, user }) {
@@ -212,6 +179,68 @@ export const authOptions: NextAuthOptions = {
         session.user.azureAdObjectId = azureAdObjectId ?? null;
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      if (!user.id) {
+        console.warn("[auth] Sign-in Event ohne user.id", {
+          provider: account?.provider ?? "unknown",
+          email: user.email ?? null,
+          isNewUser,
+        });
+        return;
+      }
+
+      const roleData = await resolveRoleAndAzureMetadata({
+        profile,
+        account,
+        emailForLogs: user.email ?? null,
+      });
+
+      const data: {
+        emailVerified: Date;
+        role?: AppRole;
+        azureAdObjectId?: string;
+      } = {
+        emailVerified: new Date(),
+      };
+
+      if (roleData.role) {
+        data.role = roleData.role;
+      }
+      if (roleData.azureAdObjectId) {
+        data.azureAdObjectId = roleData.azureAdObjectId;
+      }
+
+      await db.user.update({
+        where: { id: user.id },
+        data,
+      });
+
+      if (!roleData.role) {
+        console.warn("[auth] Keine passende Rollen-Gruppe gefunden", {
+          provider: account?.provider ?? "unknown",
+          userId: user.id,
+          email: user.email ?? null,
+          isNewUser,
+          groupsInToken: roleData.groupsInToken,
+          hasGroupOverage: roleData.hasGroupOverage,
+          attemptedGraphFallback: roleData.attemptedGraphFallback,
+        });
+        return;
+      }
+
+      console.info("[auth] Rolle zugewiesen", {
+        provider: account?.provider ?? "unknown",
+        userId: user.id,
+        email: user.email ?? null,
+        isNewUser,
+        role: roleData.role,
+        source: roleData.roleSource,
+        groupsInToken: roleData.groupsInToken,
+        hasGroupOverage: roleData.hasGroupOverage,
+      });
     },
   },
 };

@@ -6,8 +6,9 @@ import { api } from "~/trpc/react";
 
 const entries = [
   { href: "/backend/orders", label: "Bestellungen" },
+  { href: "/backend/users", label: "Benutzer" },
   { href: "/backend/cost-centers", label: "Kostenstellen" },
-  { href: "/backend", label: "Produkte" },
+  { href: "/backend/products", label: "Produkte" },
   { href: "/backend/categories", label: "Kategorien" },
   { href: "/backend/storage", label: "Lagerplaetze" },
   { href: "/backend/parts-list", label: "Teilelisten" },

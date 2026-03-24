@@ -76,11 +76,13 @@ model StorageLocation {
 }
 
 model StorageRoom {
-  id               String            @id @default(cuid())
-  name             String            @unique
+  id               String                  @id @default(cuid())
+  name             String                  @unique
   storageLocations StorageLocation[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  userAccesses     UserStorageRoomAccess[]
+  orders           Order[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
 }
 
 model Product {
@@ -161,10 +163,13 @@ model Order {
   orderNumber      String        @unique
   userId           String
   costCenterId     String
+  storageRoomId    String
   sourcePartListId String?
+  workerNote       String?
   status           OrderStatus   @default(OPEN)
   user             User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   costCenter       CostCenter    @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  storageRoom      StorageRoom   @relation(fields: [storageRoomId], references: [id], onDelete: Restrict)
   sourcePartList   PartList?     @relation(fields: [sourcePartListId], references: [id], onDelete: SetNull)
   items            OrderItem[]
   sourceRequest    OrderRequest?
@@ -173,6 +178,7 @@ model Order {
 
   @@index([userId])
   @@index([costCenterId])
+  @@index([storageRoomId])
   @@index([sourcePartListId])
   @@index([status])
   @@index([createdAt])
@@ -231,6 +237,7 @@ model OrderRequest {
   teacherExternalId  String
   teacherDisplayName String
   teacherEmail       String
+  workerNote         String?
   status             RequestStatus      @default(PENDING)
   approvedOrderId    String?            @unique
   student            User               @relation("OrderRequestsAsStudent", fields: [studentId], references: [id], onDelete: Restrict)
@@ -345,22 +352,36 @@ model SavedCartItem {
 }
 
 model User {
-  id                     String                @id @default(cuid())
-  name                   String?
-  email                  String?               @unique
-  azureAdObjectId        String?               @unique
-  emailVerified          DateTime?
-  image                  String?
-  role                   AppRole               @default(STUDENT)
-  accounts               Account[]
-  sessions               Session[]
-  savedCarts             SavedCart[]
-  orders                 Order[]
-  orderRequestsAsStudent OrderRequest[]        @relation("OrderRequestsAsStudent")
-  orderRequestsAsTeacher OrderRequest[]        @relation("OrderRequestsAsTeacher")
-  stockBookings          ProductStockBooking[]
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
+  id                      String                  @id @default(cuid())
+  name                    String?
+  email                   String?                 @unique
+  azureAdObjectId         String?                 @unique
+  emailVerified           DateTime?
+  image                   String?
+  role                    AppRole                 @default(STUDENT)
+  hasAllStorageRoomAccess Boolean                 @default(false)
+  accounts                Account[]
+  sessions                Session[]
+  storageRoomAccesses     UserStorageRoomAccess[]
+  savedCarts              SavedCart[]
+  orders                  Order[]
+  orderRequestsAsStudent  OrderRequest[]          @relation("OrderRequestsAsStudent")
+  orderRequestsAsTeacher  OrderRequest[]          @relation("OrderRequestsAsTeacher")
+  stockBookings           ProductStockBooking[]
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+}
+
+model UserStorageRoomAccess {
+  id            String      @id @default(cuid())
+  userId        String
+  storageRoomId String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storageRoom   StorageRoom @relation(fields: [storageRoomId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, storageRoomId])
+  @@index([storageRoomId])
 }
 
 model Account {

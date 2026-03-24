@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   );
   const [costCenterId, setCostCenterId] = useState("");
   const [teacherExternalId, setTeacherExternalId] = useState("");
+  const [workerNote, setWorkerNote] = useState("");
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -52,12 +53,14 @@ export default function CheckoutPage() {
 
   const currentRole = session?.user.role;
   const isStudentCheckout = currentRole === "STUDENT";
+  const trimmedWorkerNote = workerNote.trim();
 
   const itemCount = useMemo(() => cartQuery.data?.items.length ?? 0, [cartQuery.data?.items.length]);
 
   const canSubmit =
     sessionId.length > 0 &&
     (!isStudentCheckout ? costCenterId.length > 0 : teacherExternalId.length > 0) &&
+    (!isStudentCheckout || trimmedWorkerNote.length > 0) &&
     itemCount > 0 &&
     !checkoutMutation.isPending &&
     !submitForTeacherApprovalMutation.isPending &&
@@ -126,6 +129,36 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        <div className="mt-5 space-y-2">
+          <label htmlFor="worker-note" className="block text-sm font-medium text-slate-800">
+            Hinweis fuer Lager {isStudentCheckout ? "(Pflichtfeld)" : "(optional)"}
+          </label>
+          <textarea
+            id="worker-note"
+            value={workerNote}
+            onChange={(event) => setWorkerNote(event.target.value)}
+            maxLength={500}
+            rows={4}
+            placeholder={
+              isStudentCheckout
+                ? "Bitte gib relevante Infos fuer das Lager ein (z. B. Klasse, Projekt, Dringlichkeit)."
+                : "Optionale Infos fuer das Lager (z. B. Abholung durch Kollegin)."
+            }
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+          />
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              {isStudentCheckout
+                ? "Schueler muessen einen Hinweis fuer das Lager angeben."
+                : "Fuer Lehrpersonen/Admins ist der Hinweis optional."}
+            </span>
+            <span>{trimmedWorkerNote.length}/500</span>
+          </div>
+          {isStudentCheckout && trimmedWorkerNote.length === 0 ? (
+            <p className="text-sm text-rose-700">Bitte gib einen Hinweis fuer das Lager ein.</p>
+          ) : null}
+        </div>
+
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
           Aktuelle Artikel im Warenkorb: <span className="font-semibold text-slate-900">{itemCount}</span>
         </div>
@@ -133,10 +166,18 @@ export default function CheckoutPage() {
         <button
           onClick={() => {
             if (isStudentCheckout) {
-              submitForTeacherApprovalMutation.mutate({ sessionId, teacherExternalId });
+              submitForTeacherApprovalMutation.mutate({
+                sessionId,
+                teacherExternalId,
+                workerNote: trimmedWorkerNote || undefined,
+              });
               return;
             }
-            checkoutMutation.mutate({ sessionId, costCenterId });
+            checkoutMutation.mutate({
+              sessionId,
+              costCenterId,
+              workerNote: trimmedWorkerNote || undefined,
+            });
           }}
           disabled={!canSubmit}
           className="mt-5 w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
@@ -172,6 +213,13 @@ export default function CheckoutPage() {
               Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.
             </p>
           )}
+        {submitForTeacherApprovalMutation.data &&
+          !submitForTeacherApprovalMutation.data.ok &&
+          submitForTeacherApprovalMutation.data.reason === "MIXED_STORAGE_ROOMS" && (
+            <p className="mt-3 text-sm text-rose-700">
+              Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.
+            </p>
+          )}
         {submitForTeacherApprovalMutation.error && (
           <p className="mt-3 text-sm text-rose-700">
             Anfrage fehlgeschlagen. Bitte pruefe deine Eingaben und versuche es erneut.
@@ -198,6 +246,13 @@ export default function CheckoutPage() {
           checkoutMutation.data.reason === "INSUFFICIENT_STOCK" && (
             <p className="mt-3 text-sm text-rose-700">
               Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.
+            </p>
+          )}
+        {checkoutMutation.data &&
+          !checkoutMutation.data.ok &&
+          checkoutMutation.data.reason === "MIXED_STORAGE_ROOMS" && (
+            <p className="mt-3 text-sm text-rose-700">
+              Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.
             </p>
           )}
         {checkoutMutation.error && (

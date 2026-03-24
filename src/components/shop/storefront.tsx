@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type SVGProps, useEffect, useMemo, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
@@ -40,6 +41,24 @@ function formatStock(value: unknown, baseUnit: string) {
   return `${decimalToNumber(value)} ${baseUnit.toLowerCase()}`;
 }
 
+function toMixedStorageRoomWarning(message: string | null | undefined): string | null {
+  if (!message) return null;
+  if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
+    const [, existingRoom, incomingRoom] = message.split(":");
+    if (existingRoom && incomingRoom) {
+      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufuegst.`;
+    }
+    return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
+  }
+  if (message === "MIXED_STORAGE_ROOMS") {
+    return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
+  }
+  if (message.startsWith("PRODUCT_WITHOUT_STORAGE_ROOM:")) {
+    return "Dieses Produkt ist keinem Lagerraum zugeordnet und kann nicht in den Warenkorb gelegt werden.";
+  }
+  return null;
+}
+
 function WastebinIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
@@ -53,6 +72,7 @@ function WastebinIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export function Storefront() {
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = api.useUtils();
@@ -67,9 +87,12 @@ export function Storefront() {
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
+  const [cartRoomWarning, setCartRoomWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const canSeePartListProductCount =
+    session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
   // Match the natural top spacing of the content (main has `py-6` => 24px),
   // so the asides align with the product grid initially and keep that gap when sticky.
   const stickyTopOffset = 24;
@@ -125,6 +148,14 @@ export function Storefront() {
       await utils.cart.get.invalidate({ sessionId });
       setShowCartModal(true);
       setActiveAddProductId(null);
+      setCartRoomWarning(null);
+    },
+    onError: (error) => {
+      const warning = toMixedStorageRoomWarning(error.message);
+      if (warning) {
+        setCartRoomWarning(warning);
+      }
+      setActiveAddProductId(null);
     },
   });
   const addPartListMutation = api.cart.addPartList.useMutation({
@@ -134,6 +165,7 @@ export function Storefront() {
 
       if (result.ok) {
         setPartListWarning(null);
+        setCartRoomWarning(null);
         setShowCartModal(true);
         return;
       }
@@ -143,6 +175,14 @@ export function Storefront() {
         return;
       }
 
+      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
+    },
+    onError: (error) => {
+      const warning = toMixedStorageRoomWarning(error.message);
+      if (warning) {
+        setPartListWarning(warning);
+        return;
+      }
       setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
@@ -225,103 +265,109 @@ export function Storefront() {
             maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
-          <div>
-            <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
-            {partListWarning ? (
-              <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-                {partListWarning}
-              </div>
-            ) : null}
-            {partListsQuery.isLoading ? (
-              <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
-            ) : null}
-            {partListsQuery.error ? (
-              <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
-            ) : null}
-            {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
-              <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
-            ) : null}
-            <div className="space-y-2">
-              {(partListsQuery.data ?? []).map((partList) => {
-                const quantityInput = quantitiesByPartList[partList.id] ?? "1";
-                return (
-                  <div
-                    key={partList.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => router.push(`/parts-list/${partList.id}`)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        router.push(`/parts-list/${partList.id}`);
-                      }
-                    }}
-                    className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitBoxOrient: "vertical",
-                          WebkitLineClamp: 3,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {partList.name}
-                      </p>
-                      <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
-                        <span aria-hidden="true" className="text-muted-foreground">
-                          |
-                        </span>
-                        <span>{partList.items.length} Produkte</span>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={quantityInput}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={(event) =>
-                          setQuantitiesByPartList((prev) => ({
-                            ...prev,
-                            [partList.id]: event.target.value,
-                          }))
-                        }
-                        className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-                        aria-label={`Menge fuer Teileliste ${partList.name}`}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 flex-1 text-xs"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
-                          setPartListWarning(null);
-                          setActiveAddPartListId(partList.id);
-                          addPartListMutation.mutate({
-                            sessionId,
-                            partListId: partList.id,
-                            quantity: requestedQuantity,
-                          });
-                        }}
-                        disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                      >
-                        {addPartListMutation.isPending && activeAddPartListId === partList.id ? (
-                          "..."
-                        ) : (
-                          "In den Warenkorb"
-                        )}
-                      </Button>
-                    </div>
+          {canSeePartListProductCount ? (
+            <>
+              <div>
+                <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Teilelisten
+                </p>
+                {partListWarning ? (
+                  <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                    {partListWarning}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="my-4 border-t border-border" />
+                ) : null}
+                {partListsQuery.isLoading ? (
+                  <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
+                ) : null}
+                {partListsQuery.error ? (
+                  <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
+                ) : null}
+                {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
+                  <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
+                ) : null}
+                <div className="space-y-2">
+                  {(partListsQuery.data ?? []).map((partList) => {
+                    const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                    return (
+                      <div
+                        key={partList.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(`/parts-list/${partList.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(`/parts-list/${partList.id}`);
+                          }
+                        }}
+                        className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 3,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {partList.name}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                            <span aria-hidden="true" className="text-muted-foreground">
+                              |
+                            </span>
+                            <span>{partList.items.length} Produkte</span>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={quantityInput}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              setQuantitiesByPartList((prev) => ({
+                                ...prev,
+                                [partList.id]: event.target.value,
+                              }))
+                            }
+                            className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                            aria-label={`Menge fuer Teileliste ${partList.name}`}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 flex-1 text-xs"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                              setPartListWarning(null);
+                              setActiveAddPartListId(partList.id);
+                              addPartListMutation.mutate({
+                                sessionId,
+                                partListId: partList.id,
+                                quantity: requestedQuantity,
+                              });
+                            }}
+                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
+                          >
+                            {addPartListMutation.isPending && activeAddPartListId === partList.id ? (
+                              "..."
+                            ) : (
+                              "In den Warenkorb"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="my-4 border-t border-border" />
+            </>
+          ) : null}
           <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
           <nav className="space-y-1">
             <Button
@@ -575,6 +621,11 @@ export function Storefront() {
         >
           <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
           <p className="mt-1 text-xs text-muted-foreground">Aktuelle Produktpreise aktiviert</p>
+          {cartRoomWarning ? (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+              {cartRoomWarning}
+            </div>
+          ) : null}
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && (
               <div className="rounded-xl border border-border bg-muted p-3">

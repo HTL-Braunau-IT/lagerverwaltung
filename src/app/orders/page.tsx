@@ -37,7 +37,10 @@ function userLabel(user: { name: string | null; email: string | null }) {
 
 export default function OrdersPage() {
   const { data: session } = useSession();
-  const ordersQuery = api.cart.listMyOrders.useQuery();
+  const showOwnOrders = !!session?.user.role && session.user.role !== "STUDENT";
+  const ordersQuery = api.cart.listMyOrders.useQuery(undefined, {
+    enabled: showOwnOrders,
+  });
   const submittedRequestsQuery = api.cart.listMySubmittedRequests.useQuery(undefined, {
     enabled: session?.user.role === "STUDENT",
   });
@@ -128,6 +131,18 @@ export default function OrdersPage() {
                         {request.approvedOrder?.orderNumber ?? "-"}
                       </p>
                     </div>
+                    {request.approvedOrder ? (
+                      <p className="mt-2 text-sm text-slate-700">
+                        <span className="text-slate-500">Bestellstatus: </span>
+                        {formatStatus(request.approvedOrder.status)}
+                      </p>
+                    ) : null}
+                    {request.status === "REJECTED" ? (
+                      <p className="mt-2 text-xs text-rose-700">
+                        Die Lehrperson hat diese Anfrage abgelehnt. Bitte passe den Warenkorb an und sende eine neue
+                        Anfrage.
+                      </p>
+                    ) : null}
                   </div>
                 );
               })}
@@ -135,89 +150,93 @@ export default function OrdersPage() {
           </article>
         )}
 
-        {ordersQuery.isLoading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
-            Bestellungen werden geladen...
-          </div>
-        )}
+        {showOwnOrders ? (
+          <>
+            {ordersQuery.isLoading && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
+                Bestellungen werden geladen...
+              </div>
+            )}
 
-        {ordersQuery.error && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900 shadow-sm">
-            <p className="text-sm font-semibold">Bestellungen konnten nicht geladen werden.</p>
-            <button
-              onClick={() => void ordersQuery.refetch()}
-              className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100"
-            >
-              Erneut laden
-            </button>
-          </div>
-        )}
+            {ordersQuery.error && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900 shadow-sm">
+                <p className="text-sm font-semibold">Bestellungen konnten nicht geladen werden.</p>
+                <button
+                  onClick={() => void ordersQuery.refetch()}
+                  className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100"
+                >
+                  Erneut laden
+                </button>
+              </div>
+            )}
 
-        {!ordersQuery.isLoading && !ordersQuery.error && (ordersQuery.data?.length ?? 0) === 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm">
-            <p className="text-sm font-semibold">Noch keine Bestellungen vorhanden.</p>
-            <p className="mt-1 text-sm text-slate-500">
-              Sobald du im Checkout bestellst, erscheinen deine Eintraege hier.
-            </p>
-          </div>
-        )}
+            {!ordersQuery.isLoading && !ordersQuery.error && (ordersQuery.data?.length ?? 0) === 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm">
+                <p className="text-sm font-semibold">Noch keine Bestellungen vorhanden.</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Sobald du im Checkout bestellst, erscheinen deine Eintraege hier.
+                </p>
+              </div>
+            )}
 
-        {ordersQuery.data?.map((order) => {
-          const itemCount = order.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
+            {ordersQuery.data?.map((order) => {
+              const itemCount = order.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
-          return (
-            <article key={order.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">Bestellnummer</p>
-                  <h2 className="text-lg font-semibold text-slate-900">{order.orderNumber}</h2>
-                  {order.sourceRequest ? (
-                    <div className="mt-2 space-y-1">
-                      <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
-                        Aus Schuelerfreigabe
-                      </span>
-                      <p className="text-xs text-slate-600">
-                        Schueler: {userLabel(order.sourceRequest.student)}
-                      </p>
+              return (
+                <article key={order.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-slate-500">Bestellnummer</p>
+                      <h2 className="text-lg font-semibold text-slate-900">{order.orderNumber}</h2>
+                      {order.sourceRequest ? (
+                        <div className="mt-2 space-y-1">
+                          <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
+                            Aus Schuelerfreigabe
+                          </span>
+                          <p className="text-xs text-slate-600">
+                            Schueler: {userLabel(order.sourceRequest.student)}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                </div>
-                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
-                  {formatStatus(order.status)}
-                </span>
-              </div>
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
+                      {formatStatus(order.status)}
+                    </span>
+                  </div>
 
-              <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                <p>
-                  <span className="text-slate-500">Datum: </span>
-                  {formatOrderDate(order.createdAt)}
-                </p>
-                <p>
-                  <span className="text-slate-500">Kostenstelle: </span>
-                  {order.costCenter.code} - {order.costCenter.name}
-                </p>
-                <p>
-                  <span className="text-slate-500">Artikel gesamt: </span>
-                  {itemCount}
-                </p>
-              </div>
+                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+                    <p>
+                      <span className="text-slate-500">Datum: </span>
+                      {formatOrderDate(order.createdAt)}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Kostenstelle: </span>
+                      {order.costCenter.code} - {order.costCenter.name}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Artikel gesamt: </span>
+                      {itemCount}
+                    </p>
+                  </div>
 
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-sm font-medium text-slate-800">Positionen</p>
-                <ul className="mt-2 space-y-2">
-                  {order.items.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-3 text-sm text-slate-700">
-                      <span>{item.product.name}</span>
-                      <span className="font-medium text-slate-900">
-                        {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </article>
-          );
-        })}
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-sm font-medium text-slate-800">Positionen</p>
+                    <ul className="mt-2 space-y-2">
+                      {order.items.map((item) => (
+                        <li key={item.id} className="flex items-center justify-between gap-3 text-sm text-slate-700">
+                          <span>{item.product.name}</span>
+                          <span className="font-medium text-slate-900">
+                            {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              );
+            })}
+          </>
+        ) : null}
       </section>
     </main>
   );

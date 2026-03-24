@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
@@ -45,11 +46,14 @@ function formatDecimal(value: number, fractionDigits = 3) {
 }
 
 export default function ProductDetailPage() {
+  const { data: session } = useSession();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = params.id;
   const [sessionId, setSessionId] = useState("");
+  const canSeePartListProductCount =
+    session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
 
   const utils = api.useUtils();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
@@ -219,101 +223,107 @@ export default function ProductDetailPage() {
             maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
-          <div>
-            <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
-            {partListWarning ? (
-              <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-                {partListWarning}
-              </div>
-            ) : null}
-            {partListsQuery.isLoading ? (
-              <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
-            ) : null}
-            {partListsQuery.error ? (
-              <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
-            ) : null}
-            {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
-              <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
-            ) : null}
-            <div className="space-y-2">
-              {(partListsQuery.data ?? []).map((partList) => {
-                const quantityForPartList = quantitiesByPartList[partList.id] ?? "1";
-                return (
-                  <div
-                    key={partList.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => router.push(`/parts-list/${partList.id}`)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        router.push(`/parts-list/${partList.id}`);
-                      }
-                    }}
-                    className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitBoxOrient: "vertical",
-                          WebkitLineClamp: 3,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {partList.name}
-                      </p>
-                      <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
-                        <span aria-hidden="true" className="text-muted-foreground">
-                          |
-                        </span>
-                        <span>{partList.items.length} Produkte</span>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={quantityForPartList}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={(event) =>
-                          setQuantitiesByPartList((prev) => ({
-                            ...prev,
-                            [partList.id]: event.target.value,
-                          }))
-                        }
-                        className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-                        aria-label={`Menge fuer Teileliste ${partList.name}`}
-                      />
-                      <Button
-                        size="sm"
-                        className="h-8 flex-1 text-xs"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          const requestedQuantity = Math.max(1, Math.floor(Number(quantityForPartList) || 1));
-                          setPartListWarning(null);
-                          setActiveAddPartListId(partList.id);
-                          addPartListMutation.mutate({
-                            sessionId,
-                            partListId: partList.id,
-                            quantity: requestedQuantity,
-                          });
-                        }}
-                        disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                      >
-                        {addPartListMutation.isPending && activeAddPartListId === partList.id
-                          ? "..."
-                          : "In den Warenkorb"}
-                      </Button>
-                    </div>
+          {canSeePartListProductCount ? (
+            <>
+              <div>
+                <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Teilelisten
+                </p>
+                {partListWarning ? (
+                  <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+                    {partListWarning}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="my-4 border-t border-border" />
+                ) : null}
+                {partListsQuery.isLoading ? (
+                  <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
+                ) : null}
+                {partListsQuery.error ? (
+                  <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
+                ) : null}
+                {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
+                  <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
+                ) : null}
+                <div className="space-y-2">
+                  {(partListsQuery.data ?? []).map((partList) => {
+                    const quantityForPartList = quantitiesByPartList[partList.id] ?? "1";
+                    return (
+                      <div
+                        key={partList.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push(`/parts-list/${partList.id}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            router.push(`/parts-list/${partList.id}`);
+                          }
+                        }}
+                        className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 3,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {partList.name}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                            <span aria-hidden="true" className="text-muted-foreground">
+                              |
+                            </span>
+                            <span>{partList.items.length} Produkte</span>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={quantityForPartList}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              setQuantitiesByPartList((prev) => ({
+                                ...prev,
+                                [partList.id]: event.target.value,
+                              }))
+                            }
+                            className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                            aria-label={`Menge fuer Teileliste ${partList.name}`}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 flex-1 text-xs"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityForPartList) || 1));
+                              setPartListWarning(null);
+                              setActiveAddPartListId(partList.id);
+                              addPartListMutation.mutate({
+                                sessionId,
+                                partListId: partList.id,
+                                quantity: requestedQuantity,
+                              });
+                            }}
+                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
+                          >
+                            {addPartListMutation.isPending && activeAddPartListId === partList.id
+                              ? "..."
+                              : "In den Warenkorb"}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="my-4 border-t border-border" />
+            </>
+          ) : null}
           <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
           <nav className="space-y-1">
             <Button

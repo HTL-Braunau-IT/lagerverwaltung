@@ -183,7 +183,16 @@ export function OrdersAdminPanel() {
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
                     className="cursor-pointer"
                   >
-                    <TableCell className="font-medium text-foreground">{order.orderNumber}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>{order.orderNumber}</span>
+                        {order.workerNote ? (
+                          <span className="inline-flex items-center rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-orange-800">
+                            Hinweis
+                          </span>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       <p>{userLabel(order.user)}</p>
                       {order.sourceRequest?.student ? (
@@ -279,6 +288,17 @@ export function OrdersAdminPanel() {
                                 </p>
                               </div>
                             </div>
+
+                            {expandedOrderQuery.data.workerNote ? (
+                              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
+                                  Hinweis fuer Lager
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-orange-900">
+                                  {expandedOrderQuery.data.workerNote}
+                                </p>
+                              </div>
+                            ) : null}
 
                             <div className="rounded-xl border border-border bg-card p-3">
                               <p className="text-sm font-semibold text-foreground">Positionen</p>

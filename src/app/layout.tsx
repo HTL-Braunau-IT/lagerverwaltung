@@ -12,6 +12,7 @@ import {
   OrdersIcon,
 } from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
+import { db } from "~/server/db";
 import { TRPCReactProvider } from "~/trpc/react";
 
 export const metadata: Metadata = {
@@ -36,16 +37,27 @@ type HeaderNavLinkProps = {
   label: string;
   hoverClassName: string;
   icon: React.ReactNode;
+  badgeLabel?: string;
 };
 
-function HeaderNavLink({ href, label, hoverClassName, icon }: HeaderNavLinkProps) {
+function HeaderNavLink({ href, label, hoverClassName, icon, badgeLabel }: HeaderNavLinkProps) {
   return (
     <Link
       href={href}
       className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
     >
       <span className="flex h-10 w-10 items-center justify-center">{icon}</span>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+        {label}
+        {badgeLabel ? (
+          <span
+            className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
+            aria-label={`${badgeLabel} offene Freigaben`}
+          >
+            {badgeLabel}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }
@@ -54,6 +66,25 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await auth();
+  const canSeeApprovals = session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
+  const assignedRequestsWhere =
+    session?.user.role === "ADMIN"
+      ? { status: "PENDING" as const }
+      : {
+          status: "PENDING" as const,
+          OR: [
+            { teacherUserId: session?.user.id ?? "" },
+            ...(session?.user.azureAdObjectId
+              ? [{ teacherExternalId: session.user.azureAdObjectId }]
+              : []),
+          ],
+        };
+  const openApprovalsCount = canSeeApprovals
+    ? await db.orderRequest.count({
+        where: assignedRequestsWhere,
+      })
+    : 0;
+  const openApprovalsLabel = openApprovalsCount > 99 ? "99+" : String(openApprovalsCount);
 
   return (
     <html lang="de" className={inter.variable}>
@@ -89,6 +120,7 @@ export default async function RootLayout({
                       label="Freigaben"
                       hoverClassName="hover:text-emerald-600"
                       icon={<ApprovalsIcon />}
+                      badgeLabel={openApprovalsCount > 0 ? openApprovalsLabel : undefined}
                     />
                   ) : null}
                   {session.user.role === "ADMIN" ? (

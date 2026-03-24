@@ -2,6 +2,12 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { adminProcedure, createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  assertProductsAccessibleByRoomAccess,
+  assertStorageRoomAllowed,
+  getStorageRoomAccessForUser,
+  productRoomWhereForAccess,
+} from "~/server/api/routers/utils/storage-access";
 
 function isValidImageUrl(value: string): boolean {
   const trimmed = value.trim();
@@ -19,6 +25,7 @@ const listProductsInput = z.object({
 const backendListProductsInput = z.object({
   search: z.string().trim().optional(),
   categoryId: z.string().min(1).optional(),
+  storageRoomId: z.string().min(1).optional(),
   storageLocationId: z.string().min(1).optional(),
   limit: z.number().int().min(1).max(300).default(100),
   cursor: z.string().min(1).optional(),
@@ -198,8 +205,10 @@ export const productRouter = createTRPCRouter({
   backendList: adminProcedure
     .input(backendListProductsInput)
     .query(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
       const search = input.search?.trim();
       const andFilters: Array<Record<string, unknown>> = [];
+      const roomWhere = productRoomWhereForAccess(access);
 
       if (search) {
         andFilters.push({
@@ -218,8 +227,14 @@ export const productRouter = createTRPCRouter({
           ],
         });
       }
+      if (input.storageRoomId) {
+        andFilters.push({ storageLocation: { storageRoomId: input.storageRoomId } });
+      }
       if (input.storageLocationId) {
         andFilters.push({ storageLocationId: input.storageLocationId });
+      }
+      if (roomWhere) {
+        andFilters.push(roomWhere);
       }
       const where = andFilters.length > 0 ? { AND: andFilters } : undefined;
 
@@ -258,6 +273,7 @@ export const productRouter = createTRPCRouter({
               id: true,
               code: true,
               name: true,
+              storageRoomId: true,
             },
           },
           images: {
@@ -284,6 +300,30 @@ export const productRouter = createTRPCRouter({
   backendUpdate: adminProcedure
     .input(updateProductInput)
     .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.id]);
+
+      if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Produkte muessen einem erlaubten Lagerraum zugeordnet sein.",
+        });
+      }
+
+      if (input.storageLocationId) {
+        const location = await ctx.db.storageLocation.findUnique({
+          where: { id: input.storageLocationId },
+          select: { id: true, storageRoomId: true },
+        });
+        if (!location) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Ausgewaehlter Lagerplatz existiert nicht.",
+          });
+        }
+        assertStorageRoomAllowed(access, location.storageRoomId);
+      }
+
       return ctx.db.$transaction(async (tx) => {
         const updated = await tx.product.update({
           where: { id: input.id },
@@ -359,6 +399,29 @@ export const productRouter = createTRPCRouter({
   backendCreate: adminProcedure
     .input(createProductInput)
     .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+
+      if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Produkte muessen einem erlaubten Lagerraum zugeordnet sein.",
+        });
+      }
+
+      if (input.storageLocationId) {
+        const location = await ctx.db.storageLocation.findUnique({
+          where: { id: input.storageLocationId },
+          select: { id: true, storageRoomId: true },
+        });
+        if (!location) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Ausgewaehlter Lagerplatz existiert nicht.",
+          });
+        }
+        assertStorageRoomAllowed(access, location.storageRoomId);
+      }
+
       return ctx.db.$transaction(async (tx) => {
         const created = await tx.product.create({
           data: {
@@ -416,6 +479,8 @@ export const productRouter = createTRPCRouter({
       }
 
       const userId = ctx.session.user.id;
+      const access = await getStorageRoomAccessForUser(ctx.db, userId);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.productId]);
 
       return ctx.db.$transaction(async (tx) => {
         await tx.product.update({
@@ -453,6 +518,9 @@ export const productRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.productId]);
+
       const [bookings, completedOrders] = await Promise.all([
         ctx.db.productStockBooking.findMany({
           where: { productId: input.productId },

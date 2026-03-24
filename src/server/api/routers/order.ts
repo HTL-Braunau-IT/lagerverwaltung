@@ -3,6 +3,12 @@ import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter, teacherProcedure } from "~/server/api/trpc";
 import { aggregateProductRequirements, assertSufficientStock } from "~/server/api/routers/utils/stock";
+import {
+  assertStorageRoomAllowed,
+  getStorageRoomAccessForUser,
+  orderRoomWhereForAccess,
+  resolveSingleStorageRoomForProductIds,
+} from "~/server/api/routers/utils/storage-access";
 import { notifyOrderStatusChanged, notifyTeacherRequestApproved } from "~/server/mail/order-events";
 
 const backendListOrdersInput = z.object({
@@ -30,8 +36,67 @@ const teacherApproveRequestInput = z.object({
   costCenterId: z.string().min(1),
 });
 
+const teacherUpdateRequestItemQuantityInput = z.object({
+  requestId: z.string().min(1),
+  itemId: z.string().min(1),
+  quantity: z.coerce.number().positive(),
+});
+
+const teacherRemoveRequestItemInput = z.object({
+  requestId: z.string().min(1),
+  itemId: z.string().min(1),
+});
+
+const teacherRejectRequestInput = z.object({
+  requestId: z.string().min(1),
+});
+
 function formatOrderNumber(year: number, runningNumber: number) {
   return `${year}${runningNumber.toString().padStart(6, "0")}`;
+}
+
+function parseInsufficientStockMessage(message: string) {
+  if (!message.startsWith("INSUFFICIENT_STOCK:")) return null;
+  const [, productId, maxOrderableRaw] = message.split(":");
+  return {
+    productId: productId ?? "",
+    maxOrderable: Number(maxOrderableRaw ?? "0"),
+  };
+}
+
+function ensureTeacherCanHandleRequest(
+  sessionUser: {
+    role: "ADMIN" | "TEACHER" | "STUDENT";
+    id: string;
+    azureAdObjectId?: string | null;
+  },
+  request: { teacherUserId: string | null; teacherExternalId: string },
+) {
+  if (sessionUser.role === "ADMIN") return;
+
+  const allowed =
+    request.teacherUserId === sessionUser.id ||
+    (sessionUser.azureAdObjectId && request.teacherExternalId === sessionUser.azureAdObjectId);
+
+  if (!allowed) {
+    throw new TRPCError({ code: "FORBIDDEN" });
+  }
+}
+
+function ensureRequestIsPending(status: "PENDING" | "APPROVED" | "REJECTED") {
+  if (status === "PENDING") return;
+
+  if (status === "REJECTED") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Diese Anfrage wurde bereits abgelehnt.",
+    });
+  }
+
+  throw new TRPCError({
+    code: "BAD_REQUEST",
+    message: "Diese Anfrage wurde bereits freigegeben.",
+  });
 }
 
 const allowedTransitions: Record<"OPEN" | "PREPARING" | "READY_FOR_PICKUP", Array<"OPEN" | "PREPARING" | "READY_FOR_PICKUP">> =
@@ -43,14 +108,22 @@ const allowedTransitions: Record<"OPEN" | "PREPARING" | "READY_FOR_PICKUP", Arra
 
 export const orderRouter = createTRPCRouter({
   backendOpenCount: adminProcedure.query(async ({ ctx }) => {
+    const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+    const roomWhere = orderRoomWhereForAccess(access);
+
     const count = await ctx.db.order.count({
-      where: { status: "OPEN" },
+      where: {
+        status: "OPEN",
+        ...(roomWhere ?? {}),
+      },
     });
 
     return { count };
   }),
 
   backendList: adminProcedure.input(backendListOrdersInput).query(async ({ ctx, input }) => {
+    const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+    const roomWhere = orderRoomWhereForAccess(access);
     const search = input.search?.trim();
 
     const items = await ctx.db.order.findMany({
@@ -69,6 +142,7 @@ export const orderRouter = createTRPCRouter({
               ],
             }
           : {}),
+        ...(roomWhere ?? {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: input.limit + 1,
@@ -76,6 +150,7 @@ export const orderRouter = createTRPCRouter({
       select: {
         id: true,
         orderNumber: true,
+        workerNote: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -124,11 +199,18 @@ export const orderRouter = createTRPCRouter({
   }),
 
   backendById: adminProcedure.input(backendOrderByIdInput).query(async ({ ctx, input }) => {
-    return ctx.db.order.findUnique({
-      where: { id: input.id },
+    const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+    const roomWhere = orderRoomWhereForAccess(access);
+
+    return ctx.db.order.findFirst({
+      where: {
+        id: input.id,
+        ...(roomWhere ?? {}),
+      },
       select: {
         id: true,
         orderNumber: true,
+        workerNote: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -196,12 +278,14 @@ export const orderRouter = createTRPCRouter({
   backendUpdateStatus: adminProcedure
     .input(backendUpdateOrderStatusInput)
     .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
       const result = await ctx.db.$transaction(async (tx) => {
         const order = await tx.order.findUnique({
           where: { id: input.orderId },
           select: {
             id: true,
             status: true,
+            storageRoomId: true,
             orderNumber: true,
             user: {
               select: {
@@ -241,6 +325,8 @@ export const orderRouter = createTRPCRouter({
             message: "Bestellung wurde nicht gefunden.",
           });
         }
+
+        assertStorageRoomAllowed(access, order.storageRoomId);
 
         if (order.status === input.nextStatus) {
           return {
@@ -330,6 +416,7 @@ export const orderRouter = createTRPCRouter({
 
         return {
           ...updated,
+          requester: updated.sourceRequest?.student ?? null,
           changed: true as const,
         };
       });
@@ -339,7 +426,7 @@ export const orderRouter = createTRPCRouter({
           orderNumber: result.orderNumber,
           status: result.status,
           owner: result.user,
-          requester: result.requester,
+          requester: result.requester ?? undefined,
           items: result.items.map((item) => ({
             name: item.product.name,
             quantity: item.quantity,
@@ -352,6 +439,166 @@ export const orderRouter = createTRPCRouter({
       }
 
       return result;
+    }),
+
+  updateAssignedRequestItemQuantity: teacherProcedure
+    .input(teacherUpdateRequestItemQuantityInput)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const request = await tx.orderRequest.findUnique({
+          where: { id: input.requestId },
+          select: {
+            id: true,
+            status: true,
+            teacherUserId: true,
+            teacherExternalId: true,
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                productId: true,
+                quantity: true,
+              },
+            },
+          },
+        });
+
+        if (!request) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Anfrage wurde nicht gefunden.",
+          });
+        }
+
+        ensureTeacherCanHandleRequest(ctx.session.user, request);
+        ensureRequestIsPending(request.status);
+
+        const existingItem = request.items.find((item) => item.id === input.itemId);
+        if (!existingItem) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Position wurde nicht gefunden.",
+          });
+        }
+
+        const nextItems = request.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.id === input.itemId ? input.quantity : item.quantity,
+        }));
+
+        try {
+          await assertSufficientStock(tx, aggregateProductRequirements(nextItems));
+        } catch (error) {
+          if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+            const parsed = parseInsufficientStockMessage(error.message);
+            if (parsed) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Nicht genug Lagerbestand fuer diese Menge.",
+              });
+            }
+          }
+          throw error;
+        }
+
+        await tx.orderRequestItem.update({
+          where: { id: input.itemId },
+          data: {
+            quantity: input.quantity.toString(),
+          },
+          select: { id: true },
+        });
+
+        return { ok: true as const };
+      });
+    }),
+
+  removeAssignedRequestItem: teacherProcedure
+    .input(teacherRemoveRequestItemInput)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const request = await tx.orderRequest.findUnique({
+          where: { id: input.requestId },
+          select: {
+            id: true,
+            status: true,
+            teacherUserId: true,
+            teacherExternalId: true,
+            items: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        });
+
+        if (!request) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Anfrage wurde nicht gefunden.",
+          });
+        }
+
+        ensureTeacherCanHandleRequest(ctx.session.user, request);
+        ensureRequestIsPending(request.status);
+
+        const targetItem = request.items.find((item) => item.id === input.itemId);
+        if (!targetItem) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Position wurde nicht gefunden.",
+          });
+        }
+
+        await tx.orderRequestItem.delete({
+          where: { id: input.itemId },
+          select: { id: true },
+        });
+
+        return {
+          ok: true as const,
+          remainingItemCount: Math.max(request.items.length - 1, 0),
+        };
+      });
+    }),
+
+  rejectAssignedRequest: teacherProcedure
+    .input(teacherRejectRequestInput)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const request = await tx.orderRequest.findUnique({
+          where: { id: input.requestId },
+          select: {
+            id: true,
+            status: true,
+            teacherUserId: true,
+            teacherExternalId: true,
+          },
+        });
+
+        if (!request) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Anfrage wurde nicht gefunden.",
+          });
+        }
+
+        ensureTeacherCanHandleRequest(ctx.session.user, request);
+        ensureRequestIsPending(request.status);
+
+        const updated = await tx.orderRequest.update({
+          where: { id: request.id },
+          data: {
+            status: "REJECTED",
+          },
+          select: {
+            id: true,
+            status: true,
+          },
+        });
+
+        return { ok: true as const, id: updated.id, status: updated.status };
+      });
     }),
 
   listAssignedRequests: teacherProcedure.query(async ({ ctx }) => {
@@ -377,6 +624,14 @@ export const orderRouter = createTRPCRouter({
         status: true,
         createdAt: true,
         updatedAt: true,
+        approvedOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            createdAt: true,
+          },
+        },
         teacherDisplayName: true,
         teacherEmail: true,
         student: {
@@ -484,6 +739,7 @@ export const orderRouter = createTRPCRouter({
             teacherExternalId: true,
             teacherDisplayName: true,
             teacherEmail: true,
+            workerNote: true,
             student: {
               select: {
                 name: true,
@@ -514,27 +770,13 @@ export const orderRouter = createTRPCRouter({
           });
         }
 
-        if (ctx.session.user.role !== "ADMIN") {
-          const allowed =
-            request.teacherUserId === ctx.session.user.id ||
-            (ctx.session.user.azureAdObjectId &&
-              request.teacherExternalId === ctx.session.user.azureAdObjectId);
-          if (!allowed) {
-            throw new TRPCError({ code: "FORBIDDEN" });
-          }
-        }
-
-        if (request.status !== "PENDING") {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Diese Anfrage wurde bereits bearbeitet.",
-          });
-        }
+        ensureTeacherCanHandleRequest(ctx.session.user, request);
+        ensureRequestIsPending(request.status);
 
         if (request.items.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Anfrage enthaelt keine Positionen.",
+            message: "Anfrage enthaelt keine Positionen mehr. Bitte Anfrage ablehnen.",
           });
         }
 
@@ -563,6 +805,11 @@ export const orderRouter = createTRPCRouter({
           });
         }
 
+        const targetStorageRoom = await resolveSingleStorageRoomForProductIds(
+          tx,
+          request.items.map((item) => item.productId),
+        );
+
         const year = new Date().getFullYear();
         const counter = await tx.orderCounter.upsert({
           where: { year },
@@ -584,6 +831,8 @@ export const orderRouter = createTRPCRouter({
             orderNumber,
             userId: ctx.session.user.id,
             costCenterId: input.costCenterId,
+            storageRoomId: targetStorageRoom.id,
+            workerNote: request.workerNote,
             status: "OPEN",
             items: {
               create: request.items.map((item) => ({

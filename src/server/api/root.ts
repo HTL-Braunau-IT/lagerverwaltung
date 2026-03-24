@@ -6,6 +6,7 @@ import { partsListRouter } from "~/server/api/routers/parts-list";
 import { productRouter } from "~/server/api/routers/product";
 import { storageLocationRouter } from "~/server/api/routers/storage-location";
 import { storageRoomRouter } from "~/server/api/routers/storage-room";
+import { userRouter } from "~/server/api/routers/user";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -22,6 +23,7 @@ export const appRouter = createTRPCRouter({
   partsList: partsListRouter,
   storageLocation: storageLocationRouter,
   storageRoom: storageRoomRouter,
+  user: userRouter,
 });
 
 // export type definition of API

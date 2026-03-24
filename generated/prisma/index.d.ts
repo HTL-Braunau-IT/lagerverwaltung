@@ -119,6 +119,11 @@ export type SavedCartItem = $Result.DefaultSelection<Prisma.$SavedCartItemPayloa
  */
 export type User = $Result.DefaultSelection<Prisma.$UserPayload>
 /**
+ * Model UserStorageRoomAccess
+ * 
+ */
+export type UserStorageRoomAccess = $Result.DefaultSelection<Prisma.$UserStorageRoomAccessPayload>
+/**
  * Model Account
  * 
  */
@@ -543,6 +548,16 @@ export class PrismaClient<
     * ```
     */
   get user(): Prisma.UserDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.userStorageRoomAccess`: Exposes CRUD operations for the **UserStorageRoomAccess** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more UserStorageRoomAccesses
+    * const userStorageRoomAccesses = await prisma.userStorageRoomAccess.findMany()
+    * ```
+    */
+  get userStorageRoomAccess(): Prisma.UserStorageRoomAccessDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.account`: Exposes CRUD operations for the **Account** model.
@@ -1028,6 +1043,7 @@ export namespace Prisma {
     SavedCart: 'SavedCart',
     SavedCartItem: 'SavedCartItem',
     User: 'User',
+    UserStorageRoomAccess: 'UserStorageRoomAccess',
     Account: 'Account',
     Session: 'Session',
     VerificationToken: 'VerificationToken'
@@ -1046,7 +1062,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "productCategory" | "productStockBooking" | "costCenter" | "order" | "partList" | "partListDocument" | "partListItem" | "orderRequest" | "orderRequestItem" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "account" | "session" | "verificationToken"
+      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "productCategory" | "productStockBooking" | "costCenter" | "order" | "partList" | "partListDocument" | "partListItem" | "orderRequest" | "orderRequestItem" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "userStorageRoomAccess" | "account" | "session" | "verificationToken"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2604,6 +2620,80 @@ export namespace Prisma {
           }
         }
       }
+      UserStorageRoomAccess: {
+        payload: Prisma.$UserStorageRoomAccessPayload<ExtArgs>
+        fields: Prisma.UserStorageRoomAccessFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.UserStorageRoomAccessFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.UserStorageRoomAccessFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          findFirst: {
+            args: Prisma.UserStorageRoomAccessFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.UserStorageRoomAccessFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          findMany: {
+            args: Prisma.UserStorageRoomAccessFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>[]
+          }
+          create: {
+            args: Prisma.UserStorageRoomAccessCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          createMany: {
+            args: Prisma.UserStorageRoomAccessCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.UserStorageRoomAccessCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>[]
+          }
+          delete: {
+            args: Prisma.UserStorageRoomAccessDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          update: {
+            args: Prisma.UserStorageRoomAccessUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          deleteMany: {
+            args: Prisma.UserStorageRoomAccessDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.UserStorageRoomAccessUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.UserStorageRoomAccessUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>[]
+          }
+          upsert: {
+            args: Prisma.UserStorageRoomAccessUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserStorageRoomAccessPayload>
+          }
+          aggregate: {
+            args: Prisma.UserStorageRoomAccessAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateUserStorageRoomAccess>
+          }
+          groupBy: {
+            args: Prisma.UserStorageRoomAccessGroupByArgs<ExtArgs>
+            result: $Utils.Optional<UserStorageRoomAccessGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.UserStorageRoomAccessCountArgs<ExtArgs>
+            result: $Utils.Optional<UserStorageRoomAccessCountAggregateOutputType> | number
+          }
+        }
+      }
       Account: {
         payload: Prisma.$AccountPayload<ExtArgs>
         fields: Prisma.AccountFieldRefs
@@ -2955,6 +3045,7 @@ export namespace Prisma {
     savedCart?: SavedCartOmit
     savedCartItem?: SavedCartItemOmit
     user?: UserOmit
+    userStorageRoomAccess?: UserStorageRoomAccessOmit
     account?: AccountOmit
     session?: SessionOmit
     verificationToken?: VerificationTokenOmit
@@ -3110,10 +3201,14 @@ export namespace Prisma {
 
   export type StorageRoomCountOutputType = {
     storageLocations: number
+    userAccesses: number
+    orders: number
   }
 
   export type StorageRoomCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     storageLocations?: boolean | StorageRoomCountOutputTypeCountStorageLocationsArgs
+    userAccesses?: boolean | StorageRoomCountOutputTypeCountUserAccessesArgs
+    orders?: boolean | StorageRoomCountOutputTypeCountOrdersArgs
   }
 
   // Custom InputTypes
@@ -3132,6 +3227,20 @@ export namespace Prisma {
    */
   export type StorageRoomCountOutputTypeCountStorageLocationsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StorageLocationWhereInput
+  }
+
+  /**
+   * StorageRoomCountOutputType without action
+   */
+  export type StorageRoomCountOutputTypeCountUserAccessesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserStorageRoomAccessWhereInput
+  }
+
+  /**
+   * StorageRoomCountOutputType without action
+   */
+  export type StorageRoomCountOutputTypeCountOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OrderWhereInput
   }
 
 
@@ -3449,6 +3558,7 @@ export namespace Prisma {
   export type UserCountOutputType = {
     accounts: number
     sessions: number
+    storageRoomAccesses: number
     savedCarts: number
     orders: number
     orderRequestsAsStudent: number
@@ -3459,6 +3569,7 @@ export namespace Prisma {
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     accounts?: boolean | UserCountOutputTypeCountAccountsArgs
     sessions?: boolean | UserCountOutputTypeCountSessionsArgs
+    storageRoomAccesses?: boolean | UserCountOutputTypeCountStorageRoomAccessesArgs
     savedCarts?: boolean | UserCountOutputTypeCountSavedCartsArgs
     orders?: boolean | UserCountOutputTypeCountOrdersArgs
     orderRequestsAsStudent?: boolean | UserCountOutputTypeCountOrderRequestsAsStudentArgs
@@ -3489,6 +3600,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SessionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountStorageRoomAccessesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserStorageRoomAccessWhereInput
   }
 
   /**
@@ -5910,6 +6028,8 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     storageLocations?: boolean | StorageRoom$storageLocationsArgs<ExtArgs>
+    userAccesses?: boolean | StorageRoom$userAccessesArgs<ExtArgs>
+    orders?: boolean | StorageRoom$ordersArgs<ExtArgs>
     _count?: boolean | StorageRoomCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["storageRoom"]>
 
@@ -5937,6 +6057,8 @@ export namespace Prisma {
   export type StorageRoomOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "createdAt" | "updatedAt", ExtArgs["result"]["storageRoom"]>
   export type StorageRoomInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     storageLocations?: boolean | StorageRoom$storageLocationsArgs<ExtArgs>
+    userAccesses?: boolean | StorageRoom$userAccessesArgs<ExtArgs>
+    orders?: boolean | StorageRoom$ordersArgs<ExtArgs>
     _count?: boolean | StorageRoomCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type StorageRoomIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -5946,6 +6068,8 @@ export namespace Prisma {
     name: "StorageRoom"
     objects: {
       storageLocations: Prisma.$StorageLocationPayload<ExtArgs>[]
+      userAccesses: Prisma.$UserStorageRoomAccessPayload<ExtArgs>[]
+      orders: Prisma.$OrderPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -6347,6 +6471,8 @@ export namespace Prisma {
   export interface Prisma__StorageRoomClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     storageLocations<T extends StorageRoom$storageLocationsArgs<ExtArgs> = {}>(args?: Subset<T, StorageRoom$storageLocationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StorageLocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    userAccesses<T extends StorageRoom$userAccessesArgs<ExtArgs> = {}>(args?: Subset<T, StorageRoom$userAccessesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    orders<T extends StorageRoom$ordersArgs<ExtArgs> = {}>(args?: Subset<T, StorageRoom$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6794,6 +6920,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StorageLocationScalarFieldEnum | StorageLocationScalarFieldEnum[]
+  }
+
+  /**
+   * StorageRoom.userAccesses
+   */
+  export type StorageRoom$userAccessesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    where?: UserStorageRoomAccessWhereInput
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserStorageRoomAccessScalarFieldEnum | UserStorageRoomAccessScalarFieldEnum[]
+  }
+
+  /**
+   * StorageRoom.orders
+   */
+  export type StorageRoom$ordersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Order
+     */
+    select?: OrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Order
+     */
+    omit?: OrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: OrderInclude<ExtArgs> | null
+    where?: OrderWhereInput
+    orderBy?: OrderOrderByWithRelationInput | OrderOrderByWithRelationInput[]
+    cursor?: OrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: OrderScalarFieldEnum | OrderScalarFieldEnum[]
   }
 
   /**
@@ -11605,7 +11779,9 @@ export namespace Prisma {
     orderNumber: string | null
     userId: string | null
     costCenterId: string | null
+    storageRoomId: string | null
     sourcePartListId: string | null
+    workerNote: string | null
     status: $Enums.OrderStatus | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -11616,7 +11792,9 @@ export namespace Prisma {
     orderNumber: string | null
     userId: string | null
     costCenterId: string | null
+    storageRoomId: string | null
     sourcePartListId: string | null
+    workerNote: string | null
     status: $Enums.OrderStatus | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -11627,7 +11805,9 @@ export namespace Prisma {
     orderNumber: number
     userId: number
     costCenterId: number
+    storageRoomId: number
     sourcePartListId: number
+    workerNote: number
     status: number
     createdAt: number
     updatedAt: number
@@ -11640,7 +11820,9 @@ export namespace Prisma {
     orderNumber?: true
     userId?: true
     costCenterId?: true
+    storageRoomId?: true
     sourcePartListId?: true
+    workerNote?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -11651,7 +11833,9 @@ export namespace Prisma {
     orderNumber?: true
     userId?: true
     costCenterId?: true
+    storageRoomId?: true
     sourcePartListId?: true
+    workerNote?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -11662,7 +11846,9 @@ export namespace Prisma {
     orderNumber?: true
     userId?: true
     costCenterId?: true
+    storageRoomId?: true
     sourcePartListId?: true
+    workerNote?: true
     status?: true
     createdAt?: true
     updatedAt?: true
@@ -11746,7 +11932,9 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId: string | null
+    workerNote: string | null
     status: $Enums.OrderStatus
     createdAt: Date
     updatedAt: Date
@@ -11774,12 +11962,15 @@ export namespace Prisma {
     orderNumber?: boolean
     userId?: boolean
     costCenterId?: boolean
+    storageRoomId?: boolean
     sourcePartListId?: boolean
+    workerNote?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
     items?: boolean | Order$itemsArgs<ExtArgs>
     sourceRequest?: boolean | Order$sourceRequestArgs<ExtArgs>
@@ -11791,12 +11982,15 @@ export namespace Prisma {
     orderNumber?: boolean
     userId?: boolean
     costCenterId?: boolean
+    storageRoomId?: boolean
     sourcePartListId?: boolean
+    workerNote?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -11805,12 +11999,15 @@ export namespace Prisma {
     orderNumber?: boolean
     userId?: boolean
     costCenterId?: boolean
+    storageRoomId?: boolean
     sourcePartListId?: boolean
+    workerNote?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
   }, ExtArgs["result"]["order"]>
 
@@ -11819,16 +12016,19 @@ export namespace Prisma {
     orderNumber?: boolean
     userId?: boolean
     costCenterId?: boolean
+    storageRoomId?: boolean
     sourcePartListId?: boolean
+    workerNote?: boolean
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "userId" | "costCenterId" | "sourcePartListId" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+  export type OrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orderNumber" | "userId" | "costCenterId" | "storageRoomId" | "sourcePartListId" | "workerNote" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
   export type OrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
     items?: boolean | Order$itemsArgs<ExtArgs>
     sourceRequest?: boolean | Order$sourceRequestArgs<ExtArgs>
@@ -11837,11 +12037,13 @@ export namespace Prisma {
   export type OrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
   }
   export type OrderIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     costCenter?: boolean | CostCenterDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
     sourcePartList?: boolean | Order$sourcePartListArgs<ExtArgs>
   }
 
@@ -11850,6 +12052,7 @@ export namespace Prisma {
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
       costCenter: Prisma.$CostCenterPayload<ExtArgs>
+      storageRoom: Prisma.$StorageRoomPayload<ExtArgs>
       sourcePartList: Prisma.$PartListPayload<ExtArgs> | null
       items: Prisma.$OrderItemPayload<ExtArgs>[]
       sourceRequest: Prisma.$OrderRequestPayload<ExtArgs> | null
@@ -11859,7 +12062,9 @@ export namespace Prisma {
       orderNumber: string
       userId: string
       costCenterId: string
+      storageRoomId: string
       sourcePartListId: string | null
+      workerNote: string | null
       status: $Enums.OrderStatus
       createdAt: Date
       updatedAt: Date
@@ -12259,6 +12464,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     costCenter<T extends CostCenterDefaultArgs<ExtArgs> = {}>(args?: Subset<T, CostCenterDefaultArgs<ExtArgs>>): Prisma__CostCenterClient<$Result.GetResult<Prisma.$CostCenterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    storageRoom<T extends StorageRoomDefaultArgs<ExtArgs> = {}>(args?: Subset<T, StorageRoomDefaultArgs<ExtArgs>>): Prisma__StorageRoomClient<$Result.GetResult<Prisma.$StorageRoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     sourcePartList<T extends Order$sourcePartListArgs<ExtArgs> = {}>(args?: Subset<T, Order$sourcePartListArgs<ExtArgs>>): Prisma__PartListClient<$Result.GetResult<Prisma.$PartListPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     items<T extends Order$itemsArgs<ExtArgs> = {}>(args?: Subset<T, Order$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sourceRequest<T extends Order$sourceRequestArgs<ExtArgs> = {}>(args?: Subset<T, Order$sourceRequestArgs<ExtArgs>>): Prisma__OrderRequestClient<$Result.GetResult<Prisma.$OrderRequestPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
@@ -12295,7 +12501,9 @@ export namespace Prisma {
     readonly orderNumber: FieldRef<"Order", 'String'>
     readonly userId: FieldRef<"Order", 'String'>
     readonly costCenterId: FieldRef<"Order", 'String'>
+    readonly storageRoomId: FieldRef<"Order", 'String'>
     readonly sourcePartListId: FieldRef<"Order", 'String'>
+    readonly workerNote: FieldRef<"Order", 'String'>
     readonly status: FieldRef<"Order", 'OrderStatus'>
     readonly createdAt: FieldRef<"Order", 'DateTime'>
     readonly updatedAt: FieldRef<"Order", 'DateTime'>
@@ -16236,6 +16444,7 @@ export namespace Prisma {
     teacherExternalId: string | null
     teacherDisplayName: string | null
     teacherEmail: string | null
+    workerNote: string | null
     status: $Enums.RequestStatus | null
     approvedOrderId: string | null
     createdAt: Date | null
@@ -16249,6 +16458,7 @@ export namespace Prisma {
     teacherExternalId: string | null
     teacherDisplayName: string | null
     teacherEmail: string | null
+    workerNote: string | null
     status: $Enums.RequestStatus | null
     approvedOrderId: string | null
     createdAt: Date | null
@@ -16262,6 +16472,7 @@ export namespace Prisma {
     teacherExternalId: number
     teacherDisplayName: number
     teacherEmail: number
+    workerNote: number
     status: number
     approvedOrderId: number
     createdAt: number
@@ -16277,6 +16488,7 @@ export namespace Prisma {
     teacherExternalId?: true
     teacherDisplayName?: true
     teacherEmail?: true
+    workerNote?: true
     status?: true
     approvedOrderId?: true
     createdAt?: true
@@ -16290,6 +16502,7 @@ export namespace Prisma {
     teacherExternalId?: true
     teacherDisplayName?: true
     teacherEmail?: true
+    workerNote?: true
     status?: true
     approvedOrderId?: true
     createdAt?: true
@@ -16303,6 +16516,7 @@ export namespace Prisma {
     teacherExternalId?: true
     teacherDisplayName?: true
     teacherEmail?: true
+    workerNote?: true
     status?: true
     approvedOrderId?: true
     createdAt?: true
@@ -16389,6 +16603,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote: string | null
     status: $Enums.RequestStatus
     approvedOrderId: string | null
     createdAt: Date
@@ -16419,6 +16634,7 @@ export namespace Prisma {
     teacherExternalId?: boolean
     teacherDisplayName?: boolean
     teacherEmail?: boolean
+    workerNote?: boolean
     status?: boolean
     approvedOrderId?: boolean
     createdAt?: boolean
@@ -16437,6 +16653,7 @@ export namespace Prisma {
     teacherExternalId?: boolean
     teacherDisplayName?: boolean
     teacherEmail?: boolean
+    workerNote?: boolean
     status?: boolean
     approvedOrderId?: boolean
     createdAt?: boolean
@@ -16453,6 +16670,7 @@ export namespace Prisma {
     teacherExternalId?: boolean
     teacherDisplayName?: boolean
     teacherEmail?: boolean
+    workerNote?: boolean
     status?: boolean
     approvedOrderId?: boolean
     createdAt?: boolean
@@ -16469,13 +16687,14 @@ export namespace Prisma {
     teacherExternalId?: boolean
     teacherDisplayName?: boolean
     teacherEmail?: boolean
+    workerNote?: boolean
     status?: boolean
     approvedOrderId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type OrderRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "teacherUserId" | "teacherExternalId" | "teacherDisplayName" | "teacherEmail" | "status" | "approvedOrderId" | "createdAt" | "updatedAt", ExtArgs["result"]["orderRequest"]>
+  export type OrderRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "studentId" | "teacherUserId" | "teacherExternalId" | "teacherDisplayName" | "teacherEmail" | "workerNote" | "status" | "approvedOrderId" | "createdAt" | "updatedAt", ExtArgs["result"]["orderRequest"]>
   export type OrderRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     student?: boolean | UserDefaultArgs<ExtArgs>
     teacher?: boolean | OrderRequest$teacherArgs<ExtArgs>
@@ -16509,6 +16728,7 @@ export namespace Prisma {
       teacherExternalId: string
       teacherDisplayName: string
       teacherEmail: string
+      workerNote: string | null
       status: $Enums.RequestStatus
       approvedOrderId: string | null
       createdAt: Date
@@ -16946,6 +17166,7 @@ export namespace Prisma {
     readonly teacherExternalId: FieldRef<"OrderRequest", 'String'>
     readonly teacherDisplayName: FieldRef<"OrderRequest", 'String'>
     readonly teacherEmail: FieldRef<"OrderRequest", 'String'>
+    readonly workerNote: FieldRef<"OrderRequest", 'String'>
     readonly status: FieldRef<"OrderRequest", 'RequestStatus'>
     readonly approvedOrderId: FieldRef<"OrderRequest", 'String'>
     readonly createdAt: FieldRef<"OrderRequest", 'DateTime'>
@@ -26199,6 +26420,7 @@ export namespace Prisma {
     emailVerified: Date | null
     image: string | null
     role: $Enums.AppRole | null
+    hasAllStorageRoomAccess: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -26211,6 +26433,7 @@ export namespace Prisma {
     emailVerified: Date | null
     image: string | null
     role: $Enums.AppRole | null
+    hasAllStorageRoomAccess: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -26223,6 +26446,7 @@ export namespace Prisma {
     emailVerified: number
     image: number
     role: number
+    hasAllStorageRoomAccess: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -26237,6 +26461,7 @@ export namespace Prisma {
     emailVerified?: true
     image?: true
     role?: true
+    hasAllStorageRoomAccess?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -26249,6 +26474,7 @@ export namespace Prisma {
     emailVerified?: true
     image?: true
     role?: true
+    hasAllStorageRoomAccess?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -26261,6 +26487,7 @@ export namespace Prisma {
     emailVerified?: true
     image?: true
     role?: true
+    hasAllStorageRoomAccess?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -26346,6 +26573,7 @@ export namespace Prisma {
     emailVerified: Date | null
     image: string | null
     role: $Enums.AppRole
+    hasAllStorageRoomAccess: boolean
     createdAt: Date
     updatedAt: Date
     _count: UserCountAggregateOutputType | null
@@ -26375,10 +26603,12 @@ export namespace Prisma {
     emailVerified?: boolean
     image?: boolean
     role?: boolean
+    hasAllStorageRoomAccess?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
+    storageRoomAccesses?: boolean | User$storageRoomAccessesArgs<ExtArgs>
     savedCarts?: boolean | User$savedCartsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     orderRequestsAsStudent?: boolean | User$orderRequestsAsStudentArgs<ExtArgs>
@@ -26395,6 +26625,7 @@ export namespace Prisma {
     emailVerified?: boolean
     image?: boolean
     role?: boolean
+    hasAllStorageRoomAccess?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -26407,6 +26638,7 @@ export namespace Prisma {
     emailVerified?: boolean
     image?: boolean
     role?: boolean
+    hasAllStorageRoomAccess?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["user"]>
@@ -26419,14 +26651,16 @@ export namespace Prisma {
     emailVerified?: boolean
     image?: boolean
     role?: boolean
+    hasAllStorageRoomAccess?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "azureAdObjectId" | "emailVerified" | "image" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "azureAdObjectId" | "emailVerified" | "image" | "role" | "hasAllStorageRoomAccess" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
+    storageRoomAccesses?: boolean | User$storageRoomAccessesArgs<ExtArgs>
     savedCarts?: boolean | User$savedCartsArgs<ExtArgs>
     orders?: boolean | User$ordersArgs<ExtArgs>
     orderRequestsAsStudent?: boolean | User$orderRequestsAsStudentArgs<ExtArgs>
@@ -26442,6 +26676,7 @@ export namespace Prisma {
     objects: {
       accounts: Prisma.$AccountPayload<ExtArgs>[]
       sessions: Prisma.$SessionPayload<ExtArgs>[]
+      storageRoomAccesses: Prisma.$UserStorageRoomAccessPayload<ExtArgs>[]
       savedCarts: Prisma.$SavedCartPayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
       orderRequestsAsStudent: Prisma.$OrderRequestPayload<ExtArgs>[]
@@ -26456,6 +26691,7 @@ export namespace Prisma {
       emailVerified: Date | null
       image: string | null
       role: $Enums.AppRole
+      hasAllStorageRoomAccess: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["user"]>
@@ -26854,6 +27090,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     accounts<T extends User$accountsArgs<ExtArgs> = {}>(args?: Subset<T, User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sessions<T extends User$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    storageRoomAccesses<T extends User$storageRoomAccessesArgs<ExtArgs> = {}>(args?: Subset<T, User$storageRoomAccessesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     savedCarts<T extends User$savedCartsArgs<ExtArgs> = {}>(args?: Subset<T, User$savedCartsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SavedCartPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends User$ordersArgs<ExtArgs> = {}>(args?: Subset<T, User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orderRequestsAsStudent<T extends User$orderRequestsAsStudentArgs<ExtArgs> = {}>(args?: Subset<T, User$orderRequestsAsStudentArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -26895,6 +27132,7 @@ export namespace Prisma {
     readonly emailVerified: FieldRef<"User", 'DateTime'>
     readonly image: FieldRef<"User", 'String'>
     readonly role: FieldRef<"User", 'AppRole'>
+    readonly hasAllStorageRoomAccess: FieldRef<"User", 'Boolean'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
   }
@@ -27338,6 +27576,30 @@ export namespace Prisma {
   }
 
   /**
+   * User.storageRoomAccesses
+   */
+  export type User$storageRoomAccessesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    where?: UserStorageRoomAccessWhereInput
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: UserStorageRoomAccessScalarFieldEnum | UserStorageRoomAccessScalarFieldEnum[]
+  }
+
+  /**
    * User.savedCarts
    */
   export type User$savedCartsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -27473,6 +27735,1064 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: UserInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UserStorageRoomAccess
+   */
+
+  export type AggregateUserStorageRoomAccess = {
+    _count: UserStorageRoomAccessCountAggregateOutputType | null
+    _min: UserStorageRoomAccessMinAggregateOutputType | null
+    _max: UserStorageRoomAccessMaxAggregateOutputType | null
+  }
+
+  export type UserStorageRoomAccessMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    storageRoomId: string | null
+    createdAt: Date | null
+  }
+
+  export type UserStorageRoomAccessMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    storageRoomId: string | null
+    createdAt: Date | null
+  }
+
+  export type UserStorageRoomAccessCountAggregateOutputType = {
+    id: number
+    userId: number
+    storageRoomId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type UserStorageRoomAccessMinAggregateInputType = {
+    id?: true
+    userId?: true
+    storageRoomId?: true
+    createdAt?: true
+  }
+
+  export type UserStorageRoomAccessMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    storageRoomId?: true
+    createdAt?: true
+  }
+
+  export type UserStorageRoomAccessCountAggregateInputType = {
+    id?: true
+    userId?: true
+    storageRoomId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type UserStorageRoomAccessAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserStorageRoomAccess to aggregate.
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserStorageRoomAccesses to fetch.
+     */
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserStorageRoomAccesses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserStorageRoomAccesses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UserStorageRoomAccesses
+    **/
+    _count?: true | UserStorageRoomAccessCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UserStorageRoomAccessMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UserStorageRoomAccessMaxAggregateInputType
+  }
+
+  export type GetUserStorageRoomAccessAggregateType<T extends UserStorageRoomAccessAggregateArgs> = {
+        [P in keyof T & keyof AggregateUserStorageRoomAccess]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUserStorageRoomAccess[P]>
+      : GetScalarType<T[P], AggregateUserStorageRoomAccess[P]>
+  }
+
+
+
+
+  export type UserStorageRoomAccessGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserStorageRoomAccessWhereInput
+    orderBy?: UserStorageRoomAccessOrderByWithAggregationInput | UserStorageRoomAccessOrderByWithAggregationInput[]
+    by: UserStorageRoomAccessScalarFieldEnum[] | UserStorageRoomAccessScalarFieldEnum
+    having?: UserStorageRoomAccessScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UserStorageRoomAccessCountAggregateInputType | true
+    _min?: UserStorageRoomAccessMinAggregateInputType
+    _max?: UserStorageRoomAccessMaxAggregateInputType
+  }
+
+  export type UserStorageRoomAccessGroupByOutputType = {
+    id: string
+    userId: string
+    storageRoomId: string
+    createdAt: Date
+    _count: UserStorageRoomAccessCountAggregateOutputType | null
+    _min: UserStorageRoomAccessMinAggregateOutputType | null
+    _max: UserStorageRoomAccessMaxAggregateOutputType | null
+  }
+
+  type GetUserStorageRoomAccessGroupByPayload<T extends UserStorageRoomAccessGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UserStorageRoomAccessGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UserStorageRoomAccessGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UserStorageRoomAccessGroupByOutputType[P]>
+            : GetScalarType<T[P], UserStorageRoomAccessGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UserStorageRoomAccessSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    storageRoomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userStorageRoomAccess"]>
+
+  export type UserStorageRoomAccessSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    storageRoomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userStorageRoomAccess"]>
+
+  export type UserStorageRoomAccessSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    storageRoomId?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["userStorageRoomAccess"]>
+
+  export type UserStorageRoomAccessSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    storageRoomId?: boolean
+    createdAt?: boolean
+  }
+
+  export type UserStorageRoomAccessOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "storageRoomId" | "createdAt", ExtArgs["result"]["userStorageRoomAccess"]>
+  export type UserStorageRoomAccessInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }
+  export type UserStorageRoomAccessIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }
+  export type UserStorageRoomAccessIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    storageRoom?: boolean | StorageRoomDefaultArgs<ExtArgs>
+  }
+
+  export type $UserStorageRoomAccessPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UserStorageRoomAccess"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      storageRoom: Prisma.$StorageRoomPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      storageRoomId: string
+      createdAt: Date
+    }, ExtArgs["result"]["userStorageRoomAccess"]>
+    composites: {}
+  }
+
+  type UserStorageRoomAccessGetPayload<S extends boolean | null | undefined | UserStorageRoomAccessDefaultArgs> = $Result.GetResult<Prisma.$UserStorageRoomAccessPayload, S>
+
+  type UserStorageRoomAccessCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UserStorageRoomAccessFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UserStorageRoomAccessCountAggregateInputType | true
+    }
+
+  export interface UserStorageRoomAccessDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UserStorageRoomAccess'], meta: { name: 'UserStorageRoomAccess' } }
+    /**
+     * Find zero or one UserStorageRoomAccess that matches the filter.
+     * @param {UserStorageRoomAccessFindUniqueArgs} args - Arguments to find a UserStorageRoomAccess
+     * @example
+     * // Get one UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UserStorageRoomAccessFindUniqueArgs>(args: SelectSubset<T, UserStorageRoomAccessFindUniqueArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UserStorageRoomAccess that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UserStorageRoomAccessFindUniqueOrThrowArgs} args - Arguments to find a UserStorageRoomAccess
+     * @example
+     * // Get one UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UserStorageRoomAccessFindUniqueOrThrowArgs>(args: SelectSubset<T, UserStorageRoomAccessFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserStorageRoomAccess that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessFindFirstArgs} args - Arguments to find a UserStorageRoomAccess
+     * @example
+     * // Get one UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UserStorageRoomAccessFindFirstArgs>(args?: SelectSubset<T, UserStorageRoomAccessFindFirstArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserStorageRoomAccess that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessFindFirstOrThrowArgs} args - Arguments to find a UserStorageRoomAccess
+     * @example
+     * // Get one UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UserStorageRoomAccessFindFirstOrThrowArgs>(args?: SelectSubset<T, UserStorageRoomAccessFindFirstOrThrowArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UserStorageRoomAccesses that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UserStorageRoomAccesses
+     * const userStorageRoomAccesses = await prisma.userStorageRoomAccess.findMany()
+     * 
+     * // Get first 10 UserStorageRoomAccesses
+     * const userStorageRoomAccesses = await prisma.userStorageRoomAccess.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const userStorageRoomAccessWithIdOnly = await prisma.userStorageRoomAccess.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends UserStorageRoomAccessFindManyArgs>(args?: SelectSubset<T, UserStorageRoomAccessFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UserStorageRoomAccess.
+     * @param {UserStorageRoomAccessCreateArgs} args - Arguments to create a UserStorageRoomAccess.
+     * @example
+     * // Create one UserStorageRoomAccess
+     * const UserStorageRoomAccess = await prisma.userStorageRoomAccess.create({
+     *   data: {
+     *     // ... data to create a UserStorageRoomAccess
+     *   }
+     * })
+     * 
+     */
+    create<T extends UserStorageRoomAccessCreateArgs>(args: SelectSubset<T, UserStorageRoomAccessCreateArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UserStorageRoomAccesses.
+     * @param {UserStorageRoomAccessCreateManyArgs} args - Arguments to create many UserStorageRoomAccesses.
+     * @example
+     * // Create many UserStorageRoomAccesses
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UserStorageRoomAccessCreateManyArgs>(args?: SelectSubset<T, UserStorageRoomAccessCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many UserStorageRoomAccesses and returns the data saved in the database.
+     * @param {UserStorageRoomAccessCreateManyAndReturnArgs} args - Arguments to create many UserStorageRoomAccesses.
+     * @example
+     * // Create many UserStorageRoomAccesses
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many UserStorageRoomAccesses and only return the `id`
+     * const userStorageRoomAccessWithIdOnly = await prisma.userStorageRoomAccess.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends UserStorageRoomAccessCreateManyAndReturnArgs>(args?: SelectSubset<T, UserStorageRoomAccessCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a UserStorageRoomAccess.
+     * @param {UserStorageRoomAccessDeleteArgs} args - Arguments to delete one UserStorageRoomAccess.
+     * @example
+     * // Delete one UserStorageRoomAccess
+     * const UserStorageRoomAccess = await prisma.userStorageRoomAccess.delete({
+     *   where: {
+     *     // ... filter to delete one UserStorageRoomAccess
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UserStorageRoomAccessDeleteArgs>(args: SelectSubset<T, UserStorageRoomAccessDeleteArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UserStorageRoomAccess.
+     * @param {UserStorageRoomAccessUpdateArgs} args - Arguments to update one UserStorageRoomAccess.
+     * @example
+     * // Update one UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UserStorageRoomAccessUpdateArgs>(args: SelectSubset<T, UserStorageRoomAccessUpdateArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UserStorageRoomAccesses.
+     * @param {UserStorageRoomAccessDeleteManyArgs} args - Arguments to filter UserStorageRoomAccesses to delete.
+     * @example
+     * // Delete a few UserStorageRoomAccesses
+     * const { count } = await prisma.userStorageRoomAccess.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UserStorageRoomAccessDeleteManyArgs>(args?: SelectSubset<T, UserStorageRoomAccessDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserStorageRoomAccesses.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UserStorageRoomAccesses
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UserStorageRoomAccessUpdateManyArgs>(args: SelectSubset<T, UserStorageRoomAccessUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserStorageRoomAccesses and returns the data updated in the database.
+     * @param {UserStorageRoomAccessUpdateManyAndReturnArgs} args - Arguments to update many UserStorageRoomAccesses.
+     * @example
+     * // Update many UserStorageRoomAccesses
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more UserStorageRoomAccesses and only return the `id`
+     * const userStorageRoomAccessWithIdOnly = await prisma.userStorageRoomAccess.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends UserStorageRoomAccessUpdateManyAndReturnArgs>(args: SelectSubset<T, UserStorageRoomAccessUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one UserStorageRoomAccess.
+     * @param {UserStorageRoomAccessUpsertArgs} args - Arguments to update or create a UserStorageRoomAccess.
+     * @example
+     * // Update or create a UserStorageRoomAccess
+     * const userStorageRoomAccess = await prisma.userStorageRoomAccess.upsert({
+     *   create: {
+     *     // ... data to create a UserStorageRoomAccess
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UserStorageRoomAccess we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UserStorageRoomAccessUpsertArgs>(args: SelectSubset<T, UserStorageRoomAccessUpsertArgs<ExtArgs>>): Prisma__UserStorageRoomAccessClient<$Result.GetResult<Prisma.$UserStorageRoomAccessPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UserStorageRoomAccesses.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessCountArgs} args - Arguments to filter UserStorageRoomAccesses to count.
+     * @example
+     * // Count the number of UserStorageRoomAccesses
+     * const count = await prisma.userStorageRoomAccess.count({
+     *   where: {
+     *     // ... the filter for the UserStorageRoomAccesses we want to count
+     *   }
+     * })
+    **/
+    count<T extends UserStorageRoomAccessCountArgs>(
+      args?: Subset<T, UserStorageRoomAccessCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UserStorageRoomAccessCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UserStorageRoomAccess.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UserStorageRoomAccessAggregateArgs>(args: Subset<T, UserStorageRoomAccessAggregateArgs>): Prisma.PrismaPromise<GetUserStorageRoomAccessAggregateType<T>>
+
+    /**
+     * Group by UserStorageRoomAccess.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserStorageRoomAccessGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UserStorageRoomAccessGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UserStorageRoomAccessGroupByArgs['orderBy'] }
+        : { orderBy?: UserStorageRoomAccessGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UserStorageRoomAccessGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUserStorageRoomAccessGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UserStorageRoomAccess model
+   */
+  readonly fields: UserStorageRoomAccessFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UserStorageRoomAccess.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UserStorageRoomAccessClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    storageRoom<T extends StorageRoomDefaultArgs<ExtArgs> = {}>(args?: Subset<T, StorageRoomDefaultArgs<ExtArgs>>): Prisma__StorageRoomClient<$Result.GetResult<Prisma.$StorageRoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UserStorageRoomAccess model
+   */
+  interface UserStorageRoomAccessFieldRefs {
+    readonly id: FieldRef<"UserStorageRoomAccess", 'String'>
+    readonly userId: FieldRef<"UserStorageRoomAccess", 'String'>
+    readonly storageRoomId: FieldRef<"UserStorageRoomAccess", 'String'>
+    readonly createdAt: FieldRef<"UserStorageRoomAccess", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UserStorageRoomAccess findUnique
+   */
+  export type UserStorageRoomAccessFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter, which UserStorageRoomAccess to fetch.
+     */
+    where: UserStorageRoomAccessWhereUniqueInput
+  }
+
+  /**
+   * UserStorageRoomAccess findUniqueOrThrow
+   */
+  export type UserStorageRoomAccessFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter, which UserStorageRoomAccess to fetch.
+     */
+    where: UserStorageRoomAccessWhereUniqueInput
+  }
+
+  /**
+   * UserStorageRoomAccess findFirst
+   */
+  export type UserStorageRoomAccessFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter, which UserStorageRoomAccess to fetch.
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserStorageRoomAccesses to fetch.
+     */
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserStorageRoomAccesses.
+     */
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserStorageRoomAccesses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserStorageRoomAccesses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserStorageRoomAccesses.
+     */
+    distinct?: UserStorageRoomAccessScalarFieldEnum | UserStorageRoomAccessScalarFieldEnum[]
+  }
+
+  /**
+   * UserStorageRoomAccess findFirstOrThrow
+   */
+  export type UserStorageRoomAccessFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter, which UserStorageRoomAccess to fetch.
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserStorageRoomAccesses to fetch.
+     */
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserStorageRoomAccesses.
+     */
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserStorageRoomAccesses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserStorageRoomAccesses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserStorageRoomAccesses.
+     */
+    distinct?: UserStorageRoomAccessScalarFieldEnum | UserStorageRoomAccessScalarFieldEnum[]
+  }
+
+  /**
+   * UserStorageRoomAccess findMany
+   */
+  export type UserStorageRoomAccessFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter, which UserStorageRoomAccesses to fetch.
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserStorageRoomAccesses to fetch.
+     */
+    orderBy?: UserStorageRoomAccessOrderByWithRelationInput | UserStorageRoomAccessOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UserStorageRoomAccesses.
+     */
+    cursor?: UserStorageRoomAccessWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserStorageRoomAccesses from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserStorageRoomAccesses.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserStorageRoomAccesses.
+     */
+    distinct?: UserStorageRoomAccessScalarFieldEnum | UserStorageRoomAccessScalarFieldEnum[]
+  }
+
+  /**
+   * UserStorageRoomAccess create
+   */
+  export type UserStorageRoomAccessCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * The data needed to create a UserStorageRoomAccess.
+     */
+    data: XOR<UserStorageRoomAccessCreateInput, UserStorageRoomAccessUncheckedCreateInput>
+  }
+
+  /**
+   * UserStorageRoomAccess createMany
+   */
+  export type UserStorageRoomAccessCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UserStorageRoomAccesses.
+     */
+    data: UserStorageRoomAccessCreateManyInput | UserStorageRoomAccessCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserStorageRoomAccess createManyAndReturn
+   */
+  export type UserStorageRoomAccessCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * The data used to create many UserStorageRoomAccesses.
+     */
+    data: UserStorageRoomAccessCreateManyInput | UserStorageRoomAccessCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * UserStorageRoomAccess update
+   */
+  export type UserStorageRoomAccessUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * The data needed to update a UserStorageRoomAccess.
+     */
+    data: XOR<UserStorageRoomAccessUpdateInput, UserStorageRoomAccessUncheckedUpdateInput>
+    /**
+     * Choose, which UserStorageRoomAccess to update.
+     */
+    where: UserStorageRoomAccessWhereUniqueInput
+  }
+
+  /**
+   * UserStorageRoomAccess updateMany
+   */
+  export type UserStorageRoomAccessUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UserStorageRoomAccesses.
+     */
+    data: XOR<UserStorageRoomAccessUpdateManyMutationInput, UserStorageRoomAccessUncheckedUpdateManyInput>
+    /**
+     * Filter which UserStorageRoomAccesses to update
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * Limit how many UserStorageRoomAccesses to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserStorageRoomAccess updateManyAndReturn
+   */
+  export type UserStorageRoomAccessUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * The data used to update UserStorageRoomAccesses.
+     */
+    data: XOR<UserStorageRoomAccessUpdateManyMutationInput, UserStorageRoomAccessUncheckedUpdateManyInput>
+    /**
+     * Filter which UserStorageRoomAccesses to update
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * Limit how many UserStorageRoomAccesses to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * UserStorageRoomAccess upsert
+   */
+  export type UserStorageRoomAccessUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * The filter to search for the UserStorageRoomAccess to update in case it exists.
+     */
+    where: UserStorageRoomAccessWhereUniqueInput
+    /**
+     * In case the UserStorageRoomAccess found by the `where` argument doesn't exist, create a new UserStorageRoomAccess with this data.
+     */
+    create: XOR<UserStorageRoomAccessCreateInput, UserStorageRoomAccessUncheckedCreateInput>
+    /**
+     * In case the UserStorageRoomAccess was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UserStorageRoomAccessUpdateInput, UserStorageRoomAccessUncheckedUpdateInput>
+  }
+
+  /**
+   * UserStorageRoomAccess delete
+   */
+  export type UserStorageRoomAccessDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
+    /**
+     * Filter which UserStorageRoomAccess to delete.
+     */
+    where: UserStorageRoomAccessWhereUniqueInput
+  }
+
+  /**
+   * UserStorageRoomAccess deleteMany
+   */
+  export type UserStorageRoomAccessDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserStorageRoomAccesses to delete
+     */
+    where?: UserStorageRoomAccessWhereInput
+    /**
+     * Limit how many UserStorageRoomAccesses to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserStorageRoomAccess without action
+   */
+  export type UserStorageRoomAccessDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserStorageRoomAccess
+     */
+    select?: UserStorageRoomAccessSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserStorageRoomAccess
+     */
+    omit?: UserStorageRoomAccessOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserStorageRoomAccessInclude<ExtArgs> | null
   }
 
 
@@ -30796,7 +32116,9 @@ export namespace Prisma {
     orderNumber: 'orderNumber',
     userId: 'userId',
     costCenterId: 'costCenterId',
+    storageRoomId: 'storageRoomId',
     sourcePartListId: 'sourcePartListId',
+    workerNote: 'workerNote',
     status: 'status',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -30851,6 +32173,7 @@ export namespace Prisma {
     teacherExternalId: 'teacherExternalId',
     teacherDisplayName: 'teacherDisplayName',
     teacherEmail: 'teacherEmail',
+    workerNote: 'workerNote',
     status: 'status',
     approvedOrderId: 'approvedOrderId',
     createdAt: 'createdAt',
@@ -30956,11 +32279,22 @@ export namespace Prisma {
     emailVerified: 'emailVerified',
     image: 'image',
     role: 'role',
+    hasAllStorageRoomAccess: 'hasAllStorageRoomAccess',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+  export const UserStorageRoomAccessScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    storageRoomId: 'storageRoomId',
+    createdAt: 'createdAt'
+  };
+
+  export type UserStorageRoomAccessScalarFieldEnum = (typeof UserStorageRoomAccessScalarFieldEnum)[keyof typeof UserStorageRoomAccessScalarFieldEnum]
 
 
   export const AccountScalarFieldEnum: {
@@ -31314,6 +32648,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"StorageRoom"> | Date | string
     updatedAt?: DateTimeFilter<"StorageRoom"> | Date | string
     storageLocations?: StorageLocationListRelationFilter
+    userAccesses?: UserStorageRoomAccessListRelationFilter
+    orders?: OrderListRelationFilter
   }
 
   export type StorageRoomOrderByWithRelationInput = {
@@ -31322,6 +32658,8 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     storageLocations?: StorageLocationOrderByRelationAggregateInput
+    userAccesses?: UserStorageRoomAccessOrderByRelationAggregateInput
+    orders?: OrderOrderByRelationAggregateInput
   }
 
   export type StorageRoomWhereUniqueInput = Prisma.AtLeast<{
@@ -31333,6 +32671,8 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"StorageRoom"> | Date | string
     updatedAt?: DateTimeFilter<"StorageRoom"> | Date | string
     storageLocations?: StorageLocationListRelationFilter
+    userAccesses?: UserStorageRoomAccessListRelationFilter
+    orders?: OrderListRelationFilter
   }, "id" | "name">
 
   export type StorageRoomOrderByWithAggregationInput = {
@@ -31676,12 +33016,15 @@ export namespace Prisma {
     orderNumber?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
     costCenterId?: StringFilter<"Order"> | string
+    storageRoomId?: StringFilter<"Order"> | string
     sourcePartListId?: StringNullableFilter<"Order"> | string | null
+    workerNote?: StringNullableFilter<"Order"> | string | null
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     costCenter?: XOR<CostCenterScalarRelationFilter, CostCenterWhereInput>
+    storageRoom?: XOR<StorageRoomScalarRelationFilter, StorageRoomWhereInput>
     sourcePartList?: XOR<PartListNullableScalarRelationFilter, PartListWhereInput> | null
     items?: OrderItemListRelationFilter
     sourceRequest?: XOR<OrderRequestNullableScalarRelationFilter, OrderRequestWhereInput> | null
@@ -31692,12 +33035,15 @@ export namespace Prisma {
     orderNumber?: SortOrder
     userId?: SortOrder
     costCenterId?: SortOrder
+    storageRoomId?: SortOrder
     sourcePartListId?: SortOrderInput | SortOrder
+    workerNote?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
     costCenter?: CostCenterOrderByWithRelationInput
+    storageRoom?: StorageRoomOrderByWithRelationInput
     sourcePartList?: PartListOrderByWithRelationInput
     items?: OrderItemOrderByRelationAggregateInput
     sourceRequest?: OrderRequestOrderByWithRelationInput
@@ -31711,12 +33057,15 @@ export namespace Prisma {
     NOT?: OrderWhereInput | OrderWhereInput[]
     userId?: StringFilter<"Order"> | string
     costCenterId?: StringFilter<"Order"> | string
+    storageRoomId?: StringFilter<"Order"> | string
     sourcePartListId?: StringNullableFilter<"Order"> | string | null
+    workerNote?: StringNullableFilter<"Order"> | string | null
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     costCenter?: XOR<CostCenterScalarRelationFilter, CostCenterWhereInput>
+    storageRoom?: XOR<StorageRoomScalarRelationFilter, StorageRoomWhereInput>
     sourcePartList?: XOR<PartListNullableScalarRelationFilter, PartListWhereInput> | null
     items?: OrderItemListRelationFilter
     sourceRequest?: XOR<OrderRequestNullableScalarRelationFilter, OrderRequestWhereInput> | null
@@ -31727,7 +33076,9 @@ export namespace Prisma {
     orderNumber?: SortOrder
     userId?: SortOrder
     costCenterId?: SortOrder
+    storageRoomId?: SortOrder
     sourcePartListId?: SortOrderInput | SortOrder
+    workerNote?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -31744,7 +33095,9 @@ export namespace Prisma {
     orderNumber?: StringWithAggregatesFilter<"Order"> | string
     userId?: StringWithAggregatesFilter<"Order"> | string
     costCenterId?: StringWithAggregatesFilter<"Order"> | string
+    storageRoomId?: StringWithAggregatesFilter<"Order"> | string
     sourcePartListId?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    workerNote?: StringNullableWithAggregatesFilter<"Order"> | string | null
     status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
@@ -31973,6 +33326,7 @@ export namespace Prisma {
     teacherExternalId?: StringFilter<"OrderRequest"> | string
     teacherDisplayName?: StringFilter<"OrderRequest"> | string
     teacherEmail?: StringFilter<"OrderRequest"> | string
+    workerNote?: StringNullableFilter<"OrderRequest"> | string | null
     status?: EnumRequestStatusFilter<"OrderRequest"> | $Enums.RequestStatus
     approvedOrderId?: StringNullableFilter<"OrderRequest"> | string | null
     createdAt?: DateTimeFilter<"OrderRequest"> | Date | string
@@ -31990,6 +33344,7 @@ export namespace Prisma {
     teacherExternalId?: SortOrder
     teacherDisplayName?: SortOrder
     teacherEmail?: SortOrder
+    workerNote?: SortOrderInput | SortOrder
     status?: SortOrder
     approvedOrderId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -32011,6 +33366,7 @@ export namespace Prisma {
     teacherExternalId?: StringFilter<"OrderRequest"> | string
     teacherDisplayName?: StringFilter<"OrderRequest"> | string
     teacherEmail?: StringFilter<"OrderRequest"> | string
+    workerNote?: StringNullableFilter<"OrderRequest"> | string | null
     status?: EnumRequestStatusFilter<"OrderRequest"> | $Enums.RequestStatus
     createdAt?: DateTimeFilter<"OrderRequest"> | Date | string
     updatedAt?: DateTimeFilter<"OrderRequest"> | Date | string
@@ -32027,6 +33383,7 @@ export namespace Prisma {
     teacherExternalId?: SortOrder
     teacherDisplayName?: SortOrder
     teacherEmail?: SortOrder
+    workerNote?: SortOrderInput | SortOrder
     status?: SortOrder
     approvedOrderId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -32046,6 +33403,7 @@ export namespace Prisma {
     teacherExternalId?: StringWithAggregatesFilter<"OrderRequest"> | string
     teacherDisplayName?: StringWithAggregatesFilter<"OrderRequest"> | string
     teacherEmail?: StringWithAggregatesFilter<"OrderRequest"> | string
+    workerNote?: StringNullableWithAggregatesFilter<"OrderRequest"> | string | null
     status?: EnumRequestStatusWithAggregatesFilter<"OrderRequest"> | $Enums.RequestStatus
     approvedOrderId?: StringNullableWithAggregatesFilter<"OrderRequest"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"OrderRequest"> | Date | string
@@ -32535,10 +33893,12 @@ export namespace Prisma {
     emailVerified?: DateTimeNullableFilter<"User"> | Date | string | null
     image?: StringNullableFilter<"User"> | string | null
     role?: EnumAppRoleFilter<"User"> | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     accounts?: AccountListRelationFilter
     sessions?: SessionListRelationFilter
+    storageRoomAccesses?: UserStorageRoomAccessListRelationFilter
     savedCarts?: SavedCartListRelationFilter
     orders?: OrderListRelationFilter
     orderRequestsAsStudent?: OrderRequestListRelationFilter
@@ -32554,10 +33914,12 @@ export namespace Prisma {
     emailVerified?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
     role?: SortOrder
+    hasAllStorageRoomAccess?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     accounts?: AccountOrderByRelationAggregateInput
     sessions?: SessionOrderByRelationAggregateInput
+    storageRoomAccesses?: UserStorageRoomAccessOrderByRelationAggregateInput
     savedCarts?: SavedCartOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
     orderRequestsAsStudent?: OrderRequestOrderByRelationAggregateInput
@@ -32576,10 +33938,12 @@ export namespace Prisma {
     emailVerified?: DateTimeNullableFilter<"User"> | Date | string | null
     image?: StringNullableFilter<"User"> | string | null
     role?: EnumAppRoleFilter<"User"> | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFilter<"User"> | boolean
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
     accounts?: AccountListRelationFilter
     sessions?: SessionListRelationFilter
+    storageRoomAccesses?: UserStorageRoomAccessListRelationFilter
     savedCarts?: SavedCartListRelationFilter
     orders?: OrderListRelationFilter
     orderRequestsAsStudent?: OrderRequestListRelationFilter
@@ -32595,6 +33959,7 @@ export namespace Prisma {
     emailVerified?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
     role?: SortOrder
+    hasAllStorageRoomAccess?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -32613,8 +33978,63 @@ export namespace Prisma {
     emailVerified?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
     image?: StringNullableWithAggregatesFilter<"User"> | string | null
     role?: EnumAppRoleWithAggregatesFilter<"User"> | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolWithAggregatesFilter<"User"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+  }
+
+  export type UserStorageRoomAccessWhereInput = {
+    AND?: UserStorageRoomAccessWhereInput | UserStorageRoomAccessWhereInput[]
+    OR?: UserStorageRoomAccessWhereInput[]
+    NOT?: UserStorageRoomAccessWhereInput | UserStorageRoomAccessWhereInput[]
+    id?: StringFilter<"UserStorageRoomAccess"> | string
+    userId?: StringFilter<"UserStorageRoomAccess"> | string
+    storageRoomId?: StringFilter<"UserStorageRoomAccess"> | string
+    createdAt?: DateTimeFilter<"UserStorageRoomAccess"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    storageRoom?: XOR<StorageRoomScalarRelationFilter, StorageRoomWhereInput>
+  }
+
+  export type UserStorageRoomAccessOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storageRoomId?: SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    storageRoom?: StorageRoomOrderByWithRelationInput
+  }
+
+  export type UserStorageRoomAccessWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_storageRoomId?: UserStorageRoomAccessUserIdStorageRoomIdCompoundUniqueInput
+    AND?: UserStorageRoomAccessWhereInput | UserStorageRoomAccessWhereInput[]
+    OR?: UserStorageRoomAccessWhereInput[]
+    NOT?: UserStorageRoomAccessWhereInput | UserStorageRoomAccessWhereInput[]
+    userId?: StringFilter<"UserStorageRoomAccess"> | string
+    storageRoomId?: StringFilter<"UserStorageRoomAccess"> | string
+    createdAt?: DateTimeFilter<"UserStorageRoomAccess"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    storageRoom?: XOR<StorageRoomScalarRelationFilter, StorageRoomWhereInput>
+  }, "id" | "userId_storageRoomId">
+
+  export type UserStorageRoomAccessOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storageRoomId?: SortOrder
+    createdAt?: SortOrder
+    _count?: UserStorageRoomAccessCountOrderByAggregateInput
+    _max?: UserStorageRoomAccessMaxOrderByAggregateInput
+    _min?: UserStorageRoomAccessMinOrderByAggregateInput
+  }
+
+  export type UserStorageRoomAccessScalarWhereWithAggregatesInput = {
+    AND?: UserStorageRoomAccessScalarWhereWithAggregatesInput | UserStorageRoomAccessScalarWhereWithAggregatesInput[]
+    OR?: UserStorageRoomAccessScalarWhereWithAggregatesInput[]
+    NOT?: UserStorageRoomAccessScalarWhereWithAggregatesInput | UserStorageRoomAccessScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"UserStorageRoomAccess"> | string
+    userId?: StringWithAggregatesFilter<"UserStorageRoomAccess"> | string
+    storageRoomId?: StringWithAggregatesFilter<"UserStorageRoomAccess"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"UserStorageRoomAccess"> | Date | string
   }
 
   export type AccountWhereInput = {
@@ -32946,6 +34366,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     storageLocations?: StorageLocationCreateNestedManyWithoutStorageRoomInput
+    userAccesses?: UserStorageRoomAccessCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderCreateNestedManyWithoutStorageRoomInput
   }
 
   export type StorageRoomUncheckedCreateInput = {
@@ -32954,6 +34376,8 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     storageLocations?: StorageLocationUncheckedCreateNestedManyWithoutStorageRoomInput
+    userAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderUncheckedCreateNestedManyWithoutStorageRoomInput
   }
 
   export type StorageRoomUpdateInput = {
@@ -32962,6 +34386,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     storageLocations?: StorageLocationUpdateManyWithoutStorageRoomNestedInput
+    userAccesses?: UserStorageRoomAccessUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUpdateManyWithoutStorageRoomNestedInput
   }
 
   export type StorageRoomUncheckedUpdateInput = {
@@ -32970,6 +34396,8 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     storageLocations?: StorageLocationUncheckedUpdateManyWithoutStorageRoomNestedInput
+    userAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutStorageRoomNestedInput
   }
 
   export type StorageRoomCreateManyInput = {
@@ -33327,11 +34755,13 @@ export namespace Prisma {
   export type OrderCreateInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
     costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
     sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
@@ -33342,7 +34772,9 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -33353,11 +34785,13 @@ export namespace Prisma {
   export type OrderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
     costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
     sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
@@ -33368,7 +34802,9 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33381,7 +34817,9 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -33390,6 +34828,7 @@ export namespace Prisma {
   export type OrderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33400,7 +34839,9 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33634,6 +35075,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -33650,6 +35092,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -33662,6 +35105,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33678,6 +35122,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33692,6 +35137,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -33703,6 +35149,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -33715,6 +35162,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -34174,10 +35622,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
@@ -34193,10 +35643,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
@@ -34212,10 +35664,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
@@ -34231,10 +35685,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
@@ -34250,6 +35706,7 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -34262,6 +35719,7 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -34274,8 +35732,56 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessCreateInput = {
+    id?: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutStorageRoomAccessesInput
+    storageRoom: StorageRoomCreateNestedOneWithoutUserAccessesInput
+  }
+
+  export type UserStorageRoomAccessUncheckedCreateInput = {
+    id?: string
+    userId: string
+    storageRoomId: string
+    createdAt?: Date | string
+  }
+
+  export type UserStorageRoomAccessUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutStorageRoomAccessesNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutUserAccessesNestedInput
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessCreateManyInput = {
+    id?: string
+    userId: string
+    storageRoomId: string
+    createdAt?: Date | string
+  }
+
+  export type UserStorageRoomAccessUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AccountCreateInput = {
@@ -34653,7 +36159,27 @@ export namespace Prisma {
     none?: StorageLocationWhereInput
   }
 
+  export type UserStorageRoomAccessListRelationFilter = {
+    every?: UserStorageRoomAccessWhereInput
+    some?: UserStorageRoomAccessWhereInput
+    none?: UserStorageRoomAccessWhereInput
+  }
+
+  export type OrderListRelationFilter = {
+    every?: OrderWhereInput
+    some?: OrderWhereInput
+    none?: OrderWhereInput
+  }
+
   export type StorageLocationOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type UserStorageRoomAccessOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type OrderOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -34979,16 +36505,6 @@ export namespace Prisma {
     quantityDelta?: SortOrder
   }
 
-  export type OrderListRelationFilter = {
-    every?: OrderWhereInput
-    some?: OrderWhereInput
-    none?: OrderWhereInput
-  }
-
-  export type OrderOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
   export type CostCenterCountOrderByAggregateInput = {
     id?: SortOrder
     code?: SortOrder
@@ -35040,7 +36556,9 @@ export namespace Prisma {
     orderNumber?: SortOrder
     userId?: SortOrder
     costCenterId?: SortOrder
+    storageRoomId?: SortOrder
     sourcePartListId?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -35051,7 +36569,9 @@ export namespace Prisma {
     orderNumber?: SortOrder
     userId?: SortOrder
     costCenterId?: SortOrder
+    storageRoomId?: SortOrder
     sourcePartListId?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -35062,7 +36582,9 @@ export namespace Prisma {
     orderNumber?: SortOrder
     userId?: SortOrder
     costCenterId?: SortOrder
+    storageRoomId?: SortOrder
     sourcePartListId?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -35260,6 +36782,7 @@ export namespace Prisma {
     teacherExternalId?: SortOrder
     teacherDisplayName?: SortOrder
     teacherEmail?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     approvedOrderId?: SortOrder
     createdAt?: SortOrder
@@ -35273,6 +36796,7 @@ export namespace Prisma {
     teacherExternalId?: SortOrder
     teacherDisplayName?: SortOrder
     teacherEmail?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     approvedOrderId?: SortOrder
     createdAt?: SortOrder
@@ -35286,6 +36810,7 @@ export namespace Prisma {
     teacherExternalId?: SortOrder
     teacherDisplayName?: SortOrder
     teacherEmail?: SortOrder
+    workerNote?: SortOrder
     status?: SortOrder
     approvedOrderId?: SortOrder
     createdAt?: SortOrder
@@ -35656,6 +37181,7 @@ export namespace Prisma {
     emailVerified?: SortOrder
     image?: SortOrder
     role?: SortOrder
+    hasAllStorageRoomAccess?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -35668,6 +37194,7 @@ export namespace Prisma {
     emailVerified?: SortOrder
     image?: SortOrder
     role?: SortOrder
+    hasAllStorageRoomAccess?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -35680,6 +37207,7 @@ export namespace Prisma {
     emailVerified?: SortOrder
     image?: SortOrder
     role?: SortOrder
+    hasAllStorageRoomAccess?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -35706,6 +37234,32 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumAppRoleFilter<$PrismaModel>
     _max?: NestedEnumAppRoleFilter<$PrismaModel>
+  }
+
+  export type UserStorageRoomAccessUserIdStorageRoomIdCompoundUniqueInput = {
+    userId: string
+    storageRoomId: string
+  }
+
+  export type UserStorageRoomAccessCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storageRoomId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type UserStorageRoomAccessMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storageRoomId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type UserStorageRoomAccessMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storageRoomId?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -35996,11 +37550,39 @@ export namespace Prisma {
     connect?: StorageLocationWhereUniqueInput | StorageLocationWhereUniqueInput[]
   }
 
+  export type UserStorageRoomAccessCreateNestedManyWithoutStorageRoomInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput> | UserStorageRoomAccessCreateWithoutStorageRoomInput[] | UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput | UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput[]
+    createMany?: UserStorageRoomAccessCreateManyStorageRoomInputEnvelope
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+  }
+
+  export type OrderCreateNestedManyWithoutStorageRoomInput = {
+    create?: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput> | OrderCreateWithoutStorageRoomInput[] | OrderUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStorageRoomInput | OrderCreateOrConnectWithoutStorageRoomInput[]
+    createMany?: OrderCreateManyStorageRoomInputEnvelope
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+  }
+
   export type StorageLocationUncheckedCreateNestedManyWithoutStorageRoomInput = {
     create?: XOR<StorageLocationCreateWithoutStorageRoomInput, StorageLocationUncheckedCreateWithoutStorageRoomInput> | StorageLocationCreateWithoutStorageRoomInput[] | StorageLocationUncheckedCreateWithoutStorageRoomInput[]
     connectOrCreate?: StorageLocationCreateOrConnectWithoutStorageRoomInput | StorageLocationCreateOrConnectWithoutStorageRoomInput[]
     createMany?: StorageLocationCreateManyStorageRoomInputEnvelope
     connect?: StorageLocationWhereUniqueInput | StorageLocationWhereUniqueInput[]
+  }
+
+  export type UserStorageRoomAccessUncheckedCreateNestedManyWithoutStorageRoomInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput> | UserStorageRoomAccessCreateWithoutStorageRoomInput[] | UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput | UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput[]
+    createMany?: UserStorageRoomAccessCreateManyStorageRoomInputEnvelope
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+  }
+
+  export type OrderUncheckedCreateNestedManyWithoutStorageRoomInput = {
+    create?: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput> | OrderCreateWithoutStorageRoomInput[] | OrderUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStorageRoomInput | OrderCreateOrConnectWithoutStorageRoomInput[]
+    createMany?: OrderCreateManyStorageRoomInputEnvelope
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
   }
 
   export type StorageLocationUpdateManyWithoutStorageRoomNestedInput = {
@@ -36017,6 +37599,34 @@ export namespace Prisma {
     deleteMany?: StorageLocationScalarWhereInput | StorageLocationScalarWhereInput[]
   }
 
+  export type UserStorageRoomAccessUpdateManyWithoutStorageRoomNestedInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput> | UserStorageRoomAccessCreateWithoutStorageRoomInput[] | UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput | UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput[]
+    upsert?: UserStorageRoomAccessUpsertWithWhereUniqueWithoutStorageRoomInput | UserStorageRoomAccessUpsertWithWhereUniqueWithoutStorageRoomInput[]
+    createMany?: UserStorageRoomAccessCreateManyStorageRoomInputEnvelope
+    set?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    disconnect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    delete?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    update?: UserStorageRoomAccessUpdateWithWhereUniqueWithoutStorageRoomInput | UserStorageRoomAccessUpdateWithWhereUniqueWithoutStorageRoomInput[]
+    updateMany?: UserStorageRoomAccessUpdateManyWithWhereWithoutStorageRoomInput | UserStorageRoomAccessUpdateManyWithWhereWithoutStorageRoomInput[]
+    deleteMany?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
+  }
+
+  export type OrderUpdateManyWithoutStorageRoomNestedInput = {
+    create?: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput> | OrderCreateWithoutStorageRoomInput[] | OrderUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStorageRoomInput | OrderCreateOrConnectWithoutStorageRoomInput[]
+    upsert?: OrderUpsertWithWhereUniqueWithoutStorageRoomInput | OrderUpsertWithWhereUniqueWithoutStorageRoomInput[]
+    createMany?: OrderCreateManyStorageRoomInputEnvelope
+    set?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    disconnect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    delete?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    update?: OrderUpdateWithWhereUniqueWithoutStorageRoomInput | OrderUpdateWithWhereUniqueWithoutStorageRoomInput[]
+    updateMany?: OrderUpdateManyWithWhereWithoutStorageRoomInput | OrderUpdateManyWithWhereWithoutStorageRoomInput[]
+    deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
+  }
+
   export type StorageLocationUncheckedUpdateManyWithoutStorageRoomNestedInput = {
     create?: XOR<StorageLocationCreateWithoutStorageRoomInput, StorageLocationUncheckedCreateWithoutStorageRoomInput> | StorageLocationCreateWithoutStorageRoomInput[] | StorageLocationUncheckedCreateWithoutStorageRoomInput[]
     connectOrCreate?: StorageLocationCreateOrConnectWithoutStorageRoomInput | StorageLocationCreateOrConnectWithoutStorageRoomInput[]
@@ -36029,6 +37639,34 @@ export namespace Prisma {
     update?: StorageLocationUpdateWithWhereUniqueWithoutStorageRoomInput | StorageLocationUpdateWithWhereUniqueWithoutStorageRoomInput[]
     updateMany?: StorageLocationUpdateManyWithWhereWithoutStorageRoomInput | StorageLocationUpdateManyWithWhereWithoutStorageRoomInput[]
     deleteMany?: StorageLocationScalarWhereInput | StorageLocationScalarWhereInput[]
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomNestedInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput> | UserStorageRoomAccessCreateWithoutStorageRoomInput[] | UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput | UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput[]
+    upsert?: UserStorageRoomAccessUpsertWithWhereUniqueWithoutStorageRoomInput | UserStorageRoomAccessUpsertWithWhereUniqueWithoutStorageRoomInput[]
+    createMany?: UserStorageRoomAccessCreateManyStorageRoomInputEnvelope
+    set?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    disconnect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    delete?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    update?: UserStorageRoomAccessUpdateWithWhereUniqueWithoutStorageRoomInput | UserStorageRoomAccessUpdateWithWhereUniqueWithoutStorageRoomInput[]
+    updateMany?: UserStorageRoomAccessUpdateManyWithWhereWithoutStorageRoomInput | UserStorageRoomAccessUpdateManyWithWhereWithoutStorageRoomInput[]
+    deleteMany?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
+  }
+
+  export type OrderUncheckedUpdateManyWithoutStorageRoomNestedInput = {
+    create?: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput> | OrderCreateWithoutStorageRoomInput[] | OrderUncheckedCreateWithoutStorageRoomInput[]
+    connectOrCreate?: OrderCreateOrConnectWithoutStorageRoomInput | OrderCreateOrConnectWithoutStorageRoomInput[]
+    upsert?: OrderUpsertWithWhereUniqueWithoutStorageRoomInput | OrderUpsertWithWhereUniqueWithoutStorageRoomInput[]
+    createMany?: OrderCreateManyStorageRoomInputEnvelope
+    set?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    disconnect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    delete?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    connect?: OrderWhereUniqueInput | OrderWhereUniqueInput[]
+    update?: OrderUpdateWithWhereUniqueWithoutStorageRoomInput | OrderUpdateWithWhereUniqueWithoutStorageRoomInput[]
+    updateMany?: OrderUpdateManyWithWhereWithoutStorageRoomInput | OrderUpdateManyWithWhereWithoutStorageRoomInput[]
+    deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
   }
 
   export type CategoryCreateNestedOneWithoutProductsInput = {
@@ -36529,6 +38167,12 @@ export namespace Prisma {
     connect?: CostCenterWhereUniqueInput
   }
 
+  export type StorageRoomCreateNestedOneWithoutOrdersInput = {
+    create?: XOR<StorageRoomCreateWithoutOrdersInput, StorageRoomUncheckedCreateWithoutOrdersInput>
+    connectOrCreate?: StorageRoomCreateOrConnectWithoutOrdersInput
+    connect?: StorageRoomWhereUniqueInput
+  }
+
   export type PartListCreateNestedOneWithoutOrdersInput = {
     create?: XOR<PartListCreateWithoutOrdersInput, PartListUncheckedCreateWithoutOrdersInput>
     connectOrCreate?: PartListCreateOrConnectWithoutOrdersInput
@@ -36579,6 +38223,14 @@ export namespace Prisma {
     upsert?: CostCenterUpsertWithoutOrdersInput
     connect?: CostCenterWhereUniqueInput
     update?: XOR<XOR<CostCenterUpdateToOneWithWhereWithoutOrdersInput, CostCenterUpdateWithoutOrdersInput>, CostCenterUncheckedUpdateWithoutOrdersInput>
+  }
+
+  export type StorageRoomUpdateOneRequiredWithoutOrdersNestedInput = {
+    create?: XOR<StorageRoomCreateWithoutOrdersInput, StorageRoomUncheckedCreateWithoutOrdersInput>
+    connectOrCreate?: StorageRoomCreateOrConnectWithoutOrdersInput
+    upsert?: StorageRoomUpsertWithoutOrdersInput
+    connect?: StorageRoomWhereUniqueInput
+    update?: XOR<XOR<StorageRoomUpdateToOneWithWhereWithoutOrdersInput, StorageRoomUpdateWithoutOrdersInput>, StorageRoomUncheckedUpdateWithoutOrdersInput>
   }
 
   export type PartListUpdateOneWithoutOrdersNestedInput = {
@@ -37203,6 +38855,13 @@ export namespace Prisma {
     connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
   }
 
+  export type UserStorageRoomAccessCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput> | UserStorageRoomAccessCreateWithoutUserInput[] | UserStorageRoomAccessUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutUserInput | UserStorageRoomAccessCreateOrConnectWithoutUserInput[]
+    createMany?: UserStorageRoomAccessCreateManyUserInputEnvelope
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+  }
+
   export type SavedCartCreateNestedManyWithoutUserInput = {
     create?: XOR<SavedCartCreateWithoutUserInput, SavedCartUncheckedCreateWithoutUserInput> | SavedCartCreateWithoutUserInput[] | SavedCartUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SavedCartCreateOrConnectWithoutUserInput | SavedCartCreateOrConnectWithoutUserInput[]
@@ -37250,6 +38909,13 @@ export namespace Prisma {
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
     createMany?: SessionCreateManyUserInputEnvelope
     connect?: SessionWhereUniqueInput | SessionWhereUniqueInput[]
+  }
+
+  export type UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput> | UserStorageRoomAccessCreateWithoutUserInput[] | UserStorageRoomAccessUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutUserInput | UserStorageRoomAccessCreateOrConnectWithoutUserInput[]
+    createMany?: UserStorageRoomAccessCreateManyUserInputEnvelope
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
   }
 
   export type SavedCartUncheckedCreateNestedManyWithoutUserInput = {
@@ -37321,6 +38987,20 @@ export namespace Prisma {
     update?: SessionUpdateWithWhereUniqueWithoutUserInput | SessionUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: SessionUpdateManyWithWhereWithoutUserInput | SessionUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: SessionScalarWhereInput | SessionScalarWhereInput[]
+  }
+
+  export type UserStorageRoomAccessUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput> | UserStorageRoomAccessCreateWithoutUserInput[] | UserStorageRoomAccessUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutUserInput | UserStorageRoomAccessCreateOrConnectWithoutUserInput[]
+    upsert?: UserStorageRoomAccessUpsertWithWhereUniqueWithoutUserInput | UserStorageRoomAccessUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserStorageRoomAccessCreateManyUserInputEnvelope
+    set?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    disconnect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    delete?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    update?: UserStorageRoomAccessUpdateWithWhereUniqueWithoutUserInput | UserStorageRoomAccessUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserStorageRoomAccessUpdateManyWithWhereWithoutUserInput | UserStorageRoomAccessUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
   }
 
   export type SavedCartUpdateManyWithoutUserNestedInput = {
@@ -37421,6 +39101,20 @@ export namespace Prisma {
     deleteMany?: SessionScalarWhereInput | SessionScalarWhereInput[]
   }
 
+  export type UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput> | UserStorageRoomAccessCreateWithoutUserInput[] | UserStorageRoomAccessUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: UserStorageRoomAccessCreateOrConnectWithoutUserInput | UserStorageRoomAccessCreateOrConnectWithoutUserInput[]
+    upsert?: UserStorageRoomAccessUpsertWithWhereUniqueWithoutUserInput | UserStorageRoomAccessUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: UserStorageRoomAccessCreateManyUserInputEnvelope
+    set?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    disconnect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    delete?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    connect?: UserStorageRoomAccessWhereUniqueInput | UserStorageRoomAccessWhereUniqueInput[]
+    update?: UserStorageRoomAccessUpdateWithWhereUniqueWithoutUserInput | UserStorageRoomAccessUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: UserStorageRoomAccessUpdateManyWithWhereWithoutUserInput | UserStorageRoomAccessUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
+  }
+
   export type SavedCartUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SavedCartCreateWithoutUserInput, SavedCartUncheckedCreateWithoutUserInput> | SavedCartCreateWithoutUserInput[] | SavedCartUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SavedCartCreateOrConnectWithoutUserInput | SavedCartCreateOrConnectWithoutUserInput[]
@@ -37489,6 +39183,34 @@ export namespace Prisma {
     update?: ProductStockBookingUpdateWithWhereUniqueWithoutUserInput | ProductStockBookingUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: ProductStockBookingUpdateManyWithWhereWithoutUserInput | ProductStockBookingUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: ProductStockBookingScalarWhereInput | ProductStockBookingScalarWhereInput[]
+  }
+
+  export type UserCreateNestedOneWithoutStorageRoomAccessesInput = {
+    create?: XOR<UserCreateWithoutStorageRoomAccessesInput, UserUncheckedCreateWithoutStorageRoomAccessesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutStorageRoomAccessesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type StorageRoomCreateNestedOneWithoutUserAccessesInput = {
+    create?: XOR<StorageRoomCreateWithoutUserAccessesInput, StorageRoomUncheckedCreateWithoutUserAccessesInput>
+    connectOrCreate?: StorageRoomCreateOrConnectWithoutUserAccessesInput
+    connect?: StorageRoomWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutStorageRoomAccessesNestedInput = {
+    create?: XOR<UserCreateWithoutStorageRoomAccessesInput, UserUncheckedCreateWithoutStorageRoomAccessesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutStorageRoomAccessesInput
+    upsert?: UserUpsertWithoutStorageRoomAccessesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutStorageRoomAccessesInput, UserUpdateWithoutStorageRoomAccessesInput>, UserUncheckedUpdateWithoutStorageRoomAccessesInput>
+  }
+
+  export type StorageRoomUpdateOneRequiredWithoutUserAccessesNestedInput = {
+    create?: XOR<StorageRoomCreateWithoutUserAccessesInput, StorageRoomUncheckedCreateWithoutUserAccessesInput>
+    connectOrCreate?: StorageRoomCreateOrConnectWithoutUserAccessesInput
+    upsert?: StorageRoomUpsertWithoutUserAccessesInput
+    connect?: StorageRoomWhereUniqueInput
+    update?: XOR<XOR<StorageRoomUpdateToOneWithWhereWithoutUserAccessesInput, StorageRoomUpdateWithoutUserAccessesInput>, StorageRoomUncheckedUpdateWithoutUserAccessesInput>
   }
 
   export type UserCreateNestedOneWithoutAccountsInput = {
@@ -37990,6 +39712,8 @@ export namespace Prisma {
     name: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    userAccesses?: UserStorageRoomAccessCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderCreateNestedManyWithoutStorageRoomInput
   }
 
   export type StorageRoomUncheckedCreateWithoutStorageLocationsInput = {
@@ -37997,6 +39721,8 @@ export namespace Prisma {
     name: string
     createdAt?: Date | string
     updatedAt?: Date | string
+    userAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderUncheckedCreateNestedManyWithoutStorageRoomInput
   }
 
   export type StorageRoomCreateOrConnectWithoutStorageLocationsInput = {
@@ -38080,6 +39806,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    userAccesses?: UserStorageRoomAccessUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUpdateManyWithoutStorageRoomNestedInput
   }
 
   export type StorageRoomUncheckedUpdateWithoutStorageLocationsInput = {
@@ -38087,6 +39815,8 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    userAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutStorageRoomNestedInput
   }
 
   export type ProductUpsertWithWhereUniqueWithoutStorageLocationInput = {
@@ -38135,6 +39865,66 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type UserStorageRoomAccessCreateWithoutStorageRoomInput = {
+    id?: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutStorageRoomAccessesInput
+  }
+
+  export type UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput = {
+    id?: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type UserStorageRoomAccessCreateOrConnectWithoutStorageRoomInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    create: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput>
+  }
+
+  export type UserStorageRoomAccessCreateManyStorageRoomInputEnvelope = {
+    data: UserStorageRoomAccessCreateManyStorageRoomInput | UserStorageRoomAccessCreateManyStorageRoomInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type OrderCreateWithoutStorageRoomInput = {
+    id?: string
+    orderNumber: string
+    workerNote?: string | null
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutOrdersInput
+    costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
+    items?: OrderItemCreateNestedManyWithoutOrderInput
+    sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
+  }
+
+  export type OrderUncheckedCreateWithoutStorageRoomInput = {
+    id?: string
+    orderNumber: string
+    userId: string
+    costCenterId: string
+    sourcePartListId?: string | null
+    workerNote?: string | null
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    items?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
+    sourceRequest?: OrderRequestUncheckedCreateNestedOneWithoutApprovedOrderInput
+  }
+
+  export type OrderCreateOrConnectWithoutStorageRoomInput = {
+    where: OrderWhereUniqueInput
+    create: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput>
+  }
+
+  export type OrderCreateManyStorageRoomInputEnvelope = {
+    data: OrderCreateManyStorageRoomInput | OrderCreateManyStorageRoomInput[]
+    skipDuplicates?: boolean
+  }
+
   export type StorageLocationUpsertWithWhereUniqueWithoutStorageRoomInput = {
     where: StorageLocationWhereUniqueInput
     update: XOR<StorageLocationUpdateWithoutStorageRoomInput, StorageLocationUncheckedUpdateWithoutStorageRoomInput>
@@ -38162,6 +39952,64 @@ export namespace Prisma {
     description?: StringNullableFilter<"StorageLocation"> | string | null
     createdAt?: DateTimeFilter<"StorageLocation"> | Date | string
     updatedAt?: DateTimeFilter<"StorageLocation"> | Date | string
+  }
+
+  export type UserStorageRoomAccessUpsertWithWhereUniqueWithoutStorageRoomInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    update: XOR<UserStorageRoomAccessUpdateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedUpdateWithoutStorageRoomInput>
+    create: XOR<UserStorageRoomAccessCreateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedCreateWithoutStorageRoomInput>
+  }
+
+  export type UserStorageRoomAccessUpdateWithWhereUniqueWithoutStorageRoomInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    data: XOR<UserStorageRoomAccessUpdateWithoutStorageRoomInput, UserStorageRoomAccessUncheckedUpdateWithoutStorageRoomInput>
+  }
+
+  export type UserStorageRoomAccessUpdateManyWithWhereWithoutStorageRoomInput = {
+    where: UserStorageRoomAccessScalarWhereInput
+    data: XOR<UserStorageRoomAccessUpdateManyMutationInput, UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomInput>
+  }
+
+  export type UserStorageRoomAccessScalarWhereInput = {
+    AND?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
+    OR?: UserStorageRoomAccessScalarWhereInput[]
+    NOT?: UserStorageRoomAccessScalarWhereInput | UserStorageRoomAccessScalarWhereInput[]
+    id?: StringFilter<"UserStorageRoomAccess"> | string
+    userId?: StringFilter<"UserStorageRoomAccess"> | string
+    storageRoomId?: StringFilter<"UserStorageRoomAccess"> | string
+    createdAt?: DateTimeFilter<"UserStorageRoomAccess"> | Date | string
+  }
+
+  export type OrderUpsertWithWhereUniqueWithoutStorageRoomInput = {
+    where: OrderWhereUniqueInput
+    update: XOR<OrderUpdateWithoutStorageRoomInput, OrderUncheckedUpdateWithoutStorageRoomInput>
+    create: XOR<OrderCreateWithoutStorageRoomInput, OrderUncheckedCreateWithoutStorageRoomInput>
+  }
+
+  export type OrderUpdateWithWhereUniqueWithoutStorageRoomInput = {
+    where: OrderWhereUniqueInput
+    data: XOR<OrderUpdateWithoutStorageRoomInput, OrderUncheckedUpdateWithoutStorageRoomInput>
+  }
+
+  export type OrderUpdateManyWithWhereWithoutStorageRoomInput = {
+    where: OrderScalarWhereInput
+    data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutStorageRoomInput>
+  }
+
+  export type OrderScalarWhereInput = {
+    AND?: OrderScalarWhereInput | OrderScalarWhereInput[]
+    OR?: OrderScalarWhereInput[]
+    NOT?: OrderScalarWhereInput | OrderScalarWhereInput[]
+    id?: StringFilter<"Order"> | string
+    orderNumber?: StringFilter<"Order"> | string
+    userId?: StringFilter<"Order"> | string
+    costCenterId?: StringFilter<"Order"> | string
+    storageRoomId?: StringFilter<"Order"> | string
+    sourcePartListId?: StringNullableFilter<"Order"> | string | null
+    workerNote?: StringNullableFilter<"Order"> | string | null
+    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
+    createdAt?: DateTimeFilter<"Order"> | Date | string
+    updatedAt?: DateTimeFilter<"Order"> | Date | string
   }
 
   export type CategoryCreateWithoutProductsInput = {
@@ -38919,10 +40767,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
@@ -38937,10 +40787,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
@@ -39032,10 +40884,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
@@ -39050,10 +40904,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
@@ -39063,10 +40919,12 @@ export namespace Prisma {
   export type OrderCreateWithoutCostCenterInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
     sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
@@ -39076,7 +40934,9 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     userId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39110,20 +40970,6 @@ export namespace Prisma {
     data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutCostCenterInput>
   }
 
-  export type OrderScalarWhereInput = {
-    AND?: OrderScalarWhereInput | OrderScalarWhereInput[]
-    OR?: OrderScalarWhereInput[]
-    NOT?: OrderScalarWhereInput | OrderScalarWhereInput[]
-    id?: StringFilter<"Order"> | string
-    orderNumber?: StringFilter<"Order"> | string
-    userId?: StringFilter<"Order"> | string
-    costCenterId?: StringFilter<"Order"> | string
-    sourcePartListId?: StringNullableFilter<"Order"> | string | null
-    status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
-    createdAt?: DateTimeFilter<"Order"> | Date | string
-    updatedAt?: DateTimeFilter<"Order"> | Date | string
-  }
-
   export type UserCreateWithoutOrdersInput = {
     id?: string
     name?: string | null
@@ -39132,10 +40978,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
     orderRequestsAsTeacher?: OrderRequestCreateNestedManyWithoutTeacherInput
@@ -39150,10 +40998,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
     orderRequestsAsTeacher?: OrderRequestUncheckedCreateNestedManyWithoutTeacherInput
@@ -39184,6 +41034,29 @@ export namespace Prisma {
   export type CostCenterCreateOrConnectWithoutOrdersInput = {
     where: CostCenterWhereUniqueInput
     create: XOR<CostCenterCreateWithoutOrdersInput, CostCenterUncheckedCreateWithoutOrdersInput>
+  }
+
+  export type StorageRoomCreateWithoutOrdersInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    storageLocations?: StorageLocationCreateNestedManyWithoutStorageRoomInput
+    userAccesses?: UserStorageRoomAccessCreateNestedManyWithoutStorageRoomInput
+  }
+
+  export type StorageRoomUncheckedCreateWithoutOrdersInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    storageLocations?: StorageLocationUncheckedCreateNestedManyWithoutStorageRoomInput
+    userAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutStorageRoomInput
+  }
+
+  export type StorageRoomCreateOrConnectWithoutOrdersInput = {
+    where: StorageRoomWhereUniqueInput
+    create: XOR<StorageRoomCreateWithoutOrdersInput, StorageRoomUncheckedCreateWithoutOrdersInput>
   }
 
   export type PartListCreateWithoutOrdersInput = {
@@ -39244,6 +41117,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39259,6 +41133,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39289,10 +41164,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
     orderRequestsAsTeacher?: OrderRequestUpdateManyWithoutTeacherNestedInput
@@ -39307,10 +41184,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
     orderRequestsAsTeacher?: OrderRequestUncheckedUpdateManyWithoutTeacherNestedInput
@@ -39342,6 +41221,35 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StorageRoomUpsertWithoutOrdersInput = {
+    update: XOR<StorageRoomUpdateWithoutOrdersInput, StorageRoomUncheckedUpdateWithoutOrdersInput>
+    create: XOR<StorageRoomCreateWithoutOrdersInput, StorageRoomUncheckedCreateWithoutOrdersInput>
+    where?: StorageRoomWhereInput
+  }
+
+  export type StorageRoomUpdateToOneWithWhereWithoutOrdersInput = {
+    where?: StorageRoomWhereInput
+    data: XOR<StorageRoomUpdateWithoutOrdersInput, StorageRoomUncheckedUpdateWithoutOrdersInput>
+  }
+
+  export type StorageRoomUpdateWithoutOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    storageLocations?: StorageLocationUpdateManyWithoutStorageRoomNestedInput
+    userAccesses?: UserStorageRoomAccessUpdateManyWithoutStorageRoomNestedInput
+  }
+
+  export type StorageRoomUncheckedUpdateWithoutOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    storageLocations?: StorageLocationUncheckedUpdateManyWithoutStorageRoomNestedInput
+    userAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomNestedInput
   }
 
   export type PartListUpsertWithoutOrdersInput = {
@@ -39411,6 +41319,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39426,6 +41335,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -39521,11 +41431,13 @@ export namespace Prisma {
   export type OrderCreateWithoutSourcePartListInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
     costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
     sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
   }
@@ -39535,6 +41447,8 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -39883,10 +41797,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsTeacher?: OrderRequestCreateNestedManyWithoutTeacherInput
@@ -39901,10 +41817,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsTeacher?: OrderRequestUncheckedCreateNestedManyWithoutTeacherInput
@@ -39924,10 +41842,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
@@ -39942,10 +41862,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
@@ -39960,11 +41882,13 @@ export namespace Prisma {
   export type OrderCreateWithoutSourceRequestInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
     costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
   }
@@ -39974,7 +41898,9 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40029,10 +41955,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsTeacher?: OrderRequestUpdateManyWithoutTeacherNestedInput
@@ -40047,10 +41975,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsTeacher?: OrderRequestUncheckedUpdateManyWithoutTeacherNestedInput
@@ -40076,10 +42006,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
@@ -40094,10 +42026,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
@@ -40118,11 +42052,13 @@ export namespace Prisma {
   export type OrderUpdateWithoutSourceRequestInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
     costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
   }
@@ -40132,7 +42068,9 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40160,6 +42098,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40175,6 +42114,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -40257,6 +42197,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40272,6 +42213,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40342,11 +42284,13 @@ export namespace Prisma {
   export type OrderCreateWithoutItemsInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutOrdersInput
     costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
     sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
   }
@@ -40356,7 +42300,9 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40437,11 +42383,13 @@ export namespace Prisma {
   export type OrderUpdateWithoutItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
     costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
     sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
   }
@@ -40451,7 +42399,9 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40911,10 +42861,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
     orderRequestsAsTeacher?: OrderRequestCreateNestedManyWithoutTeacherInput
@@ -40929,10 +42881,12 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
     orderRequestsAsTeacher?: OrderRequestUncheckedCreateNestedManyWithoutTeacherInput
@@ -40989,10 +42943,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
     orderRequestsAsTeacher?: OrderRequestUpdateManyWithoutTeacherNestedInput
@@ -41007,10 +42963,12 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
     orderRequestsAsTeacher?: OrderRequestUncheckedUpdateManyWithoutTeacherNestedInput
@@ -41257,6 +43215,28 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type UserStorageRoomAccessCreateWithoutUserInput = {
+    id?: string
+    createdAt?: Date | string
+    storageRoom: StorageRoomCreateNestedOneWithoutUserAccessesInput
+  }
+
+  export type UserStorageRoomAccessUncheckedCreateWithoutUserInput = {
+    id?: string
+    storageRoomId: string
+    createdAt?: Date | string
+  }
+
+  export type UserStorageRoomAccessCreateOrConnectWithoutUserInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    create: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserStorageRoomAccessCreateManyUserInputEnvelope = {
+    data: UserStorageRoomAccessCreateManyUserInput | UserStorageRoomAccessCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SavedCartCreateWithoutUserInput = {
     id?: string
     name: string
@@ -41286,10 +43266,12 @@ export namespace Prisma {
   export type OrderCreateWithoutUserInput = {
     id?: string
     orderNumber: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     costCenter: CostCenterCreateNestedOneWithoutOrdersInput
+    storageRoom: StorageRoomCreateNestedOneWithoutOrdersInput
     sourcePartList?: PartListCreateNestedOneWithoutOrdersInput
     items?: OrderItemCreateNestedManyWithoutOrderInput
     sourceRequest?: OrderRequestCreateNestedOneWithoutApprovedOrderInput
@@ -41299,7 +43281,9 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -41322,6 +43306,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -41336,6 +43321,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -41358,6 +43344,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -41372,6 +43359,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -41477,6 +43465,22 @@ export namespace Prisma {
     expires?: DateTimeFilter<"Session"> | Date | string
   }
 
+  export type UserStorageRoomAccessUpsertWithWhereUniqueWithoutUserInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    update: XOR<UserStorageRoomAccessUpdateWithoutUserInput, UserStorageRoomAccessUncheckedUpdateWithoutUserInput>
+    create: XOR<UserStorageRoomAccessCreateWithoutUserInput, UserStorageRoomAccessUncheckedCreateWithoutUserInput>
+  }
+
+  export type UserStorageRoomAccessUpdateWithWhereUniqueWithoutUserInput = {
+    where: UserStorageRoomAccessWhereUniqueInput
+    data: XOR<UserStorageRoomAccessUpdateWithoutUserInput, UserStorageRoomAccessUncheckedUpdateWithoutUserInput>
+  }
+
+  export type UserStorageRoomAccessUpdateManyWithWhereWithoutUserInput = {
+    where: UserStorageRoomAccessScalarWhereInput
+    data: XOR<UserStorageRoomAccessUpdateManyMutationInput, UserStorageRoomAccessUncheckedUpdateManyWithoutUserInput>
+  }
+
   export type SavedCartUpsertWithWhereUniqueWithoutUserInput = {
     where: SavedCartWhereUniqueInput
     update: XOR<SavedCartUpdateWithoutUserInput, SavedCartUncheckedUpdateWithoutUserInput>
@@ -41546,6 +43550,7 @@ export namespace Prisma {
     teacherExternalId?: StringFilter<"OrderRequest"> | string
     teacherDisplayName?: StringFilter<"OrderRequest"> | string
     teacherEmail?: StringFilter<"OrderRequest"> | string
+    workerNote?: StringNullableFilter<"OrderRequest"> | string | null
     status?: EnumRequestStatusFilter<"OrderRequest"> | $Enums.RequestStatus
     approvedOrderId?: StringNullableFilter<"OrderRequest"> | string | null
     createdAt?: DateTimeFilter<"OrderRequest"> | Date | string
@@ -41584,6 +43589,154 @@ export namespace Prisma {
     data: XOR<ProductStockBookingUpdateManyMutationInput, ProductStockBookingUncheckedUpdateManyWithoutUserInput>
   }
 
+  export type UserCreateWithoutStorageRoomAccessesInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    azureAdObjectId?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    savedCarts?: SavedCartCreateNestedManyWithoutUserInput
+    orders?: OrderCreateNestedManyWithoutUserInput
+    orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
+    orderRequestsAsTeacher?: OrderRequestCreateNestedManyWithoutTeacherInput
+    stockBookings?: ProductStockBookingCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutStorageRoomAccessesInput = {
+    id?: string
+    name?: string | null
+    email?: string | null
+    azureAdObjectId?: string | null
+    emailVerified?: Date | string | null
+    image?: string | null
+    role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
+    orders?: OrderUncheckedCreateNestedManyWithoutUserInput
+    orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
+    orderRequestsAsTeacher?: OrderRequestUncheckedCreateNestedManyWithoutTeacherInput
+    stockBookings?: ProductStockBookingUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutStorageRoomAccessesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutStorageRoomAccessesInput, UserUncheckedCreateWithoutStorageRoomAccessesInput>
+  }
+
+  export type StorageRoomCreateWithoutUserAccessesInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    storageLocations?: StorageLocationCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderCreateNestedManyWithoutStorageRoomInput
+  }
+
+  export type StorageRoomUncheckedCreateWithoutUserAccessesInput = {
+    id?: string
+    name: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    storageLocations?: StorageLocationUncheckedCreateNestedManyWithoutStorageRoomInput
+    orders?: OrderUncheckedCreateNestedManyWithoutStorageRoomInput
+  }
+
+  export type StorageRoomCreateOrConnectWithoutUserAccessesInput = {
+    where: StorageRoomWhereUniqueInput
+    create: XOR<StorageRoomCreateWithoutUserAccessesInput, StorageRoomUncheckedCreateWithoutUserAccessesInput>
+  }
+
+  export type UserUpsertWithoutStorageRoomAccessesInput = {
+    update: XOR<UserUpdateWithoutStorageRoomAccessesInput, UserUncheckedUpdateWithoutStorageRoomAccessesInput>
+    create: XOR<UserCreateWithoutStorageRoomAccessesInput, UserUncheckedCreateWithoutStorageRoomAccessesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutStorageRoomAccessesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutStorageRoomAccessesInput, UserUncheckedUpdateWithoutStorageRoomAccessesInput>
+  }
+
+  export type UserUpdateWithoutStorageRoomAccessesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    azureAdObjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
+    orders?: OrderUpdateManyWithoutUserNestedInput
+    orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
+    orderRequestsAsTeacher?: OrderRequestUpdateManyWithoutTeacherNestedInput
+    stockBookings?: ProductStockBookingUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutStorageRoomAccessesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    azureAdObjectId?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
+    orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
+    orderRequestsAsTeacher?: OrderRequestUncheckedUpdateManyWithoutTeacherNestedInput
+    stockBookings?: ProductStockBookingUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type StorageRoomUpsertWithoutUserAccessesInput = {
+    update: XOR<StorageRoomUpdateWithoutUserAccessesInput, StorageRoomUncheckedUpdateWithoutUserAccessesInput>
+    create: XOR<StorageRoomCreateWithoutUserAccessesInput, StorageRoomUncheckedCreateWithoutUserAccessesInput>
+    where?: StorageRoomWhereInput
+  }
+
+  export type StorageRoomUpdateToOneWithWhereWithoutUserAccessesInput = {
+    where?: StorageRoomWhereInput
+    data: XOR<StorageRoomUpdateWithoutUserAccessesInput, StorageRoomUncheckedUpdateWithoutUserAccessesInput>
+  }
+
+  export type StorageRoomUpdateWithoutUserAccessesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    storageLocations?: StorageLocationUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUpdateManyWithoutStorageRoomNestedInput
+  }
+
+  export type StorageRoomUncheckedUpdateWithoutUserAccessesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    storageLocations?: StorageLocationUncheckedUpdateManyWithoutStorageRoomNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutStorageRoomNestedInput
+  }
+
   export type UserCreateWithoutAccountsInput = {
     id?: string
     name?: string | null
@@ -41592,9 +43745,11 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     sessions?: SessionCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
@@ -41610,9 +43765,11 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
@@ -41644,9 +43801,11 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
@@ -41662,9 +43821,11 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
@@ -41680,9 +43841,11 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartCreateNestedManyWithoutUserInput
     orders?: OrderCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestCreateNestedManyWithoutStudentInput
@@ -41698,9 +43861,11 @@ export namespace Prisma {
     emailVerified?: Date | string | null
     image?: string | null
     role?: $Enums.AppRole
+    hasAllStorageRoomAccess?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedCreateNestedManyWithoutUserInput
     savedCarts?: SavedCartUncheckedCreateNestedManyWithoutUserInput
     orders?: OrderUncheckedCreateNestedManyWithoutUserInput
     orderRequestsAsStudent?: OrderRequestUncheckedCreateNestedManyWithoutStudentInput
@@ -41732,9 +43897,11 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUpdateManyWithoutUserNestedInput
     orders?: OrderUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUpdateManyWithoutStudentNestedInput
@@ -41750,9 +43917,11 @@ export namespace Prisma {
     emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
     role?: EnumAppRoleFieldUpdateOperationsInput | $Enums.AppRole
+    hasAllStorageRoomAccess?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    storageRoomAccesses?: UserStorageRoomAccessUncheckedUpdateManyWithoutUserNestedInput
     savedCarts?: SavedCartUncheckedUpdateManyWithoutUserNestedInput
     orders?: OrderUncheckedUpdateManyWithoutUserNestedInput
     orderRequestsAsStudent?: OrderRequestUncheckedUpdateManyWithoutStudentNestedInput
@@ -41961,6 +44130,24 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type UserStorageRoomAccessCreateManyStorageRoomInput = {
+    id?: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type OrderCreateManyStorageRoomInput = {
+    id?: string
+    orderNumber: string
+    userId: string
+    costCenterId: string
+    sourcePartListId?: string | null
+    workerNote?: string | null
+    status?: $Enums.OrderStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type StorageLocationUpdateWithoutStorageRoomInput = {
     id?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
@@ -41986,6 +44173,64 @@ export namespace Prisma {
     code?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessUpdateWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutStorageRoomAccessesNestedInput
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateManyWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderUpdateWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutOrdersNestedInput
+    costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
+    items?: OrderItemUpdateManyWithoutOrderNestedInput
+    sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
+  }
+
+  export type OrderUncheckedUpdateWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    costCenterId?: StringFieldUpdateOperationsInput | string
+    sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
+    sourceRequest?: OrderRequestUncheckedUpdateOneWithoutApprovedOrderNestedInput
+  }
+
+  export type OrderUncheckedUpdateManyWithoutStorageRoomInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    costCenterId?: StringFieldUpdateOperationsInput | string
+    sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -42242,7 +44487,9 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     userId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -42251,10 +44498,12 @@ export namespace Prisma {
   export type OrderUpdateWithoutCostCenterInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
     sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
@@ -42264,7 +44513,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42276,7 +44527,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42343,6 +44596,8 @@ export namespace Prisma {
     orderNumber: string
     userId: string
     costCenterId: string
+    storageRoomId: string
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -42435,11 +44690,13 @@ export namespace Prisma {
   export type OrderUpdateWithoutSourcePartListInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutOrdersNestedInput
     costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
     sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
   }
@@ -42449,6 +44706,8 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42461,6 +44720,8 @@ export namespace Prisma {
     orderNumber?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42582,6 +44843,12 @@ export namespace Prisma {
     expires: Date | string
   }
 
+  export type UserStorageRoomAccessCreateManyUserInput = {
+    id?: string
+    storageRoomId: string
+    createdAt?: Date | string
+  }
+
   export type SavedCartCreateManyUserInput = {
     id?: string
     name: string
@@ -42593,7 +44860,9 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     costCenterId: string
+    storageRoomId: string
     sourcePartListId?: string | null
+    workerNote?: string | null
     status?: $Enums.OrderStatus
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -42605,6 +44874,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -42617,6 +44887,7 @@ export namespace Prisma {
     teacherExternalId: string
     teacherDisplayName: string
     teacherEmail: string
+    workerNote?: string | null
     status?: $Enums.RequestStatus
     approvedOrderId?: string | null
     createdAt?: Date | string
@@ -42692,6 +44963,24 @@ export namespace Prisma {
     expires?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type UserStorageRoomAccessUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutUserAccessesNestedInput
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type UserStorageRoomAccessUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type SavedCartUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -42718,10 +45007,12 @@ export namespace Prisma {
   export type OrderUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     costCenter?: CostCenterUpdateOneRequiredWithoutOrdersNestedInput
+    storageRoom?: StorageRoomUpdateOneRequiredWithoutOrdersNestedInput
     sourcePartList?: PartListUpdateOneWithoutOrdersNestedInput
     items?: OrderItemUpdateManyWithoutOrderNestedInput
     sourceRequest?: OrderRequestUpdateOneWithoutApprovedOrderNestedInput
@@ -42731,7 +45022,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42743,7 +45036,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     costCenterId?: StringFieldUpdateOperationsInput | string
+    storageRoomId?: StringFieldUpdateOperationsInput | string
     sourcePartListId?: NullableStringFieldUpdateOperationsInput | string | null
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42754,6 +45049,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42768,6 +45064,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42781,6 +45078,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42792,6 +45090,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42806,6 +45105,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42819,6 +45119,7 @@ export namespace Prisma {
     teacherExternalId?: StringFieldUpdateOperationsInput | string
     teacherDisplayName?: StringFieldUpdateOperationsInput | string
     teacherEmail?: StringFieldUpdateOperationsInput | string
+    workerNote?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumRequestStatusFieldUpdateOperationsInput | $Enums.RequestStatus
     approvedOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

@@ -9,13 +9,17 @@ import {
   assertSufficientStock,
   calculatePartListMaxOrderable,
 } from "~/server/api/routers/utils/stock";
+import { resolveSingleStorageRoomForProductIds } from "~/server/api/routers/utils/storage-access";
 
 const sessionInput = z.object({
   sessionId: z.string().min(1).max(128),
 });
 
+const workerNoteInput = z.string().trim().max(500).optional();
+
 const submitForTeacherApprovalInput = sessionInput.extend({
   teacherExternalId: z.string().min(1),
+  workerNote: workerNoteInput,
 });
 const addPartListInput = sessionInput.extend({
   partListId: z.string().min(1),
@@ -37,6 +41,138 @@ function parseInsufficientStockMessage(message: string) {
     productId: productId ?? "",
     maxOrderable: Number(maxOrderableRaw ?? "0"),
   };
+}
+
+function normalizeWorkerNote(workerNote: string | undefined) {
+  const normalized = workerNote?.trim();
+  return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function createMixedStorageRoomsError(existingRoomName: string, incomingRoomName: string): TRPCError {
+  return new TRPCError({
+    code: "BAD_REQUEST",
+    message: `MIXED_STORAGE_ROOMS:${existingRoomName}:${incomingRoomName}`,
+  });
+}
+
+async function resolveProductStorageRoom(
+  db: {
+    product: {
+      findUnique: (args: {
+        where: { id: string };
+        select: {
+          storageLocation: {
+            select: {
+              storageRoom: {
+                select: {
+                  id: true;
+                  name: true;
+                };
+              };
+            };
+          };
+        };
+      }) => Promise<{ storageLocation: { storageRoom: { id: string; name: string } } | null } | null>;
+    };
+  },
+  productId: string,
+) {
+  const product = await db.product.findUnique({
+    where: { id: productId },
+    select: {
+      storageLocation: {
+        select: {
+          storageRoom: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!product?.storageLocation?.storageRoom) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `PRODUCT_WITHOUT_STORAGE_ROOM:${productId}`,
+    });
+  }
+
+  return product.storageLocation.storageRoom;
+}
+
+async function resolveCurrentCartStorageRoom(
+  db: {
+    cartItem: {
+      findMany: (args: {
+        where: { cartId: string };
+        select: { productId: true };
+      }) => Promise<Array<{ productId: string }>>;
+    };
+    product: {
+      findMany: (args: {
+        where: { id: { in: string[] } };
+        select: {
+          id: true;
+          storageLocation: {
+            select: {
+              storageRoom: {
+                select: {
+                  id: true;
+                  name: true;
+                };
+              };
+            };
+          };
+        };
+      }) => Promise<
+        Array<{
+          id: string;
+          storageLocation: {
+            storageRoom: {
+              id: string;
+              name: string;
+            };
+          } | null;
+        }>
+      >;
+    };
+  },
+  cartId: string,
+) {
+  const cartItems = await db.cartItem.findMany({
+    where: { cartId },
+    select: { productId: true },
+  });
+  if (cartItems.length === 0) return null;
+
+  try {
+    return await resolveSingleStorageRoomForProductIds(
+      db,
+      cartItems.map((item) => item.productId),
+    );
+  } catch (error) {
+    if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "MIXED_STORAGE_ROOMS",
+      });
+    }
+    throw error;
+  }
+}
+
+function requireWorkerNoteForStudent(role: string, workerNote: string | undefined) {
+  const normalized = normalizeWorkerNote(workerNote);
+  if (role === "STUDENT" && !normalized) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "WORKER_NOTE_REQUIRED",
+    });
+  }
+  return normalized;
 }
 
 export const cartRouter = createTRPCRouter({
@@ -134,6 +270,15 @@ export const cartRouter = createTRPCRouter({
           update: {},
           select: { id: true, sessionId: true },
         });
+
+        const [currentCartRoom, incomingProductRoom] = await Promise.all([
+          resolveCurrentCartStorageRoom(tx, cart.id),
+          resolveProductStorageRoom(tx, input.productId),
+        ]);
+
+        if (currentCartRoom && currentCartRoom.id !== incomingProductRoom.id) {
+          throw createMixedStorageRoomsError(currentCartRoom.name, incomingProductRoom.name);
+        }
 
         const cartItems = await tx.cartItem.findMany({
           where: { cartId: cart.id },
@@ -242,6 +387,28 @@ export const cartRouter = createTRPCRouter({
         select: { id: true },
       });
 
+      let incomingPartListRoom: { id: string; name: string };
+      try {
+        incomingPartListRoom = await resolveSingleStorageRoomForProductIds(
+          tx,
+          partList.items.map((item) => item.productId),
+        );
+      } catch (error) {
+        if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "MIXED_STORAGE_ROOMS",
+          });
+        }
+        throw error;
+      }
+
+      const currentCartRoom = await resolveCurrentCartStorageRoom(tx, cart.id);
+
+      if (currentCartRoom && currentCartRoom.id !== incomingPartListRoom.id) {
+        throw createMixedStorageRoomsError(currentCartRoom.name, incomingPartListRoom.name);
+      }
+
       for (const item of partList.items) {
         const incrementQuantity = (Number(item.quantity) * requestedQuantity).toString();
         await tx.cartItem.upsert({
@@ -319,6 +486,20 @@ export const cartRouter = createTRPCRouter({
             productId: input.line.productId,
             quantity: input.quantity,
           });
+          try {
+            await resolveSingleStorageRoomForProductIds(
+              tx,
+              nextItems.map((item) => item.productId),
+            );
+          } catch (error) {
+            if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "MIXED_STORAGE_ROOMS",
+              });
+            }
+            throw error;
+          }
         }
         await assertSufficientStock(tx, aggregateProductRequirements(nextItems));
 
@@ -383,9 +564,11 @@ export const cartRouter = createTRPCRouter({
     .input(
       sessionInput.extend({
         costCenterId: z.string().min(1),
+        workerNote: workerNoteInput,
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const workerNote = requireWorkerNoteForStudent(ctx.session.user.role, input.workerNote);
       const result = await ctx.db.$transaction(async (tx) => {
         const cart = await tx.cart.findUnique({
           where: { sessionId: input.sessionId },
@@ -438,6 +621,19 @@ export const cartRouter = createTRPCRouter({
           throw error;
         }
 
+        let targetStorageRoom: { id: string; name: string };
+        try {
+          targetStorageRoom = await resolveSingleStorageRoomForProductIds(
+            tx,
+            cart.items.map((item) => item.productId),
+          );
+        } catch (error) {
+          if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+            return { ok: false as const, reason: "MIXED_STORAGE_ROOMS" as const };
+          }
+          throw error;
+        }
+
         const year = new Date().getFullYear();
         const counter = await tx.orderCounter.upsert({
           where: { year },
@@ -460,6 +656,8 @@ export const cartRouter = createTRPCRouter({
             orderNumber,
             userId: ctx.session.user.id,
             costCenterId: input.costCenterId,
+            storageRoomId: targetStorageRoom.id,
+            workerNote,
             status: "OPEN",
             items: {
               create: cart.items.map((item) => ({
@@ -516,6 +714,7 @@ export const cartRouter = createTRPCRouter({
       if (ctx.session.user.role !== "STUDENT") {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
+      const workerNote = requireWorkerNoteForStudent(ctx.session.user.role, input.workerNote);
 
       let selectedTeacher:
         | {
@@ -569,6 +768,18 @@ export const cartRouter = createTRPCRouter({
         }
 
         try {
+          await resolveSingleStorageRoomForProductIds(
+            tx,
+            cart.items.map((item) => item.productId),
+          );
+        } catch (error) {
+          if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+            return { ok: false as const, reason: "MIXED_STORAGE_ROOMS" as const };
+          }
+          throw error;
+        }
+
+        try {
           await assertSufficientStock(tx, aggregateProductRequirements(cart.items));
         } catch (error) {
           if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
@@ -597,6 +808,7 @@ export const cartRouter = createTRPCRouter({
             teacherExternalId: selectedTeacher.externalId,
             teacherDisplayName: selectedTeacher.displayName,
             teacherEmail: selectedTeacher.email,
+            workerNote,
             status: "PENDING",
             items: {
               create: cart.items.map((item) => ({
@@ -839,6 +1051,23 @@ export const cartRouter = createTRPCRouter({
 
       if (!savedCart) {
         return { ok: false as const, reason: "NOT_FOUND" as const };
+      }
+
+      if (savedCart.items.length > 0) {
+        try {
+          await resolveSingleStorageRoomForProductIds(
+            ctx.db,
+            savedCart.items.map((item) => item.productId),
+          );
+        } catch (error) {
+          if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "MIXED_STORAGE_ROOMS",
+            });
+          }
+          throw error;
+        }
       }
 
       await ctx.db.$transaction(async (tx) => {

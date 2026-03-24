@@ -193,7 +193,9 @@ exports.Prisma.OrderScalarFieldEnum = {
   orderNumber: 'orderNumber',
   userId: 'userId',
   costCenterId: 'costCenterId',
+  storageRoomId: 'storageRoomId',
   sourcePartListId: 'sourcePartListId',
+  workerNote: 'workerNote',
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -236,6 +238,7 @@ exports.Prisma.OrderRequestScalarFieldEnum = {
   teacherExternalId: 'teacherExternalId',
   teacherDisplayName: 'teacherDisplayName',
   teacherEmail: 'teacherEmail',
+  workerNote: 'workerNote',
   status: 'status',
   approvedOrderId: 'approvedOrderId',
   createdAt: 'createdAt',
@@ -314,8 +317,16 @@ exports.Prisma.UserScalarFieldEnum = {
   emailVerified: 'emailVerified',
   image: 'image',
   role: 'role',
+  hasAllStorageRoomAccess: 'hasAllStorageRoomAccess',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserStorageRoomAccessScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  storageRoomId: 'storageRoomId',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.AccountScalarFieldEnum = {
@@ -421,6 +432,7 @@ exports.Prisma.ModelName = {
   SavedCart: 'SavedCart',
   SavedCartItem: 'SavedCartItem',
   User: 'User',
+  UserStorageRoomAccess: 'UserStorageRoomAccess',
   Account: 'Account',
   Session: 'Session',
   VerificationToken: 'VerificationToken'
