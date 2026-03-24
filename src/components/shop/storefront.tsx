@@ -392,6 +392,11 @@ export function Storefront() {
             const previewImage = product.images[0];
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
+            const stockOnHand = decimalToNumber(product.quantityOnHand);
+            const parsedQuantity = Number(quantityInput);
+            const selectedQuantity =
+              Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+            const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
             return (
               <Card
                 key={product.id}
@@ -445,7 +450,6 @@ export function Storefront() {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const parsedQuantity = Number(quantityInput);
                           const currentQuantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
@@ -465,6 +469,7 @@ export function Storefront() {
                       <input
                         type="number"
                         min={unitStep}
+                        max={stockOnHand}
                         step={unitStep}
                         value={quantityInput}
                         onClick={(event) => event.stopPropagation()}
@@ -481,12 +486,12 @@ export function Storefront() {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const parsedQuantity = Number(quantityInput);
                           const currentQuantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
                               : unitStep;
-                          const nextQuantity = currentQuantity + unitStep;
+                          const nextQuantity =
+                            stockOnHand > 0 ? Math.min(stockOnHand, currentQuantity + unitStep) : unitStep;
                           setQuantitiesByProduct((prev) => ({
                             ...prev,
                             [product.id]: nextQuantity.toString(),
@@ -503,9 +508,9 @@ export function Storefront() {
                     <Button
                       onClick={(event) => {
                         event.stopPropagation();
-                        const parsedQuantity = Number(quantityInput);
                         const quantity =
                           Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+                        if (stockOnHand <= 0 || quantity > stockOnHand) return;
                         setActiveAddProductId(product.id);
                         addItemMutation.mutate({
                           sessionId,
@@ -513,7 +518,7 @@ export function Storefront() {
                           quantity,
                         });
                       }}
-                      disabled={sessionId.length === 0 || addItemMutation.isPending}
+                      disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
                       className="h-10 shrink-0 whitespace-nowrap rounded-xl px-2.5"
                     >
                       {addItemMutation.isPending && activeAddProductId === product.id

@@ -135,6 +135,15 @@ export const cartRouter = createTRPCRouter({
           select: { id: true, sessionId: true },
         });
 
+        const cartItems = await tx.cartItem.findMany({
+          where: { cartId: cart.id },
+          select: {
+            productId: true,
+            sourcePartListId: true,
+            quantity: true,
+          },
+        });
+
         const existingDirectLine = await tx.cartItem.findFirst({
           where: {
             cartId: cart.id,
@@ -143,6 +152,22 @@ export const cartRouter = createTRPCRouter({
           },
           select: { id: true },
         });
+
+        const requestedQuantity = Number(quantity);
+        const existingDirectItem = cartItems.find(
+          (item) => item.productId === input.productId && item.sourcePartListId === null,
+        );
+        const nextItems: Array<{ productId: string; quantity: unknown }> = cartItems
+          .filter((item) => !(item.productId === input.productId && item.sourcePartListId === null))
+          .map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          }));
+        nextItems.push({
+          productId: input.productId,
+          quantity: (existingDirectItem ? Number(existingDirectItem.quantity) : 0) + requestedQuantity,
+        });
+        await assertSufficientStock(tx, aggregateProductRequirements(nextItems));
 
         if (existingDirectLine) {
           await tx.cartItem.update({
@@ -253,50 +278,80 @@ export const cartRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const cart = await ctx.db.cart.findUnique({
-        where: { sessionId: input.sessionId },
-        select: { id: true },
-      });
-
-      if (!cart) return null;
-
-      const lineWhere = {
-        cartId: cart.id,
-        productId: input.line.productId,
-        ...(input.line.sourcePartListId
-          ? { sourcePartListId: input.line.sourcePartListId }
-          : { sourcePartListId: null }),
-      };
-
-      if (input.quantity === 0) {
-        await ctx.db.cartItem.deleteMany({
-          where: lineWhere,
-        });
-      } else {
-        const existing = await ctx.db.cartItem.findFirst({
-          where: lineWhere,
+      return ctx.db.$transaction(async (tx) => {
+        const cart = await tx.cart.findUnique({
+          where: { sessionId: input.sessionId },
           select: { id: true },
         });
-        if (existing) {
-          await ctx.db.cartItem.update({
-            where: { id: existing.id },
-            data: {
-              quantity: input.quantity.toString(),
-            },
-          });
-        } else {
-          await ctx.db.cartItem.create({
-            data: {
-              cartId: cart.id,
-              productId: input.line.productId,
-              sourcePartListId: input.line.sourcePartListId ?? null,
-              quantity: input.quantity.toString(),
-            },
+
+        if (!cart) return null;
+
+        const targetSourcePartListId = input.line.sourcePartListId ?? null;
+        const lineWhere = {
+          cartId: cart.id,
+          productId: input.line.productId,
+          sourcePartListId: targetSourcePartListId,
+        };
+
+        const cartItems = await tx.cartItem.findMany({
+          where: { cartId: cart.id },
+          select: {
+            productId: true,
+            sourcePartListId: true,
+            quantity: true,
+          },
+        });
+
+        const nextItems: Array<{ productId: string; quantity: unknown }> = cartItems
+          .filter(
+            (item) =>
+              !(
+                item.productId === input.line.productId &&
+                item.sourcePartListId === targetSourcePartListId
+              ),
+          )
+          .map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          }));
+        if (input.quantity > 0) {
+          nextItems.push({
+            productId: input.line.productId,
+            quantity: input.quantity,
           });
         }
-      }
+        await assertSufficientStock(tx, aggregateProductRequirements(nextItems));
 
-      return { ok: true };
+        if (input.quantity === 0) {
+          await tx.cartItem.deleteMany({
+            where: lineWhere,
+          });
+        } else {
+          const existing = await tx.cartItem.findFirst({
+            where: lineWhere,
+            select: { id: true },
+          });
+          if (existing) {
+            await tx.cartItem.update({
+              where: { id: existing.id },
+              data: {
+                quantity: input.quantity.toString(),
+              },
+            });
+          } else {
+            await tx.cartItem.create({
+              data: {
+                cartId: cart.id,
+                productId: input.line.productId,
+                sourcePartListId: targetSourcePartListId,
+                quantity: input.quantity.toString(),
+              },
+            });
+          }
+        }
+
+        return { ok: true };
+      });
     }),
 
   removeItem: publicProcedure

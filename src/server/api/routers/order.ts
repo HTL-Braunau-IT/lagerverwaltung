@@ -9,6 +9,7 @@ const backendListOrdersInput = z.object({
   search: z.string().trim().optional(),
   status: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]).optional(),
   limit: z.number().int().min(1).max(300).default(150),
+  cursor: z.string().min(1).optional(),
 });
 
 const backendOrderByIdInput = z.object({
@@ -44,7 +45,7 @@ export const orderRouter = createTRPCRouter({
   backendList: adminProcedure.input(backendListOrdersInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
 
-    return ctx.db.order.findMany({
+    const items = await ctx.db.order.findMany({
       where: {
         ...(input.status ? { status: input.status } : {}),
         ...(search
@@ -62,7 +63,8 @@ export const orderRouter = createTRPCRouter({
           : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: input.limit,
+      take: input.limit + 1,
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         orderNumber: true,
@@ -103,6 +105,14 @@ export const orderRouter = createTRPCRouter({
         },
       },
     });
+
+    let nextCursor: string | undefined;
+    if (items.length > input.limit) {
+      const nextItem = items.pop();
+      nextCursor = nextItem?.id;
+    }
+
+    return { items, nextCursor };
   }),
 
   backendById: adminProcedure.input(backendOrderByIdInput).query(async ({ ctx, input }) => {

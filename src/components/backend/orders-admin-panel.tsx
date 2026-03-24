@@ -65,11 +65,16 @@ export function OrdersAdminPanel() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
-  const ordersQuery = api.order.backendList.useQuery({
-    search: searchTerm || undefined,
-    status: statusFilter === "ALL" ? undefined : statusFilter,
-    limit: 200,
-  });
+  const ordersQuery = api.order.backendList.useInfiniteQuery(
+    {
+      search: searchTerm || undefined,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
+      limit: 100,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
 
   const expandedOrderQuery = api.order.backendById.useQuery(
     { id: expandedOrderId ?? "" },
@@ -87,7 +92,7 @@ export function OrdersAdminPanel() {
 
   const sortedOrders = useMemo(
     () =>
-      [...(ordersQuery.data ?? [])].sort(
+      [...(ordersQuery.data?.pages.flatMap((page) => page.items) ?? [])].sort(
         (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
       ),
     [ordersQuery.data],
@@ -330,6 +335,18 @@ export function OrdersAdminPanel() {
           </TableBody>
         </Table>
       </div>
+      {ordersQuery.hasNextPage ? (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void ordersQuery.fetchNextPage()}
+            disabled={ordersQuery.isFetchingNextPage}
+          >
+            {ordersQuery.isFetchingNextPage ? "Lade mehr..." : "Mehr laden"}
+          </Button>
+        </div>
+      ) : null}
     </Card>
   );
 }

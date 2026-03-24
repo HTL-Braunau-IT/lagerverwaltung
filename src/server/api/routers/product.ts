@@ -12,7 +12,10 @@ const listProductsInput = z.object({
 
 const backendListProductsInput = z.object({
   search: z.string().trim().optional(),
+  categoryId: z.string().min(1).optional(),
+  storageLocationId: z.string().min(1).optional(),
   limit: z.number().int().min(1).max(300).default(100),
+  cursor: z.string().min(1).optional(),
 });
 
 const updateProductInput = z.object({
@@ -160,19 +163,30 @@ export const productRouter = createTRPCRouter({
     .input(backendListProductsInput)
     .query(async ({ ctx, input }) => {
       const search = input.search?.trim();
+      const andFilters: Array<Record<string, unknown>> = [];
 
-      return ctx.db.product.findMany({
-        where: search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { sku: { contains: search, mode: "insensitive" } },
-                { description: { contains: search, mode: "insensitive" } },
-              ],
-            }
-          : undefined,
+      if (search) {
+        andFilters.push({
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { sku: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+          ],
+        });
+      }
+      if (input.categoryId) {
+        andFilters.push({ categoryId: input.categoryId });
+      }
+      if (input.storageLocationId) {
+        andFilters.push({ storageLocationId: input.storageLocationId });
+      }
+      const where = andFilters.length > 0 ? { AND: andFilters } : undefined;
+
+      const items = await ctx.db.product.findMany({
+        where,
         orderBy: [{ name: "asc" }, { id: "asc" }],
-        take: input.limit,
+        take: input.limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
         select: {
           id: true,
           name: true,
@@ -210,6 +224,14 @@ export const productRouter = createTRPCRouter({
           },
         },
       });
+
+      let nextCursor: string | undefined;
+      if (items.length > input.limit) {
+        const nextItem = items.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return { items, nextCursor };
     }),
 
   backendUpdate: adminProcedure

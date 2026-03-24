@@ -48,6 +48,7 @@ export function PartsListAdminPanel() {
   });
   const productsQuery = api.product.backendList.useQuery({
     limit: 300,
+    cursor: undefined,
   });
 
   const loadPartListForEdit = async (id: string) => {
@@ -89,7 +90,7 @@ export function PartsListAdminPanel() {
 
   const productOptions = useMemo(
     () =>
-      (productsQuery.data ?? []).map((product) => ({
+      (productsQuery.data?.items ?? []).map((product) => ({
         id: product.id,
         label: `${product.sku} - ${product.name}`,
       })),
