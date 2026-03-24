@@ -5,6 +5,12 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 
 import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-button";
+import {
+  AdministrationIcon,
+  ApprovalsIcon,
+  LogoutIcon,
+  OrdersIcon,
+} from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
 import { TRPCReactProvider } from "~/trpc/react";
 
@@ -24,6 +30,25 @@ const roleLabels: Record<"ADMIN" | "TEACHER" | "STUDENT", string> = {
   TEACHER: "Lehrkraft",
   STUDENT: "Schueler",
 };
+
+type HeaderNavLinkProps = {
+  href: string;
+  label: string;
+  hoverClassName: string;
+  icon: React.ReactNode;
+};
+
+function HeaderNavLink({ href, label, hoverClassName, icon }: HeaderNavLinkProps) {
+  return (
+    <Link
+      href={href}
+      className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
+    >
+      <span className="flex h-10 w-10 items-center justify-center">{icon}</span>
+      <span className="text-sm font-medium">{label}</span>
+    </Link>
+  );
+}
 
 export default async function RootLayout({
   children,
@@ -50,35 +75,35 @@ export default async function RootLayout({
                 <p className="text-center text-sm font-medium text-muted-foreground">
                   {`Angemeldet als ${session.user.email ?? "Benutzer"} (${roleLabels[session.user.role]})`}
                 </p>
-                <div className="flex items-center gap-2">
-                  <Link
+                <div className="flex items-center gap-3">
+                  <HeaderNavLink
                     href="/orders"
-                    className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                  >
-                    Bestellhistorie
-                  </Link>
+                    label="Bestellhistorie"
+                    hoverClassName="hover:text-sky-600"
+                    icon={<OrdersIcon />}
+                  />
                   {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
-                    <Link
+                    <HeaderNavLink
                       href="/teacher/orders"
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                    >
-                      Freigaben
-                    </Link>
+                      label="Freigaben"
+                      hoverClassName="hover:text-emerald-600"
+                      icon={<ApprovalsIcon />}
+                    />
                   ) : null}
                   {session.user.role === "ADMIN" ? (
-                    <Link
+                    <HeaderNavLink
                       href="/backend"
-                      className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-                    >
-                      Administration
-                    </Link>
+                      label="Administration"
+                      hoverClassName="hover:text-violet-600"
+                      icon={<AdministrationIcon />}
+                    />
                   ) : null}
-                  <Link
+                  <HeaderNavLink
                     href="/api/auth/signout"
-                    className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
-                  >
-                    Abmelden
-                  </Link>
+                    label="Abmelden"
+                    hoverClassName="hover:text-rose-600"
+                    icon={<LogoutIcon />}
+                  />
                 </div>
               </div>
             </header>
