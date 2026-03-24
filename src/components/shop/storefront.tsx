@@ -9,10 +9,8 @@ import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
-const TOP_BANNER_GAP_PX = 24;
 
 function getOrCreateSessionId() {
   if (typeof window === "undefined") return "";
@@ -60,9 +58,10 @@ export function Storefront() {
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
-  const headerRef = useRef<HTMLElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const [stickyTopOffset, setStickyTopOffset] = useState(144);
+  // Match the natural top spacing of the content (main has `py-6` => 24px),
+  // so the asides align with the product grid initially and keep that gap when sticky.
+  const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   useEffect(() => {
@@ -73,15 +72,8 @@ export function Storefront() {
   }, [searchInput]);
 
   useEffect(() => {
-    const updateOffset = () => {
-      const height = headerRef.current?.offsetHeight ?? 0;
-      setStickyTopOffset(height + 16);
-    };
-
-    updateOffset();
-    window.addEventListener("resize", updateOffset);
-    return () => window.removeEventListener("resize", updateOffset);
-  }, []);
+    setSearchInput(searchFromUrl);
+  }, [searchFromUrl]);
 
   useEffect(() => {
     const updateAppHeaderOffset = () => {
@@ -154,7 +146,6 @@ export function Storefront() {
   }, [cartQuery.data?.items]);
 
   const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
-  const cartItemsCount = cartQuery.data?.items.length ?? 0;
   const groupedCartItems = useMemo(() => {
     const standalone: typeof cartItems = [];
     const partLists = new Map<string, { id: string; name: string; items: typeof cartItems }>();
@@ -208,39 +199,12 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <header
-        ref={headerRef}
-        className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5"
-      >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">HTL Lager</p>
-            <h1 className="text-xl font-semibold text-foreground md:text-2xl">Schulshop</h1>
-          </div>
-          <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-            Warenkorb: {cartItemsCount} Artikel
-          </div>
-        </div>
-        <div className="mt-4">
-          <label htmlFor="product-search" className="mb-2 block text-xs text-muted-foreground">
-            Suche nach Name oder Beschreibung
-          </label>
-          <Input
-            id="product-search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="z. B. HDMI-Kabel, A4 Papier..."
-            className="h-10 rounded-xl"
-          />
-        </div>
-      </header>
-
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_340px]">
         <aside
           className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
           style={{
-            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+            top: `${appHeaderOffset + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
           <div>
@@ -264,38 +228,25 @@ export function Storefront() {
                 const quantityInput = quantitiesByPartList[partList.id] ?? "1";
                 return (
                   <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
-                    {partList.imageUrl ? (
-                      <img
-                        src={partList.imageUrl}
-                        alt={`Bild fuer Teileliste ${partList.name}`}
-                        className="mb-2 h-16 w-full rounded-md border border-border object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
+                    <div className="flex items-start justify-between gap-2">
+                      <p
+                        className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitBoxOrient: "vertical",
+                          WebkitLineClamp: 3,
+                          overflow: "hidden",
                         }}
-                      />
-                    ) : null}
-                    <p className="truncate text-xs font-semibold text-foreground">{partList.name}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{partList.items.length} Produkte</p>
-                    {partList.documents.length > 0 ? (
-                      <div className="mt-1.5 space-y-1">
-                        {partList.documents.slice(0, 2).map((document) => (
-                          <a
-                            key={document.id}
-                            href={document.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block truncate text-[11px] text-primary underline-offset-2 hover:underline"
-                          >
-                            {document.originalName}
-                          </a>
-                        ))}
-                        {partList.documents.length > 2 ? (
-                          <p className="text-[11px] text-muted-foreground">
-                            +{partList.documents.length - 2} weitere Dokumente
-                          </p>
-                        ) : null}
+                      >
+                        {partList.name}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                        <span aria-hidden="true" className="text-muted-foreground">
+                          |
+                        </span>
+                        <span>{partList.items.length} Produkte</span>
                       </div>
-                    ) : null}
+                    </div>
                     <div className="mt-2 flex items-center gap-1.5">
                       <input
                         type="number"
@@ -308,7 +259,7 @@ export function Storefront() {
                             [partList.id]: event.target.value,
                           }))
                         }
-                        className="h-8 w-14 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                        className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
                         aria-label={`Menge fuer Teileliste ${partList.name}`}
                       />
                       <Button
@@ -326,9 +277,11 @@ export function Storefront() {
                         }}
                         disabled={sessionId.length === 0 || addPartListMutation.isPending}
                       >
-                        {addPartListMutation.isPending && activeAddPartListId === partList.id
-                          ? "..."
-                          : "Hinzufuegen"}
+                        {addPartListMutation.isPending && activeAddPartListId === partList.id ? (
+                          "..."
+                        ) : (
+                          "In den Warenkorb"
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -364,7 +317,7 @@ export function Storefront() {
           </nav>
         </aside>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:grid-cols-4">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -591,8 +544,8 @@ export function Storefront() {
           id="cart-panel"
           className="self-start rounded-2xl border border-border bg-card p-4 shadow-sm lg:sticky lg:overflow-auto"
           style={{
-            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+            top: `${appHeaderOffset + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
           <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
