@@ -5,6 +5,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
@@ -38,11 +39,18 @@ type ProductFormState = {
   unitKind: (typeof unitKinds)[number]["value"];
   baseUnit: (typeof baseUnits)[number]["value"];
   unitStep: string;
-  categoryId: string;
+  isVisible: boolean;
+  categoryIds: string[];
   storageLocationId: string;
   imageUrl: string;
   imageAltText: string;
 };
+
+type ProductCreateFormState = ProductFormState & {
+  startingQuantity: string;
+};
+
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
@@ -59,7 +67,11 @@ function createInitialForm(product: {
   unitKind: ProductFormState["unitKind"];
   baseUnit: ProductFormState["baseUnit"];
   unitStep: unknown;
+  isVisible: boolean;
   categoryId: string | null;
+  categories: Array<{
+    categoryId: string;
+  }>;
   storageLocationId: string | null;
   images: Array<{
     url: string;
@@ -76,10 +88,35 @@ function createInitialForm(product: {
     unitKind: product.unitKind,
     baseUnit: product.baseUnit,
     unitStep: String(toNumber(product.unitStep)),
-    categoryId: product.categoryId ?? "",
+    isVisible: product.isVisible,
+    categoryIds: Array.from(
+      new Set([
+        ...product.categories.map((entry) => entry.categoryId),
+        ...(product.categoryId ? [product.categoryId] : []),
+      ]),
+    ),
     storageLocationId: product.storageLocationId ?? "",
     imageUrl: firstImage?.url ?? "",
     imageAltText: firstImage?.altText ?? "",
+  };
+}
+
+function createEmptyCreateForm(): ProductCreateFormState {
+  return {
+    name: "",
+    sku: "",
+    description: "",
+    price: "0",
+    minimumQuantity: "0",
+    startingQuantity: "0",
+    unitKind: "PIECE",
+    baseUnit: "PCS",
+    unitStep: "1",
+    isVisible: true,
+    categoryIds: [],
+    storageLocationId: "",
+    imageUrl: "",
+    imageAltText: "",
   };
 }
 
@@ -156,11 +193,19 @@ export function ProductsAdminPanel() {
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<ProductCreateFormState>(createEmptyCreateForm);
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
+  const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
+  const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
+  const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
   const [bookingSupplierInput, setBookingSupplierInput] = useState("");
   const [bookingNoteInput, setBookingNoteInput] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -188,6 +233,15 @@ export function ProductsAdminPanel() {
       await utils.product.backendList.invalidate();
     },
   });
+  const createMutation = api.product.backendCreate.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.product.backendList.invalidate(), utils.product.list.invalidate()]);
+      setCreateForm(createEmptyCreateForm());
+      setCreateImageFile(null);
+      setCreateImageUploadError(null);
+      setCreateOpen(false);
+    },
+  });
   const stockBookingMutation = api.product.backendBookStock.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -211,6 +265,44 @@ export function ProductsAdminPanel() {
       ),
     [productsQuery.data],
   );
+  const canCreateProduct =
+    createForm.name.trim().length > 0 &&
+    createForm.sku.trim().length > 0 &&
+    Number.isFinite(Number(createForm.price)) &&
+    Number(createForm.price) >= 0 &&
+    Number.isFinite(Number(createForm.minimumQuantity)) &&
+    Number(createForm.minimumQuantity) >= 0 &&
+    Number.isFinite(Number(createForm.startingQuantity)) &&
+    Number(createForm.startingQuantity) >= 0 &&
+    Number.isFinite(Number(createForm.unitStep)) &&
+    Number(createForm.unitStep) > 0;
+
+  const uploadProductImage = async (sku: string, file: File): Promise<string> => {
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Bitte eine Bilddatei auswaehlen.");
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
+    }
+
+    const body = new FormData();
+    body.append("sku", sku);
+    body.append("file", file);
+
+    const response = await fetch("/api/backend/products/upload-image", {
+      method: "POST",
+      body,
+    });
+    const result = (await response.json().catch(() => null)) as
+      | { url?: string; message?: string }
+      | null;
+
+    if (!response.ok || !result?.url) {
+      throw new Error(result?.message ?? "Bild konnte nicht hochgeladen werden.");
+    }
+
+    return result.url;
+  };
 
   return (
     <Card className="rounded-2xl p-5">
@@ -219,6 +311,17 @@ export function ProductsAdminPanel() {
           <h2 className="text-xl font-semibold text-foreground">Produkte</h2>
           <p className="text-sm text-muted-foreground">Produkte suchen, oeffnen und bearbeiten.</p>
         </div>
+        <Button
+          type="button"
+          onClick={() => {
+            setCreateForm(createEmptyCreateForm());
+            setCreateImageFile(null);
+            setCreateImageUploadError(null);
+            setCreateOpen(true);
+          }}
+        >
+          Neues Produkt
+        </Button>
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-3">
@@ -304,6 +407,7 @@ export function ProductsAdminPanel() {
             {sortedProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
               const form = formsById[product.id] ?? createInitialForm(product);
+              const previewImage = product.images[0];
               const locationText = product.storageLocation
                 ? `${product.storageLocation.code} - ${product.storageLocation.name}`
                 : "-";
@@ -318,9 +422,33 @@ export function ProductsAdminPanel() {
                         [product.id]: current[product.id] ?? createInitialForm(product),
                       }));
                     }}
+                    onMouseEnter={() => {
+                      if (isExpanded) return;
+                      setHoveredProductId(product.id);
+                    }}
+                    onMouseLeave={() =>
+                      setHoveredProductId((current) => (current === product.id ? null : current))
+                    }
                     className="cursor-pointer"
                   >
-                    <TableCell className="font-medium text-foreground">{product.name}</TableCell>
+                    <TableCell className="font-medium text-foreground">
+                      <div className="relative inline-block">
+                        <span>{product.name}</span>
+                        {previewImage?.url && hoveredProductId === product.id && !isExpanded ? (
+                          <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md border border-border bg-card p-1 shadow-lg">
+                            <img
+                              src={previewImage.url}
+                              alt={previewImage.altText || `${product.name} Produktbild`}
+                              className="h-20 w-20 rounded object-cover"
+                              onError={(event) => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = "/pictures/placeholder.jpg";
+                              }}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{product.sku}</TableCell>
                     <TableCell className="text-muted-foreground">{product.category?.name ?? "-"}</TableCell>
                     <TableCell className="text-muted-foreground">{locationText}</TableCell>
@@ -331,6 +459,41 @@ export function ProductsAdminPanel() {
                     <tr className="border-t border-border bg-muted/30">
                       <td colSpan={6} className="px-3 py-4">
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <label className="text-xs text-slate-600 md:col-span-2">
+                            Sichtbarkeit
+                            <div
+                              className="mt-1 flex items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <span className="text-sm text-slate-900">
+                                {form.isVisible
+                                  ? "Produkt ist fuer Benutzer sichtbar"
+                                  : "Produkt ist fuer Benutzer ausgeblendet"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setFormsById((current) => ({
+                                    ...current,
+                                    [product.id]: { ...form, isVisible: !form.isVisible },
+                                  }));
+                                }}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                                  form.isVisible ? "bg-primary" : "bg-slate-300"
+                                }`}
+                                aria-label="Produktsichtbarkeit umschalten"
+                                aria-pressed={form.isVisible}
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                    form.isVisible ? "translate-x-5" : "translate-x-1"
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          </label>
+
                           <label className="text-xs text-slate-600">
                             Name
                             <input
@@ -489,25 +652,34 @@ export function ProductsAdminPanel() {
                           </label>
 
                           <label className="text-xs text-slate-600">
-                            Kategorie
-                            <select
-                              value={form.categoryId}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, categoryId: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            >
-                              <option value="">Keine Kategorie</option>
+                            Kategorien
+                            <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-lg border border-slate-300 bg-white px-2.5 py-2">
                               {(categoriesQuery.data ?? []).map((category) => (
-                                <option key={category.id} value={category.id}>
-                                  {category.name}
-                                </option>
+                                <label key={category.id} className="flex items-center gap-2 text-sm text-slate-900">
+                                  <input
+                                    type="checkbox"
+                                    checked={form.categoryIds.includes(category.id)}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={(event) =>
+                                      setFormsById((current) => ({
+                                        ...current,
+                                        [product.id]: {
+                                          ...form,
+                                          categoryIds: event.target.checked
+                                            ? [...form.categoryIds, category.id]
+                                            : form.categoryIds.filter((id) => id !== category.id),
+                                        },
+                                      }))
+                                    }
+                                    className="h-4 w-4 rounded border-slate-300"
+                                  />
+                                  <span>{category.name}</span>
+                                </label>
                               ))}
-                            </select>
+                              {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                                <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                              ) : null}
+                            </div>
                           </label>
 
                           <label className="text-xs text-slate-600">
@@ -532,8 +704,59 @@ export function ProductsAdminPanel() {
                             </select>
                           </label>
 
+                          <div className="md:col-span-2">
+                            <label className="text-xs text-slate-600">
+                              Bild hochladen
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onClick={(event) => event.stopPropagation()}
+                                onChange={async (event) => {
+                                  const file = event.target.files?.[0];
+                                  if (!file) return;
+                                  const sku = form.sku.trim();
+                                  if (!sku) {
+                                    setEditUploadErrorById((current) => ({
+                                      ...current,
+                                      [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                    }));
+                                    return;
+                                  }
+                                  try {
+                                    setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
+                                    setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                    const uploadedUrl = await uploadProductImage(sku, file);
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, imageUrl: uploadedUrl },
+                                    }));
+                                  } catch (error) {
+                                    setEditUploadErrorById((current) => ({
+                                      ...current,
+                                      [product.id]:
+                                        error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
+                                    }));
+                                  } finally {
+                                    setEditUploadPendingById((current) => ({ ...current, [product.id]: false }));
+                                    event.target.value = "";
+                                  }
+                                }}
+                                className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
+                              />
+                            </label>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Klicken, um ein neues Produktbild auszuwaehlen.
+                            </p>
+                            {editUploadPendingById[product.id] ? (
+                              <p className="mt-1 text-xs text-muted-foreground">Bild wird hochgeladen...</p>
+                            ) : null}
+                            {editUploadErrorById[product.id] ? (
+                              <p className="mt-1 text-xs text-destructive">{editUploadErrorById[product.id]}</p>
+                            ) : null}
+                          </div>
+
                           <label className="text-xs text-slate-600 md:col-span-2">
-                            Bild-URL
+                            Bild-URL (optional)
                             <input
                               type="url"
                               value={form.imageUrl}
@@ -619,13 +842,14 @@ export function ProductsAdminPanel() {
                                 unitKind: form.unitKind,
                                 baseUnit: form.baseUnit,
                                 unitStep: Number(form.unitStep),
-                                categoryId: form.categoryId || null,
+                                isVisible: form.isVisible,
+                                categoryIds: form.categoryIds,
                                 storageLocationId: form.storageLocationId || null,
                                 imageUrl: form.imageUrl.trim() || null,
                                 imageAltText: form.imageAltText.trim() || null,
                               });
                             }}
-                            disabled={updateMutation.isPending}
+                            disabled={updateMutation.isPending || editUploadPendingById[product.id]}
                             className="disabled:opacity-60"
                           >
                             {updateMutation.isPending ? "Speichert..." : "Speichern"}
@@ -654,6 +878,234 @@ export function ProductsAdminPanel() {
           </Button>
         </div>
       ) : null}
+
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Neues Produkt"
+        description="Alle Produktdaten eingeben, Startbestand setzen und optional ein Bild hochladen."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="text-xs text-muted-foreground">
+            Name
+            <Input
+              value={createForm.name}
+              onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            SKU
+            <Input
+              value={createForm.sku}
+              onChange={(event) => setCreateForm((current) => ({ ...current, sku: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground md:col-span-2">
+            Beschreibung
+            <textarea
+              value={createForm.description}
+              onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))}
+              rows={3}
+              className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Preis
+            <Input
+              type="number"
+              min={0}
+              step={0.01}
+              value={createForm.price}
+              onChange={(event) => setCreateForm((current) => ({ ...current, price: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Mindestbestand
+            <Input
+              type="number"
+              min={0}
+              step={0.001}
+              value={createForm.minimumQuantity}
+              onChange={(event) =>
+                setCreateForm((current) => ({ ...current, minimumQuantity: event.target.value }))
+              }
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Startbestand
+            <Input
+              type="number"
+              min={0}
+              step={0.001}
+              value={createForm.startingQuantity}
+              onChange={(event) =>
+                setCreateForm((current) => ({ ...current, startingQuantity: event.target.value }))
+              }
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Schrittweite
+            <Input
+              type="number"
+              min={0.001}
+              step={0.001}
+              value={createForm.unitStep}
+              onChange={(event) => setCreateForm((current) => ({ ...current, unitStep: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Einheitstyp
+            <select
+              value={createForm.unitKind}
+              onChange={(event) =>
+                setCreateForm((current) => ({
+                  ...current,
+                  unitKind: event.target.value as ProductFormState["unitKind"],
+                }))
+              }
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+            >
+              {unitKinds.map((unitKind) => (
+                <option key={unitKind.value} value={unitKind.value}>
+                  {unitKind.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Basiseinheit
+            <select
+              value={createForm.baseUnit}
+              onChange={(event) =>
+                setCreateForm((current) => ({
+                  ...current,
+                  baseUnit: event.target.value as ProductFormState["baseUnit"],
+                }))
+              }
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+            >
+              {baseUnits.map((baseUnit) => (
+                <option key={baseUnit.value} value={baseUnit.value}>
+                  {baseUnit.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Kategorien
+            <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-xl border border-input bg-background px-3 py-2">
+              {(categoriesQuery.data ?? []).map((category) => (
+                <label key={category.id} className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={createForm.categoryIds.includes(category.id)}
+                    onChange={(event) =>
+                      setCreateForm((current) => ({
+                        ...current,
+                        categoryIds: event.target.checked
+                          ? [...current.categoryIds, category.id]
+                          : current.categoryIds.filter((id) => id !== category.id),
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  <span>{category.name}</span>
+                </label>
+              ))}
+              {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                <p className="text-xs text-muted-foreground">Keine Kategorien vorhanden.</p>
+              ) : null}
+            </div>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Lagerplatz
+            <select
+              value={createForm.storageLocationId}
+              onChange={(event) =>
+                setCreateForm((current) => ({ ...current, storageLocationId: event.target.value }))
+              }
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+            >
+              <option value="">Kein Lagerplatz</option>
+              {(storageLocationsQuery.data ?? []).map((storageLocation) => (
+                <option key={storageLocation.id} value={storageLocation.id}>
+                  {storageLocation.code} - {storageLocation.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground md:col-span-2">
+            Bild hochladen (optional)
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => setCreateImageFile(event.target.files?.[0] ?? null)}
+              className="mt-2 block w-full cursor-pointer rounded-xl border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {createImageFile ? `Ausgewaehlt: ${createImageFile.name}` : "Noch keine Datei ausgewaehlt."}
+            </span>
+          </label>
+          <label className="text-xs text-muted-foreground md:col-span-2">
+            Bild-Alt-Text (optional)
+            <Input
+              value={createForm.imageAltText}
+              onChange={(event) => setCreateForm((current) => ({ ...current, imageAltText: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+        </div>
+        {createImageUploadError ? <p className="mt-2 text-sm text-destructive">{createImageUploadError}</p> : null}
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            type="button"
+            disabled={!canCreateProduct || createMutation.isPending || createImageUploadPending}
+            onClick={async () => {
+              try {
+                setCreateImageUploadError(null);
+                let imageUrl = createForm.imageUrl.trim() || null;
+                if (createImageFile) {
+                  setCreateImageUploadPending(true);
+                  imageUrl = await uploadProductImage(createForm.sku.trim(), createImageFile);
+                }
+                createMutation.mutate({
+                  name: createForm.name.trim(),
+                  sku: createForm.sku.trim(),
+                  description: createForm.description.trim() ? createForm.description.trim() : null,
+                  price: Number(createForm.price),
+                  minimumQuantity: Number(createForm.minimumQuantity),
+                  startingQuantity: Number(createForm.startingQuantity),
+                  unitKind: createForm.unitKind,
+                  baseUnit: createForm.baseUnit,
+                  unitStep: Number(createForm.unitStep),
+                  isVisible: createForm.isVisible,
+                  categoryIds: createForm.categoryIds,
+                  storageLocationId: createForm.storageLocationId || null,
+                  imageUrl,
+                  imageAltText: createForm.imageAltText.trim() ? createForm.imageAltText.trim() : null,
+                });
+              } catch (error) {
+                setCreateImageUploadError(
+                  error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
+                );
+              } finally {
+                setCreateImageUploadPending(false);
+              }
+            }}
+          >
+            {createMutation.isPending || createImageUploadPending ? "Erstellt..." : "Produkt erstellen"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+            Abbrechen
+          </Button>
+        </div>
+      </Dialog>
 
       {bookingProduct ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
