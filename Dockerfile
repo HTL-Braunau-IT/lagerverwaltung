@@ -17,6 +17,7 @@ RUN apk add --no-cache openssl libc6-compat
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npx prisma generate
 RUN npm run build
 RUN npm prune --omit=dev
 
@@ -33,17 +34,22 @@ RUN apk add --no-cache openssl libc6-compat \
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/env.js ./src/env.js
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/public/pictures/placeholder.jpg /opt/default-assets/placeholder.jpg
 
 # Persist files written to /public (e.g. uploads)
 VOLUME ["/app/public"]
 
-RUN chown -R nextjs:nodejs /app
+RUN mkdir -p /app/public/data \
+  && chown -R nextjs:nodejs /app \
+  && chmod -R 775 /app/public/data
 USER nextjs
 
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; npm run db:migrate && npx prisma generate && npm run start"]

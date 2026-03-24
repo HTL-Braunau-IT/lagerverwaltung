@@ -65,11 +65,16 @@ export function OrdersAdminPanel() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
-  const ordersQuery = api.order.backendList.useQuery({
-    search: searchTerm || undefined,
-    status: statusFilter === "ALL" ? undefined : statusFilter,
-    limit: 200,
-  });
+  const ordersQuery = api.order.backendList.useInfiniteQuery(
+    {
+      search: searchTerm || undefined,
+      status: statusFilter === "ALL" ? undefined : statusFilter,
+      limit: 100,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
 
   const expandedOrderQuery = api.order.backendById.useQuery(
     { id: expandedOrderId ?? "" },
@@ -80,6 +85,7 @@ export function OrdersAdminPanel() {
     onSuccess: async () => {
       await Promise.all([
         utils.order.backendList.invalidate(),
+        utils.order.backendOpenCount.invalidate(),
         expandedOrderId ? utils.order.backendById.invalidate({ id: expandedOrderId }) : Promise.resolve(),
       ]);
     },
@@ -87,7 +93,7 @@ export function OrdersAdminPanel() {
 
   const sortedOrders = useMemo(
     () =>
-      [...(ordersQuery.data ?? [])].sort(
+      [...(ordersQuery.data?.pages.flatMap((page) => page.items) ?? [])].sort(
         (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
       ),
     [ordersQuery.data],
@@ -305,7 +311,9 @@ export function OrdersAdminPanel() {
                                         <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
                                         <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
                                         <td className="px-2.5 py-2 text-muted-foreground">
-                                          {item.product.storageLocation.code} - {item.product.storageLocation.name}
+                                          {item.product.storageLocation
+                                            ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                            : "-"}
                                         </td>
                                         <td className="px-2.5 py-2 text-foreground">
                                           {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
@@ -328,6 +336,18 @@ export function OrdersAdminPanel() {
           </TableBody>
         </Table>
       </div>
+      {ordersQuery.hasNextPage ? (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void ordersQuery.fetchNextPage()}
+            disabled={ordersQuery.isFetchingNextPage}
+          >
+            {ordersQuery.isFetchingNextPage ? "Lade mehr..." : "Mehr laden"}
+          </Button>
+        </div>
+      ) : null}
     </Card>
   );
 }

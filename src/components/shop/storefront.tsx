@@ -57,6 +57,7 @@ export function Storefront() {
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   // Match the natural top spacing of the content (main has `py-6` => 24px),
   // so the asides align with the product grid initially and keep that gap when sticky.
@@ -206,33 +207,6 @@ export function Storefront() {
             maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
-          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
-          <nav className="space-y-1">
-            <Button
-              onClick={() => setSelectedCategoryId(undefined)}
-              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
-              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                selectedCategoryId === undefined ? "" : "text-muted-foreground"
-              }`}
-            >
-              <span>Alle Kategorien</span>
-            </Button>
-            {categoryQuery.data?.map((category) => (
-              <Button
-                key={category.id}
-                onClick={() => setSelectedCategoryId(category.id)}
-                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
-                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
-                }`}
-              >
-                <span className="truncate">{category.name}</span>
-                <span className="text-xs">({category._count.products})</span>
-              </Button>
-            ))}
-          </nav>
-
-          <div className="my-4 border-t border-border" />
           <div>
             <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
             {partListWarning ? (
@@ -296,6 +270,32 @@ export function Storefront() {
               })}
             </div>
           </div>
+          <div className="my-4 border-t border-border" />
+          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
+          <nav className="space-y-1">
+            <Button
+              onClick={() => setSelectedCategoryId(undefined)}
+              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
+              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                selectedCategoryId === undefined ? "" : "text-muted-foreground"
+              }`}
+            >
+              <span>Alle Kategorien</span>
+            </Button>
+            {categoryQuery.data?.map((category) => (
+              <Button
+                key={category.id}
+                onClick={() => setSelectedCategoryId(category.id)}
+                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
+                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
+                }`}
+              >
+                <span className="truncate">{category.name}</span>
+                <span className="text-xs">({category._count.products})</span>
+              </Button>
+            ))}
+          </nav>
         </aside>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:grid-cols-4">
@@ -354,8 +354,15 @@ export function Storefront() {
             const lowStock =
               decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
+            const hasImageError = failedProductImages.has(product.id);
+            const showImagePlaceholder = !previewImage?.url || hasImageError;
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
+            const stockOnHand = decimalToNumber(product.quantityOnHand);
+            const parsedQuantity = Number(quantityInput);
+            const selectedQuantity =
+              Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+            const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
             return (
               <Card
                 key={product.id}
@@ -372,16 +379,29 @@ export function Storefront() {
               >
                 <div>
                   <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
-                    <img
-                      src={previewImage?.url || "/pictures/placeholder.jpg"}
-                      alt={previewImage?.altText ?? `${product.name} Produktbild`}
-                      className="h-40 w-full object-cover"
-                      loading="lazy"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = "/pictures/placeholder.jpg";
-                      }}
-                    />
+                    {showImagePlaceholder ? (
+                      <div
+                        className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
+                        aria-label={`${product.name} Platzhalterbild`}
+                      >
+                        Kein Produktbild
+                      </div>
+                    ) : (
+                      <img
+                        src={previewImage.url}
+                        alt={previewImage.altText ?? `${product.name} Produktbild`}
+                        className="h-40 w-full object-cover"
+                        loading="lazy"
+                        onError={() => {
+                          setFailedProductImages((prev) => {
+                            if (prev.has(product.id)) return prev;
+                            const next = new Set(prev);
+                            next.add(product.id);
+                            return next;
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <h2 className="line-clamp-2 text-base font-semibold text-foreground">{product.name}</h2>
@@ -409,7 +429,6 @@ export function Storefront() {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const parsedQuantity = Number(quantityInput);
                           const currentQuantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
@@ -429,6 +448,7 @@ export function Storefront() {
                       <input
                         type="number"
                         min={unitStep}
+                        max={stockOnHand}
                         step={unitStep}
                         value={quantityInput}
                         onClick={(event) => event.stopPropagation()}
@@ -445,12 +465,12 @@ export function Storefront() {
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const parsedQuantity = Number(quantityInput);
                           const currentQuantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
                               : unitStep;
-                          const nextQuantity = currentQuantity + unitStep;
+                          const nextQuantity =
+                            stockOnHand > 0 ? Math.min(stockOnHand, currentQuantity + unitStep) : unitStep;
                           setQuantitiesByProduct((prev) => ({
                             ...prev,
                             [product.id]: nextQuantity.toString(),
@@ -467,9 +487,9 @@ export function Storefront() {
                     <Button
                       onClick={(event) => {
                         event.stopPropagation();
-                        const parsedQuantity = Number(quantityInput);
                         const quantity =
                           Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+                        if (stockOnHand <= 0 || quantity > stockOnHand) return;
                         setActiveAddProductId(product.id);
                         addItemMutation.mutate({
                           sessionId,
@@ -477,7 +497,7 @@ export function Storefront() {
                           quantity,
                         });
                       }}
-                      disabled={sessionId.length === 0 || addItemMutation.isPending}
+                      disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
                       className="h-10 shrink-0 whitespace-nowrap rounded-xl px-2.5"
                     >
                       {addItemMutation.isPending && activeAddProductId === product.id

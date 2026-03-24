@@ -60,7 +60,7 @@ function createInitialForm(product: {
   baseUnit: ProductFormState["baseUnit"];
   unitStep: unknown;
   categoryId: string | null;
-  storageLocationId: string;
+  storageLocationId: string | null;
   images: Array<{
     url: string;
     altText: string | null;
@@ -77,7 +77,7 @@ function createInitialForm(product: {
     baseUnit: product.baseUnit,
     unitStep: String(toNumber(product.unitStep)),
     categoryId: product.categoryId ?? "",
-    storageLocationId: product.storageLocationId,
+    storageLocationId: product.storageLocationId ?? "",
     imageUrl: firstImage?.url ?? "",
     imageAltText: firstImage?.altText ?? "",
   };
@@ -152,6 +152,8 @@ export function ProductsAdminPanel() {
   const utils = api.useUtils();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
@@ -167,10 +169,17 @@ export function ProductsAdminPanel() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
-  const productsQuery = api.product.backendList.useQuery({
-    search: searchTerm || undefined,
-    limit: 200,
-  });
+  const productsQuery = api.product.backendList.useInfiniteQuery(
+    {
+      search: searchTerm || undefined,
+      categoryId: categoryFilter || undefined,
+      storageLocationId: storageLocationFilter || undefined,
+      limit: 100,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
   const categoriesQuery = api.category.list.useQuery();
   const storageLocationsQuery = api.storageLocation.list.useQuery();
 
@@ -196,7 +205,10 @@ export function ProductsAdminPanel() {
   });
 
   const sortedProducts = useMemo(
-    () => [...(productsQuery.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
+    () =>
+      [...(productsQuery.data?.pages.flatMap((page) => page.items) ?? [])].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
     [productsQuery.data],
   );
 
@@ -209,7 +221,7 @@ export function ProductsAdminPanel() {
         </div>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 grid gap-3 md:grid-cols-3">
         <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
           Suche nach Name, SKU oder Beschreibung
           <Input
@@ -219,6 +231,36 @@ export function ProductsAdminPanel() {
             placeholder="z. B. HDMI, Papier, sku-1002"
             className="mt-1 h-10 rounded-xl"
           />
+        </label>
+        <label className="mb-1 block text-xs text-muted-foreground">
+          Kategorie
+          <select
+            value={categoryFilter}
+            onChange={(event) => setCategoryFilter(event.target.value)}
+            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Alle Kategorien</option>
+            {(categoriesQuery.data ?? []).map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="mb-1 block text-xs text-muted-foreground">
+          Lagerplatz
+          <select
+            value={storageLocationFilter}
+            onChange={(event) => setStorageLocationFilter(event.target.value)}
+            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Alle Lagerplaetze</option>
+            {(storageLocationsQuery.data ?? []).map((storageLocation) => (
+              <option key={storageLocation.id} value={storageLocation.id}>
+                {storageLocation.code} - {storageLocation.name}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
 
@@ -262,7 +304,9 @@ export function ProductsAdminPanel() {
             {sortedProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
               const form = formsById[product.id] ?? createInitialForm(product);
-              const locationText = `${product.storageLocation.code} - ${product.storageLocation.name}`;
+              const locationText = product.storageLocation
+                ? `${product.storageLocation.code} - ${product.storageLocation.name}`
+                : "-";
 
               return (
                 <Fragment key={product.id}>
@@ -479,6 +523,7 @@ export function ProductsAdminPanel() {
                               }
                               className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
                             >
+                              <option value="">Kein Lagerplatz</option>
                               {(storageLocationsQuery.data ?? []).map((storageLocation) => (
                                 <option key={storageLocation.id} value={storageLocation.id}>
                                   {storageLocation.code} - {storageLocation.name}
@@ -575,7 +620,7 @@ export function ProductsAdminPanel() {
                                 baseUnit: form.baseUnit,
                                 unitStep: Number(form.unitStep),
                                 categoryId: form.categoryId || null,
-                                storageLocationId: form.storageLocationId,
+                                storageLocationId: form.storageLocationId || null,
                                 imageUrl: form.imageUrl.trim() || null,
                                 imageAltText: form.imageAltText.trim() || null,
                               });
@@ -597,6 +642,18 @@ export function ProductsAdminPanel() {
           </TableBody>
         </Table>
       </div>
+      {productsQuery.hasNextPage ? (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void productsQuery.fetchNextPage()}
+            disabled={productsQuery.isFetchingNextPage}
+          >
+            {productsQuery.isFetchingNextPage ? "Lade mehr..." : "Mehr laden"}
+          </Button>
+        </div>
+      ) : null}
 
       {bookingProduct ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">

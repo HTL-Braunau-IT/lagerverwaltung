@@ -3,6 +3,7 @@ import { getServerSession, type NextAuthOptions } from "next-auth";
 import AzureAD from "next-auth/providers/azure-ad";
 
 import { env } from "~/env";
+import { resolveRoleFromGraphMembership } from "~/server/graph/user-role";
 import { db } from "~/server/db";
 
 const roleByGroup = {
@@ -10,6 +11,8 @@ const roleByGroup = {
   TEACHER: env.ROLE_TEACHER_GROUP_ID,
   STUDENT: env.ROLE_STUDENT_GROUP_ID,
 } as const;
+
+type AppRole = "ADMIN" | "TEACHER" | "STUDENT";
 
 const resolveRoleFromGroups = (groups: unknown): "ADMIN" | "TEACHER" | "STUDENT" | null => {
   if (!Array.isArray(groups)) return null;
@@ -73,6 +76,15 @@ const extractAzureObjectId = (
   }
 
   return null;
+};
+
+const hasGroupOverageClaim = (idTokenClaims: Record<string, unknown> | null): boolean => {
+  const claimNames = idTokenClaims?._claim_names;
+  return (
+    typeof claimNames === "object" &&
+    claimNames !== null &&
+    "groups" in claimNames
+  );
 };
 
 export const authOptions: NextAuthOptions = {
@@ -139,24 +151,38 @@ export const authOptions: NextAuthOptions = {
       const idTokenClaims = decodeJwtPayload(account?.id_token);
       const groups = extractGroupsFromClaims(profile, idTokenClaims);
       const azureAdObjectId = extractAzureObjectId(profile, idTokenClaims);
-      const role = resolveRoleFromGroups(groups);
+      const hasGroupOverage = hasGroupOverageClaim(idTokenClaims);
+      let role: AppRole | null = resolveRoleFromGroups(groups);
+      let roleSource: "token" | "graph-fallback" | "none" = "none";
+      if (role) roleSource = "token";
       if (!user.email) {
         return false;
       }
 
-      if (!role) {
-        if (env.NODE_ENV !== "production") {
-          console.warn("[auth] Zugriff verweigert: keine passende Rollen-Gruppe gefunden", {
+      if (!role && azureAdObjectId && (hasGroupOverage || groups.length === 0)) {
+        try {
+          role = await resolveRoleFromGraphMembership(azureAdObjectId);
+          if (role) {
+            roleSource = "graph-fallback";
+          }
+        } catch (error) {
+          console.warn("[auth] Graph-Fallback zur Rollenaufloesung fehlgeschlagen", {
             email: user.email,
-            groups,
-            hasGroupOverage: Boolean(
-              idTokenClaims?._claim_names &&
-                typeof idTokenClaims._claim_names === "object" &&
-                idTokenClaims._claim_names !== null &&
-                "groups" in idTokenClaims._claim_names,
-            ),
+            azureAdObjectId,
+            reason: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+            hasGroupOverage,
+            groupsInToken: groups.length,
           });
         }
+      }
+
+      if (!role) {
+        console.warn("[auth] Keine passende Rollen-Gruppe gefunden", {
+          email: user.email,
+          groupsInToken: groups.length,
+          hasGroupOverage,
+          attemptedGraphFallback: Boolean(azureAdObjectId && (hasGroupOverage || groups.length === 0)),
+        });
         // Do not block sign-in here, otherwise account linking/user creation can fail.
         // Access control is enforced by app role checks in server procedures/routes.
         return true;
@@ -165,6 +191,14 @@ export const authOptions: NextAuthOptions = {
       await db.user.updateMany({
         where: { email: user.email },
         data: { role, emailVerified: new Date(), azureAdObjectId },
+      });
+
+      console.info("[auth] Rolle zugewiesen", {
+        email: user.email,
+        role,
+        source: roleSource,
+        groupsInToken: groups.length,
+        hasGroupOverage,
       });
 
       return true;

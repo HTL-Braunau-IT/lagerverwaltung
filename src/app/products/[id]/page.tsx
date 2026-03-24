@@ -58,6 +58,7 @@ export default function ProductDetailPage() {
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
+      setShowCartModal(true);
     },
   });
   const setQuantityMutation = api.cart.setItemQuantity.useMutation({
@@ -124,6 +125,7 @@ export default function ProductDetailPage() {
 
   const product = productQuery.data;
   const lowStock = decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
+  const stockOnHand = decimalToNumber(product.quantityOnHand);
 
   const categoryName = product.category?.name ?? "Ohne Kategorie";
   const locationLabel = product.storageLocation
@@ -237,14 +239,14 @@ export default function ProductDetailPage() {
 
               <button
                 onClick={() => {
+                  if (stockOnHand <= 0) return;
                   addItemMutation.mutate({
                     sessionId,
                     productId: product.id,
                     quantity: 1,
                   });
-                  setShowCartModal(true);
                 }}
-                disabled={sessionId.length === 0 || addItemMutation.isPending}
+                disabled={sessionId.length === 0 || addItemMutation.isPending || stockOnHand <= 0}
                 className="mt-5 rounded-xl bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}

@@ -50,12 +50,13 @@ enum RequestStatus {
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String?   @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String            @id @default(cuid())
+  name         String
+  slug         String?           @unique
+  products     Product[]         @relation("PrimaryProductCategory")
+  productLinks ProductCategory[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   @@unique([name])
 }
@@ -94,9 +95,10 @@ model Product {
   baseUnit          BaseUnit
   unitStep          Decimal               @default(1) @db.Decimal(14, 3)
   categoryId        String?
-  storageLocationId String
-  category          Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  storageLocation   StorageLocation       @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
+  storageLocationId String?
+  category          Category?             @relation("PrimaryProductCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  categories        ProductCategory[]
+  storageLocation   StorageLocation?      @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
   images            ProductImage[]
   cartItems         CartItem[]
   savedCartItems    SavedCartItem[]
@@ -111,6 +113,18 @@ model Product {
   @@index([categoryId])
   @@index([storageLocationId])
   @@index([quantityOnHand, minimumQuantity])
+}
+
+model ProductCategory {
+  id         String   @id @default(cuid())
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([productId, categoryId])
+  @@index([categoryId])
 }
 
 model ProductStockBooking {
