@@ -239,7 +239,19 @@ export default function ProductDetailPage() {
               {(partListsQuery.data ?? []).map((partList) => {
                 const quantityForPartList = quantitiesByPartList[partList.id] ?? "1";
                 return (
-                  <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
+                  <div
+                    key={partList.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/parts-list/${partList.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(`/parts-list/${partList.id}`);
+                      }
+                    }}
+                    className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <p
                         className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
@@ -259,12 +271,13 @@ export default function ProductDetailPage() {
                         <span>{partList.items.length} Produkte</span>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-1.5">
+                    <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
                       <input
                         type="number"
                         min={1}
                         step={1}
                         value={quantityForPartList}
+                        onClick={(event) => event.stopPropagation()}
                         onChange={(event) =>
                           setQuantitiesByPartList((prev) => ({
                             ...prev,
@@ -277,7 +290,8 @@ export default function ProductDetailPage() {
                       <Button
                         size="sm"
                         className="h-8 flex-1 text-xs"
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           const requestedQuantity = Math.max(1, Math.floor(Number(quantityForPartList) || 1));
                           setPartListWarning(null);
                           setActiveAddPartListId(partList.id);

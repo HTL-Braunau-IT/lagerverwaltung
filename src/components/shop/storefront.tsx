@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type SVGProps, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
@@ -38,6 +38,18 @@ function formatPrice(value: unknown) {
 
 function formatStock(value: unknown, baseUnit: string) {
   return `${decimalToNumber(value)} ${baseUnit.toLowerCase()}`;
+}
+
+function WastebinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
 }
 
 export function Storefront() {
@@ -233,7 +245,19 @@ export function Storefront() {
               {(partListsQuery.data ?? []).map((partList) => {
                 const quantityInput = quantitiesByPartList[partList.id] ?? "1";
                 return (
-                  <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
+                  <div
+                    key={partList.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/parts-list/${partList.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(`/parts-list/${partList.id}`);
+                      }
+                    }}
+                    className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <p
                         className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
@@ -253,12 +277,13 @@ export function Storefront() {
                         <span>{partList.items.length} Produkte</span>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-1.5">
+                    <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
                       <input
                         type="number"
                         min={1}
                         step={1}
                         value={quantityInput}
+                        onClick={(event) => event.stopPropagation()}
                         onChange={(event) =>
                           setQuantitiesByPartList((prev) => ({
                             ...prev,
@@ -271,7 +296,8 @@ export function Storefront() {
                       <Button
                         size="sm"
                         className="h-8 flex-1 text-xs"
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
                           setPartListWarning(null);
                           setActiveAddPartListId(partList.id);
@@ -589,6 +615,23 @@ export function Storefront() {
                                     productId: item.productId,
                                     sourcePartListId: item.sourcePartListId,
                                   },
+                                  quantity: 0,
+                                })
+                              }
+                              variant="outline"
+                              className="h-7 px-2 text-destructive hover:text-destructive"
+                              aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                            >
+                              <WastebinIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
                                   quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                                 })
                               }
@@ -629,6 +672,23 @@ export function Storefront() {
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <p className="text-sm text-foreground">{formatPrice(item.product.price)}</p>
                     <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() =>
+                          setQuantityMutation.mutate({
+                            sessionId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
+                            quantity: 0,
+                          })
+                        }
+                        variant="outline"
+                        className="h-8 px-2 text-destructive hover:text-destructive"
+                        aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                      >
+                        <WastebinIcon className="h-4 w-4" />
+                      </Button>
                       <Button
                         onClick={() =>
                           setQuantityMutation.mutate({

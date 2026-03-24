@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { type SVGProps, useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
 
@@ -30,6 +30,18 @@ function formatPrice(value: unknown) {
     style: "currency",
     currency: "EUR",
   }).format(amount);
+}
+
+function WastebinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
 }
 
 export default function CartsPage() {
@@ -161,6 +173,22 @@ export default function CartsPage() {
                                 productId: item.productId,
                                 sourcePartListId: item.sourcePartListId,
                               },
+                              quantity: 0,
+                            })
+                          }
+                          className="rounded-lg border border-rose-300 bg-white px-2 py-1 text-rose-700 transition hover:bg-rose-50"
+                          aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                        >
+                          <WastebinIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() =>
+                            setQuantityMutation.mutate({
+                              sessionId,
+                              line: {
+                                productId: item.productId,
+                                sourcePartListId: item.sourcePartListId,
+                              },
                               quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
                             })
                           }
@@ -206,6 +234,22 @@ export default function CartsPage() {
                   </p>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setQuantityMutation.mutate({
+                        sessionId,
+                        line: {
+                          productId: item.productId,
+                          sourcePartListId: item.sourcePartListId,
+                        },
+                        quantity: 0,
+                      })
+                    }
+                    className="rounded-lg border border-rose-300 bg-white px-2 py-1 text-rose-700 transition hover:bg-rose-50"
+                    aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                  >
+                    <WastebinIcon className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() =>
                       setQuantityMutation.mutate({

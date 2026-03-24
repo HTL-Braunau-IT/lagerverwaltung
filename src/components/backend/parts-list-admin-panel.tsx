@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -13,6 +14,7 @@ type PartListItemForm = {
   productId: string;
   productLabel: string;
   quantity: string;
+  displayUnit: string;
 };
 
 type PartListForm = {
@@ -31,12 +33,30 @@ type PartListDocument = {
   createdAt: Date;
 };
 
+type ProductSearchMode = "create" | "edit";
+const BASE_UNIT_LABELS: Record<string, string> = {
+  PCS: "Stk",
+  MM: "mm",
+  CM: "cm",
+  M: "m",
+  CM2: "cm2",
+  M2: "m2",
+  G: "g",
+  KG: "kg",
+  ML: "ml",
+  L: "l",
+};
+
 function createEmptyForm(): PartListForm {
   return {
     name: "",
     description: "",
-    items: [{ productId: "", productLabel: "", quantity: "1" }],
+    items: [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
   };
+}
+
+function formatBaseUnitLabel(baseUnit: string) {
+  return BASE_UNIT_LABELS[baseUnit] ?? baseUnit;
 }
 
 export function PartsListAdminPanel() {
@@ -53,6 +73,12 @@ export function PartsListAdminPanel() {
   const [createUploadError, setCreateUploadError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [activeProductRowKey, setActiveProductRowKey] = useState<string | null>(null);
+  const [productSearchInput, setProductSearchInput] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const productInputRefs = useRef(new Map<string, HTMLInputElement>());
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -61,14 +87,25 @@ export function PartsListAdminPanel() {
     return () => window.clearTimeout(timeout);
   }, [searchInput]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setProductSearchTerm(productSearchInput.trim());
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [productSearchInput]);
+
   const listsQuery = api.partsList.backendList.useQuery({
     search: searchTerm || undefined,
     limit: 200,
   });
-  const productsQuery = api.product.backendList.useQuery({
-    limit: 300,
-    cursor: undefined,
-  });
+  const productsQuery = api.product.backendList.useQuery(
+    {
+      search: productSearchTerm || undefined,
+      limit: 200,
+      cursor: undefined,
+    },
+    { enabled: activeProductRowKey !== null && productSearchTerm.length > 0 },
+  );
   const selectedPartListQuery = api.partsList.backendById.useQuery(
     { id: selectedId ?? "" },
     { enabled: Boolean(selectedId) },
@@ -85,7 +122,8 @@ export function PartsListAdminPanel() {
           productId: item.productId,
           productLabel: `${item.product.sku} - ${item.product.name}`,
           quantity: String(Number(item.quantity)),
-        })) ?? [{ productId: "", productLabel: "", quantity: "1" }],
+          displayUnit: formatBaseUnitLabel(item.product.baseUnit),
+        })) ?? [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
     });
   };
 
@@ -114,26 +152,209 @@ export function PartsListAdminPanel() {
     },
   });
 
-  const productOptions = useMemo(
+  const productSuggestions = useMemo(
     () =>
       (productsQuery.data?.items ?? []).map((product) => ({
         id: product.id,
         label: `${product.sku} - ${product.name}`,
+        baseUnit: product.baseUnit,
       })),
     [productsQuery.data],
   );
-  const productByLabel = useMemo(
-    () => new Map(productOptions.map((option) => [option.label.toLowerCase(), option.id])),
-    [productOptions],
-  );
+  const duplicateProductIds = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of form.items) {
+      if (!item.productId) continue;
+      counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([productId]) => productId),
+    );
+  }, [form.items]);
 
   const isEditing = Boolean(selectedId);
   const currentImageUrl = selectedPartListQuery.data?.imageUrl ?? null;
   const currentDocuments = (selectedPartListQuery.data?.documents ?? []) as PartListDocument[];
+  const hasDuplicateProducts = duplicateProductIds.size > 0;
   const canSave =
     form.name.trim().length > 0 &&
     form.items.length > 0 &&
-    form.items.every((item) => item.productId.length > 0 && Number(item.quantity) > 0);
+    form.items.every((item) => item.productId.length > 0 && Number(item.quantity) > 0) &&
+    !hasDuplicateProducts;
+  const normalizedFormItems = form.items
+    .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
+    .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
+
+  const getProductRowKey = (mode: ProductSearchMode, index: number) => `${mode}-${index}`;
+  const activeProductMode: ProductSearchMode | null = activeProductRowKey?.startsWith("edit-")
+    ? "edit"
+    : activeProductRowKey?.startsWith("create-")
+      ? "create"
+      : null;
+
+  const updateDropdownPosition = (rowKey: string | null) => {
+    if (!rowKey) {
+      setDropdownPosition(null);
+      return;
+    }
+    const input = productInputRefs.current.get(rowKey);
+    if (!input) {
+      setDropdownPosition(null);
+      return;
+    }
+    const modeFromKey: ProductSearchMode = rowKey.startsWith("edit-") ? "edit" : "create";
+    const rect = input.getBoundingClientRect();
+    setDropdownPosition({
+      top: modeFromKey === "edit" ? rect.top - 4 : rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
+  const updateFormItem = (index: number, updater: (item: PartListItemForm) => PartListItemForm) => {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, itemIndex) => (itemIndex === index ? updater(item) : item)),
+    }));
+  };
+
+  const handleProductInputFocus = (mode: ProductSearchMode, index: number, currentLabel: string) => {
+    const rowKey = getProductRowKey(mode, index);
+    setActiveProductRowKey(rowKey);
+    setProductSearchInput(currentLabel);
+    setProductSearchTerm(currentLabel.trim());
+    setHighlightedSuggestionIndex(0);
+    updateDropdownPosition(rowKey);
+  };
+
+  const handleProductInputChange = (mode: ProductSearchMode, index: number, value: string) => {
+    const rowKey = getProductRowKey(mode, index);
+    updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "" }));
+    setActiveProductRowKey(rowKey);
+    setProductSearchInput(value);
+    setHighlightedSuggestionIndex(0);
+    updateDropdownPosition(rowKey);
+  };
+
+  const closeProductSuggestions = (mode: ProductSearchMode, index: number) => {
+    const rowKey = getProductRowKey(mode, index);
+    window.setTimeout(() => {
+      setActiveProductRowKey((currentKey) => (currentKey === rowKey ? null : currentKey));
+    }, 120);
+  };
+
+  const selectProductSuggestion = (
+    mode: ProductSearchMode,
+    index: number,
+    selected: { id: string; label: string; baseUnit: string },
+  ) => {
+    const alreadySelectedInAnotherRow = form.items.some(
+      (item, itemIndex) => itemIndex !== index && item.productId === selected.id,
+    );
+    if (alreadySelectedInAnotherRow) {
+      return;
+    }
+    updateFormItem(index, (item) => ({
+      ...item,
+      productId: selected.id,
+      productLabel: selected.label,
+      displayUnit: formatBaseUnitLabel(selected.baseUnit),
+    }));
+    setActiveProductRowKey(null);
+    setProductSearchInput("");
+    setProductSearchTerm("");
+    setHighlightedSuggestionIndex(0);
+  };
+
+  useEffect(() => {
+    if (!activeProductRowKey) return;
+    const syncPosition = () => updateDropdownPosition(activeProductRowKey);
+    syncPosition();
+    window.addEventListener("resize", syncPosition);
+    window.addEventListener("scroll", syncPosition, true);
+    return () => {
+      window.removeEventListener("resize", syncPosition);
+      window.removeEventListener("scroll", syncPosition, true);
+    };
+  }, [activeProductRowKey, activeProductMode]);
+
+  const renderProductCell = (mode: ProductSearchMode, item: PartListItemForm, index: number) => {
+    const rowKey = getProductRowKey(mode, index);
+    const isActive = activeProductRowKey === rowKey;
+
+    return (
+      <div>
+        <input
+          ref={(node) => {
+            if (node) {
+              productInputRefs.current.set(rowKey, node);
+            } else {
+              productInputRefs.current.delete(rowKey);
+            }
+          }}
+          value={item.productLabel}
+          onFocus={() => handleProductInputFocus(mode, index, item.productLabel)}
+          onBlur={() => closeProductSuggestions(mode, index)}
+          onChange={(event) => handleProductInputChange(mode, index, event.target.value)}
+          onKeyDown={(event) => {
+            if (!showSuggestions || filteredProductSuggestions.length === 0) {
+              if (event.key === "Escape") {
+                setActiveProductRowKey(null);
+              }
+              return;
+            }
+
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setHighlightedSuggestionIndex((prev) => (prev + 1) % filteredProductSuggestions.length);
+              return;
+            }
+
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setHighlightedSuggestionIndex((prev) =>
+                prev <= 0 ? filteredProductSuggestions.length - 1 : prev - 1,
+              );
+              return;
+            }
+
+            if (event.key === "Enter") {
+              event.preventDefault();
+              const selected = filteredProductSuggestions[highlightedSuggestionIndex];
+              if (selected) {
+                selectProductSuggestion(mode, index, selected);
+              }
+              return;
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              setActiveProductRowKey(null);
+            }
+          }}
+          placeholder="SKU oder Name tippen..."
+          className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+        />
+        {item.productId && duplicateProductIds.has(item.productId) ? (
+          <p className="mt-1 text-xs text-destructive">Produkt ist bereits in einer anderen Zeile enthalten.</p>
+        ) : null}
+      </div>
+    );
+  };
+
+  const showSuggestions = activeProductRowKey !== null && productSearchTerm.length > 0 && dropdownPosition !== null;
+  const filteredProductSuggestions = useMemo(() => {
+    if (!activeProductRowKey) return productSuggestions;
+    const [, indexText] = activeProductRowKey.split("-");
+    const activeIndex = Number(indexText);
+    if (!Number.isInteger(activeIndex)) return productSuggestions;
+    return productSuggestions.filter(
+      (suggestion) =>
+        !form.items.some((item, itemIndex) => itemIndex !== activeIndex && item.productId === suggestion.id),
+    );
+  }, [activeProductRowKey, form.items, productSuggestions]);
 
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -341,46 +562,22 @@ export function PartsListAdminPanel() {
         </div>
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="min-w-full border-collapse text-left text-sm">
+          <table className="min-w-full table-fixed border-collapse text-left text-sm">
             <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">Produkt</th>
-                <th className="px-3 py-2">Menge</th>
-                <th className="px-3 py-2">Aktion</th>
+                <th className="w-[50%] px-3 py-2">Produkt</th>
+                <th className="w-[16%] px-3 py-2">Menge</th>
+                <th className="w-[14%] px-3 py-2">Einheit</th>
+                <th className="w-[20%] px-3 py-2">Aktion</th>
               </tr>
             </thead>
             <tbody>
               {form.items.map((item, index) => (
                 <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <input
-                      list={`parts-list-products-create-${index}`}
-                      value={item.productLabel}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  productLabel: event.target.value,
-                                  productId:
-                                    productByLabel.get(event.target.value.trim().toLowerCase()) ?? "",
-                                }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      placeholder="SKU oder Name tippen..."
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                    />
-                    <datalist id={`parts-list-products-create-${index}`}>
-                      {productOptions.map((option) => (
-                        <option key={option.id} value={option.label} />
-                      ))}
-                    </datalist>
+                  <td className="px-3 py-2 align-top">
+                    {renderProductCell("create", item, index)}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 align-top">
                     <input
                       type="number"
                       min={0.001}
@@ -402,7 +599,12 @@ export function PartsListAdminPanel() {
                       className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
                     />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 align-top">
+                    <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
+                      {item.displayUnit || "-"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 align-top">
                     <Button
                       type="button"
                       variant="outline"
@@ -429,7 +631,7 @@ export function PartsListAdminPanel() {
             onClick={() =>
               setForm((prev) => ({
                 ...prev,
-                items: [...prev.items, { productId: "", productLabel: "", quantity: "1" }],
+                items: [...prev.items, { productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
               }))
             }
           >
@@ -463,7 +665,11 @@ export function PartsListAdminPanel() {
             </label>
           </div>
         </div>
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4">
+          {hasDuplicateProducts ? (
+            <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
+          ) : null}
+          <div className="flex items-center gap-2">
           <Button
             type="button"
             onClick={async () => {
@@ -473,10 +679,7 @@ export function PartsListAdminPanel() {
                 created = await createMutation.mutateAsync({
                   name: form.name.trim(),
                   description: form.description.trim() ? form.description.trim() : null,
-                  items: form.items.map((item) => ({
-                    productId: item.productId,
-                    quantity: Number(item.quantity),
-                  })),
+                  items: normalizedFormItems,
                 });
               } catch (error) {
                 setCreateUploadError(
@@ -518,8 +721,54 @@ export function PartsListAdminPanel() {
           <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
             Abbrechen
           </Button>
+          </div>
         </div>
       </Dialog>
+
+      {showSuggestions
+        ? createPortal(
+            <div
+              className="fixed z-[9999] max-h-72 overflow-y-auto rounded-xl border border-border bg-card shadow-lg"
+              style={{
+                left: dropdownPosition.left,
+                width: dropdownPosition.width,
+                top: activeProductMode === "edit" ? undefined : dropdownPosition.top,
+                bottom:
+                  activeProductMode === "edit" ? Math.max(window.innerHeight - dropdownPosition.top, 0) : undefined,
+              }}
+            >
+              {productsQuery.isLoading ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Produkte werden gesucht...</p>
+              ) : filteredProductSuggestions.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Keine passenden Produkte gefunden.</p>
+              ) : (
+                filteredProductSuggestions.map((suggestion, suggestionIndex) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    className={`block w-full px-3 py-2 text-left text-xs ${
+                      suggestionIndex === highlightedSuggestionIndex
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60"
+                    }`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!activeProductRowKey) return;
+                      const [mode, indexText] = activeProductRowKey.split("-");
+                      const index = Number(indexText);
+                      if ((mode === "create" || mode === "edit") && Number.isInteger(index)) {
+                        selectProductSuggestion(mode, index, suggestion);
+                      }
+                    }}
+                  >
+                    {suggestion.label}
+                  </button>
+                ))
+              )}
+            </div>,
+            document.body,
+          )
+        : null}
 
       {isEditing ? (
         <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
@@ -557,46 +806,22 @@ export function PartsListAdminPanel() {
         </div>
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="min-w-full border-collapse text-left text-sm">
+          <table className="min-w-full table-fixed border-collapse text-left text-sm">
             <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">Produkt</th>
-                <th className="px-3 py-2">Menge</th>
-                <th className="px-3 py-2">Aktion</th>
+                <th className="w-[50%] px-3 py-2">Produkt</th>
+                <th className="w-[16%] px-3 py-2">Menge</th>
+                <th className="w-[14%] px-3 py-2">Einheit</th>
+                <th className="w-[20%] px-3 py-2">Aktion</th>
               </tr>
             </thead>
             <tbody>
               {form.items.map((item, index) => (
                 <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <input
-                      list={`parts-list-products-${index}`}
-                      value={item.productLabel}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  productLabel: event.target.value,
-                                  productId:
-                                    productByLabel.get(event.target.value.trim().toLowerCase()) ?? "",
-                                }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      placeholder="SKU oder Name tippen..."
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                    />
-                    <datalist id={`parts-list-products-${index}`}>
-                      {productOptions.map((option) => (
-                        <option key={option.id} value={option.label} />
-                      ))}
-                    </datalist>
+                  <td className="px-3 py-2 align-top">
+                    {renderProductCell("edit", item, index)}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 align-top">
                     <input
                       type="number"
                       min={0.001}
@@ -618,7 +843,12 @@ export function PartsListAdminPanel() {
                       className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
                     />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 align-top">
+                    <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
+                      {item.displayUnit || "-"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 align-top">
                     <Button
                       type="button"
                       variant="outline"
@@ -646,7 +876,7 @@ export function PartsListAdminPanel() {
             onClick={() =>
               setForm((prev) => ({
                 ...prev,
-                items: [...prev.items, { productId: "", productLabel: "", quantity: "1" }],
+                items: [...prev.items, { productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
               }))
             }
           >
@@ -654,7 +884,11 @@ export function PartsListAdminPanel() {
           </Button>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4">
+          {hasDuplicateProducts ? (
+            <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             onClick={() => {
@@ -663,10 +897,7 @@ export function PartsListAdminPanel() {
                 id: selectedId,
                 name: form.name.trim(),
                 description: form.description.trim() ? form.description.trim() : null,
-                items: form.items.map((item) => ({
-                  productId: item.productId,
-                  quantity: Number(item.quantity),
-                })),
+                items: normalizedFormItems,
               });
             }}
             disabled={!canSave || updateMutation.isPending}
@@ -682,6 +913,7 @@ export function PartsListAdminPanel() {
           >
             {deleteMutation.isPending ? "Loescht..." : "Teileliste loeschen"}
           </Button>
+          </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">

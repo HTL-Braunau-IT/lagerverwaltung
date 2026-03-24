@@ -11,6 +11,9 @@ const partListItemInput = z.object({
 const backendByIdInput = z.object({
   id: z.string().min(1),
 });
+const byIdForShopInput = z.object({
+  id: z.string().min(1),
+});
 
 const backendListInput = z.object({
   search: z.string().trim().optional(),
@@ -74,6 +77,52 @@ export const partsListRouter = createTRPCRouter({
   listForShop: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.partList.findMany({
       orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        imageUrl: true,
+        documents: {
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          select: {
+            id: true,
+            originalName: true,
+            url: true,
+            mimeType: true,
+            sizeBytes: true,
+          },
+        },
+        items: {
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            quantity: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                baseUnit: true,
+                quantityOnHand: true,
+                images: {
+                  orderBy: { sortOrder: "asc" },
+                  take: 1,
+                  select: {
+                    id: true,
+                    url: true,
+                    altText: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }),
+  byIdForShop: publicProcedure.input(byIdForShopInput).query(async ({ ctx, input }) => {
+    return ctx.db.partList.findUnique({
+      where: { id: input.id },
       select: {
         id: true,
         name: true,
