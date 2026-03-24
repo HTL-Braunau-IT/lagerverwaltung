@@ -153,7 +153,6 @@ export function Storefront() {
   }, [cartQuery.data?.items]);
 
   const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
-  const cartItemsCount = cartQuery.data?.items.length ?? 0;
   const groupedCartItems = useMemo(() => {
     const standalone: typeof cartItems = [];
     const partLists = new Map<string, { id: string; name: string; items: typeof cartItems }>();
@@ -215,9 +214,6 @@ export function Storefront() {
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">HTL Lager</p>
             <h1 className="text-xl font-semibold text-foreground md:text-2xl">Schulshop</h1>
-          </div>
-          <div className="rounded-xl border border-border bg-secondary px-3 py-2 text-sm text-secondary-foreground">
-            Warenkorb: {cartItemsCount} Artikel
           </div>
         </div>
         <div className="mt-4">
