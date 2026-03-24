@@ -1,8 +1,18 @@
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import mysql from "mysql2/promise";
 import { BaseUnit, PrismaClient, UnitKind } from "../generated/prisma/index.js";
+
+// Prefer runtime-injected env vars (Docker/CI/prod). For local CLI usage,
+// fall back to loading .env automatically when Node supports it.
+if (!process.env.DATABASE_URL && typeof process.loadEnvFile === "function") {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (existsSync(envPath)) {
+    process.loadEnvFile(envPath);
+  }
+}
 
 const connectionString = process.env.DATABASE_URL;
 const legacyHost = process.env.LEGACY_DB_HOST;
@@ -13,7 +23,9 @@ const legacyDatabase = process.env.LEGACY_DB_NAME;
 const legacyMediaBaseUrl = process.env.LEGACY_MEDIA_BASE_URL;
 
 if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
+  throw new Error(
+    "DATABASE_URL is not set. Provide it as an environment variable (recommended for Docker/prod) or create a local .env for manual runs.",
+  );
 }
 
 if (!legacyHost || !legacyUser || !legacyDatabase) {
@@ -38,6 +50,8 @@ const report = {
   imagesDownloaded: 0,
   imagesFailed: 0,
   imagesUpserted: 0,
+  unitFallbacks: 0,
+  unknownProductUnits: {},
   skipped: [],
 };
 
@@ -123,6 +137,71 @@ function toAbsoluteMediaUrl(urlOrPath, baseUrl) {
 function toNumber(raw, fallback = 0) {
   const parsed = Number.parseFloat(String(raw ?? ""));
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * @param {string | null | undefined} rawUnit
+ */
+function normalizeLegacyUnit(rawUnit) {
+  const trimmed = normalizeText(rawUnit).toLowerCase();
+  if (!trimmed) return "";
+  return trimmed
+    .replace(/\s+/g, "")
+    .replace(/\./g, "")
+    .replace(/²/g, "2")
+    .replace("qm", "m2")
+    .replace("qcm", "cm2")
+    .replace("qdm", "dm2");
+}
+
+/**
+ * @param {string | null | undefined} rawUnit
+ */
+function mapLegacyUnit(rawUnit) {
+  const unit = normalizeLegacyUnit(rawUnit);
+  if (!unit) {
+    return { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS, baseStep: 1, matched: false, normalizedUnit: unit };
+  }
+
+  /** @type {Record<string, { unitKind: UnitKind, baseUnit: BaseUnit, baseStep?: number }>} */
+  const mapping = {
+    pcs: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    piece: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    st: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    stk: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    mm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.MM },
+    cm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.CM },
+    m: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.M },
+    cm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2 },
+    dm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2, baseStep: 100 },
+    m2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.M2 },
+    g: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.G },
+    dag: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.G, baseStep: 10 },
+    kg: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.KG },
+    ml: { unitKind: UnitKind.VOLUME, baseUnit: BaseUnit.ML },
+    l: { unitKind: UnitKind.VOLUME, baseUnit: BaseUnit.L },
+  };
+
+  const mapped = mapping[unit];
+  if (mapped) {
+    return {
+      unitKind: mapped.unitKind,
+      baseUnit: mapped.baseUnit,
+      baseStep: mapped.baseStep ?? 1,
+      matched: true,
+      normalizedUnit: unit,
+    };
+  }
+
+  return { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS, baseStep: 1, matched: false, normalizedUnit: unit };
+}
+
+/**
+ * @param {number} value
+ */
+function toPrismaDecimalStep(value) {
+  const safe = Number.isFinite(value) && value > 0 ? value : 1;
+  return safe.toFixed(3);
 }
 
 /**
@@ -290,6 +369,8 @@ async function main() {
         p.product_sku AS sku,
         p.product_in_stock AS inStock,
         p.low_stock_notification AS lowStockNotification,
+        p.product_unit AS productUnit,
+        p.product_packaging AS productPackaging,
         p.published AS published,
         pd.product_name AS productName,
         pd.product_desc AS productDesc,
@@ -403,6 +484,16 @@ async function main() {
       const quantityOnHand = toNumber(row.inStock, 0);
       const minimumQuantity = toNumber(row.lowStockNotification, 0);
       const price = toNumber(productIdToPrice.get(productId), 0).toFixed(2);
+      const mappedUnit = mapLegacyUnit(row.productUnit);
+      const packagingStep = toNumber(row.productPackaging, 1);
+      const unitStep = toPrismaDecimalStep(packagingStep * mappedUnit.baseStep);
+      if (!mappedUnit.matched) {
+        report.unitFallbacks += 1;
+        if (mappedUnit.normalizedUnit) {
+          const current = Number(report.unknownProductUnits[mappedUnit.normalizedUnit] ?? 0);
+          report.unknownProductUnits[mappedUnit.normalizedUnit] = current + 1;
+        }
+      }
 
       const legacyCategoryCandidates = productIdToCategoryIds.get(productId) ?? [];
       const preferredLegacyCategoryId =
@@ -436,9 +527,9 @@ async function main() {
             price,
             quantityOnHand,
             minimumQuantity,
-            unitKind: UnitKind.PIECE,
-            baseUnit: BaseUnit.PCS,
-            unitStep: 1,
+            unitKind: mappedUnit.unitKind,
+            baseUnit: mappedUnit.baseUnit,
+            unitStep,
             categoryId: mappedCategoryId,
             storageLocationId: mappedStorageLocationId,
           },
@@ -455,9 +546,9 @@ async function main() {
             price,
             quantityOnHand,
             minimumQuantity,
-            unitKind: UnitKind.PIECE,
-            baseUnit: BaseUnit.PCS,
-            unitStep: 1,
+            unitKind: mappedUnit.unitKind,
+            baseUnit: mappedUnit.baseUnit,
+            unitStep,
             categoryId: mappedCategoryId,
             storageLocationId: mappedStorageLocationId,
           },
