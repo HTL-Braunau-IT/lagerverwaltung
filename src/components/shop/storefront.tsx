@@ -210,13 +210,7 @@ export function Storefront() {
         ref={headerRef}
         className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5"
       >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">HTL Lager</p>
-            <h1 className="text-xl font-semibold text-foreground md:text-2xl">Schulshop</h1>
-          </div>
-        </div>
-        <div className="mt-4">
+        <div>
           <label htmlFor="product-search" className="mb-2 block text-xs text-muted-foreground">
             Suche nach Name oder Beschreibung
           </label>

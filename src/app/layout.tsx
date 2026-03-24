@@ -39,8 +39,15 @@ export default async function RootLayout({
               data-app-shell-header="true"
               className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur"
             >
-              <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-                <p className="text-sm font-medium text-muted-foreground">
+              <div className="mx-auto grid w-full max-w-7xl grid-cols-[220px_1fr_auto] items-center gap-4 px-6 py-4">
+                <Link
+                  href="/"
+                  className="flex flex-col items-center text-center text-foreground transition-colors hover:text-primary"
+                >
+                  <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">HTL LAGER</span>
+                  <span className="text-xl font-semibold">Schulshop</span>
+                </Link>
+                <p className="text-center text-sm font-medium text-muted-foreground">
                   {`Angemeldet als ${session.user.email ?? "Benutzer"} (${roleLabels[session.user.role]})`}
                 </p>
                 <div className="flex items-center gap-2">
