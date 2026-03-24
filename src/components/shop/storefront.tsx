@@ -11,7 +11,6 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
-const TOP_BANNER_GAP_PX = 24;
 
 function getOrCreateSessionId() {
   if (typeof window === "undefined") return "";
@@ -59,7 +58,9 @@ export function Storefront() {
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const stickyTopOffset = 16;
+  // Match the natural top spacing of the content (main has `py-6` => 24px),
+  // so the asides align with the product grid initially and keep that gap when sticky.
+  const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   useEffect(() => {
@@ -201,8 +202,8 @@ export function Storefront() {
         <aside
           className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
           style={{
-            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+            top: `${appHeaderOffset + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
           <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
@@ -504,8 +505,8 @@ export function Storefront() {
           id="cart-panel"
           className="self-start rounded-2xl border border-border bg-card p-4 shadow-sm lg:sticky lg:overflow-auto"
           style={{
-            top: `${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
+            top: `${appHeaderOffset + stickyTopOffset}px`,
+            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
           }}
         >
           <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
