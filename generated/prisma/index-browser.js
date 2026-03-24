@@ -149,6 +149,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   id: 'id',
   name: 'name',
   sku: 'sku',
+  isVisible: 'isVisible',
   description: 'description',
   price: 'price',
   quantityOnHand: 'quantityOnHand',
@@ -202,6 +203,19 @@ exports.Prisma.PartListScalarFieldEnum = {
   id: 'id',
   name: 'name',
   description: 'description',
+  imageUrl: 'imageUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PartListDocumentScalarFieldEnum = {
+  id: 'id',
+  partListId: 'partListId',
+  fileName: 'fileName',
+  originalName: 'originalName',
+  url: 'url',
+  mimeType: 'mimeType',
+  sizeBytes: 'sizeBytes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -395,6 +409,7 @@ exports.Prisma.ModelName = {
   CostCenter: 'CostCenter',
   Order: 'Order',
   PartList: 'PartList',
+  PartListDocument: 'PartListDocument',
   PartListItem: 'PartListItem',
   OrderRequest: 'OrderRequest',
   OrderRequestItem: 'OrderRequestItem',

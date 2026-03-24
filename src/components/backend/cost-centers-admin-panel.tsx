@@ -5,25 +5,34 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 type CostCenterForm = {
-  code: string;
   name: string;
 };
 
 function createEmptyForm(): CostCenterForm {
   return {
-    code: "",
     name: "",
   };
+}
+
+function toCostCenterCode(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export function CostCentersAdminPanel() {
   const utils = api.useUtils();
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
 
@@ -46,6 +55,7 @@ export function CostCentersAdminPanel() {
     onSuccess: async () => {
       await Promise.all([utils.costCenter.backendList.invalidate(), utils.costCenter.list.invalidate()]);
       setForm(createEmptyForm());
+      setCreateOpen(false);
     },
   });
   const updateMutation = api.costCenter.backendUpdate.useMutation({
@@ -74,13 +84,25 @@ export function CostCentersAdminPanel() {
   );
 
   const isEditing = Boolean(selectedId);
-  const canSave = form.code.trim().length > 0 && form.name.trim().length > 0;
+  const generatedCode = toCostCenterCode(form.name.trim());
+  const canSave = form.name.trim().length > 0 && generatedCode.length > 0;
 
   return (
     <Card className="rounded-2xl p-5">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Kostenstellen</h2>
-        <p className="text-sm text-muted-foreground">Kostenstellen erstellen, bearbeiten und loeschen.</p>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Kostenstellen</h2>
+          <p className="text-sm text-muted-foreground">Kostenstellen erstellen, bearbeiten und loeschen.</p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => {
+            setForm(createEmptyForm());
+            setCreateOpen(true);
+          }}
+        >
+          Neue Kostenstelle
+        </Button>
       </div>
 
       <div className="mb-4">
@@ -141,7 +163,6 @@ export function CostCentersAdminPanel() {
                     onClick={() => {
                       setSelectedId(center.id);
                       setForm({
-                        code: center.code,
                         name: center.name,
                       });
                     }}
@@ -167,34 +188,13 @@ export function CostCentersAdminPanel() {
         </div>
       ) : null}
 
-      <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold text-foreground">
-            {isEditing ? "Kostenstelle bearbeiten" : "Neue Kostenstelle"}
-          </h3>
-          {isEditing ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSelectedId(null);
-                setForm(createEmptyForm());
-              }}
-            >
-              Neu anlegen
-            </Button>
-          ) : null}
-        </div>
-
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Neue Kostenstelle"
+        description="Name eingeben. Der Code wird automatisch aus dem Namen erzeugt."
+      >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Code
-            <Input
-              value={form.code}
-              onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
           <label className="text-xs text-muted-foreground">
             Name
             <Input
@@ -203,51 +203,88 @@ export function CostCentersAdminPanel() {
               className="mt-1 h-10 rounded-xl"
             />
           </label>
+          <label className="text-xs text-muted-foreground">
+            Code (automatisch)
+            <Input value={generatedCode} readOnly className="mt-1 h-10 rounded-xl" />
+          </label>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() =>
+              createMutation.mutate({
+                code: generatedCode,
+                name: form.name.trim(),
+              })
+            }
+            disabled={!canSave || createMutation.isPending}
+          >
+            {createMutation.isPending ? "Erstellt..." : "Kostenstelle erstellen"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+            Abbrechen
+          </Button>
+        </div>
+      </Dialog>
+
+      {isEditing ? (
+        <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-base font-semibold text-foreground">Kostenstelle bearbeiten</h3>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSelectedId(null);
+              setForm(createEmptyForm());
+            }}
+          >
+            Auswahl aufheben
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="text-xs text-muted-foreground">
+            Name
+            <Input
+              value={form.name}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Code (automatisch)
+            <Input value={generatedCode} readOnly className="mt-1 h-10 rounded-xl" />
+          </label>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {isEditing ? (
-            <Button
-              type="button"
-              onClick={() =>
-                selectedId &&
-                updateMutation.mutate({
-                  id: selectedId,
-                  code: form.code.trim(),
-                  name: form.name.trim(),
-                })
-              }
-              disabled={!canSave || updateMutation.isPending}
-            >
-              {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={() =>
-                createMutation.mutate({
-                  code: form.code.trim(),
-                  name: form.name.trim(),
-                })
-              }
-              disabled={!canSave || createMutation.isPending}
-            >
-              {createMutation.isPending ? "Erstellt..." : "Kostenstelle erstellen"}
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={() =>
+              selectedId &&
+              updateMutation.mutate({
+                id: selectedId,
+                code: generatedCode,
+                name: form.name.trim(),
+              })
+            }
+            disabled={!canSave || updateMutation.isPending}
+          >
+            {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
+          </Button>
 
-          {isEditing ? (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Loescht..." : "Kostenstelle loeschen"}
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? "Loescht..." : "Kostenstelle loeschen"}
+          </Button>
         </div>
       </div>
+      ) : null}
     </Card>
   );
 }

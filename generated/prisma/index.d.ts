@@ -59,6 +59,11 @@ export type Order = $Result.DefaultSelection<Prisma.$OrderPayload>
  */
 export type PartList = $Result.DefaultSelection<Prisma.$PartListPayload>
 /**
+ * Model PartListDocument
+ * 
+ */
+export type PartListDocument = $Result.DefaultSelection<Prisma.$PartListDocumentPayload>
+/**
  * Model PartListItem
  * 
  */
@@ -418,6 +423,16 @@ export class PrismaClient<
     * ```
     */
   get partList(): Prisma.PartListDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.partListDocument`: Exposes CRUD operations for the **PartListDocument** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PartListDocuments
+    * const partListDocuments = await prisma.partListDocument.findMany()
+    * ```
+    */
+  get partListDocument(): Prisma.PartListDocumentDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.partListItem`: Exposes CRUD operations for the **PartListItem** model.
@@ -1001,6 +1016,7 @@ export namespace Prisma {
     CostCenter: 'CostCenter',
     Order: 'Order',
     PartList: 'PartList',
+    PartListDocument: 'PartListDocument',
     PartListItem: 'PartListItem',
     OrderRequest: 'OrderRequest',
     OrderRequestItem: 'OrderRequestItem',
@@ -1030,7 +1046,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "productCategory" | "productStockBooking" | "costCenter" | "order" | "partList" | "partListItem" | "orderRequest" | "orderRequestItem" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "account" | "session" | "verificationToken"
+      modelProps: "category" | "storageLocation" | "storageRoom" | "product" | "productCategory" | "productStockBooking" | "costCenter" | "order" | "partList" | "partListDocument" | "partListItem" | "orderRequest" | "orderRequestItem" | "orderCounter" | "orderItem" | "productImage" | "cart" | "cartItem" | "savedCart" | "savedCartItem" | "user" | "account" | "session" | "verificationToken"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1697,6 +1713,80 @@ export namespace Prisma {
           count: {
             args: Prisma.PartListCountArgs<ExtArgs>
             result: $Utils.Optional<PartListCountAggregateOutputType> | number
+          }
+        }
+      }
+      PartListDocument: {
+        payload: Prisma.$PartListDocumentPayload<ExtArgs>
+        fields: Prisma.PartListDocumentFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PartListDocumentFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PartListDocumentFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          findFirst: {
+            args: Prisma.PartListDocumentFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PartListDocumentFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          findMany: {
+            args: Prisma.PartListDocumentFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>[]
+          }
+          create: {
+            args: Prisma.PartListDocumentCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          createMany: {
+            args: Prisma.PartListDocumentCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PartListDocumentCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>[]
+          }
+          delete: {
+            args: Prisma.PartListDocumentDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          update: {
+            args: Prisma.PartListDocumentUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          deleteMany: {
+            args: Prisma.PartListDocumentDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PartListDocumentUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PartListDocumentUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>[]
+          }
+          upsert: {
+            args: Prisma.PartListDocumentUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PartListDocumentPayload>
+          }
+          aggregate: {
+            args: Prisma.PartListDocumentAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePartListDocument>
+          }
+          groupBy: {
+            args: Prisma.PartListDocumentGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PartListDocumentGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PartListDocumentCountArgs<ExtArgs>
+            result: $Utils.Optional<PartListDocumentCountAggregateOutputType> | number
           }
         }
       }
@@ -2853,6 +2943,7 @@ export namespace Prisma {
     costCenter?: CostCenterOmit
     order?: OrderOmit
     partList?: PartListOmit
+    partListDocument?: PartListDocumentOmit
     partListItem?: PartListItemOmit
     orderRequest?: OrderRequestOmit
     orderRequestItem?: OrderRequestItemOmit
@@ -3206,12 +3297,14 @@ export namespace Prisma {
 
   export type PartListCountOutputType = {
     items: number
+    documents: number
     cartItems: number
     orders: number
   }
 
   export type PartListCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     items?: boolean | PartListCountOutputTypeCountItemsArgs
+    documents?: boolean | PartListCountOutputTypeCountDocumentsArgs
     cartItems?: boolean | PartListCountOutputTypeCountCartItemsArgs
     orders?: boolean | PartListCountOutputTypeCountOrdersArgs
   }
@@ -3232,6 +3325,13 @@ export namespace Prisma {
    */
   export type PartListCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PartListItemWhereInput
+  }
+
+  /**
+   * PartListCountOutputType without action
+   */
+  export type PartListCountOutputTypeCountDocumentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PartListDocumentWhereInput
   }
 
   /**
@@ -6745,6 +6845,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     sku: string | null
+    isVisible: boolean | null
     description: string | null
     price: Decimal | null
     quantityOnHand: Decimal | null
@@ -6762,6 +6863,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     sku: string | null
+    isVisible: boolean | null
     description: string | null
     price: Decimal | null
     quantityOnHand: Decimal | null
@@ -6779,6 +6881,7 @@ export namespace Prisma {
     id: number
     name: number
     sku: number
+    isVisible: number
     description: number
     price: number
     quantityOnHand: number
@@ -6812,6 +6915,7 @@ export namespace Prisma {
     id?: true
     name?: true
     sku?: true
+    isVisible?: true
     description?: true
     price?: true
     quantityOnHand?: true
@@ -6829,6 +6933,7 @@ export namespace Prisma {
     id?: true
     name?: true
     sku?: true
+    isVisible?: true
     description?: true
     price?: true
     quantityOnHand?: true
@@ -6846,6 +6951,7 @@ export namespace Prisma {
     id?: true
     name?: true
     sku?: true
+    isVisible?: true
     description?: true
     price?: true
     quantityOnHand?: true
@@ -6950,6 +7056,7 @@ export namespace Prisma {
     id: string
     name: string
     sku: string
+    isVisible: boolean
     description: string | null
     price: Decimal
     quantityOnHand: Decimal
@@ -6986,6 +7093,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     sku?: boolean
+    isVisible?: boolean
     description?: boolean
     price?: boolean
     quantityOnHand?: boolean
@@ -7014,6 +7122,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     sku?: boolean
+    isVisible?: boolean
     description?: boolean
     price?: boolean
     quantityOnHand?: boolean
@@ -7033,6 +7142,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     sku?: boolean
+    isVisible?: boolean
     description?: boolean
     price?: boolean
     quantityOnHand?: boolean
@@ -7052,6 +7162,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     sku?: boolean
+    isVisible?: boolean
     description?: boolean
     price?: boolean
     quantityOnHand?: boolean
@@ -7065,7 +7176,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "sku" | "description" | "price" | "quantityOnHand" | "minimumQuantity" | "unitKind" | "baseUnit" | "unitStep" | "categoryId" | "storageLocationId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "sku" | "isVisible" | "description" | "price" | "quantityOnHand" | "minimumQuantity" | "unitKind" | "baseUnit" | "unitStep" | "categoryId" | "storageLocationId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     category?: boolean | Product$categoryArgs<ExtArgs>
     categories?: boolean | Product$categoriesArgs<ExtArgs>
@@ -7106,6 +7217,7 @@ export namespace Prisma {
       id: string
       name: string
       sku: string
+      isVisible: boolean
       description: string | null
       price: Prisma.Decimal
       quantityOnHand: Prisma.Decimal
@@ -7553,6 +7665,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Product", 'String'>
     readonly name: FieldRef<"Product", 'String'>
     readonly sku: FieldRef<"Product", 'String'>
+    readonly isVisible: FieldRef<"Product", 'Boolean'>
     readonly description: FieldRef<"Product", 'String'>
     readonly price: FieldRef<"Product", 'Decimal'>
     readonly quantityOnHand: FieldRef<"Product", 'Decimal'>
@@ -12681,6 +12794,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     description: string | null
+    imageUrl: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12689,6 +12803,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     description: string | null
+    imageUrl: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -12697,6 +12812,7 @@ export namespace Prisma {
     id: number
     name: number
     description: number
+    imageUrl: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -12707,6 +12823,7 @@ export namespace Prisma {
     id?: true
     name?: true
     description?: true
+    imageUrl?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12715,6 +12832,7 @@ export namespace Prisma {
     id?: true
     name?: true
     description?: true
+    imageUrl?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12723,6 +12841,7 @@ export namespace Prisma {
     id?: true
     name?: true
     description?: true
+    imageUrl?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -12804,6 +12923,7 @@ export namespace Prisma {
     id: string
     name: string
     description: string | null
+    imageUrl: string | null
     createdAt: Date
     updatedAt: Date
     _count: PartListCountAggregateOutputType | null
@@ -12829,9 +12949,11 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
+    imageUrl?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     items?: boolean | PartList$itemsArgs<ExtArgs>
+    documents?: boolean | PartList$documentsArgs<ExtArgs>
     cartItems?: boolean | PartList$cartItemsArgs<ExtArgs>
     orders?: boolean | PartList$ordersArgs<ExtArgs>
     _count?: boolean | PartListCountOutputTypeDefaultArgs<ExtArgs>
@@ -12841,6 +12963,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
+    imageUrl?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["partList"]>
@@ -12849,6 +12972,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
+    imageUrl?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["partList"]>
@@ -12857,13 +12981,15 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     description?: boolean
+    imageUrl?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type PartListOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["partList"]>
+  export type PartListOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "imageUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["partList"]>
   export type PartListInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     items?: boolean | PartList$itemsArgs<ExtArgs>
+    documents?: boolean | PartList$documentsArgs<ExtArgs>
     cartItems?: boolean | PartList$cartItemsArgs<ExtArgs>
     orders?: boolean | PartList$ordersArgs<ExtArgs>
     _count?: boolean | PartListCountOutputTypeDefaultArgs<ExtArgs>
@@ -12875,6 +13001,7 @@ export namespace Prisma {
     name: "PartList"
     objects: {
       items: Prisma.$PartListItemPayload<ExtArgs>[]
+      documents: Prisma.$PartListDocumentPayload<ExtArgs>[]
       cartItems: Prisma.$CartItemPayload<ExtArgs>[]
       orders: Prisma.$OrderPayload<ExtArgs>[]
     }
@@ -12882,6 +13009,7 @@ export namespace Prisma {
       id: string
       name: string
       description: string | null
+      imageUrl: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["partList"]>
@@ -13279,6 +13407,7 @@ export namespace Prisma {
   export interface Prisma__PartListClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     items<T extends PartList$itemsArgs<ExtArgs> = {}>(args?: Subset<T, PartList$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PartListItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    documents<T extends PartList$documentsArgs<ExtArgs> = {}>(args?: Subset<T, PartList$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     cartItems<T extends PartList$cartItemsArgs<ExtArgs> = {}>(args?: Subset<T, PartList$cartItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CartItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     orders<T extends PartList$ordersArgs<ExtArgs> = {}>(args?: Subset<T, PartList$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -13313,6 +13442,7 @@ export namespace Prisma {
     readonly id: FieldRef<"PartList", 'String'>
     readonly name: FieldRef<"PartList", 'String'>
     readonly description: FieldRef<"PartList", 'String'>
+    readonly imageUrl: FieldRef<"PartList", 'String'>
     readonly createdAt: FieldRef<"PartList", 'DateTime'>
     readonly updatedAt: FieldRef<"PartList", 'DateTime'>
   }
@@ -13732,6 +13862,30 @@ export namespace Prisma {
   }
 
   /**
+   * PartList.documents
+   */
+  export type PartList$documentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    where?: PartListDocumentWhereInput
+    orderBy?: PartListDocumentOrderByWithRelationInput | PartListDocumentOrderByWithRelationInput[]
+    cursor?: PartListDocumentWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PartListDocumentScalarFieldEnum | PartListDocumentScalarFieldEnum[]
+  }
+
+  /**
    * PartList.cartItems
    */
   export type PartList$cartItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -13795,6 +13949,1155 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: PartListInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PartListDocument
+   */
+
+  export type AggregatePartListDocument = {
+    _count: PartListDocumentCountAggregateOutputType | null
+    _avg: PartListDocumentAvgAggregateOutputType | null
+    _sum: PartListDocumentSumAggregateOutputType | null
+    _min: PartListDocumentMinAggregateOutputType | null
+    _max: PartListDocumentMaxAggregateOutputType | null
+  }
+
+  export type PartListDocumentAvgAggregateOutputType = {
+    sizeBytes: number | null
+  }
+
+  export type PartListDocumentSumAggregateOutputType = {
+    sizeBytes: number | null
+  }
+
+  export type PartListDocumentMinAggregateOutputType = {
+    id: string | null
+    partListId: string | null
+    fileName: string | null
+    originalName: string | null
+    url: string | null
+    mimeType: string | null
+    sizeBytes: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PartListDocumentMaxAggregateOutputType = {
+    id: string | null
+    partListId: string | null
+    fileName: string | null
+    originalName: string | null
+    url: string | null
+    mimeType: string | null
+    sizeBytes: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type PartListDocumentCountAggregateOutputType = {
+    id: number
+    partListId: number
+    fileName: number
+    originalName: number
+    url: number
+    mimeType: number
+    sizeBytes: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type PartListDocumentAvgAggregateInputType = {
+    sizeBytes?: true
+  }
+
+  export type PartListDocumentSumAggregateInputType = {
+    sizeBytes?: true
+  }
+
+  export type PartListDocumentMinAggregateInputType = {
+    id?: true
+    partListId?: true
+    fileName?: true
+    originalName?: true
+    url?: true
+    mimeType?: true
+    sizeBytes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PartListDocumentMaxAggregateInputType = {
+    id?: true
+    partListId?: true
+    fileName?: true
+    originalName?: true
+    url?: true
+    mimeType?: true
+    sizeBytes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type PartListDocumentCountAggregateInputType = {
+    id?: true
+    partListId?: true
+    fileName?: true
+    originalName?: true
+    url?: true
+    mimeType?: true
+    sizeBytes?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type PartListDocumentAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PartListDocument to aggregate.
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PartListDocuments to fetch.
+     */
+    orderBy?: PartListDocumentOrderByWithRelationInput | PartListDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PartListDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PartListDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PartListDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PartListDocuments
+    **/
+    _count?: true | PartListDocumentCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PartListDocumentAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PartListDocumentSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PartListDocumentMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PartListDocumentMaxAggregateInputType
+  }
+
+  export type GetPartListDocumentAggregateType<T extends PartListDocumentAggregateArgs> = {
+        [P in keyof T & keyof AggregatePartListDocument]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePartListDocument[P]>
+      : GetScalarType<T[P], AggregatePartListDocument[P]>
+  }
+
+
+
+
+  export type PartListDocumentGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PartListDocumentWhereInput
+    orderBy?: PartListDocumentOrderByWithAggregationInput | PartListDocumentOrderByWithAggregationInput[]
+    by: PartListDocumentScalarFieldEnum[] | PartListDocumentScalarFieldEnum
+    having?: PartListDocumentScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PartListDocumentCountAggregateInputType | true
+    _avg?: PartListDocumentAvgAggregateInputType
+    _sum?: PartListDocumentSumAggregateInputType
+    _min?: PartListDocumentMinAggregateInputType
+    _max?: PartListDocumentMaxAggregateInputType
+  }
+
+  export type PartListDocumentGroupByOutputType = {
+    id: string
+    partListId: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt: Date
+    updatedAt: Date
+    _count: PartListDocumentCountAggregateOutputType | null
+    _avg: PartListDocumentAvgAggregateOutputType | null
+    _sum: PartListDocumentSumAggregateOutputType | null
+    _min: PartListDocumentMinAggregateOutputType | null
+    _max: PartListDocumentMaxAggregateOutputType | null
+  }
+
+  type GetPartListDocumentGroupByPayload<T extends PartListDocumentGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PartListDocumentGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PartListDocumentGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PartListDocumentGroupByOutputType[P]>
+            : GetScalarType<T[P], PartListDocumentGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PartListDocumentSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    partListId?: boolean
+    fileName?: boolean
+    originalName?: boolean
+    url?: boolean
+    mimeType?: boolean
+    sizeBytes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["partListDocument"]>
+
+  export type PartListDocumentSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    partListId?: boolean
+    fileName?: boolean
+    originalName?: boolean
+    url?: boolean
+    mimeType?: boolean
+    sizeBytes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["partListDocument"]>
+
+  export type PartListDocumentSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    partListId?: boolean
+    fileName?: boolean
+    originalName?: boolean
+    url?: boolean
+    mimeType?: boolean
+    sizeBytes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["partListDocument"]>
+
+  export type PartListDocumentSelectScalar = {
+    id?: boolean
+    partListId?: boolean
+    fileName?: boolean
+    originalName?: boolean
+    url?: boolean
+    mimeType?: boolean
+    sizeBytes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type PartListDocumentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "partListId" | "fileName" | "originalName" | "url" | "mimeType" | "sizeBytes" | "createdAt" | "updatedAt", ExtArgs["result"]["partListDocument"]>
+  export type PartListDocumentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }
+  export type PartListDocumentIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }
+  export type PartListDocumentIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    partList?: boolean | PartListDefaultArgs<ExtArgs>
+  }
+
+  export type $PartListDocumentPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PartListDocument"
+    objects: {
+      partList: Prisma.$PartListPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      partListId: string
+      fileName: string
+      originalName: string
+      url: string
+      mimeType: string
+      sizeBytes: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["partListDocument"]>
+    composites: {}
+  }
+
+  type PartListDocumentGetPayload<S extends boolean | null | undefined | PartListDocumentDefaultArgs> = $Result.GetResult<Prisma.$PartListDocumentPayload, S>
+
+  type PartListDocumentCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PartListDocumentFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PartListDocumentCountAggregateInputType | true
+    }
+
+  export interface PartListDocumentDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PartListDocument'], meta: { name: 'PartListDocument' } }
+    /**
+     * Find zero or one PartListDocument that matches the filter.
+     * @param {PartListDocumentFindUniqueArgs} args - Arguments to find a PartListDocument
+     * @example
+     * // Get one PartListDocument
+     * const partListDocument = await prisma.partListDocument.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PartListDocumentFindUniqueArgs>(args: SelectSubset<T, PartListDocumentFindUniqueArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PartListDocument that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PartListDocumentFindUniqueOrThrowArgs} args - Arguments to find a PartListDocument
+     * @example
+     * // Get one PartListDocument
+     * const partListDocument = await prisma.partListDocument.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PartListDocumentFindUniqueOrThrowArgs>(args: SelectSubset<T, PartListDocumentFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PartListDocument that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentFindFirstArgs} args - Arguments to find a PartListDocument
+     * @example
+     * // Get one PartListDocument
+     * const partListDocument = await prisma.partListDocument.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PartListDocumentFindFirstArgs>(args?: SelectSubset<T, PartListDocumentFindFirstArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PartListDocument that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentFindFirstOrThrowArgs} args - Arguments to find a PartListDocument
+     * @example
+     * // Get one PartListDocument
+     * const partListDocument = await prisma.partListDocument.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PartListDocumentFindFirstOrThrowArgs>(args?: SelectSubset<T, PartListDocumentFindFirstOrThrowArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PartListDocuments that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PartListDocuments
+     * const partListDocuments = await prisma.partListDocument.findMany()
+     * 
+     * // Get first 10 PartListDocuments
+     * const partListDocuments = await prisma.partListDocument.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const partListDocumentWithIdOnly = await prisma.partListDocument.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PartListDocumentFindManyArgs>(args?: SelectSubset<T, PartListDocumentFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PartListDocument.
+     * @param {PartListDocumentCreateArgs} args - Arguments to create a PartListDocument.
+     * @example
+     * // Create one PartListDocument
+     * const PartListDocument = await prisma.partListDocument.create({
+     *   data: {
+     *     // ... data to create a PartListDocument
+     *   }
+     * })
+     * 
+     */
+    create<T extends PartListDocumentCreateArgs>(args: SelectSubset<T, PartListDocumentCreateArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PartListDocuments.
+     * @param {PartListDocumentCreateManyArgs} args - Arguments to create many PartListDocuments.
+     * @example
+     * // Create many PartListDocuments
+     * const partListDocument = await prisma.partListDocument.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PartListDocumentCreateManyArgs>(args?: SelectSubset<T, PartListDocumentCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PartListDocuments and returns the data saved in the database.
+     * @param {PartListDocumentCreateManyAndReturnArgs} args - Arguments to create many PartListDocuments.
+     * @example
+     * // Create many PartListDocuments
+     * const partListDocument = await prisma.partListDocument.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PartListDocuments and only return the `id`
+     * const partListDocumentWithIdOnly = await prisma.partListDocument.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PartListDocumentCreateManyAndReturnArgs>(args?: SelectSubset<T, PartListDocumentCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PartListDocument.
+     * @param {PartListDocumentDeleteArgs} args - Arguments to delete one PartListDocument.
+     * @example
+     * // Delete one PartListDocument
+     * const PartListDocument = await prisma.partListDocument.delete({
+     *   where: {
+     *     // ... filter to delete one PartListDocument
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PartListDocumentDeleteArgs>(args: SelectSubset<T, PartListDocumentDeleteArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PartListDocument.
+     * @param {PartListDocumentUpdateArgs} args - Arguments to update one PartListDocument.
+     * @example
+     * // Update one PartListDocument
+     * const partListDocument = await prisma.partListDocument.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PartListDocumentUpdateArgs>(args: SelectSubset<T, PartListDocumentUpdateArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PartListDocuments.
+     * @param {PartListDocumentDeleteManyArgs} args - Arguments to filter PartListDocuments to delete.
+     * @example
+     * // Delete a few PartListDocuments
+     * const { count } = await prisma.partListDocument.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PartListDocumentDeleteManyArgs>(args?: SelectSubset<T, PartListDocumentDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PartListDocuments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PartListDocuments
+     * const partListDocument = await prisma.partListDocument.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PartListDocumentUpdateManyArgs>(args: SelectSubset<T, PartListDocumentUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PartListDocuments and returns the data updated in the database.
+     * @param {PartListDocumentUpdateManyAndReturnArgs} args - Arguments to update many PartListDocuments.
+     * @example
+     * // Update many PartListDocuments
+     * const partListDocument = await prisma.partListDocument.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PartListDocuments and only return the `id`
+     * const partListDocumentWithIdOnly = await prisma.partListDocument.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PartListDocumentUpdateManyAndReturnArgs>(args: SelectSubset<T, PartListDocumentUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PartListDocument.
+     * @param {PartListDocumentUpsertArgs} args - Arguments to update or create a PartListDocument.
+     * @example
+     * // Update or create a PartListDocument
+     * const partListDocument = await prisma.partListDocument.upsert({
+     *   create: {
+     *     // ... data to create a PartListDocument
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PartListDocument we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PartListDocumentUpsertArgs>(args: SelectSubset<T, PartListDocumentUpsertArgs<ExtArgs>>): Prisma__PartListDocumentClient<$Result.GetResult<Prisma.$PartListDocumentPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PartListDocuments.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentCountArgs} args - Arguments to filter PartListDocuments to count.
+     * @example
+     * // Count the number of PartListDocuments
+     * const count = await prisma.partListDocument.count({
+     *   where: {
+     *     // ... the filter for the PartListDocuments we want to count
+     *   }
+     * })
+    **/
+    count<T extends PartListDocumentCountArgs>(
+      args?: Subset<T, PartListDocumentCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PartListDocumentCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PartListDocument.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PartListDocumentAggregateArgs>(args: Subset<T, PartListDocumentAggregateArgs>): Prisma.PrismaPromise<GetPartListDocumentAggregateType<T>>
+
+    /**
+     * Group by PartListDocument.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PartListDocumentGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PartListDocumentGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PartListDocumentGroupByArgs['orderBy'] }
+        : { orderBy?: PartListDocumentGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PartListDocumentGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPartListDocumentGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PartListDocument model
+   */
+  readonly fields: PartListDocumentFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PartListDocument.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PartListDocumentClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    partList<T extends PartListDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PartListDefaultArgs<ExtArgs>>): Prisma__PartListClient<$Result.GetResult<Prisma.$PartListPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PartListDocument model
+   */
+  interface PartListDocumentFieldRefs {
+    readonly id: FieldRef<"PartListDocument", 'String'>
+    readonly partListId: FieldRef<"PartListDocument", 'String'>
+    readonly fileName: FieldRef<"PartListDocument", 'String'>
+    readonly originalName: FieldRef<"PartListDocument", 'String'>
+    readonly url: FieldRef<"PartListDocument", 'String'>
+    readonly mimeType: FieldRef<"PartListDocument", 'String'>
+    readonly sizeBytes: FieldRef<"PartListDocument", 'Int'>
+    readonly createdAt: FieldRef<"PartListDocument", 'DateTime'>
+    readonly updatedAt: FieldRef<"PartListDocument", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PartListDocument findUnique
+   */
+  export type PartListDocumentFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which PartListDocument to fetch.
+     */
+    where: PartListDocumentWhereUniqueInput
+  }
+
+  /**
+   * PartListDocument findUniqueOrThrow
+   */
+  export type PartListDocumentFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which PartListDocument to fetch.
+     */
+    where: PartListDocumentWhereUniqueInput
+  }
+
+  /**
+   * PartListDocument findFirst
+   */
+  export type PartListDocumentFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which PartListDocument to fetch.
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PartListDocuments to fetch.
+     */
+    orderBy?: PartListDocumentOrderByWithRelationInput | PartListDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PartListDocuments.
+     */
+    cursor?: PartListDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PartListDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PartListDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PartListDocuments.
+     */
+    distinct?: PartListDocumentScalarFieldEnum | PartListDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * PartListDocument findFirstOrThrow
+   */
+  export type PartListDocumentFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which PartListDocument to fetch.
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PartListDocuments to fetch.
+     */
+    orderBy?: PartListDocumentOrderByWithRelationInput | PartListDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PartListDocuments.
+     */
+    cursor?: PartListDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PartListDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PartListDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PartListDocuments.
+     */
+    distinct?: PartListDocumentScalarFieldEnum | PartListDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * PartListDocument findMany
+   */
+  export type PartListDocumentFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter, which PartListDocuments to fetch.
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PartListDocuments to fetch.
+     */
+    orderBy?: PartListDocumentOrderByWithRelationInput | PartListDocumentOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PartListDocuments.
+     */
+    cursor?: PartListDocumentWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PartListDocuments from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PartListDocuments.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PartListDocuments.
+     */
+    distinct?: PartListDocumentScalarFieldEnum | PartListDocumentScalarFieldEnum[]
+  }
+
+  /**
+   * PartListDocument create
+   */
+  export type PartListDocumentCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PartListDocument.
+     */
+    data: XOR<PartListDocumentCreateInput, PartListDocumentUncheckedCreateInput>
+  }
+
+  /**
+   * PartListDocument createMany
+   */
+  export type PartListDocumentCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PartListDocuments.
+     */
+    data: PartListDocumentCreateManyInput | PartListDocumentCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PartListDocument createManyAndReturn
+   */
+  export type PartListDocumentCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * The data used to create many PartListDocuments.
+     */
+    data: PartListDocumentCreateManyInput | PartListDocumentCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PartListDocument update
+   */
+  export type PartListDocumentUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PartListDocument.
+     */
+    data: XOR<PartListDocumentUpdateInput, PartListDocumentUncheckedUpdateInput>
+    /**
+     * Choose, which PartListDocument to update.
+     */
+    where: PartListDocumentWhereUniqueInput
+  }
+
+  /**
+   * PartListDocument updateMany
+   */
+  export type PartListDocumentUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PartListDocuments.
+     */
+    data: XOR<PartListDocumentUpdateManyMutationInput, PartListDocumentUncheckedUpdateManyInput>
+    /**
+     * Filter which PartListDocuments to update
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * Limit how many PartListDocuments to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PartListDocument updateManyAndReturn
+   */
+  export type PartListDocumentUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * The data used to update PartListDocuments.
+     */
+    data: XOR<PartListDocumentUpdateManyMutationInput, PartListDocumentUncheckedUpdateManyInput>
+    /**
+     * Filter which PartListDocuments to update
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * Limit how many PartListDocuments to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PartListDocument upsert
+   */
+  export type PartListDocumentUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PartListDocument to update in case it exists.
+     */
+    where: PartListDocumentWhereUniqueInput
+    /**
+     * In case the PartListDocument found by the `where` argument doesn't exist, create a new PartListDocument with this data.
+     */
+    create: XOR<PartListDocumentCreateInput, PartListDocumentUncheckedCreateInput>
+    /**
+     * In case the PartListDocument was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PartListDocumentUpdateInput, PartListDocumentUncheckedUpdateInput>
+  }
+
+  /**
+   * PartListDocument delete
+   */
+  export type PartListDocumentDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
+    /**
+     * Filter which PartListDocument to delete.
+     */
+    where: PartListDocumentWhereUniqueInput
+  }
+
+  /**
+   * PartListDocument deleteMany
+   */
+  export type PartListDocumentDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PartListDocuments to delete
+     */
+    where?: PartListDocumentWhereInput
+    /**
+     * Limit how many PartListDocuments to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PartListDocument without action
+   */
+  export type PartListDocumentDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PartListDocument
+     */
+    select?: PartListDocumentSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PartListDocument
+     */
+    omit?: PartListDocumentOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PartListDocumentInclude<ExtArgs> | null
   }
 
 
@@ -29437,6 +30740,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     sku: 'sku',
+    isVisible: 'isVisible',
     description: 'description',
     price: 'price',
     quantityOnHand: 'quantityOnHand',
@@ -29505,11 +30809,27 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     description: 'description',
+    imageUrl: 'imageUrl',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
 
   export type PartListScalarFieldEnum = (typeof PartListScalarFieldEnum)[keyof typeof PartListScalarFieldEnum]
+
+
+  export const PartListDocumentScalarFieldEnum: {
+    id: 'id',
+    partListId: 'partListId',
+    fileName: 'fileName',
+    originalName: 'originalName',
+    url: 'url',
+    mimeType: 'mimeType',
+    sizeBytes: 'sizeBytes',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type PartListDocumentScalarFieldEnum = (typeof PartListDocumentScalarFieldEnum)[keyof typeof PartListDocumentScalarFieldEnum]
 
 
   export const PartListItemScalarFieldEnum: {
@@ -29738,6 +31058,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -29794,20 +31121,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'RequestStatus'
-   */
-  export type EnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus'>
-    
-
-
-  /**
-   * Reference to a field of type 'RequestStatus[]'
-   */
-  export type ListEnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Int'
    */
   export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -29818,6 +31131,20 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'RequestStatus'
+   */
+  export type EnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RequestStatus[]'
+   */
+  export type ListEnumRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequestStatus[]'>
     
 
 
@@ -30035,6 +31362,7 @@ export namespace Prisma {
     id?: StringFilter<"Product"> | string
     name?: StringFilter<"Product"> | string
     sku?: StringFilter<"Product"> | string
+    isVisible?: BoolFilter<"Product"> | boolean
     description?: StringNullableFilter<"Product"> | string | null
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
@@ -30062,6 +31390,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     sku?: SortOrder
+    isVisible?: SortOrder
     description?: SortOrderInput | SortOrder
     price?: SortOrder
     quantityOnHand?: SortOrder
@@ -30092,6 +31421,7 @@ export namespace Prisma {
     OR?: ProductWhereInput[]
     NOT?: ProductWhereInput | ProductWhereInput[]
     name?: StringFilter<"Product"> | string
+    isVisible?: BoolFilter<"Product"> | boolean
     description?: StringNullableFilter<"Product"> | string | null
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
@@ -30119,6 +31449,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     sku?: SortOrder
+    isVisible?: SortOrder
     description?: SortOrderInput | SortOrder
     price?: SortOrder
     quantityOnHand?: SortOrder
@@ -30144,6 +31475,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Product"> | string
     name?: StringWithAggregatesFilter<"Product"> | string
     sku?: StringWithAggregatesFilter<"Product"> | string
+    isVisible?: BoolWithAggregatesFilter<"Product"> | boolean
     description?: StringNullableWithAggregatesFilter<"Product"> | string | null
     price?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
@@ -30425,9 +31757,11 @@ export namespace Prisma {
     id?: StringFilter<"PartList"> | string
     name?: StringFilter<"PartList"> | string
     description?: StringNullableFilter<"PartList"> | string | null
+    imageUrl?: StringNullableFilter<"PartList"> | string | null
     createdAt?: DateTimeFilter<"PartList"> | Date | string
     updatedAt?: DateTimeFilter<"PartList"> | Date | string
     items?: PartListItemListRelationFilter
+    documents?: PartListDocumentListRelationFilter
     cartItems?: CartItemListRelationFilter
     orders?: OrderListRelationFilter
   }
@@ -30436,9 +31770,11 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    imageUrl?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     items?: PartListItemOrderByRelationAggregateInput
+    documents?: PartListDocumentOrderByRelationAggregateInput
     cartItems?: CartItemOrderByRelationAggregateInput
     orders?: OrderOrderByRelationAggregateInput
   }
@@ -30450,9 +31786,11 @@ export namespace Prisma {
     OR?: PartListWhereInput[]
     NOT?: PartListWhereInput | PartListWhereInput[]
     description?: StringNullableFilter<"PartList"> | string | null
+    imageUrl?: StringNullableFilter<"PartList"> | string | null
     createdAt?: DateTimeFilter<"PartList"> | Date | string
     updatedAt?: DateTimeFilter<"PartList"> | Date | string
     items?: PartListItemListRelationFilter
+    documents?: PartListDocumentListRelationFilter
     cartItems?: CartItemListRelationFilter
     orders?: OrderListRelationFilter
   }, "id" | "name">
@@ -30461,6 +31799,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrderInput | SortOrder
+    imageUrl?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: PartListCountOrderByAggregateInput
@@ -30475,8 +31814,87 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"PartList"> | string
     name?: StringWithAggregatesFilter<"PartList"> | string
     description?: StringNullableWithAggregatesFilter<"PartList"> | string | null
+    imageUrl?: StringNullableWithAggregatesFilter<"PartList"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"PartList"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"PartList"> | Date | string
+  }
+
+  export type PartListDocumentWhereInput = {
+    AND?: PartListDocumentWhereInput | PartListDocumentWhereInput[]
+    OR?: PartListDocumentWhereInput[]
+    NOT?: PartListDocumentWhereInput | PartListDocumentWhereInput[]
+    id?: StringFilter<"PartListDocument"> | string
+    partListId?: StringFilter<"PartListDocument"> | string
+    fileName?: StringFilter<"PartListDocument"> | string
+    originalName?: StringFilter<"PartListDocument"> | string
+    url?: StringFilter<"PartListDocument"> | string
+    mimeType?: StringFilter<"PartListDocument"> | string
+    sizeBytes?: IntFilter<"PartListDocument"> | number
+    createdAt?: DateTimeFilter<"PartListDocument"> | Date | string
+    updatedAt?: DateTimeFilter<"PartListDocument"> | Date | string
+    partList?: XOR<PartListScalarRelationFilter, PartListWhereInput>
+  }
+
+  export type PartListDocumentOrderByWithRelationInput = {
+    id?: SortOrder
+    partListId?: SortOrder
+    fileName?: SortOrder
+    originalName?: SortOrder
+    url?: SortOrder
+    mimeType?: SortOrder
+    sizeBytes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    partList?: PartListOrderByWithRelationInput
+  }
+
+  export type PartListDocumentWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    partListId_fileName?: PartListDocumentPartListIdFileNameCompoundUniqueInput
+    AND?: PartListDocumentWhereInput | PartListDocumentWhereInput[]
+    OR?: PartListDocumentWhereInput[]
+    NOT?: PartListDocumentWhereInput | PartListDocumentWhereInput[]
+    partListId?: StringFilter<"PartListDocument"> | string
+    fileName?: StringFilter<"PartListDocument"> | string
+    originalName?: StringFilter<"PartListDocument"> | string
+    url?: StringFilter<"PartListDocument"> | string
+    mimeType?: StringFilter<"PartListDocument"> | string
+    sizeBytes?: IntFilter<"PartListDocument"> | number
+    createdAt?: DateTimeFilter<"PartListDocument"> | Date | string
+    updatedAt?: DateTimeFilter<"PartListDocument"> | Date | string
+    partList?: XOR<PartListScalarRelationFilter, PartListWhereInput>
+  }, "id" | "partListId_fileName">
+
+  export type PartListDocumentOrderByWithAggregationInput = {
+    id?: SortOrder
+    partListId?: SortOrder
+    fileName?: SortOrder
+    originalName?: SortOrder
+    url?: SortOrder
+    mimeType?: SortOrder
+    sizeBytes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: PartListDocumentCountOrderByAggregateInput
+    _avg?: PartListDocumentAvgOrderByAggregateInput
+    _max?: PartListDocumentMaxOrderByAggregateInput
+    _min?: PartListDocumentMinOrderByAggregateInput
+    _sum?: PartListDocumentSumOrderByAggregateInput
+  }
+
+  export type PartListDocumentScalarWhereWithAggregatesInput = {
+    AND?: PartListDocumentScalarWhereWithAggregatesInput | PartListDocumentScalarWhereWithAggregatesInput[]
+    OR?: PartListDocumentScalarWhereWithAggregatesInput[]
+    NOT?: PartListDocumentScalarWhereWithAggregatesInput | PartListDocumentScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PartListDocument"> | string
+    partListId?: StringWithAggregatesFilter<"PartListDocument"> | string
+    fileName?: StringWithAggregatesFilter<"PartListDocument"> | string
+    originalName?: StringWithAggregatesFilter<"PartListDocument"> | string
+    url?: StringWithAggregatesFilter<"PartListDocument"> | string
+    mimeType?: StringWithAggregatesFilter<"PartListDocument"> | string
+    sizeBytes?: IntWithAggregatesFilter<"PartListDocument"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"PartListDocument"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"PartListDocument"> | Date | string
   }
 
   export type PartListItemWhereInput = {
@@ -31579,6 +32997,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -31604,6 +33023,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -31629,6 +33049,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -31654,6 +33075,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -31679,6 +33101,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -31696,6 +33119,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -31711,6 +33135,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -31985,9 +33410,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentCreateNestedManyWithoutPartListInput
     cartItems?: CartItemCreateNestedManyWithoutSourcePartListInput
     orders?: OrderCreateNestedManyWithoutSourcePartListInput
   }
@@ -31996,9 +33423,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemUncheckedCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentUncheckedCreateNestedManyWithoutPartListInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutSourcePartListInput
     orders?: OrderUncheckedCreateNestedManyWithoutSourcePartListInput
   }
@@ -32007,9 +33436,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUpdateManyWithoutSourcePartListNestedInput
     orders?: OrderUpdateManyWithoutSourcePartListNestedInput
   }
@@ -32018,9 +33449,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUncheckedUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUncheckedUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutSourcePartListNestedInput
     orders?: OrderUncheckedUpdateManyWithoutSourcePartListNestedInput
   }
@@ -32029,6 +33462,7 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -32037,6 +33471,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -32045,6 +33480,90 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentCreateInput = {
+    id?: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    partList: PartListCreateNestedOneWithoutDocumentsInput
+  }
+
+  export type PartListDocumentUncheckedCreateInput = {
+    id?: string
+    partListId: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PartListDocumentUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    partList?: PartListUpdateOneRequiredWithoutDocumentsNestedInput
+  }
+
+  export type PartListDocumentUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    partListId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentCreateManyInput = {
+    id?: string
+    partListId: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PartListDocumentUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    partListId?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -33159,6 +34678,11 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type DecimalFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -33268,6 +34792,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     sku?: SortOrder
+    isVisible?: SortOrder
     description?: SortOrder
     price?: SortOrder
     quantityOnHand?: SortOrder
@@ -33292,6 +34817,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     sku?: SortOrder
+    isVisible?: SortOrder
     description?: SortOrder
     price?: SortOrder
     quantityOnHand?: SortOrder
@@ -33309,6 +34835,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     sku?: SortOrder
+    isVisible?: SortOrder
     description?: SortOrder
     price?: SortOrder
     quantityOnHand?: SortOrder
@@ -33327,6 +34854,14 @@ export namespace Prisma {
     quantityOnHand?: SortOrder
     minimumQuantity?: SortOrder
     unitStep?: SortOrder
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
@@ -33543,10 +35078,21 @@ export namespace Prisma {
     _max?: NestedEnumOrderStatusFilter<$PrismaModel>
   }
 
+  export type PartListDocumentListRelationFilter = {
+    every?: PartListDocumentWhereInput
+    some?: PartListDocumentWhereInput
+    none?: PartListDocumentWhereInput
+  }
+
+  export type PartListDocumentOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type PartListCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    imageUrl?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33555,6 +35101,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    imageUrl?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -33563,13 +35110,90 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     description?: SortOrder
+    imageUrl?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type PartListScalarRelationFilter = {
     is?: PartListWhereInput
     isNot?: PartListWhereInput
+  }
+
+  export type PartListDocumentPartListIdFileNameCompoundUniqueInput = {
+    partListId: string
+    fileName: string
+  }
+
+  export type PartListDocumentCountOrderByAggregateInput = {
+    id?: SortOrder
+    partListId?: SortOrder
+    fileName?: SortOrder
+    originalName?: SortOrder
+    url?: SortOrder
+    mimeType?: SortOrder
+    sizeBytes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PartListDocumentAvgOrderByAggregateInput = {
+    sizeBytes?: SortOrder
+  }
+
+  export type PartListDocumentMaxOrderByAggregateInput = {
+    id?: SortOrder
+    partListId?: SortOrder
+    fileName?: SortOrder
+    originalName?: SortOrder
+    url?: SortOrder
+    mimeType?: SortOrder
+    sizeBytes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PartListDocumentMinOrderByAggregateInput = {
+    id?: SortOrder
+    partListId?: SortOrder
+    fileName?: SortOrder
+    originalName?: SortOrder
+    url?: SortOrder
+    mimeType?: SortOrder
+    sizeBytes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type PartListDocumentSumOrderByAggregateInput = {
+    sizeBytes?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type PartListItemPartListIdProductIdCompoundUniqueInput = {
@@ -33720,17 +35344,6 @@ export namespace Prisma {
     quantity?: SortOrder
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type OrderCounterCountOrderByAggregateInput = {
     year?: SortOrder
     lastNumber?: SortOrder
@@ -33754,22 +35367,6 @@ export namespace Prisma {
   export type OrderCounterSumOrderByAggregateInput = {
     year?: SortOrder
     lastNumber?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type OrderScalarRelationFilter = {
@@ -34558,6 +36155,10 @@ export namespace Prisma {
     connect?: ProductStockBookingWhereUniqueInput | ProductStockBookingWhereUniqueInput[]
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type DecimalFieldUpdateOperationsInput = {
     set?: Decimal | DecimalJsLike | number | string
     increment?: Decimal | DecimalJsLike | number | string
@@ -35045,6 +36646,13 @@ export namespace Prisma {
     connect?: PartListItemWhereUniqueInput | PartListItemWhereUniqueInput[]
   }
 
+  export type PartListDocumentCreateNestedManyWithoutPartListInput = {
+    create?: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput> | PartListDocumentCreateWithoutPartListInput[] | PartListDocumentUncheckedCreateWithoutPartListInput[]
+    connectOrCreate?: PartListDocumentCreateOrConnectWithoutPartListInput | PartListDocumentCreateOrConnectWithoutPartListInput[]
+    createMany?: PartListDocumentCreateManyPartListInputEnvelope
+    connect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+  }
+
   export type CartItemCreateNestedManyWithoutSourcePartListInput = {
     create?: XOR<CartItemCreateWithoutSourcePartListInput, CartItemUncheckedCreateWithoutSourcePartListInput> | CartItemCreateWithoutSourcePartListInput[] | CartItemUncheckedCreateWithoutSourcePartListInput[]
     connectOrCreate?: CartItemCreateOrConnectWithoutSourcePartListInput | CartItemCreateOrConnectWithoutSourcePartListInput[]
@@ -35064,6 +36672,13 @@ export namespace Prisma {
     connectOrCreate?: PartListItemCreateOrConnectWithoutPartListInput | PartListItemCreateOrConnectWithoutPartListInput[]
     createMany?: PartListItemCreateManyPartListInputEnvelope
     connect?: PartListItemWhereUniqueInput | PartListItemWhereUniqueInput[]
+  }
+
+  export type PartListDocumentUncheckedCreateNestedManyWithoutPartListInput = {
+    create?: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput> | PartListDocumentCreateWithoutPartListInput[] | PartListDocumentUncheckedCreateWithoutPartListInput[]
+    connectOrCreate?: PartListDocumentCreateOrConnectWithoutPartListInput | PartListDocumentCreateOrConnectWithoutPartListInput[]
+    createMany?: PartListDocumentCreateManyPartListInputEnvelope
+    connect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
   }
 
   export type CartItemUncheckedCreateNestedManyWithoutSourcePartListInput = {
@@ -35092,6 +36707,20 @@ export namespace Prisma {
     update?: PartListItemUpdateWithWhereUniqueWithoutPartListInput | PartListItemUpdateWithWhereUniqueWithoutPartListInput[]
     updateMany?: PartListItemUpdateManyWithWhereWithoutPartListInput | PartListItemUpdateManyWithWhereWithoutPartListInput[]
     deleteMany?: PartListItemScalarWhereInput | PartListItemScalarWhereInput[]
+  }
+
+  export type PartListDocumentUpdateManyWithoutPartListNestedInput = {
+    create?: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput> | PartListDocumentCreateWithoutPartListInput[] | PartListDocumentUncheckedCreateWithoutPartListInput[]
+    connectOrCreate?: PartListDocumentCreateOrConnectWithoutPartListInput | PartListDocumentCreateOrConnectWithoutPartListInput[]
+    upsert?: PartListDocumentUpsertWithWhereUniqueWithoutPartListInput | PartListDocumentUpsertWithWhereUniqueWithoutPartListInput[]
+    createMany?: PartListDocumentCreateManyPartListInputEnvelope
+    set?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    disconnect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    delete?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    connect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    update?: PartListDocumentUpdateWithWhereUniqueWithoutPartListInput | PartListDocumentUpdateWithWhereUniqueWithoutPartListInput[]
+    updateMany?: PartListDocumentUpdateManyWithWhereWithoutPartListInput | PartListDocumentUpdateManyWithWhereWithoutPartListInput[]
+    deleteMany?: PartListDocumentScalarWhereInput | PartListDocumentScalarWhereInput[]
   }
 
   export type CartItemUpdateManyWithoutSourcePartListNestedInput = {
@@ -35136,6 +36765,20 @@ export namespace Prisma {
     deleteMany?: PartListItemScalarWhereInput | PartListItemScalarWhereInput[]
   }
 
+  export type PartListDocumentUncheckedUpdateManyWithoutPartListNestedInput = {
+    create?: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput> | PartListDocumentCreateWithoutPartListInput[] | PartListDocumentUncheckedCreateWithoutPartListInput[]
+    connectOrCreate?: PartListDocumentCreateOrConnectWithoutPartListInput | PartListDocumentCreateOrConnectWithoutPartListInput[]
+    upsert?: PartListDocumentUpsertWithWhereUniqueWithoutPartListInput | PartListDocumentUpsertWithWhereUniqueWithoutPartListInput[]
+    createMany?: PartListDocumentCreateManyPartListInputEnvelope
+    set?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    disconnect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    delete?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    connect?: PartListDocumentWhereUniqueInput | PartListDocumentWhereUniqueInput[]
+    update?: PartListDocumentUpdateWithWhereUniqueWithoutPartListInput | PartListDocumentUpdateWithWhereUniqueWithoutPartListInput[]
+    updateMany?: PartListDocumentUpdateManyWithWhereWithoutPartListInput | PartListDocumentUpdateManyWithWhereWithoutPartListInput[]
+    deleteMany?: PartListDocumentScalarWhereInput | PartListDocumentScalarWhereInput[]
+  }
+
   export type CartItemUncheckedUpdateManyWithoutSourcePartListNestedInput = {
     create?: XOR<CartItemCreateWithoutSourcePartListInput, CartItemUncheckedCreateWithoutSourcePartListInput> | CartItemCreateWithoutSourcePartListInput[] | CartItemUncheckedCreateWithoutSourcePartListInput[]
     connectOrCreate?: CartItemCreateOrConnectWithoutSourcePartListInput | CartItemCreateOrConnectWithoutSourcePartListInput[]
@@ -35162,6 +36805,28 @@ export namespace Prisma {
     update?: OrderUpdateWithWhereUniqueWithoutSourcePartListInput | OrderUpdateWithWhereUniqueWithoutSourcePartListInput[]
     updateMany?: OrderUpdateManyWithWhereWithoutSourcePartListInput | OrderUpdateManyWithWhereWithoutSourcePartListInput[]
     deleteMany?: OrderScalarWhereInput | OrderScalarWhereInput[]
+  }
+
+  export type PartListCreateNestedOneWithoutDocumentsInput = {
+    create?: XOR<PartListCreateWithoutDocumentsInput, PartListUncheckedCreateWithoutDocumentsInput>
+    connectOrCreate?: PartListCreateOrConnectWithoutDocumentsInput
+    connect?: PartListWhereUniqueInput
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type PartListUpdateOneRequiredWithoutDocumentsNestedInput = {
+    create?: XOR<PartListCreateWithoutDocumentsInput, PartListUncheckedCreateWithoutDocumentsInput>
+    connectOrCreate?: PartListCreateOrConnectWithoutDocumentsInput
+    upsert?: PartListUpsertWithoutDocumentsInput
+    connect?: PartListWhereUniqueInput
+    update?: XOR<XOR<PartListUpdateToOneWithWhereWithoutDocumentsInput, PartListUpdateWithoutDocumentsInput>, PartListUncheckedUpdateWithoutDocumentsInput>
   }
 
   export type PartListCreateNestedOneWithoutItemsInput = {
@@ -35310,14 +36975,6 @@ export namespace Prisma {
     upsert?: ProductUpsertWithoutOrderRequestItemsInput
     connect?: ProductWhereUniqueInput
     update?: XOR<XOR<ProductUpdateToOneWithWhereWithoutOrderRequestItemsInput, ProductUpdateWithoutOrderRequestItemsInput>, ProductUncheckedUpdateWithoutOrderRequestItemsInput>
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type OrderCreateNestedOneWithoutItemsInput = {
@@ -35979,6 +37636,11 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedDecimalFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -36002,6 +37664,14 @@ export namespace Prisma {
     in?: $Enums.BaseUnit[] | ListEnumBaseUnitFieldRefInput<$PrismaModel>
     notIn?: $Enums.BaseUnit[] | ListEnumBaseUnitFieldRefInput<$PrismaModel>
     not?: NestedEnumBaseUnitFilter<$PrismaModel> | $Enums.BaseUnit
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
@@ -36057,23 +37727,6 @@ export namespace Prisma {
     _max?: NestedEnumOrderStatusFilter<$PrismaModel>
   }
 
-  export type NestedEnumRequestStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.RequestStatus | EnumRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRequestStatusFilter<$PrismaModel> | $Enums.RequestStatus
-  }
-
-  export type NestedEnumRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.RequestStatus | EnumRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.RequestStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumRequestStatusFilter<$PrismaModel>
-    _max?: NestedEnumRequestStatusFilter<$PrismaModel>
-  }
-
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -36099,6 +37752,23 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedEnumRequestStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequestStatus | EnumRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequestStatusFilter<$PrismaModel> | $Enums.RequestStatus
+  }
+
+  export type NestedEnumRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequestStatus | EnumRequestStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequestStatus[] | ListEnumRequestStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.RequestStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRequestStatusFilter<$PrismaModel>
+    _max?: NestedEnumRequestStatusFilter<$PrismaModel>
   }
 
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
@@ -36174,6 +37844,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -36198,6 +37869,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -36273,6 +37945,7 @@ export namespace Prisma {
     id?: StringFilter<"Product"> | string
     name?: StringFilter<"Product"> | string
     sku?: StringFilter<"Product"> | string
+    isVisible?: BoolFilter<"Product"> | boolean
     description?: StringNullableFilter<"Product"> | string | null
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
@@ -36335,6 +38008,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -36359,6 +38033,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37017,6 +38692,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37041,6 +38717,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37104,6 +38781,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37128,6 +38806,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37181,6 +38860,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37205,6 +38885,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37286,6 +38967,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37310,6 +38992,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -37507,9 +39190,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentCreateNestedManyWithoutPartListInput
     cartItems?: CartItemCreateNestedManyWithoutSourcePartListInput
   }
 
@@ -37517,9 +39202,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemUncheckedCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentUncheckedCreateNestedManyWithoutPartListInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutSourcePartListInput
   }
 
@@ -37672,9 +39359,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUpdateManyWithoutSourcePartListNestedInput
   }
 
@@ -37682,9 +39371,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUncheckedUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUncheckedUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutSourcePartListNestedInput
   }
 
@@ -37767,6 +39458,38 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PartListDocumentCreateWithoutPartListInput = {
+    id?: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PartListDocumentUncheckedCreateWithoutPartListInput = {
+    id?: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type PartListDocumentCreateOrConnectWithoutPartListInput = {
+    where: PartListDocumentWhereUniqueInput
+    create: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput>
+  }
+
+  export type PartListDocumentCreateManyPartListInputEnvelope = {
+    data: PartListDocumentCreateManyPartListInput | PartListDocumentCreateManyPartListInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CartItemCreateWithoutSourcePartListInput = {
     id?: string
     quantity?: Decimal | DecimalJsLike | number | string
@@ -37845,6 +39568,37 @@ export namespace Prisma {
     data: XOR<PartListItemUpdateManyMutationInput, PartListItemUncheckedUpdateManyWithoutPartListInput>
   }
 
+  export type PartListDocumentUpsertWithWhereUniqueWithoutPartListInput = {
+    where: PartListDocumentWhereUniqueInput
+    update: XOR<PartListDocumentUpdateWithoutPartListInput, PartListDocumentUncheckedUpdateWithoutPartListInput>
+    create: XOR<PartListDocumentCreateWithoutPartListInput, PartListDocumentUncheckedCreateWithoutPartListInput>
+  }
+
+  export type PartListDocumentUpdateWithWhereUniqueWithoutPartListInput = {
+    where: PartListDocumentWhereUniqueInput
+    data: XOR<PartListDocumentUpdateWithoutPartListInput, PartListDocumentUncheckedUpdateWithoutPartListInput>
+  }
+
+  export type PartListDocumentUpdateManyWithWhereWithoutPartListInput = {
+    where: PartListDocumentScalarWhereInput
+    data: XOR<PartListDocumentUpdateManyMutationInput, PartListDocumentUncheckedUpdateManyWithoutPartListInput>
+  }
+
+  export type PartListDocumentScalarWhereInput = {
+    AND?: PartListDocumentScalarWhereInput | PartListDocumentScalarWhereInput[]
+    OR?: PartListDocumentScalarWhereInput[]
+    NOT?: PartListDocumentScalarWhereInput | PartListDocumentScalarWhereInput[]
+    id?: StringFilter<"PartListDocument"> | string
+    partListId?: StringFilter<"PartListDocument"> | string
+    fileName?: StringFilter<"PartListDocument"> | string
+    originalName?: StringFilter<"PartListDocument"> | string
+    url?: StringFilter<"PartListDocument"> | string
+    mimeType?: StringFilter<"PartListDocument"> | string
+    sizeBytes?: IntFilter<"PartListDocument"> | number
+    createdAt?: DateTimeFilter<"PartListDocument"> | Date | string
+    updatedAt?: DateTimeFilter<"PartListDocument"> | Date | string
+  }
+
   export type CartItemUpsertWithWhereUniqueWithoutSourcePartListInput = {
     where: CartItemWhereUniqueInput
     update: XOR<CartItemUpdateWithoutSourcePartListInput, CartItemUncheckedUpdateWithoutSourcePartListInput>
@@ -37877,12 +39631,78 @@ export namespace Prisma {
     data: XOR<OrderUpdateManyMutationInput, OrderUncheckedUpdateManyWithoutSourcePartListInput>
   }
 
+  export type PartListCreateWithoutDocumentsInput = {
+    id?: string
+    name: string
+    description?: string | null
+    imageUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    items?: PartListItemCreateNestedManyWithoutPartListInput
+    cartItems?: CartItemCreateNestedManyWithoutSourcePartListInput
+    orders?: OrderCreateNestedManyWithoutSourcePartListInput
+  }
+
+  export type PartListUncheckedCreateWithoutDocumentsInput = {
+    id?: string
+    name: string
+    description?: string | null
+    imageUrl?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    items?: PartListItemUncheckedCreateNestedManyWithoutPartListInput
+    cartItems?: CartItemUncheckedCreateNestedManyWithoutSourcePartListInput
+    orders?: OrderUncheckedCreateNestedManyWithoutSourcePartListInput
+  }
+
+  export type PartListCreateOrConnectWithoutDocumentsInput = {
+    where: PartListWhereUniqueInput
+    create: XOR<PartListCreateWithoutDocumentsInput, PartListUncheckedCreateWithoutDocumentsInput>
+  }
+
+  export type PartListUpsertWithoutDocumentsInput = {
+    update: XOR<PartListUpdateWithoutDocumentsInput, PartListUncheckedUpdateWithoutDocumentsInput>
+    create: XOR<PartListCreateWithoutDocumentsInput, PartListUncheckedCreateWithoutDocumentsInput>
+    where?: PartListWhereInput
+  }
+
+  export type PartListUpdateToOneWithWhereWithoutDocumentsInput = {
+    where?: PartListWhereInput
+    data: XOR<PartListUpdateWithoutDocumentsInput, PartListUncheckedUpdateWithoutDocumentsInput>
+  }
+
+  export type PartListUpdateWithoutDocumentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: PartListItemUpdateManyWithoutPartListNestedInput
+    cartItems?: CartItemUpdateManyWithoutSourcePartListNestedInput
+    orders?: OrderUpdateManyWithoutSourcePartListNestedInput
+  }
+
+  export type PartListUncheckedUpdateWithoutDocumentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    items?: PartListItemUncheckedUpdateManyWithoutPartListNestedInput
+    cartItems?: CartItemUncheckedUpdateManyWithoutSourcePartListNestedInput
+    orders?: OrderUncheckedUpdateManyWithoutSourcePartListNestedInput
+  }
+
   export type PartListCreateWithoutItemsInput = {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    documents?: PartListDocumentCreateNestedManyWithoutPartListInput
     cartItems?: CartItemCreateNestedManyWithoutSourcePartListInput
     orders?: OrderCreateNestedManyWithoutSourcePartListInput
   }
@@ -37891,8 +39711,10 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    documents?: PartListDocumentUncheckedCreateNestedManyWithoutPartListInput
     cartItems?: CartItemUncheckedCreateNestedManyWithoutSourcePartListInput
     orders?: OrderUncheckedCreateNestedManyWithoutSourcePartListInput
   }
@@ -37906,6 +39728,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37930,6 +39753,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -37970,8 +39794,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    documents?: PartListDocumentUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUpdateManyWithoutSourcePartListNestedInput
     orders?: OrderUpdateManyWithoutSourcePartListNestedInput
   }
@@ -37980,8 +39806,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    documents?: PartListDocumentUncheckedUpdateManyWithoutPartListNestedInput
     cartItems?: CartItemUncheckedUpdateManyWithoutSourcePartListNestedInput
     orders?: OrderUncheckedUpdateManyWithoutSourcePartListNestedInput
   }
@@ -38001,6 +39829,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38025,6 +39854,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38360,6 +40190,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38384,6 +40215,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38461,6 +40293,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38485,6 +40318,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38538,6 +40372,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38562,6 +40397,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38637,6 +40473,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38661,6 +40498,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38685,6 +40523,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38709,6 +40548,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38749,6 +40589,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38773,6 +40614,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38860,6 +40702,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38884,6 +40727,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -38913,9 +40757,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentCreateNestedManyWithoutPartListInput
     orders?: OrderCreateNestedManyWithoutSourcePartListInput
   }
 
@@ -38923,9 +40769,11 @@ export namespace Prisma {
     id?: string
     name: string
     description?: string | null
+    imageUrl?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     items?: PartListItemUncheckedCreateNestedManyWithoutPartListInput
+    documents?: PartListDocumentUncheckedCreateNestedManyWithoutPartListInput
     orders?: OrderUncheckedCreateNestedManyWithoutSourcePartListInput
   }
 
@@ -38974,6 +40822,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -38998,6 +40847,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -39033,9 +40883,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUpdateManyWithoutPartListNestedInput
     orders?: OrderUpdateManyWithoutSourcePartListNestedInput
   }
 
@@ -39043,9 +40895,11 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: PartListItemUncheckedUpdateManyWithoutPartListNestedInput
+    documents?: PartListDocumentUncheckedUpdateManyWithoutPartListNestedInput
     orders?: OrderUncheckedUpdateManyWithoutSourcePartListNestedInput
   }
 
@@ -39204,6 +41058,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -39228,6 +41083,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -39295,6 +41151,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -39319,6 +41176,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -39906,6 +41764,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -39928,6 +41787,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -39952,6 +41812,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -39976,6 +41837,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -40010,6 +41872,7 @@ export namespace Prisma {
     id?: string
     name: string
     sku: string
+    isVisible?: boolean
     description?: string | null
     price: Decimal | DecimalJsLike | number | string
     quantityOnHand?: Decimal | DecimalJsLike | number | string
@@ -40026,6 +41889,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -40050,6 +41914,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -40074,6 +41939,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     sku?: StringFieldUpdateOperationsInput | string
+    isVisible?: BoolFieldUpdateOperationsInput | boolean
     description?: NullableStringFieldUpdateOperationsInput | string | null
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     quantityOnHand?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -40452,6 +42318,17 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type PartListDocumentCreateManyPartListInput = {
+    id?: string
+    fileName: string
+    originalName: string
+    url: string
+    mimeType: string
+    sizeBytes: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type CartItemCreateManySourcePartListInput = {
     id?: string
     cartId: string
@@ -40491,6 +42368,39 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentUpdateWithoutPartListInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentUncheckedUpdateWithoutPartListInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PartListDocumentUncheckedUpdateManyWithoutPartListInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    fileName?: StringFieldUpdateOperationsInput | string
+    originalName?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    mimeType?: StringFieldUpdateOperationsInput | string
+    sizeBytes?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

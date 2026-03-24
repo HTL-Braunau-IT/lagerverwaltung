@@ -5,19 +5,27 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 type CategoryForm = {
   name: string;
-  slug: string;
 };
 
 function createEmptyForm(): CategoryForm {
   return {
     name: "",
-    slug: "",
   };
+}
+
+function toCategorySlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export function CategoriesAdminPanel() {
@@ -25,6 +33,7 @@ export function CategoriesAdminPanel() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [usageFilter, setUsageFilter] = useState<"ALL" | "USED" | "UNUSED">("ALL");
+  const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<CategoryForm>(createEmptyForm);
 
@@ -47,6 +56,7 @@ export function CategoriesAdminPanel() {
     onSuccess: async () => {
       await Promise.all([utils.category.backendList.invalidate(), utils.category.list.invalidate()]);
       setForm(createEmptyForm());
+      setCreateOpen(false);
     },
   });
   const updateMutation = api.category.backendUpdate.useMutation({
@@ -79,13 +89,25 @@ export function CategoriesAdminPanel() {
   );
 
   const isEditing = Boolean(selectedId);
-  const canSave = form.name.trim().length > 0;
+  const generatedSlug = toCategorySlug(form.name.trim());
+  const canSave = form.name.trim().length > 0 && generatedSlug.length > 0;
 
   return (
     <Card className="rounded-2xl p-5">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-foreground">Kategorien</h2>
-        <p className="text-sm text-muted-foreground">Kategorien erstellen, bearbeiten und loeschen.</p>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Kategorien</h2>
+          <p className="text-sm text-muted-foreground">Kategorien erstellen, bearbeiten und loeschen.</p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => {
+            setForm(createEmptyForm());
+            setCreateOpen(true);
+          }}
+        >
+          Neue Kategorie
+        </Button>
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
@@ -159,7 +181,6 @@ export function CategoriesAdminPanel() {
                       setSelectedId(category.id);
                       setForm({
                         name: category.name,
-                        slug: category.slug ?? "",
                       });
                     }}
                   >
@@ -184,23 +205,59 @@ export function CategoriesAdminPanel() {
         </div>
       ) : null}
 
-      <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Neue Kategorie"
+        description="Name eingeben. Der Slug wird automatisch aus dem Namen erzeugt."
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="text-xs text-muted-foreground">
+            Name
+            <Input
+              value={form.name}
+              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+              className="mt-1 h-10 rounded-xl"
+            />
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Slug (automatisch)
+            <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
+          </label>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() =>
+              createMutation.mutate({
+                name: form.name.trim(),
+                slug: generatedSlug,
+              })
+            }
+            disabled={!canSave || createMutation.isPending}
+          >
+            {createMutation.isPending ? "Erstellt..." : "Kategorie erstellen"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
+            Abbrechen
+          </Button>
+        </div>
+      </Dialog>
+
+      {isEditing ? (
+        <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold text-foreground">
-            {isEditing ? "Kategorie bearbeiten" : "Neue Kategorie"}
-          </h3>
-          {isEditing ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSelectedId(null);
-                setForm(createEmptyForm());
-              }}
-            >
-              Neu anlegen
-            </Button>
-          ) : null}
+          <h3 className="text-base font-semibold text-foreground">Kategorie bearbeiten</h3>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSelectedId(null);
+              setForm(createEmptyForm());
+            }}
+          >
+            Auswahl aufheben
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -213,58 +270,38 @@ export function CategoriesAdminPanel() {
             />
           </label>
           <label className="text-xs text-muted-foreground">
-            Slug (optional)
-            <Input
-              value={form.slug}
-              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
+            Slug (automatisch)
+            <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
           </label>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {isEditing ? (
-            <Button
-              type="button"
-              onClick={() =>
-                selectedId &&
-                updateMutation.mutate({
-                  id: selectedId,
-                  name: form.name.trim(),
-                  slug: form.slug.trim() ? form.slug.trim() : null,
-                })
-              }
-              disabled={!canSave || updateMutation.isPending}
-            >
-              {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={() =>
-                createMutation.mutate({
-                  name: form.name.trim(),
-                  slug: form.slug.trim() ? form.slug.trim() : null,
-                })
-              }
-              disabled={!canSave || createMutation.isPending}
-            >
-              {createMutation.isPending ? "Erstellt..." : "Kategorie erstellen"}
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={() =>
+              selectedId &&
+              updateMutation.mutate({
+                id: selectedId,
+                name: form.name.trim(),
+                slug: generatedSlug,
+              })
+            }
+            disabled={!canSave || updateMutation.isPending}
+          >
+            {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
+          </Button>
 
-          {isEditing ? (
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
-            </Button>
-          ) : null}
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
+          </Button>
         </div>
       </div>
+      ) : null}
     </Card>
   );
 }

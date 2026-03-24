@@ -87,6 +87,7 @@ model Product {
     id                String          @id @default(cuid())
     name              String
     sku               String          @unique
+    isVisible         Boolean         @default(true)
     description       String?
     price             Decimal         @db.Decimal(12, 2)
     quantityOnHand    Decimal         @default(0) @db.Decimal(14, 3)
@@ -181,7 +182,9 @@ model PartList {
     id          String         @id @default(cuid())
     name        String
     description String?
+    imageUrl    String?
     items       PartListItem[]
+    documents   PartListDocument[]
     cartItems   CartItem[]
     orders      Order[]
     createdAt   DateTime       @default(now())
@@ -189,6 +192,22 @@ model PartList {
 
     @@unique([name])
     @@index([createdAt])
+}
+
+model PartListDocument {
+    id           String   @id @default(cuid())
+    partListId   String
+    fileName     String
+    originalName String
+    url          String
+    mimeType     String
+    sizeBytes    Int
+    partList     PartList @relation(fields: [partListId], references: [id], onDelete: Cascade)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@index([partListId, createdAt])
+    @@unique([partListId, fileName])
 }
 
 model PartListItem {

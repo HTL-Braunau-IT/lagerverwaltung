@@ -31,6 +31,10 @@ const backendDeleteInput = z.object({
   id: z.string().min(1),
 });
 
+const backendClearImageInput = z.object({
+  id: z.string().min(1),
+});
+
 function ensureUniqueProducts(items: Array<{ productId: string }>) {
   const ids = items.map((item) => item.productId);
   const uniqueIds = new Set(ids);
@@ -74,6 +78,17 @@ export const partsListRouter = createTRPCRouter({
         id: true,
         name: true,
         description: true,
+        imageUrl: true,
+        documents: {
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          select: {
+            id: true,
+            originalName: true,
+            url: true,
+            mimeType: true,
+            sizeBytes: true,
+          },
+        },
         items: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           select: {
@@ -120,8 +135,14 @@ export const partsListRouter = createTRPCRouter({
         id: true,
         name: true,
         description: true,
+        imageUrl: true,
         createdAt: true,
         updatedAt: true,
+        documents: {
+          select: {
+            id: true,
+          },
+        },
         items: {
           select: {
             id: true,
@@ -138,8 +159,21 @@ export const partsListRouter = createTRPCRouter({
         id: true,
         name: true,
         description: true,
+        imageUrl: true,
         createdAt: true,
         updatedAt: true,
+        documents: {
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          select: {
+            id: true,
+            fileName: true,
+            originalName: true,
+            url: true,
+            mimeType: true,
+            sizeBytes: true,
+            createdAt: true,
+          },
+        },
         items: {
           orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           select: {
@@ -222,6 +256,15 @@ export const partsListRouter = createTRPCRouter({
   backendDelete: adminProcedure.input(backendDeleteInput).mutation(async ({ ctx, input }) => {
     await ctx.db.partList.delete({
       where: { id: input.id },
+      select: { id: true },
+    });
+    return { ok: true as const };
+  }),
+
+  backendClearImage: adminProcedure.input(backendClearImageInput).mutation(async ({ ctx, input }) => {
+    await ctx.db.partList.update({
+      where: { id: input.id },
+      data: { imageUrl: null },
       select: { id: true },
     });
     return { ok: true as const };

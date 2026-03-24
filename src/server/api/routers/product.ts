@@ -3,6 +3,12 @@ import { TRPCError } from "@trpc/server";
 
 import { adminProcedure, createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
+function isValidImageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/")) return true;
+  return z.string().url().safeParse(trimmed).success;
+}
+
 const listProductsInput = z.object({
   search: z.string().trim().optional(),
   categoryId: z.string().min(1).optional(),
@@ -28,9 +34,31 @@ const updateProductInput = z.object({
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
   baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "M2", "G", "KG", "ML", "L"]),
   unitStep: z.coerce.number().gt(0),
-  categoryId: z.string().min(1).nullable(),
+  isVisible: z.boolean(),
+  categoryIds: z.array(z.string().min(1)).default([]),
   storageLocationId: z.string().min(1).nullable(),
-  imageUrl: z.string().trim().url().nullable(),
+  imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
+    message: "Invalid URL",
+  }),
+  imageAltText: z.string().trim().nullable(),
+});
+
+const createProductInput = z.object({
+  name: z.string().trim().min(1),
+  sku: z.string().trim().min(1),
+  description: z.string().trim().nullable(),
+  price: z.coerce.number().min(0),
+  minimumQuantity: z.coerce.number().min(0),
+  startingQuantity: z.coerce.number().min(0),
+  unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
+  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "M2", "G", "KG", "ML", "L"]),
+  unitStep: z.coerce.number().gt(0),
+  isVisible: z.boolean().default(true),
+  categoryIds: z.array(z.string().min(1)).default([]),
+  storageLocationId: z.string().min(1).nullable(),
+  imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
+    message: "Invalid URL",
+  }),
   imageAltText: z.string().trim().nullable(),
 });
 
@@ -62,7 +90,8 @@ export const productRouter = createTRPCRouter({
         ],
       });
     }
-    const where = andFilters.length > 0 ? { AND: andFilters } : undefined;
+    const where =
+      andFilters.length > 0 ? { AND: [{ isVisible: true }, ...andFilters] } : { isVisible: true };
 
     const items = await ctx.db.product.findMany({
       where,
@@ -80,6 +109,7 @@ export const productRouter = createTRPCRouter({
         unitKind: true,
         baseUnit: true,
         unitStep: true,
+        isVisible: true,
         categoryId: true,
         storageLocationId: true,
         category: {
@@ -119,8 +149,8 @@ export const productRouter = createTRPCRouter({
   byId: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.product.findUnique({
-        where: { id: input.id },
+      return ctx.db.product.findFirst({
+        where: { id: input.id, isVisible: true },
         select: {
           id: true,
           name: true,
@@ -132,10 +162,16 @@ export const productRouter = createTRPCRouter({
           unitKind: true,
           baseUnit: true,
           unitStep: true,
+          isVisible: true,
           category: {
             select: {
               id: true,
               name: true,
+            },
+          },
+          categories: {
+            select: {
+              categoryId: true,
             },
           },
           storageLocation: {
@@ -175,7 +211,12 @@ export const productRouter = createTRPCRouter({
         });
       }
       if (input.categoryId) {
-        andFilters.push({ categoryId: input.categoryId });
+        andFilters.push({
+          OR: [
+            { categoryId: input.categoryId },
+            { categories: { some: { categoryId: input.categoryId } } },
+          ],
+        });
       }
       if (input.storageLocationId) {
         andFilters.push({ storageLocationId: input.storageLocationId });
@@ -198,12 +239,18 @@ export const productRouter = createTRPCRouter({
           unitKind: true,
           baseUnit: true,
           unitStep: true,
+          isVisible: true,
           categoryId: true,
           storageLocationId: true,
           category: {
             select: {
               id: true,
               name: true,
+            },
+          },
+          categories: {
+            select: {
+              categoryId: true,
             },
           },
           storageLocation: {
@@ -249,7 +296,8 @@ export const productRouter = createTRPCRouter({
             unitKind: input.unitKind,
             baseUnit: input.baseUnit,
             unitStep: input.unitStep,
-            categoryId: input.categoryId,
+            isVisible: input.isVisible,
+            categoryId: input.categoryIds[0] ?? null,
             storageLocationId: input.storageLocationId,
           },
           select: {
@@ -286,23 +334,74 @@ export const productRouter = createTRPCRouter({
           await tx.productImage.delete({ where: { id: existingImage.id } });
         }
 
-        if (input.categoryId) {
-          await tx.productCategory.upsert({
-            where: {
-              productId_categoryId: {
-                productId: input.id,
-                categoryId: input.categoryId,
-              },
-            },
-            update: {},
-            create: {
+        await tx.productCategory.deleteMany({
+          where: {
+            productId: input.id,
+            ...(input.categoryIds.length > 0
+              ? { categoryId: { notIn: input.categoryIds } }
+              : {}),
+          },
+        });
+        if (input.categoryIds.length > 0) {
+          await tx.productCategory.createMany({
+            data: input.categoryIds.map((categoryId) => ({
               productId: input.id,
-              categoryId: input.categoryId,
-            },
+              categoryId,
+            })),
+            skipDuplicates: true,
           });
         }
 
         return updated;
+      });
+    }),
+
+  backendCreate: adminProcedure
+    .input(createProductInput)
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const created = await tx.product.create({
+          data: {
+            name: input.name,
+            sku: input.sku,
+            description: input.description,
+            price: input.price,
+            minimumQuantity: input.minimumQuantity,
+            quantityOnHand: input.startingQuantity,
+            unitKind: input.unitKind,
+            baseUnit: input.baseUnit,
+            unitStep: input.unitStep,
+            isVisible: input.isVisible,
+            categoryId: input.categoryIds[0] ?? null,
+            storageLocationId: input.storageLocationId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (input.imageUrl) {
+          await tx.productImage.create({
+            data: {
+              productId: created.id,
+              url: input.imageUrl,
+              altText: input.imageAltText?.length ? input.imageAltText : null,
+              sortOrder: 0,
+            },
+          });
+        }
+
+        if (input.categoryIds.length > 0) {
+          await tx.productCategory.createMany({
+            data: input.categoryIds.map((categoryId) => ({
+              productId: created.id,
+              categoryId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+
+        return created;
       });
     }),
 

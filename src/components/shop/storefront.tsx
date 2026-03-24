@@ -264,8 +264,38 @@ export function Storefront() {
                 const quantityInput = quantitiesByPartList[partList.id] ?? "1";
                 return (
                   <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
+                    {partList.imageUrl ? (
+                      <img
+                        src={partList.imageUrl}
+                        alt={`Bild fuer Teileliste ${partList.name}`}
+                        className="mb-2 h-16 w-full rounded-md border border-border object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : null}
                     <p className="truncate text-xs font-semibold text-foreground">{partList.name}</p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">{partList.items.length} Produkte</p>
+                    {partList.documents.length > 0 ? (
+                      <div className="mt-1.5 space-y-1">
+                        {partList.documents.slice(0, 2).map((document) => (
+                          <a
+                            key={document.id}
+                            href={document.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block truncate text-[11px] text-primary underline-offset-2 hover:underline"
+                          >
+                            {document.originalName}
+                          </a>
+                        ))}
+                        {partList.documents.length > 2 ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            +{partList.documents.length - 2} weitere Dokumente
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     <div className="mt-2 flex items-center gap-1.5">
                       <input
                         type="number"

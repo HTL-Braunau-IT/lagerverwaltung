@@ -13,7 +13,7 @@ export default async function BackendLayout({
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto w-[90%] px-4 py-6 sm:px-6 lg:px-8">
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
         <BackendSidebarNav />
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">{children}</section>
