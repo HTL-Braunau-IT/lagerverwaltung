@@ -298,7 +298,7 @@ export function Storefront() {
           </div>
         </aside>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:grid-cols-4">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
