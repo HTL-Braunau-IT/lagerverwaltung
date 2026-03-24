@@ -1,0 +1,23 @@
+{
+  "categoriesCreated": 0,
+  "categoriesUpdated": 39,
+  "storageLocationsCreated": 0,
+  "storageLocationsUpdated": 2625,
+  "productsCreated": 0,
+  "productsUpdated": 4737,
+  "productsSkipped": 0,
+  "imagesDownloaded": 4210,
+  "imagesFailed": 0,
+  "imagesUpserted": 4210,
+  "unitFallbacks": 77,
+  "unknownProductUnits": {
+    "pkg": 1,
+    "spule": 10,
+    "rolle": 14,
+    "cl": 21,
+    "dm": 16,
+    "dose": 9,
+    "bund": 6
+  },
+  "skipped": []
+}

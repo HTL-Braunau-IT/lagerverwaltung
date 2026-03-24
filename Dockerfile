@@ -52,4 +52,4 @@ RUN mkdir -p /app/public/data \
 USER nextjs
 
 EXPOSE 3000
-CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; npm run db:migrate && npm run start"]
+CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; npm run db:migrate && npx prisma generate && npm run start"]

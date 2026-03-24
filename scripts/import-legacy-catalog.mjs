@@ -171,6 +171,7 @@ function mapLegacyUnit(rawUnit) {
     stk: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
     mm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.MM },
     cm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.CM },
+    dm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.CM, baseStep: 10 },
     m: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.M },
     cm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2 },
     dm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2, baseStep: 100 },
@@ -179,7 +180,12 @@ function mapLegacyUnit(rawUnit) {
     dag: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.G, baseStep: 10 },
     kg: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.KG },
     ml: { unitKind: UnitKind.VOLUME, baseUnit: BaseUnit.ML },
+    cl: { unitKind: UnitKind.VOLUME, baseUnit: BaseUnit.L, baseStep: 0.01 },
     l: { unitKind: UnitKind.VOLUME, baseUnit: BaseUnit.L },
+    bund: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    pkg: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    spule: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
+    rolle: { unitKind: UnitKind.PIECE, baseUnit: BaseUnit.PCS },
   };
 
   const mapped = mapping[unit];
