@@ -10,6 +10,7 @@ export function Search() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchFromUrl = searchParams.get("search") ?? "";
+  const showOnPage = pathname === "/" || pathname.startsWith("/products/");
   const [value, setValue] = useState(searchFromUrl);
 
   useEffect(() => {
@@ -17,7 +18,7 @@ export function Search() {
   }, [searchFromUrl]);
 
   useEffect(() => {
-    if (pathname !== "/") return;
+    if (!showOnPage) return;
 
     const timeout = window.setTimeout(() => {
       const currentQuery = searchParams.toString();
@@ -35,13 +36,14 @@ export function Search() {
         return;
       }
 
-      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+      const targetPath = "/";
+      router.replace(nextQuery ? `${targetPath}?${nextQuery}` : targetPath, { scroll: false });
     }, 250);
 
     return () => window.clearTimeout(timeout);
-  }, [pathname, router, searchParams, value]);
+  }, [pathname, router, searchParams, showOnPage, value]);
 
-  if (pathname !== "/") {
+  if (!showOnPage) {
     return null;
   }
 
