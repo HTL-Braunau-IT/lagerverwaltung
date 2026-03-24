@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await fileValue.arrayBuffer());
     await writeFile(outputPath, buffer);
 
-    const url = `/data/uploads/parts-lists/images/${partListId}/${filename}`;
+    const url = `/api/backend/parts-list/image/${partListId}`;
     await db.partList.update({
       where: { id: partListId },
       data: { imageUrl: url },

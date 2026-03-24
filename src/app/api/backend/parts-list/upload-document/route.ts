@@ -107,19 +107,25 @@ export async function POST(request: Request) {
     }
 
     const outputPath = path.join(uploadDir, fileName);
-    const url = `/data/uploads/documents/${partListId}/${fileName}`;
     const buffer = Buffer.from(await fileValue.arrayBuffer());
     await writeFile(outputPath, buffer);
 
-    const document = await db.partListDocument.create({
+    const createdDocument = await db.partListDocument.create({
       data: {
         partListId,
         fileName,
         originalName: fileValue.name || fileName,
-        url,
+        url: "",
         mimeType: fileValue.type || "application/octet-stream",
         sizeBytes: fileValue.size,
       },
+      select: { id: true },
+    });
+    const url = `/api/backend/parts-list/document/${createdDocument.id}`;
+
+    const document = await db.partListDocument.update({
+      where: { id: createdDocument.id },
+      data: { url },
       select: {
         id: true,
         fileName: true,

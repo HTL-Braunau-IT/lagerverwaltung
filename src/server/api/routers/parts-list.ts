@@ -38,6 +38,15 @@ const backendClearImageInput = z.object({
   id: z.string().min(1),
 });
 
+function normalizePartListImageUrl(partListId: string, imageUrl: string | null) {
+  if (!imageUrl) return null;
+  return `/api/backend/parts-list/image/${partListId}`;
+}
+
+function normalizePartListDocumentUrl(documentId: string) {
+  return `/api/backend/parts-list/document/${documentId}`;
+}
+
 function ensureUniqueProducts(items: Array<{ productId: string }>) {
   const ids = items.map((item) => item.productId);
   const uniqueIds = new Set(ids);
@@ -75,7 +84,7 @@ async function ensureProductsExist(
 
 export const partsListRouter = createTRPCRouter({
   listForShop: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.partList.findMany({
+    const lists = await ctx.db.partList.findMany({
       orderBy: [{ name: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -119,9 +128,17 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
+    return lists.map((list) => ({
+      ...list,
+      imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
+      documents: list.documents.map((document) => ({
+        ...document,
+        url: normalizePartListDocumentUrl(document.id),
+      })),
+    }));
   }),
   byIdForShop: publicProcedure.input(byIdForShopInput).query(async ({ ctx, input }) => {
-    return ctx.db.partList.findUnique({
+    const partList = await ctx.db.partList.findUnique({
       where: { id: input.id },
       select: {
         id: true,
@@ -165,11 +182,20 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
+    if (!partList) return null;
+    return {
+      ...partList,
+      imageUrl: normalizePartListImageUrl(partList.id, partList.imageUrl),
+      documents: partList.documents.map((document) => ({
+        ...document,
+        url: normalizePartListDocumentUrl(document.id),
+      })),
+    };
   }),
 
   backendList: adminProcedure.input(backendListInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
-    return ctx.db.partList.findMany({
+    const lists = await ctx.db.partList.findMany({
       where: search
         ? {
             OR: [
@@ -199,10 +225,14 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
+    return lists.map((list) => ({
+      ...list,
+      imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
+    }));
   }),
 
   backendById: adminProcedure.input(backendByIdInput).query(async ({ ctx, input }) => {
-    return ctx.db.partList.findUnique({
+    const partList = await ctx.db.partList.findUnique({
       where: { id: input.id },
       select: {
         id: true,
@@ -242,6 +272,15 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
+    if (!partList) return null;
+    return {
+      ...partList,
+      imageUrl: normalizePartListImageUrl(partList.id, partList.imageUrl),
+      documents: partList.documents.map((document) => ({
+        ...document,
+        url: normalizePartListDocumentUrl(document.id),
+      })),
+    };
   }),
 
   backendCreate: adminProcedure.input(backendCreateInput).mutation(async ({ ctx, input }) => {
