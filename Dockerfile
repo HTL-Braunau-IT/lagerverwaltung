@@ -44,7 +44,9 @@ COPY --from=builder /app/scripts ./scripts
 # Persist files written to /public (e.g. uploads)
 VOLUME ["/app/public"]
 
-RUN chown -R nextjs:nodejs /app
+RUN mkdir -p /app/public/data \
+  && chown -R nextjs:nodejs /app \
+  && chmod -R 775 /app/public/data
 USER nextjs
 
 EXPOSE 3000
