@@ -259,7 +259,7 @@ export function Storefront() {
                             [partList.id]: event.target.value,
                           }))
                         }
-                        className="h-8 w-14 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
+                        className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
                         aria-label={`Menge fuer Teileliste ${partList.name}`}
                       />
                       <Button
@@ -277,9 +277,11 @@ export function Storefront() {
                         }}
                         disabled={sessionId.length === 0 || addPartListMutation.isPending}
                       >
-                        {addPartListMutation.isPending && activeAddPartListId === partList.id
-                          ? "..."
-                          : "Hinzufuegen"}
+                        {addPartListMutation.isPending && activeAddPartListId === partList.id ? (
+                          "..."
+                        ) : (
+                          "In den Warenkorb"
+                        )}
                       </Button>
                     </div>
                   </div>

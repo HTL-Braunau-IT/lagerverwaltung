@@ -59,22 +59,3 @@ export function LogoutIcon() {
     </svg>
   );
 }
-
-export function AddToCartIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-<svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
-  <path
-    d="M3 5h2l2.2 9.5a2 2 0 0 0 2 1.5h6.6a2 2 0 0 0 2-1.6L19 8H6.2
-       M9 20a1 1 0 1 0 0.001 0
-       M17 20a1 1 0 1 0 0.001 0
-       M12 10v4
-       M10 12h4"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
-</svg>
-  );
-}
