@@ -228,8 +228,25 @@ export function Storefront() {
                 const quantityInput = quantitiesByPartList[partList.id] ?? "1";
                 return (
                   <div key={partList.id} className="rounded-lg border border-border bg-muted/40 p-2">
-                    <p className="truncate text-xs font-semibold text-foreground">{partList.name}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{partList.items.length} Produkte</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p
+                        className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitBoxOrient: "vertical",
+                          WebkitLineClamp: 3,
+                          overflow: "hidden",
+                        }}
+                      >
+                        {partList.name}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+                        <span aria-hidden="true" className="text-muted-foreground">
+                          |
+                        </span>
+                        <span>{partList.items.length} Produkte</span>
+                      </div>
+                    </div>
                     <div className="mt-2 flex items-center gap-1.5">
                       <input
                         type="number"
