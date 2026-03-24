@@ -8,7 +8,6 @@ import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-butto
 import {
   AdministrationIcon,
   ApprovalsIcon,
-  LogoutIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
@@ -72,9 +71,9 @@ export default async function RootLayout({
                   <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">HTL LAGER</span>
                   <span className="text-xl font-semibold">Schulshop</span>
                 </Link>
-                <p className="text-center text-sm font-medium text-muted-foreground">
-                  {`Angemeldet als ${session.user.email ?? "Benutzer"} (${roleLabels[session.user.role]})`}
-                </p>
+                <div>
+                  {/* Search bar? */}
+                </div>
                 <div className="flex items-center gap-3">
                   <HeaderNavLink
                     href="/orders"
@@ -98,12 +97,51 @@ export default async function RootLayout({
                       icon={<AdministrationIcon />}
                     />
                   ) : null}
-                  <HeaderNavLink
-                    href="/api/auth/signout"
-                    label="Abmelden"
-                    hoverClassName="hover:text-rose-600"
-                    icon={<LogoutIcon />}
-                  />
+                  <div className="relative">
+                    <div className="group relative inline-flex min-w-24 flex-col items-center text-muted-foreground transition-colors hover:text-primary">
+                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border text-xs font-semibold text-foreground">
+                        {session.user.image ? (
+                          // Use Entra profile image if available.
+                          <img
+                            src={session.user.image}
+                            alt={session.user.name ? `${session.user.name} Profilbild` : "Profilbild"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          (session.user.name ?? session.user.email?.split("@")[0] ?? "B")
+                            .slice(0, 2)
+                            .toUpperCase()
+                        )}
+                      </span>
+                      <p className="pt-1 text-sm font-medium text-muted-foreground">Mein Benutzer</p>
+                      <div className="pointer-events-none absolute top-full w-72 rounded-lg border border-border bg-card p-3 opacity-0 shadow-md transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                        <p className="text-sm font-medium text-center text-foreground">
+                          {session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}
+                        </p>
+                        <p className="text-xs text-center text-muted-foreground">
+                          {session.user.email ?? "vorname.nachname@htl-braunau.at"}
+                        </p>
+                        <div className="mt-2 flex justify-center">
+                          <div className="inline-flex items-center gap-2 px-2 text-muted-foreground">
+                            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/75">
+                              Rollen
+                            </span>
+                            <span className="inline-flex rounded-full border border-border/80 bg-background px-2.5 py-0.5 text-[11px] font-medium leading-none text-foreground">
+                              {roleLabels[session.user.role]}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-center mt-2 flex gap-3 border-t border-border/70 pt-2.5">
+                          <Link
+                            href="/api/auth/signout"
+                            className="inline-flex items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 transition-colors hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800"
+                          >
+                            Abmelden
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </header>
