@@ -42,6 +42,14 @@ const allowedTransitions: Record<"OPEN" | "PREPARING" | "READY_FOR_PICKUP", Arra
   };
 
 export const orderRouter = createTRPCRouter({
+  backendOpenCount: adminProcedure.query(async ({ ctx }) => {
+    const count = await ctx.db.order.count({
+      where: { status: "OPEN" },
+    });
+
+    return { count };
+  }),
+
   backendList: adminProcedure.input(backendListOrdersInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
 

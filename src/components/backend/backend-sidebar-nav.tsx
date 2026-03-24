@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { api } from "~/trpc/react";
 
 const entries = [
   { href: "/backend/orders", label: "Bestellungen" },
@@ -14,6 +15,9 @@ const entries = [
 
 export function BackendSidebarNav() {
   const pathname = usePathname();
+  const openOrdersCountQuery = api.order.backendOpenCount.useQuery();
+  const openOrdersCount = openOrdersCountQuery.data?.count ?? 0;
+  const openOrdersLabel = openOrdersCount > 99 ? "99+" : String(openOrdersCount);
 
   return (
     <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
@@ -31,7 +35,17 @@ export function BackendSidebarNav() {
                   : "text-foreground hover:bg-accent"
               }`}
             >
-              {entry.label}
+              <span className="flex items-center justify-between gap-2">
+                <span>{entry.label}</span>
+                {entry.href === "/backend/orders" && openOrdersCount > 0 ? (
+                  <span
+                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-semibold leading-none text-white"
+                    aria-label={`${openOrdersCount} offene Bestellungen`}
+                  >
+                    {openOrdersLabel}
+                  </span>
+                ) : null}
+              </span>
             </Link>
           );
         })}

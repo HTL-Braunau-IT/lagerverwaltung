@@ -85,6 +85,7 @@ export function OrdersAdminPanel() {
     onSuccess: async () => {
       await Promise.all([
         utils.order.backendList.invalidate(),
+        utils.order.backendOpenCount.invalidate(),
         expandedOrderId ? utils.order.backendById.invalidate({ id: expandedOrderId }) : Promise.resolve(),
       ]);
     },

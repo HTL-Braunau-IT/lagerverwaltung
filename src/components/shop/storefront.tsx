@@ -59,6 +59,7 @@ export function Storefront() {
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const headerRef = useRef<HTMLElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [stickyTopOffset, setStickyTopOffset] = useState(144);
@@ -390,6 +391,10 @@ export function Storefront() {
             const lowStock =
               decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
+            const hasImageError = failedProductImages.has(product.id);
+            const imageSrc = !previewImage?.url || hasImageError
+              ? "/pictures/placeholder.jpg"
+              : previewImage.url;
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
             const stockOnHand = decimalToNumber(product.quantityOnHand);
@@ -414,12 +419,18 @@ export function Storefront() {
                 <div>
                   <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
                     <img
-                      src={previewImage?.url || "/pictures/placeholder.jpg"}
+                      src={imageSrc}
                       alt={previewImage?.altText ?? `${product.name} Produktbild`}
                       className="h-40 w-full object-cover"
                       loading="lazy"
                       onError={(event) => {
-                        event.currentTarget.onerror = null;
+                        if (!previewImage?.url) return;
+                        setFailedProductImages((prev) => {
+                          if (prev.has(product.id)) return prev;
+                          const next = new Set(prev);
+                          next.add(product.id);
+                          return next;
+                        });
                         event.currentTarget.src = "/pictures/placeholder.jpg";
                       }}
                     />
