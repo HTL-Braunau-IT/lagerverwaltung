@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 
@@ -47,7 +46,7 @@ export function Storefront() {
   const utils = api.useUtils();
   const searchFromUrl = searchParams.get("search") ?? "";
   const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
-  const [sessionId] = useState(() => getOrCreateSessionId());
+  const [sessionId, setSessionId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(categoryFromUrl);
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
@@ -63,6 +62,10 @@ export function Storefront() {
   // so the asides align with the product grid initially and keep that gap when sticky.
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
+
+  useEffect(() => {
+    setSessionId(getOrCreateSessionId());
+  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -167,7 +170,10 @@ export function Storefront() {
     return { standalone, partLists: [...partLists.values()] };
   }, [cartItems]);
   const products = useMemo(
-    () => productQuery.data?.pages.flatMap((page) => page.items) ?? [],
+    () =>
+      (productQuery.data?.pages.flatMap((page) => page.items) ?? []).filter(
+        (product) => decimalToNumber(product.quantityOnHand) > 0,
+      ),
     [productQuery.data?.pages],
   );
   const hasProducts = products.length > 0;
@@ -370,8 +376,6 @@ export function Storefront() {
           )}
 
           {products.map((product) => {
-            const lowStock =
-              decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
             const previewImage = product.images[0];
             const hasImageError = failedProductImages.has(product.id);
             const showImagePlaceholder = !previewImage?.url || hasImageError;
@@ -424,11 +428,6 @@ export function Storefront() {
                   </div>
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <h2 className="line-clamp-2 text-base font-semibold text-foreground">{product.name}</h2>
-                    {lowStock ? (
-                      <Badge variant="destructive">Niedriger Bestand</Badge>
-                    ) : (
-                      <Badge variant="success">Auf Lager</Badge>
-                    )}
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}

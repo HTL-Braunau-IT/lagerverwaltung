@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 
@@ -38,19 +37,26 @@ function formatStock(value: unknown, baseUnit: string) {
   return `${decimalToNumber(value)} ${baseUnit.toLowerCase()}`;
 }
 
+function formatDecimal(value: number, fractionDigits = 3) {
+  return new Intl.NumberFormat("de-AT", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
+
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = params.id;
-  const [sessionId] = useState(() =>
-    typeof window === "undefined" ? "" : getOrCreateSessionId(),
-  );
+  const [sessionId, setSessionId] = useState("");
 
   const utils = api.useUtils();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [showCartModal, setShowCartModal] = useState(false);
   const [quantityInput, setQuantityInput] = useState("1");
+  const [areaWidthInput, setAreaWidthInput] = useState("1");
+  const [areaHeightInput, setAreaHeightInput] = useState("1");
   const [activeAddPartListId, setActiveAddPartListId] = useState<string | null>(null);
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
@@ -97,6 +103,10 @@ export default function ProductDetailPage() {
   });
 
   useEffect(() => {
+    setSessionId(getOrCreateSessionId());
+  }, []);
+
+  useEffect(() => {
     const updateAppHeaderOffset = () => {
       const appHeader = document.querySelector<HTMLElement>('[data-app-shell-header="true"]');
       setAppHeaderOffset(appHeader?.offsetHeight ?? 0);
@@ -111,6 +121,8 @@ export default function ProductDetailPage() {
     if (!productQuery.data) return;
     const step = Math.max(decimalToNumber(productQuery.data.unitStep), 0.001);
     setQuantityInput(step.toString());
+    setAreaWidthInput("1");
+    setAreaHeightInput("1");
   }, [productQuery.data?.id, productQuery.data?.unitStep]);
 
   const cartTotal = useMemo(() => {
@@ -167,11 +179,27 @@ export default function ProductDetailPage() {
   }
 
   const product = productQuery.data;
-  const lowStock = decimalToNumber(product.quantityOnHand) <= decimalToNumber(product.minimumQuantity);
+  const isAreaProduct = product.unitKind === "AREA";
   const stockOnHand = decimalToNumber(product.quantityOnHand);
   const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
   const parsedQuantity = Number(quantityInput);
-  const selectedQuantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
+  const areaWidth = Number(areaWidthInput);
+  const areaHeight = Number(areaHeightInput);
+  const areaInSquareMillimeters =
+    Number.isFinite(areaWidth) && areaWidth > 0 && Number.isFinite(areaHeight) && areaHeight > 0
+      ? areaWidth * areaHeight
+      : 0;
+  const computedAreaQuantity =
+    product.baseUnit === "CM2"
+      ? areaInSquareMillimeters / 100
+      : product.baseUnit === "M2"
+        ? areaInSquareMillimeters / 1_000_000
+        : areaInSquareMillimeters;
+  const selectedQuantity = isAreaProduct
+    ? computedAreaQuantity
+    : Number.isFinite(parsedQuantity) && parsedQuantity > 0
+      ? parsedQuantity
+      : unitStep;
   const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
 
   const categoryName = product.category?.name ?? "Ohne Kategorie";
@@ -311,7 +339,7 @@ export default function ProductDetailPage() {
           </nav>
         </aside>
 
-        <Card className="rounded-2xl p-6 shadow-sm">
+        <Card className="self-start rounded-2xl p-6 shadow-sm">
           <Link href="/" className="mb-4 inline-flex text-sm font-medium text-primary hover:opacity-80">
             Zurueck zur Produktliste
           </Link>
@@ -347,54 +375,92 @@ export default function ProductDetailPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
                 </p>
-                <Badge variant={lowStock ? "destructive" : "success"} className="mt-3">
-                  {lowStock ? "Niedriger Bestand" : "Auf Lager"}
-                </Badge>
               </div>
 
               <div className="mt-5 flex w-full flex-wrap items-center gap-2">
-                <div className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm">
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                      const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                      setQuantityInput(nextQuantity.toString());
-                    }}
-                    variant="ghost"
-                    className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
-                    aria-label={`Menge fuer ${product.name} reduzieren`}
-                  >
-                    -
-                  </Button>
-                  <input
-                    type="number"
-                    min={unitStep}
-                    max={stockOnHand}
-                    step={unitStep}
-                    value={quantityInput}
-                    onChange={(event) => setQuantityInput(event.target.value)}
-                    className="w-12 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    aria-label={`Menge fuer ${product.name}`}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                      const nextQuantity = currentQuantity + unitStep;
-                      setQuantityInput(nextQuantity.toString());
-                    }}
-                    variant="ghost"
-                    className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
-                    aria-label={`Menge fuer ${product.name} erhoehen`}
-                  >
-                    +
-                  </Button>
-                  <span className="pr-2 text-xs text-muted-foreground">{product.baseUnit.toLowerCase()}</span>
-                </div>
+                {isAreaProduct ? (
+                  <div className="w-full rounded-xl border border-border bg-muted/40 p-3">
+                    <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+                      Flaeche berechnen
+                    </p>
+                    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Breite (mm)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          value={areaWidthInput}
+                          onChange={(event) => setAreaWidthInput(event.target.value)}
+                          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Hoehe (mm)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          step="1"
+                          value={areaHeightInput}
+                          onChange={(event) => setAreaHeightInput(event.target.value)}
+                          className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Berechnete Menge:{" "}
+                      <span className="font-semibold text-foreground">
+                        {formatDecimal(selectedQuantity > 0 ? selectedQuantity : 0)}{" "}
+                        {product.baseUnit.toLowerCase().replace("2", "²")}
+                      </span>
+                      {" · "}
+                      {formatDecimal(areaInSquareMillimeters > 0 ? areaInSquareMillimeters : 0, 0)} mm²
+                    </p>
+                  </div>
+                ) : (
+                  <div className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
+                        const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
+                        setQuantityInput(nextQuantity.toString());
+                      }}
+                      variant="ghost"
+                      className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
+                      aria-label={`Menge fuer ${product.name} reduzieren`}
+                    >
+                      -
+                    </Button>
+                    <input
+                      type="number"
+                      min={unitStep}
+                      max={stockOnHand}
+                      step={unitStep}
+                      value={quantityInput}
+                      onChange={(event) => setQuantityInput(event.target.value)}
+                      className="w-12 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label={`Menge fuer ${product.name}`}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
+                        const nextQuantity = currentQuantity + unitStep;
+                        setQuantityInput(nextQuantity.toString());
+                      }}
+                      variant="ghost"
+                      className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
+                      aria-label={`Menge fuer ${product.name} erhoehen`}
+                    >
+                      +
+                    </Button>
+                    <span className="pr-2 text-xs text-muted-foreground">{product.baseUnit.toLowerCase()}</span>
+                  </div>
+                )}
                 <Button
                   onClick={() => {
-                    if (stockOnHand <= 0 || selectedQuantity > stockOnHand) return;
+                    if (stockOnHand <= 0 || selectedQuantity <= 0 || selectedQuantity > stockOnHand) return;
                     addItemMutation.mutate({
                       sessionId,
                       productId: product.id,
