@@ -243,33 +243,6 @@ export function Storefront() {
             maxHeight: `calc(100vh - ${appHeaderOffset + TOP_BANNER_GAP_PX + stickyTopOffset + 16}px)`,
           }}
         >
-          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
-          <nav className="space-y-1">
-            <Button
-              onClick={() => setSelectedCategoryId(undefined)}
-              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
-              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                selectedCategoryId === undefined ? "" : "text-muted-foreground"
-              }`}
-            >
-              <span>Alle Kategorien</span>
-            </Button>
-            {categoryQuery.data?.map((category) => (
-              <Button
-                key={category.id}
-                onClick={() => setSelectedCategoryId(category.id)}
-                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
-                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
-                }`}
-              >
-                <span className="truncate">{category.name}</span>
-                <span className="text-xs">({category._count.products})</span>
-              </Button>
-            ))}
-          </nav>
-
-          <div className="my-4 border-t border-border" />
           <div>
             <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
             {partListWarning ? (
@@ -333,6 +306,32 @@ export function Storefront() {
               })}
             </div>
           </div>
+          <div className="my-4 border-t border-border" />
+          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
+          <nav className="space-y-1">
+            <Button
+              onClick={() => setSelectedCategoryId(undefined)}
+              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
+              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                selectedCategoryId === undefined ? "" : "text-muted-foreground"
+              }`}
+            >
+              <span>Alle Kategorien</span>
+            </Button>
+            {categoryQuery.data?.map((category) => (
+              <Button
+                key={category.id}
+                onClick={() => setSelectedCategoryId(category.id)}
+                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
+                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
+                }`}
+              >
+                <span className="truncate">{category.name}</span>
+                <span className="text-xs">({category._count.products})</span>
+              </Button>
+            ))}
+          </nav>
         </aside>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
