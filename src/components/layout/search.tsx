@@ -20,7 +20,8 @@ export function Search() {
     if (pathname !== "/") return;
 
     const timeout = window.setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString());
+      const currentQuery = searchParams.toString();
+      const params = new URLSearchParams(currentQuery);
       const trimmed = value.trim();
 
       if (trimmed) {
@@ -29,8 +30,12 @@ export function Search() {
         params.delete("search");
       }
 
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      const nextQuery = params.toString();
+      if (nextQuery === currentQuery) {
+        return;
+      }
+
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     }, 250);
 
     return () => window.clearTimeout(timeout);

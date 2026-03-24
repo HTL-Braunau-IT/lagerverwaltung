@@ -67,6 +67,7 @@ export default async function RootLayout({
               <div className="mx-auto grid w-full max-w-[112rem] grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 px-3 py-4 sm:px-4 lg:px-5">
                 <Link
                   href="/"
+                  prefetch={false}
                   className="flex flex-col items-center text-center text-foreground transition-colors hover:text-primary"
                 >
                   <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">HTL LAGER</span>
