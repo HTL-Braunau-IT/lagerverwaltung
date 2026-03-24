@@ -33,6 +33,7 @@ RUN apk add --no-cache openssl libc6-compat \
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/env.js ./src/env.js
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
