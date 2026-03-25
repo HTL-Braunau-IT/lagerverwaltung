@@ -71,6 +71,27 @@ export function AssignedOrdersPanel() {
     },
   });
 
+  const loanRequestsQuery = api.loan.listPendingLoanRequests.useQuery();
+
+  const invalidateAfterLoanAction = async () => {
+    await Promise.all([
+      utils.loan.listPendingLoanRequests.invalidate(),
+      utils.loan.listMyLoans.invalidate(),
+    ]);
+  };
+
+  const approveLoanMutation = api.loan.teacherApproveLoan.useMutation({
+    onSuccess: async () => {
+      await invalidateAfterLoanAction();
+    },
+  });
+
+  const rejectLoanMutation = api.loan.teacherRejectLoan.useMutation({
+    onSuccess: async () => {
+      await invalidateAfterLoanAction();
+    },
+  });
+
   const pendingRequests = useMemo(
     () => (requestsQuery.data ?? []).filter((request) => request.status === "PENDING"),
     [requestsQuery.data],
@@ -83,12 +104,18 @@ export function AssignedOrdersPanel() {
     updateItemQuantityMutation.isPending ||
     removeItemMutation.isPending ||
     rejectMutation.isPending ||
-    approveMutation.isPending;
+    approveMutation.isPending ||
+    approveLoanMutation.isPending ||
+    rejectLoanMutation.isPending;
   const actionErrorMessage =
     updateItemQuantityMutation.error?.message ??
     removeItemMutation.error?.message ??
     rejectMutation.error?.message ??
-    approveMutation.error?.message;
+    approveMutation.error?.message ??
+    approveLoanMutation.error?.message ??
+    rejectLoanMutation.error?.message;
+
+  const pendingLoanRequests = loanRequestsQuery.data ?? [];
 
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -128,7 +155,9 @@ export function AssignedOrdersPanel() {
         {!requestsQuery.isLoading &&
           !requestsQuery.error &&
           pendingRequests.length === 0 &&
-          completedRequests.length === 0 && (
+          completedRequests.length === 0 &&
+          !loanRequestsQuery.isLoading &&
+          pendingLoanRequests.length === 0 && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm">
             <p className="text-sm font-semibold">Aktuell keine Freigaben vorhanden.</p>
           </div>
@@ -294,6 +323,105 @@ export function AssignedOrdersPanel() {
                       className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {approveMutation.isPending ? "Wird bestellt..." : "Bestellung final absenden"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+        {loanRequestsQuery.isLoading && pendingLoanRequests.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
+            Ausleihanfragen werden geladen...
+          </div>
+        ) : null}
+
+        {loanRequestsQuery.error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900 shadow-sm">
+            <p className="text-sm font-semibold">Ausleihanfragen konnten nicht geladen werden.</p>
+            <button
+              onClick={() => void loanRequestsQuery.refetch()}
+              className="mt-3 rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-800 transition hover:bg-rose-100"
+            >
+              Erneut laden
+            </button>
+          </div>
+        ) : null}
+
+        {pendingLoanRequests.length > 0 && (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <h2 className="text-sm font-semibold text-amber-900">Offene Ausleihfreigaben</h2>
+              <p className="mt-1 text-sm text-amber-800">
+                Diese Ausleihanfragen warten auf deine endgueltige Entscheidung.
+              </p>
+            </div>
+
+            {pendingLoanRequests.map((request) => {
+              const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantityRequested), 0);
+              const hasItems = request.items.length > 0;
+              return (
+                <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900">{studentLabel(request.borrower)}</h3>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+                      Wartet auf Freigabe
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+                    <p>
+                      <span className="text-slate-500">Eingang: </span>
+                      {formatDate(request.createdAt)}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Lehrperson: </span>
+                      {request.teacherDisplayName ?? "-"}
+                    </p>
+                    <p>
+                      <span className="text-slate-500">Artikel gesamt: </span>
+                      {itemCount}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-sm font-medium text-slate-800">Positionen</p>
+                    {!hasItems ? (
+                      <p className="mt-2 text-sm text-slate-600">Keine Positionen vorhanden.</p>
+                    ) : (
+                      <ul className="mt-2 space-y-2">
+                        {request.items.map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                          >
+                            <span className="font-medium text-slate-900">{item.lendableItem.name}</span>
+                            <span>
+                              {decimalToNumber(item.quantityRequested)} Stk
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => rejectLoanMutation.mutate({ loanId: request.id })}
+                      disabled={!hasItems || isAnyMutationPending || rejectLoanMutation.isPending}
+                      className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {rejectLoanMutation.isPending ? "Wird abgelehnt..." : "Anfrage ablehnen"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => approveLoanMutation.mutate({ loanId: request.id })}
+                      disabled={!hasItems || isAnyMutationPending || approveLoanMutation.isPending}
+                      className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {approveLoanMutation.isPending ? "Wird freigegeben..." : "Ausleihe freigeben"}
                     </button>
                   </div>
                 </article>

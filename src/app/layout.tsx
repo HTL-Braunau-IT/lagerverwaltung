@@ -9,6 +9,7 @@ import { Search } from "~/components/layout/search";
 import {
   AdministrationIcon,
   ApprovalsIcon,
+  LendingIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
@@ -113,6 +114,12 @@ export default async function RootLayout({
                     label="Bestellhistorie"
                     hoverClassName="hover:text-sky-600"
                     icon={<OrdersIcon />}
+                  />
+                  <HeaderNavLink
+                    href="/ausleihe"
+                    label="Ausleihe"
+                    hoverClassName="hover:text-amber-600"
+                    icon={<LendingIcon />}
                   />
                   {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
                     <HeaderNavLink

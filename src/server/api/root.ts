@@ -1,9 +1,11 @@
 import { cartRouter } from "~/server/api/routers/cart";
 import { categoryRouter } from "~/server/api/routers/category";
 import { costCenterRouter } from "~/server/api/routers/cost-center";
+import { lendableItemRouter } from "~/server/api/routers/lendable-item";
 import { orderRouter } from "~/server/api/routers/order";
 import { partsListRouter } from "~/server/api/routers/parts-list";
 import { productRouter } from "~/server/api/routers/product";
+import { loanRouter } from "~/server/api/routers/loan";
 import { storageLocationRouter } from "~/server/api/routers/storage-location";
 import { storageRoomRouter } from "~/server/api/routers/storage-room";
 import { userRouter } from "~/server/api/routers/user";
@@ -18,9 +20,11 @@ export const appRouter = createTRPCRouter({
   product: productRouter,
   category: categoryRouter,
   costCenter: costCenterRouter,
+  lendableItem: lendableItemRouter,
   cart: cartRouter,
   order: orderRouter,
   partsList: partsListRouter,
+  loan: loanRouter,
   storageLocation: storageLocationRouter,
   storageRoom: storageRoomRouter,
   user: userRouter,

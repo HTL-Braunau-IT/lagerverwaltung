@@ -18,6 +18,7 @@ export const env = createEnv({
     ROLE_STUDENT_GROUP_ID: z.string().min(1),
     MAIL_FROM_ADDRESS: z.string().email().optional(),
     MAIL_OPS_BCC_ADDRESS: z.string().email().optional(),
+    LOAN_REMINDER_CRON_SECRET: z.string().min(1).optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -48,6 +49,7 @@ export const env = createEnv({
     ROLE_STUDENT_GROUP_ID: process.env.ROLE_STUDENT_GROUP_ID,
     MAIL_FROM_ADDRESS: process.env.MAIL_FROM_ADDRESS,
     MAIL_OPS_BCC_ADDRESS: process.env.MAIL_OPS_BCC_ADDRESS,
+    LOAN_REMINDER_CRON_SECRET: process.env.LOAN_REMINDER_CRON_SECRET,
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

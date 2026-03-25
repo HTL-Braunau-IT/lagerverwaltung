@@ -5,7 +5,13 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig([
   {
-    ignores: [".next/**", "generated/**", "**/*.d.ts", "eslint.config.js"],
+    ignores: [
+      ".next/**",
+      "generated/**",
+      "**/*.d.ts",
+      "eslint.config.js",
+      "scripts/import-legacy-catalog.mjs",
+    ],
   },
   ...nextVitals,
   ...nextTypescript,

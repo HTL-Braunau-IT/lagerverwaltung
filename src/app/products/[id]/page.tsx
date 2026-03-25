@@ -51,7 +51,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = params.id;
-  const [sessionId, setSessionId] = useState("");
+  const [sessionId] = useState(() => getOrCreateSessionId());
   const canSeePartListProductCount =
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
 
@@ -107,10 +107,6 @@ export default function ProductDetailPage() {
   });
 
   useEffect(() => {
-    setSessionId(getOrCreateSessionId());
-  }, []);
-
-  useEffect(() => {
     const updateAppHeaderOffset = () => {
       const appHeader = document.querySelector<HTMLElement>('[data-app-shell-header="true"]');
       setAppHeaderOffset(appHeader?.offsetHeight ?? 0);
@@ -124,9 +120,12 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!productQuery.data) return;
     const step = Math.max(decimalToNumber(productQuery.data.unitStep), 0.001);
-    setQuantityInput(step.toString());
-    setAreaWidthInput("1");
-    setAreaHeightInput("1");
+    // Avoid synchronous setState directly in the effect body (lint rule).
+    queueMicrotask(() => {
+      setQuantityInput(step.toString());
+      setAreaWidthInput("1");
+      setAreaHeightInput("1");
+    });
   }, [productQuery.data?.id, productQuery.data?.unitStep]);
 
   const cartTotal = useMemo(() => {

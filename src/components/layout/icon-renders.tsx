@@ -13,6 +13,28 @@ export function OrdersIcon() {
   );
 }
 
+export function LendingIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+      <path
+        d="M7 7h10v4H7V7Zm-2 6h14v9H5v-9Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 11v9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function ApprovalsIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">

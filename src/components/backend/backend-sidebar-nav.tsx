@@ -12,6 +12,8 @@ const entries = [
   { href: "/backend/categories", label: "Kategorien" },
   { href: "/backend/storage", label: "Lagerplaetze" },
   { href: "/backend/parts-list", label: "Teilelisten" },
+  { href: "/backend/lendable-items", label: "Ausleihartikel" },
+  { href: "/backend/loans", label: "Ausleihen" },
 ] as const;
 
 export function BackendSidebarNav() {
@@ -19,6 +21,10 @@ export function BackendSidebarNav() {
   const openOrdersCountQuery = api.order.backendOpenCount.useQuery();
   const openOrdersCount = openOrdersCountQuery.data?.count ?? 0;
   const openOrdersLabel = openOrdersCount > 99 ? "99+" : String(openOrdersCount);
+
+  const openLoansCountQuery = api.loan.backendOpenCount.useQuery();
+  const openLoansCount = openLoansCountQuery.data?.count ?? 0;
+  const openLoansLabel = openLoansCount > 99 ? "99+" : String(openLoansCount);
 
   return (
     <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
@@ -44,6 +50,14 @@ export function BackendSidebarNav() {
                     aria-label={`${openOrdersCount} offene Bestellungen`}
                   >
                     {openOrdersLabel}
+                  </span>
+                ) : null}
+                {entry.href === "/backend/loans" && openLoansCount > 0 ? (
+                  <span
+                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-semibold leading-none text-white"
+                    aria-label={`${openLoansCount} offene Ausleihen`}
+                  >
+                    {openLoansLabel}
                   </span>
                 ) : null}
               </span>

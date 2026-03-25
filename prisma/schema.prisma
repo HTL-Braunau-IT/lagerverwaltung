@@ -48,6 +48,19 @@ enum RequestStatus {
     REJECTED
 }
 
+enum LoanStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    CLOSED
+}
+
+enum LoanReminderTrigger {
+    DUE
+    OVERDUE
+    MANUAL
+}
+
 model Category {
     id        String    @id @default(cuid())
     name      String
@@ -80,6 +93,8 @@ model StorageRoom {
     storageLocations StorageLocation[]
     userAccesses     UserStorageRoomAccess[]
     orders           Order[]
+    loans            Loan[]
+    lendableItems    LendableItem[]
     createdAt        DateTime          @default(now())
     updatedAt        DateTime          @updatedAt
 }
@@ -268,6 +283,105 @@ model OrderRequestItem {
     @@unique([orderRequestId, productId])
 }
 
+model Loan {
+    id String @id @default(cuid())
+
+    borrowerId String
+    borrower   User   @relation("LoansAsBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+
+    teacherUserId String?
+    teacher       User?   @relation("LoansAsTeacher", fields: [teacherUserId], references: [id], onDelete: SetNull)
+    teacherExternalId  String?
+    teacherDisplayName String?
+    teacherEmail        String?
+
+    storageRoomId String
+    storageRoom   StorageRoom @relation(fields: [storageRoomId], references: [id], onDelete: Restrict)
+
+    status LoanStatus @default(PENDING)
+
+    items LoanItem[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([borrowerId])
+    @@index([storageRoomId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+model LoanItem {
+    id String @id @default(cuid())
+
+    loanId String
+    loan   Loan   @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+    lendableItemId String
+    lendableItem   LendableItem @relation(fields: [lendableItemId], references: [id], onDelete: Restrict)
+
+    quantityRequested Decimal @db.Decimal(14, 3)
+    quantityApproved  Decimal @default(0) @db.Decimal(14, 3)
+    quantityHandedOver Decimal @default(0) @db.Decimal(14, 3)
+    quantityReturned   Decimal @default(0) @db.Decimal(14, 3)
+
+    borrowedAt DateTime?
+    dueAt      DateTime?
+
+    reminderLogs LoanReminderLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([loanId])
+    @@index([lendableItemId])
+    @@index([dueAt])
+}
+
+model LendableItem {
+    id            String      @id @default(cuid())
+    name          String
+    description   String?
+    quantityOnHand Int        @default(0)
+    isVisible     Boolean     @default(true)
+    storageRoomId String
+    storageRoom   StorageRoom @relation(fields: [storageRoomId], references: [id], onDelete: Restrict)
+    images        LendableItemImage[]
+    loanItems     LoanItem[]
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+
+    @@index([name])
+    @@index([storageRoomId])
+    @@index([isVisible])
+}
+
+model LendableItemImage {
+    id             String       @id @default(cuid())
+    lendableItemId String
+    url            String
+    altText        String?
+    sortOrder      Int          @default(0)
+    lendableItem   LendableItem @relation(fields: [lendableItemId], references: [id], onDelete: Cascade)
+    createdAt      DateTime     @default(now())
+
+    @@index([lendableItemId, sortOrder])
+}
+
+model LoanReminderLog {
+    id String @id @default(cuid())
+
+    loanItemId String
+    loanItem   LoanItem @relation(fields: [loanItemId], references: [id], onDelete: Cascade)
+
+    trigger LoanReminderTrigger
+    sentForDate DateTime
+    sentAt DateTime @default(now())
+
+    @@unique([loanItemId, trigger, sentForDate])
+    @@index([loanItemId, sentAt])
+}
+
 model OrderCounter {
     year       Int @id
     lastNumber Int
@@ -369,6 +483,8 @@ model User {
     orderRequestsAsTeacher OrderRequest[] @relation("OrderRequestsAsTeacher")
     stockBookings ProductStockBooking[]
     pinnedPartLists UserPinnedPartList[]
+    loansAsBorrower Loan[] @relation("LoansAsBorrower")
+    loansAsTeacher  Loan[] @relation("LoansAsTeacher")
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
 }
