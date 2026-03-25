@@ -280,9 +280,10 @@ export function Storefront() {
     return pinnedPartLists.filter((partList) => partList.name.toLowerCase().includes(modalSearchTerm));
   }, [modalSearchTerm, pinnedPartLists]);
   const filteredPartListsForModal = useMemo(() => {
-    if (!modalSearchTerm) return allPartLists;
-    return allPartLists.filter((partList) => partList.name.toLowerCase().includes(modalSearchTerm));
-  }, [allPartLists, modalSearchTerm]);
+    const base = allPartLists.filter((partList) => !pinnedPartListIds.has(partList.id));
+    if (!modalSearchTerm) return base;
+    return base.filter((partList) => partList.name.toLowerCase().includes(modalSearchTerm));
+  }, [allPartLists, modalSearchTerm, pinnedPartListIds]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
@@ -885,7 +886,7 @@ export function Storefront() {
                 {filteredPinnedPartListsForModal.length === 0 ? (
                   <p className="mt-2 text-sm text-muted-foreground">
                     {pinnedPartLists.length === 0
-                      ? "Du hast noch keine gepinnten Teilelisten."
+                      ? "Noch keine gepinnten Teilelisten."
                       : "Keine gepinnten Teilelisten passen zur Suche."}
                   </p>
                 ) : (
