@@ -192,6 +192,7 @@ model PartList {
     documents   PartListDocument[]
     cartItems   CartItem[]
     orders      Order[]
+    pinnedBy    UserPinnedPartList[]
     createdAt   DateTime       @default(now())
     updatedAt   DateTime       @updatedAt
 
@@ -367,8 +368,23 @@ model User {
     orderRequestsAsStudent OrderRequest[] @relation("OrderRequestsAsStudent")
     orderRequestsAsTeacher OrderRequest[] @relation("OrderRequestsAsTeacher")
     stockBookings ProductStockBooking[]
+    pinnedPartLists UserPinnedPartList[]
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
+}
+
+model UserPinnedPartList {
+    id         String   @id @default(cuid())
+    userId     String
+    partListId String
+    createdAt  DateTime @default(now())
+
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    partList PartList @relation(fields: [partListId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, partListId])
+    @@index([userId, createdAt])
+    @@index([partListId])
 }
 
 model UserStorageRoomAccess {

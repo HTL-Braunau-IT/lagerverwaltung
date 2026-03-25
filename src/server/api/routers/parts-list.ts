@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { adminProcedure, createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { adminProcedure, createTRPCRouter, publicProcedure, teacherProcedure } from "~/server/api/trpc";
 
 const partListItemInput = z.object({
   productId: z.string().min(1),
@@ -36,6 +36,10 @@ const backendDeleteInput = z.object({
 
 const backendClearImageInput = z.object({
   id: z.string().min(1),
+});
+
+const togglePinnedInput = z.object({
+  partListId: z.string().min(1),
 });
 
 function normalizePartListImageUrl(partListId: string, imageUrl: string | null) {
@@ -136,6 +140,50 @@ export const partsListRouter = createTRPCRouter({
         url: normalizePartListDocumentUrl(document.id),
       })),
     }));
+  }),
+  pinnedForUser: teacherProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const pins = await ctx.db.userPinnedPartList.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { partListId: true },
+    });
+    return pins.map((pin) => pin.partListId);
+  }),
+  togglePinned: teacherProcedure.input(togglePinnedInput).mutation(async ({ ctx, input }) => {
+    const userId = ctx.session.user.id;
+
+    const existingPartList = await ctx.db.partList.findUnique({
+      where: { id: input.partListId },
+      select: { id: true },
+    });
+    if (!existingPartList) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Teileliste wurde nicht gefunden." });
+    }
+
+    const existing = await ctx.db.userPinnedPartList.findUnique({
+      where: {
+        userId_partListId: {
+          userId,
+          partListId: input.partListId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await ctx.db.userPinnedPartList.delete({
+        where: { id: existing.id },
+        select: { id: true },
+      });
+      return { pinned: false as const };
+    }
+
+    await ctx.db.userPinnedPartList.create({
+      data: { userId, partListId: input.partListId },
+      select: { id: true },
+    });
+    return { pinned: true as const };
   }),
   byIdForShop: publicProcedure.input(byIdForShopInput).query(async ({ ctx, input }) => {
     const partList = await ctx.db.partList.findUnique({
