@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, BaseUnit, UnitKind } from "../generated/prisma/index.js";
+import { PrismaClient, BaseUnit, UnitKind } from "@prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -18,8 +18,8 @@ const prisma = new PrismaClient({ adapter });
  * @property {string} price
  * @property {string} quantityOnHand
  * @property {string} minimumQuantity
- * @property {import("../generated/prisma/index.js").UnitKind} unitKind
- * @property {import("../generated/prisma/index.js").BaseUnit} baseUnit
+ * @property {import("@prisma/client").UnitKind} unitKind
+ * @property {import("@prisma/client").BaseUnit} baseUnit
  * @property {string} unitStep
  * @property {string} categoryId
  * @property {string} storageLocationId

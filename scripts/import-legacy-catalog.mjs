@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PrismaPg } from "@prisma/adapter-pg";
 import mysql from "mysql2/promise";
-import { BaseUnit, PrismaClient, UnitKind } from "../generated/prisma/index.js";
+import { BaseUnit, PrismaClient, UnitKind } from "@prisma/client";
 
 // Prefer runtime-injected env vars (Docker/CI/prod). For local CLI usage,
 // fall back to loading .env automatically when Node supports it.
