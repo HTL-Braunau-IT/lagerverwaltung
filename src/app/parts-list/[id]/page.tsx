@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
+import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-side-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -55,30 +56,19 @@ export default function PartListDetailPage() {
   const [sessionId] = useState(() => getOrCreateSessionId());
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [showCartModal, setShowCartModal] = useState(false);
-  const [activeAddPartListId, setActiveAddPartListId] = useState<string | null>(null);
-  const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [quantityInput, setQuantityInput] = useState("1");
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   const utils = api.useUtils();
-  const categoryQuery = api.category.list.useQuery();
-  const partListsQuery = api.partsList.listForShop.useQuery();
   const selectedPartListQuery = api.partsList.byIdForShop.useQuery(
     { id: partListId },
     { enabled: Boolean(partListId) },
   );
-  const cartQuery = api.cart.get.useQuery(
-    { sessionId },
-    {
-      enabled: sessionId.length > 0,
-    },
-  );
   const addPartListMutation = api.cart.addPartList.useMutation({
     onSuccess: async (result) => {
       await utils.cart.get.invalidate({ sessionId });
-      setActiveAddPartListId(null);
 
       if (result.ok) {
         setPartListWarning(null);
@@ -94,11 +84,6 @@ export default function PartListDetailPage() {
       setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
-  const setQuantityMutation = api.cart.setItemQuantity.useMutation({
-    onSuccess: async () => {
-      await utils.cart.get.invalidate({ sessionId });
-    },
-  });
 
   useEffect(() => {
     const updateAppHeaderOffset = () => {
@@ -110,13 +95,6 @@ export default function PartListDetailPage() {
     window.addEventListener("resize", updateAppHeaderOffset);
     return () => window.removeEventListener("resize", updateAppHeaderOffset);
   }, []);
-
-  const cartTotal = useMemo(() => {
-    const items = cartQuery.data?.items ?? [];
-    return items.reduce((total, item) => {
-      return total + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
-    }, 0);
-  }, [cartQuery.data?.items]);
 
   if (selectedPartListQuery.isLoading) {
     return (
@@ -168,151 +146,20 @@ export default function PartListDetailPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_320px]">
-        <aside
-          className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
-          style={{
-            top: `${appHeaderOffset + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+        <ShopCategoriesAside
+          appHeaderOffset={appHeaderOffset}
+          stickyTopOffset={stickyTopOffset}
+          selectedCategoryId={selectedCategoryId}
+          onSelectedCategoryIdChange={setSelectedCategoryId}
+          onCategoryPicked={(categoryId) => {
+            const params = new URLSearchParams();
+            if (searchFromUrl) params.set("search", searchFromUrl);
+            if (categoryId) params.set("categoryId", categoryId);
+            const query = params.toString();
+            router.push(query ? `/?${query}` : "/");
           }}
-        >
-          {canSeePartListProductCount ? (
-            <>
-              <div>
-                <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  Teilelisten
-                </p>
-                {partListWarning ? (
-                  <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-                    {partListWarning}
-                  </div>
-                ) : null}
-                {partListsQuery.isLoading ? (
-                  <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
-                ) : null}
-                {partListsQuery.error ? (
-                  <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
-                ) : null}
-                {!partListsQuery.isLoading && !partListsQuery.error && (partListsQuery.data?.length ?? 0) === 0 ? (
-                  <p className="px-2 text-xs text-muted-foreground">Keine Teilelisten verfuegbar.</p>
-                ) : null}
-                <div className="space-y-2">
-                  {(partListsQuery.data ?? []).map((partList) => {
-                    const quantityForPartList = quantitiesByPartList[partList.id] ?? "1";
-                    return (
-                      <div
-                        key={partList.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => router.push(`/parts-list/${partList.id}`)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            router.push(`/parts-list/${partList.id}`);
-                          }
-                        }}
-                        className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p
-                            className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
-                            style={{
-                              display: "-webkit-box",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 3,
-                              overflow: "hidden",
-                            }}
-                          >
-                            {partList.name}
-                          </p>
-                          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
-                            <span aria-hidden="true" className="text-muted-foreground">
-                              |
-                            </span>
-                            <span>{partList.items.length} Produkte</span>
-                          </div>
-                        </div>
-                        <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={quantityForPartList}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              setQuantitiesByPartList((prev) => ({
-                                ...prev,
-                                [partList.id]: event.target.value,
-                              }))
-                            }
-                            className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-                            aria-label={`Menge fuer Teileliste ${partList.name}`}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-8 flex-1 text-xs"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityForPartList) || 1));
-                              setPartListWarning(null);
-                              setActiveAddPartListId(partList.id);
-                              addPartListMutation.mutate({
-                                sessionId,
-                                partListId: partList.id,
-                                quantity: requestedQuantity,
-                              });
-                            }}
-                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                          >
-                            {addPartListMutation.isPending && activeAddPartListId === partList.id
-                              ? "..."
-                              : "In den Warenkorb"}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="my-4 border-t border-border" />
-            </>
-          ) : null}
-          <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
-          <nav className="space-y-1">
-            <Button
-              onClick={() => {
-                setSelectedCategoryId(undefined);
-                router.push(searchFromUrl ? `/?search=${encodeURIComponent(searchFromUrl)}` : "/");
-              }}
-              variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
-              className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                selectedCategoryId === undefined ? "" : "text-muted-foreground"
-              }`}
-            >
-              <span>Alle Kategorien</span>
-            </Button>
-            {categoryQuery.data?.map((category) => (
-              <Button
-                key={category.id}
-                onClick={() => {
-                  setSelectedCategoryId(category.id);
-                  const params = new URLSearchParams();
-                  if (searchFromUrl) params.set("search", searchFromUrl);
-                  params.set("categoryId", category.id);
-                  const query = params.toString();
-                  router.push(query ? `/?${query}` : "/");
-                }}
-                variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
-                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                  selectedCategoryId === category.id ? "" : "text-muted-foreground"
-                }`}
-              >
-                <span className="truncate">{category.name}</span>
-                <span className="text-xs">({category._count.products})</span>
-              </Button>
-            ))}
-          </nav>
-        </aside>
+        />
 
         <Card className="self-start rounded-2xl p-6 shadow-sm">
           <Link href="/" className="mb-4 inline-flex text-sm font-medium text-primary hover:opacity-80">
@@ -357,7 +204,6 @@ export default function PartListDetailPage() {
                     onClick={() => {
                       const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
                       setPartListWarning(null);
-                      setActiveAddPartListId(selectedPartList.id);
                       addPartListMutation.mutate({
                         sessionId,
                         partListId: selectedPartList.id,
@@ -367,9 +213,7 @@ export default function PartListDetailPage() {
                     disabled={sessionId.length === 0 || addPartListMutation.isPending}
                     className="h-10 rounded-xl px-3"
                   >
-                    {addPartListMutation.isPending && activeAddPartListId === selectedPartList.id
-                      ? "..."
-                      : "In den Warenkorb"}
+                    {addPartListMutation.isPending ? "..." : "In den Warenkorb"}
                   </Button>
                 </div>
               </div>
@@ -444,80 +288,15 @@ export default function PartListDetailPage() {
           </div>
         </Card>
 
-        <aside
-          id="cart-panel"
-          className="self-start rounded-2xl border border-border bg-card p-4 shadow-sm lg:sticky lg:overflow-auto"
-          style={{
-            top: `${appHeaderOffset + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
-          }}
-        >
-          <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Aktuelle Produktpreise aktiviert</p>
-          <div className="mt-4 space-y-3">
-            {(cartQuery.data?.items.length ?? 0) === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine Artikel im Warenkorb.</p>
-            ) : (
-              cartQuery.data?.items.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
-                  <p className="text-sm font-medium text-foreground">{item.product.name}</p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-sm text-foreground">{formatPrice(item.product.price)}</p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        -
-                      </Button>
-                      <span className="min-w-8 text-center text-sm text-foreground">
-                        {decimalToNumber(item.quantity)}
-                      </span>
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: decimalToNumber(item.quantity) + 1,
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-4 border-t border-border pt-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Zwischensumme</span>
-              <span className="font-semibold text-primary">{formatPrice(cartTotal)}</span>
-            </div>
-            <Link
-              href="/carts"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-            >
-              Zum Warenkorb
-            </Link>
-          </div>
-        </aside>
+        <ShopPartListsAside
+          appHeaderOffset={appHeaderOffset}
+          stickyTopOffset={stickyTopOffset}
+          sessionId={sessionId}
+          canSeePartListProductCount={canSeePartListProductCount}
+          onAddedToCart={() => setShowCartModal(true)}
+          warning={partListWarning}
+          onWarningChange={setPartListWarning}
+        />
       </section>
 
       {showCartModal && (
