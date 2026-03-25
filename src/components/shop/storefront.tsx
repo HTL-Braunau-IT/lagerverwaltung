@@ -10,6 +10,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
+import { PinIcon } from "~/components/layout/icon-renders";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -68,26 +69,6 @@ function WastebinIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M19 6l-1 14H6L5 6" />
       <path d="M10 11v6" />
       <path d="M14 11v6" />
-    </svg>
-  );
-}
-
-function PinIcon({
-  filled,
-  ...props
-}: SVGProps<SVGSVGElement> & {
-  filled?: boolean;
-}) {
-  return filled ? (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-      <path d="M14.8 2.5c.5.1.9.5 1 .9l.8 3.6 3.1 3.1c.3.3.4.8.3 1.2-.2.4-.6.7-1 .7h-6.1l-.7 6.1c-.1.5-.4.9-.9 1-.5.1-1-.1-1.3-.5l-2.6-3.6-3.6-2.6c-.4-.3-.6-.8-.5-1.3.1-.5.5-.8 1-.9l6.1-.7V4.4c0-.4.3-.8.7-1 .4-.2.9-.1 1.2.2l1.9 1.9 3.6.8Z" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
-      <path d="M14.5 3.5 12 6V4.5a1 1 0 0 1 1.5-.9l1 .6Z" />
-      <path d="M15.9 7.2 18.3 9.6a1 1 0 0 1-.7 1.7H12" />
-      <path d="M12 11 11.2 18a1 1 0 0 1-1.7.7l-2.1-2.9-2.9-2.1a1 1 0 0 1 .7-1.7L12 11Z" />
-      <path d="M12 11V6" />
     </svg>
   );
 }
@@ -314,7 +295,7 @@ export function Storefront() {
                 maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
               }}
             >
-              <div className="flex items-center justify-between gap-2 px-2 pb-2">
+              <div className="flex items-center justify-between gap-2 px-2 ">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
                 <Button
                   variant="ghost"
@@ -326,7 +307,7 @@ export function Storefront() {
                   }}
                   disabled={partListsQuery.isLoading || Boolean(partListsQuery.error)}
                 >
-                  Alle ({allPartLists.length})
+                  Alle anzeigen ({allPartLists.length})
                 </Button>
               </div>
 
@@ -342,12 +323,12 @@ export function Storefront() {
                 <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
               ) : null}
 
-              <p className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Angepinnt
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Gepinnt
               </p>
               {pinnedPartLists.length === 0 ? (
-                <p className="px-2 pt-2 text-xs text-muted-foreground">
-                  Keine Teilelisten angepinnt. Tippe auf das Pin-Symbol, um Favoriten zu speichern.
+                <p className="px-2 py-2 text-xs text-muted-foreground">
+                  Noch keine gepinnten Teilelisten. Du kannst Teilelisten in der Übersicht pinnen.
                 </p>
               ) : (
                 <div className="mt-2 space-y-2">
@@ -377,22 +358,24 @@ export function Storefront() {
                               overflow: "hidden",
                             }}
                           >
-                            {partList.name}
+                            {partList.name}{" "}
+                            <span className="text-[11px] font-normal text-muted-foreground">
+                              | {partList.items.length} Produkte
+                            </span>
                           </p>
-                          <div className="flex shrink-0 items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                togglePinnedPartListMutation.mutate({ partListId: partList.id });
-                              }}
-                              aria-label={`Teileliste ${partList.name} anheften oder loesen`}
-                            >
-                              <PinIcon className="h-4 w-4 text-primary" filled />
-                            </Button>
-                          </div>
+                          <button
+                            type="button"
+                            className="grid h-5 w-5 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              togglePinnedPartListMutation.mutate({ partListId: partList.id });
+                            }}
+                            aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
+                          >
+                            <span className="pt-1 pr-1">
+                              <PinIcon size={12} className="text-primary" filled />
+                            </span>
+                          </button>
                         </div>
                         <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
                           <input
@@ -466,7 +449,7 @@ export function Storefront() {
           </aside>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))]">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -872,7 +855,7 @@ export function Storefront() {
         open={showAllPartListsModal}
         onClose={() => setShowAllPartListsModal(false)}
         title="Alle Teilelisten"
-        description="Favoriten sind oben angepinnt. Tippe auf das Pin-Symbol, um Favoriten zu speichern."
+        description="Gepinnte Teilelisten stehen oben. Tippe auf das Symbol, um Teilelisten zu pinnen oder zu entpinnen."
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -897,17 +880,19 @@ export function Storefront() {
             <div className="space-y-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Angepinnt ({pinnedPartLists.length})
+                  Gepinnt ({pinnedPartLists.length})
                 </p>
                 {filteredPinnedPartListsForModal.length === 0 ? (
                   <p className="mt-2 text-sm text-muted-foreground">
                     {pinnedPartLists.length === 0
-                      ? "Du hast noch keine Teilelisten angepinnt."
-                      : "Keine angepinnten Teilelisten passen zur Suche."}
+                      ? "Du hast noch keine gepinnten Teilelisten."
+                      : "Keine gepinnten Teilelisten passen zur Suche."}
                   </p>
                 ) : (
                   <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {filteredPinnedPartListsForModal.map((partList) => (
+                    {filteredPinnedPartListsForModal.map((partList) => {
+                      const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                      return (
                       <div
                         key={`pinned-${partList.id}`}
                         role="button"
@@ -926,25 +911,72 @@ export function Storefront() {
                         className="cursor-pointer rounded-xl border border-border bg-muted/40 p-3 transition hover:border-primary/50"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground">
-                            {partList.name}
+                          <p
+                            className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
+                            style={{
+                              display: "-webkit-box",
+                              WebkitBoxOrient: "vertical",
+                              WebkitLineClamp: 3,
+                              overflow: "hidden",
+                            }}
+                          >
+                            {partList.name}{" "}
+                            <span className="text-xs font-normal text-muted-foreground">
+                              | {partList.items.length} Produkte
+                            </span>
                           </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                          <button
+                            type="button"
+                            className="grid h-6 w-6 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
                             onClick={(event) => {
                               event.stopPropagation();
                               togglePinnedPartListMutation.mutate({ partListId: partList.id });
                             }}
-                            aria-label={`Teileliste ${partList.name} anheften oder loesen`}
+                            aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
                           >
-                            <PinIcon className="h-4 w-4 text-primary" filled />
+                            <span className="pt-1 pr-1">
+                              <PinIcon size={12} className="text-primary" filled />
+                            </span>
+                          </button>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={quantityInput}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              setQuantitiesByPartList((prev) => ({
+                                ...prev,
+                                [partList.id]: event.target.value,
+                              }))
+                            }
+                            className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
+                            aria-label={`Menge fuer Teileliste ${partList.name}`}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-9 flex-1"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                              setPartListWarning(null);
+                              setActiveAddPartListId(partList.id);
+                              addPartListMutation.mutate({
+                                sessionId,
+                                partListId: partList.id,
+                                quantity: requestedQuantity,
+                              });
+                            }}
+                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
+                          >
+                            {addPartListMutation.isPending && activeAddPartListId === partList.id ? "..." : "In den Warenkorb"}
                           </Button>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{partList.items.length} Produkte</p>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 )}
               </div>
@@ -959,6 +991,7 @@ export function Storefront() {
                   <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {filteredPartListsForModal.map((partList) => {
                       const isPinned = pinnedPartListIds.has(partList.id);
+                      const quantityInput = quantitiesByPartList[partList.id] ?? "1";
                       return (
                         <div
                           key={partList.id}
@@ -978,23 +1011,71 @@ export function Storefront() {
                           className="cursor-pointer rounded-xl border border-border bg-card p-3 transition hover:border-primary/50"
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <p className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground">
-                              {partList.name}
+                            <p
+                              className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
+                              style={{
+                                display: "-webkit-box",
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: 3,
+                                overflow: "hidden",
+                              }}
+                            >
+                              {partList.name}{" "}
+                              <span className="text-xs font-normal text-muted-foreground">
+                                | {partList.items.length} Produkte
+                              </span>
                             </p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`h-8 w-8 p-0 ${isPinned ? "text-primary" : "text-muted-foreground"}`}
+                            <button
+                              type="button"
+                              className={`grid h-6 w-6 place-items-start justify-items-end rounded-md hover:bg-accent ${
+                                isPinned ? "text-primary" : "text-muted-foreground"
+                              }`}
                               onClick={(event) => {
                                 event.stopPropagation();
                                 togglePinnedPartListMutation.mutate({ partListId: partList.id });
                               }}
-                              aria-label={`Teileliste ${partList.name} anheften oder loesen`}
+                              aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
                             >
-                              <PinIcon className="h-4 w-4" filled={isPinned} />
+                              <span className="pt-1 pr-1">
+                                <PinIcon size={12} className={isPinned ? "text-primary" : "text-muted-foreground"} filled={isPinned} />
+                              </span>
+                            </button>
+                          </div>
+                          <div className="mt-3 flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={quantityInput}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setQuantitiesByPartList((prev) => ({
+                                  ...prev,
+                                  [partList.id]: event.target.value,
+                                }))
+                              }
+                              className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
+                              aria-label={`Menge fuer Teileliste ${partList.name}`}
+                            />
+                            <Button
+                              size="sm"
+                              className="h-9 flex-1"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                                setPartListWarning(null);
+                                setActiveAddPartListId(partList.id);
+                                addPartListMutation.mutate({
+                                  sessionId,
+                                  partListId: partList.id,
+                                  quantity: requestedQuantity,
+                                });
+                              }}
+                              disabled={sessionId.length === 0 || addPartListMutation.isPending}
+                            >
+                              {addPartListMutation.isPending && activeAddPartListId === partList.id ? "..." : "In den Warenkorb"}
                             </Button>
                           </div>
-                          <p className="mt-1 text-xs text-muted-foreground">{partList.items.length} Produkte</p>
                         </div>
                       );
                     })}
