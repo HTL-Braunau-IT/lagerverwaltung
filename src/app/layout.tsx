@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 
 import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-button";
+import { HeaderCartLink } from "~/components/layout/header-cart-link";
 import { Search } from "~/components/layout/search";
 import {
   AdministrationIcon,
@@ -108,6 +109,7 @@ export default async function RootLayout({
                   <Search />
                 </div>
                 <div className="flex items-center gap-3">
+                  <HeaderCartLink />
                   <HeaderNavLink
                     href="/orders"
                     label="Bestellhistorie"

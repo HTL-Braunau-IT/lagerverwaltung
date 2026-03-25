@@ -60,6 +60,23 @@ export function LogoutIcon() {
   );
 }
 
+export function CartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+      <path
+        d="M6.5 6h14l-1.4 7.2a2 2 0 0 1-2 1.6H9.1a2 2 0 0 1-2-1.6L5.7 3.8A1.5 1.5 0 0 0 4.2 2.6H3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9.5" cy="19" r="1.5" fill="currentColor" />
+      <circle cx="17.5" cy="19" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function PinIcon({
   filled = false,
   size = 20,

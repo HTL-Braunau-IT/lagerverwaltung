@@ -76,7 +76,6 @@ export function Storefront() {
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
-  const [cartRoomWarning, setCartRoomWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const [showAllPartListsModal, setShowAllPartListsModal] = useState(false);
   const [partListModalSearch, setPartListModalSearch] = useState("");
@@ -126,12 +125,6 @@ export function Storefront() {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   );
-  const cartQuery = api.cart.get.useQuery(
-    { sessionId },
-    {
-      enabled: sessionId.length > 0,
-    },
-  );
   const partListsQuery = api.partsList.listForShop.useQuery();
   const pinnedPartListsQuery = api.partsList.pinnedForUser.useQuery(undefined, {
     enabled: Boolean(session?.user.id) && canSeePartListProductCount,
@@ -147,14 +140,15 @@ export function Storefront() {
       await utils.cart.get.invalidate({ sessionId });
       setShowCartModal(true);
       setActiveAddProductId(null);
-      setCartRoomWarning(null);
+      setPartListWarning(null);
     },
     onError: (error) => {
       const warning = toMixedStorageRoomWarning(error.message);
-      if (warning) {
-        setCartRoomWarning(warning);
-      }
       setActiveAddProductId(null);
+      if (warning) {
+        setPartListWarning(warning);
+        return;
+      }
     },
   });
   const addPartListMutation = api.cart.addPartList.useMutation({
@@ -164,7 +158,6 @@ export function Storefront() {
 
       if (result.ok) {
         setPartListWarning(null);
-        setCartRoomWarning(null);
         setShowCartModal(true);
         return;
       }
@@ -186,40 +179,6 @@ export function Storefront() {
     },
   });
 
-  const setQuantityMutation = api.cart.setItemQuantity.useMutation({
-    onSuccess: async () => {
-      await utils.cart.get.invalidate({ sessionId });
-    },
-  });
-
-  const cartTotal = useMemo(() => {
-    const items = cartQuery.data?.items ?? [];
-    return items.reduce((total, item) => {
-      return total + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
-    }, 0);
-  }, [cartQuery.data?.items]);
-
-  const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
-  const groupedCartItems = useMemo(() => {
-    const standalone: typeof cartItems = [];
-    const partLists = new Map<string, { id: string; name: string; items: typeof cartItems }>();
-
-    for (const item of cartItems) {
-      if (!item.sourcePartListId || !item.sourcePartList) {
-        standalone.push(item);
-        continue;
-      }
-      const current = partLists.get(item.sourcePartListId) ?? {
-        id: item.sourcePartList.id,
-        name: item.sourcePartList.name,
-        items: [],
-      };
-      current.items.push(item);
-      partLists.set(item.sourcePartListId, current);
-    }
-
-    return { standalone, partLists: [...partLists.values()] };
-  }, [cartItems]);
   const products = useMemo(
     () =>
       (productQuery.data?.pages.flatMap((page) => page.items) ?? []).filter(
