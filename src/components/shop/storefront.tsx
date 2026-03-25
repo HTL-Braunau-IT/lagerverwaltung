@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { type SVGProps, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -59,18 +58,6 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
     return "Dieses Produkt ist keinem Lagerraum zugeordnet und kann nicht in den Warenkorb gelegt werden.";
   }
   return null;
-}
-
-function WastebinIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-    </svg>
-  );
 }
 
 export function Storefront() {
@@ -287,7 +274,7 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_340px]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
         <aside
           className="self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto"
           style={{
@@ -672,183 +659,7 @@ export function Storefront() {
             </aside>
           ) : null}
 
-          <aside id="cart-panel" className="min-h-0 flex-1 rounded-2xl border border-border bg-card p-4 shadow-sm lg:overflow-auto">
-          <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Aktuelle Produktpreise aktiviert</p>
-          {cartRoomWarning ? (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-              {cartRoomWarning}
-            </div>
-          ) : null}
-          <div className="mt-4 space-y-3">
-            {cartQuery.isLoading && (
-              <div className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-sm text-muted-foreground">Warenkorb wird geladen...</p>
-              </div>
-            )}
-            {cartQuery.error && (
-              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3">
-                <p className="text-sm font-medium text-destructive">Warenkorb konnte nicht geladen werden.</p>
-                <Button
-                  onClick={() => void cartQuery.refetch()}
-                  variant="outline"
-                  className="mt-2"
-                >
-                  Erneut versuchen
-                </Button>
-              </div>
-            )}
-            {!cartQuery.isLoading && !cartQuery.error && (cartQuery.data?.items.length ?? 0) === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine Artikel im Warenkorb.</p>
-            ) : (
-              <>
-              {groupedCartItems.partLists.map((group) => (
-                <div key={group.id} className="rounded-xl border border-border bg-muted p-3">
-                  <p className="text-sm font-semibold text-foreground">{group.name}</p>
-                  <div className="mt-2 space-y-2">
-                    {group.items.map((item) => (
-                      <div key={item.id} className="rounded-lg border border-border bg-card/70 p-2">
-                        <p className="text-xs font-medium text-foreground">{item.product.name}</p>
-                        <div className="mt-1 flex items-center justify-between gap-2">
-                          <p className="text-xs text-muted-foreground">{formatPrice(item.product.price)}</p>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: 0,
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2 text-destructive hover:text-destructive"
-                              aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                            >
-                              <WastebinIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2"
-                            >
-                              -
-                            </Button>
-                            <span className="min-w-8 text-center text-xs text-foreground">
-                              {decimalToNumber(item.quantity)}
-                            </span>
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: decimalToNumber(item.quantity) + 1,
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2"
-                            >
-                              +
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {groupedCartItems.standalone.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
-                  <p className="text-sm font-medium text-foreground">{item.product.name}</p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-sm text-foreground">{formatPrice(item.product.price)}</p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: 0,
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2 text-destructive hover:text-destructive"
-                        aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                      >
-                        <WastebinIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        -
-                      </Button>
-                      <span className="min-w-8 text-center text-sm text-foreground">
-                        {decimalToNumber(item.quantity)}
-                      </span>
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: decimalToNumber(item.quantity) + 1,
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              </>
-            )}
-          </div>
-          <div className="mt-4 border-t border-border pt-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Zwischensumme</span>
-              <span className="font-semibold text-primary">{formatPrice(cartTotal)}</span>
-            </div>
-            <Link
-              href="/carts"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-            >
-              Zum Warenkorb
-            </Link>
-          </div>
-          </aside>
+          {/* Warenkorb-Panel rechts entfernt */}
         </div>
       </section>
 
