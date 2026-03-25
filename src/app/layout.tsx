@@ -46,18 +46,18 @@ function HeaderNavLink({ href, label, hoverClassName, icon, badgeLabel }: Header
       href={href}
       className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
     >
-      <span className="flex h-10 w-10 items-center justify-center">{icon}</span>
-      <span className="inline-flex items-center gap-1.5 text-sm font-medium">
-        {label}
+      <span className="relative flex h-10 w-10 items-center justify-center">
+        {icon}
         {badgeLabel ? (
           <span
-            className="inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
+            className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
             aria-label={`${badgeLabel} offene Freigaben`}
           >
             {badgeLabel}
           </span>
         ) : null}
       </span>
+      <span className="text-sm font-medium">{label}</span>
     </Link>
   );
 }
