@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { type SVGProps, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -9,8 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
-import { PinIcon } from "~/components/layout/icon-renders";
+import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-side-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -61,18 +59,6 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
   return null;
 }
 
-function WastebinIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" {...props}>
-      <path d="M3 6h18" />
-      <path d="M8 6V4h8v2" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-    </svg>
-  );
-}
-
 export function Storefront() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -85,14 +71,9 @@ export function Storefront() {
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
-  const [activeAddPartListId, setActiveAddPartListId] = useState<string | null>(null);
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
-  const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
-  const [cartRoomWarning, setCartRoomWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
-  const [showAllPartListsModal, setShowAllPartListsModal] = useState(false);
-  const [partListModalSearch, setPartListModalSearch] = useState("");
   const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const canSeePartListProductCount =
@@ -128,7 +109,6 @@ export function Storefront() {
     return () => window.removeEventListener("resize", updateAppHeaderOffset);
   }, []);
 
-  const categoryQuery = api.category.list.useQuery();
   const productQuery = api.product.list.useInfiniteQuery(
     {
       search: searchTerm || undefined,
@@ -139,100 +119,23 @@ export function Storefront() {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   );
-  const cartQuery = api.cart.get.useQuery(
-    { sessionId },
-    {
-      enabled: sessionId.length > 0,
-    },
-  );
-  const partListsQuery = api.partsList.listForShop.useQuery();
-  const pinnedPartListsQuery = api.partsList.pinnedForUser.useQuery(undefined, {
-    enabled: Boolean(session?.user.id) && canSeePartListProductCount,
-  });
-  const togglePinnedPartListMutation = api.partsList.togglePinned.useMutation({
-    onSuccess: async () => {
-      await utils.partsList.pinnedForUser.invalidate();
-    },
-  });
-
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
       setShowCartModal(true);
       setActiveAddProductId(null);
-      setCartRoomWarning(null);
+      setPartListWarning(null);
     },
     onError: (error) => {
       const warning = toMixedStorageRoomWarning(error.message);
-      if (warning) {
-        setCartRoomWarning(warning);
-      }
       setActiveAddProductId(null);
-    },
-  });
-  const addPartListMutation = api.cart.addPartList.useMutation({
-    onSuccess: async (result) => {
-      await utils.cart.get.invalidate({ sessionId });
-      setActiveAddPartListId(null);
-
-      if (result.ok) {
-        setPartListWarning(null);
-        setCartRoomWarning(null);
-        setShowCartModal(true);
-        return;
-      }
-
-      if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
-        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfuegbar.`);
-        return;
-      }
-
-      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
-    },
-    onError: (error) => {
-      const warning = toMixedStorageRoomWarning(error.message);
       if (warning) {
         setPartListWarning(warning);
         return;
       }
-      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
 
-  const setQuantityMutation = api.cart.setItemQuantity.useMutation({
-    onSuccess: async () => {
-      await utils.cart.get.invalidate({ sessionId });
-    },
-  });
-
-  const cartTotal = useMemo(() => {
-    const items = cartQuery.data?.items ?? [];
-    return items.reduce((total, item) => {
-      return total + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
-    }, 0);
-  }, [cartQuery.data?.items]);
-
-  const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
-  const groupedCartItems = useMemo(() => {
-    const standalone: typeof cartItems = [];
-    const partLists = new Map<string, { id: string; name: string; items: typeof cartItems }>();
-
-    for (const item of cartItems) {
-      if (!item.sourcePartListId || !item.sourcePartList) {
-        standalone.push(item);
-        continue;
-      }
-      const current = partLists.get(item.sourcePartListId) ?? {
-        id: item.sourcePartList.id,
-        name: item.sourcePartList.name,
-        items: [],
-      };
-      current.items.push(item);
-      partLists.set(item.sourcePartListId, current);
-    }
-
-    return { standalone, partLists: [...partLists.values()] };
-  }, [cartItems]);
   const products = useMemo(
     () =>
       (productQuery.data?.pages.flatMap((page) => page.items) ?? []).filter(
@@ -267,187 +170,15 @@ export function Storefront() {
     products.length,
   ]);
 
-  const pinnedPartListIds = useMemo(() => new Set(pinnedPartListsQuery.data ?? []), [pinnedPartListsQuery.data]);
-  const allPartLists = useMemo(() => partListsQuery.data ?? [], [partListsQuery.data]);
-  const pinnedPartLists = useMemo(
-    () => allPartLists.filter((partList) => pinnedPartListIds.has(partList.id)),
-    [allPartLists, pinnedPartListIds],
-  );
-
-  const modalSearchTerm = partListModalSearch.trim().toLowerCase();
-  const filteredPinnedPartListsForModal = useMemo(() => {
-    if (!modalSearchTerm) return pinnedPartLists;
-    return pinnedPartLists.filter((partList) => partList.name.toLowerCase().includes(modalSearchTerm));
-  }, [modalSearchTerm, pinnedPartLists]);
-  const filteredPartListsForModal = useMemo(() => {
-    if (!modalSearchTerm) return allPartLists;
-    return allPartLists.filter((partList) => partList.name.toLowerCase().includes(modalSearchTerm));
-  }, [allPartLists, modalSearchTerm]);
-
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr_340px]">
-        <div className="self-start space-y-4 lg:sticky" style={{ top: `${appHeaderOffset + stickyTopOffset}px` }}>
-          {canSeePartListProductCount ? (
-            <aside
-              className="rounded-2xl border border-border bg-card p-3 shadow-sm lg:overflow-auto"
-              style={{
-                maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
-              }}
-            >
-              <div className="flex items-center justify-between gap-2 px-2 ">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => {
-                    setPartListModalSearch("");
-                    setShowAllPartListsModal(true);
-                  }}
-                  disabled={partListsQuery.isLoading || Boolean(partListsQuery.error)}
-                >
-                  Alle anzeigen ({allPartLists.length})
-                </Button>
-              </div>
-
-              {partListWarning ? (
-                <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-                  {partListWarning}
-                </div>
-              ) : null}
-              {partListsQuery.isLoading ? (
-                <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
-              ) : null}
-              {partListsQuery.error ? (
-                <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
-              ) : null}
-
-              <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Gepinnt
-              </p>
-              {pinnedPartLists.length === 0 ? (
-                <p className="px-2 py-2 text-xs text-muted-foreground">
-                  Noch keine gepinnten Teilelisten. Du kannst Teilelisten in der Übersicht pinnen.
-                </p>
-              ) : (
-                <div className="mt-2 space-y-2">
-                  {pinnedPartLists.map((partList) => {
-                    const quantityInput = quantitiesByPartList[partList.id] ?? "1";
-                    return (
-                      <div
-                        key={partList.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => router.push(`/parts-list/${partList.id}`)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            router.push(`/parts-list/${partList.id}`);
-                          }
-                        }}
-                        className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p
-                            className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
-                            style={{
-                              display: "-webkit-box",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 3,
-                              overflow: "hidden",
-                            }}
-                          >
-                            {partList.name}{" "}
-                            <span className="text-[11px] font-normal text-muted-foreground">
-                              | {partList.items.length} Produkte
-                            </span>
-                          </p>
-                          <button
-                            type="button"
-                            className="grid h-5 w-5 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              togglePinnedPartListMutation.mutate({ partListId: partList.id });
-                            }}
-                            aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
-                          >
-                            <span className="pt-1 pr-1">
-                              <PinIcon size={12} className="text-primary" filled />
-                            </span>
-                          </button>
-                        </div>
-                        <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={quantityInput}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              setQuantitiesByPartList((prev) => ({
-                                ...prev,
-                                [partList.id]: event.target.value,
-                              }))
-                            }
-                            className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-                            aria-label={`Menge fuer Teileliste ${partList.name}`}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-8 flex-1 text-xs"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
-                              setPartListWarning(null);
-                              setActiveAddPartListId(partList.id);
-                              addPartListMutation.mutate({
-                                sessionId,
-                                partListId: partList.id,
-                                quantity: requestedQuantity,
-                              });
-                            }}
-                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                          >
-                            {addPartListMutation.isPending && activeAddPartListId === partList.id ? "..." : "In den Warenkorb"}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </aside>
-          ) : null}
-
-          <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-            <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
-            <nav className="space-y-1">
-              <Button
-                onClick={() => setSelectedCategoryId(undefined)}
-                variant={selectedCategoryId === undefined ? "secondary" : "ghost"}
-                className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                  selectedCategoryId === undefined ? "" : "text-muted-foreground"
-                }`}
-              >
-                <span>Alle Kategorien</span>
-              </Button>
-              {categoryQuery.data?.map((category) => (
-                <Button
-                  key={category.id}
-                  onClick={() => setSelectedCategoryId(category.id)}
-                  variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
-                  className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
-                    selectedCategoryId === category.id ? "" : "text-muted-foreground"
-                  }`}
-                >
-                  <span className="truncate">{category.name}</span>
-                  <span className="text-xs">({category._count.products})</span>
-                </Button>
-              ))}
-            </nav>
-          </aside>
-        </div>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+        <ShopCategoriesAside
+          appHeaderOffset={appHeaderOffset}
+          stickyTopOffset={stickyTopOffset}
+          selectedCategoryId={selectedCategoryId}
+          onSelectedCategoryIdChange={setSelectedCategoryId}
+        />
 
         <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))]">
           {productQuery.isLoading && (
@@ -665,427 +396,16 @@ export function Storefront() {
           )}
         </div>
 
-        <aside
-          id="cart-panel"
-          className="self-start rounded-2xl border border-border bg-card p-4 shadow-sm lg:sticky lg:overflow-auto"
-          style={{
-            top: `${appHeaderOffset + stickyTopOffset}px`,
-            maxHeight: `calc(100vh - ${appHeaderOffset + stickyTopOffset + 16}px)`,
-          }}
-        >
-          <h2 className="text-base font-semibold text-foreground">Warenkorb</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Aktuelle Produktpreise aktiviert</p>
-          {cartRoomWarning ? (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-              {cartRoomWarning}
-            </div>
-          ) : null}
-          <div className="mt-4 space-y-3">
-            {cartQuery.isLoading && (
-              <div className="rounded-xl border border-border bg-muted p-3">
-                <p className="text-sm text-muted-foreground">Warenkorb wird geladen...</p>
-              </div>
-            )}
-            {cartQuery.error && (
-              <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-3">
-                <p className="text-sm font-medium text-destructive">Warenkorb konnte nicht geladen werden.</p>
-                <Button
-                  onClick={() => void cartQuery.refetch()}
-                  variant="outline"
-                  className="mt-2"
-                >
-                  Erneut versuchen
-                </Button>
-              </div>
-            )}
-            {!cartQuery.isLoading && !cartQuery.error && (cartQuery.data?.items.length ?? 0) === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine Artikel im Warenkorb.</p>
-            ) : (
-              <>
-              {groupedCartItems.partLists.map((group) => (
-                <div key={group.id} className="rounded-xl border border-border bg-muted p-3">
-                  <p className="text-sm font-semibold text-foreground">{group.name}</p>
-                  <div className="mt-2 space-y-2">
-                    {group.items.map((item) => (
-                      <div key={item.id} className="rounded-lg border border-border bg-card/70 p-2">
-                        <p className="text-xs font-medium text-foreground">{item.product.name}</p>
-                        <div className="mt-1 flex items-center justify-between gap-2">
-                          <p className="text-xs text-muted-foreground">{formatPrice(item.product.price)}</p>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: 0,
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2 text-destructive hover:text-destructive"
-                              aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                            >
-                              <WastebinIcon className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2"
-                            >
-                              -
-                            </Button>
-                            <span className="min-w-8 text-center text-xs text-foreground">
-                              {decimalToNumber(item.quantity)}
-                            </span>
-                            <Button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: decimalToNumber(item.quantity) + 1,
-                                })
-                              }
-                              variant="outline"
-                              className="h-7 px-2"
-                            >
-                              +
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {groupedCartItems.standalone.map((item) => (
-                <div key={item.id} className="rounded-xl border border-border bg-muted p-3">
-                  <p className="text-sm font-medium text-foreground">{item.product.name}</p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="text-sm text-foreground">{formatPrice(item.product.price)}</p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: 0,
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2 text-destructive hover:text-destructive"
-                        aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                      >
-                        <WastebinIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        -
-                      </Button>
-                      <span className="min-w-8 text-center text-sm text-foreground">
-                        {decimalToNumber(item.quantity)}
-                      </span>
-                      <Button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: decimalToNumber(item.quantity) + 1,
-                          })
-                        }
-                        variant="outline"
-                        className="h-8 px-2"
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              </>
-            )}
-          </div>
-          <div className="mt-4 border-t border-border pt-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Zwischensumme</span>
-              <span className="font-semibold text-primary">{formatPrice(cartTotal)}</span>
-            </div>
-            <Link
-              href="/carts"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-            >
-              Zum Warenkorb
-            </Link>
-          </div>
-        </aside>
+        <ShopPartListsAside
+          appHeaderOffset={appHeaderOffset}
+          stickyTopOffset={stickyTopOffset}
+          sessionId={sessionId}
+          canSeePartListProductCount={canSeePartListProductCount}
+          onAddedToCart={() => setShowCartModal(true)}
+          warning={partListWarning}
+          onWarningChange={setPartListWarning}
+        />
       </section>
-
-      <Dialog
-        open={showAllPartListsModal}
-        onClose={() => setShowAllPartListsModal(false)}
-        title="Alle Teilelisten"
-        description="Gepinnte Teilelisten stehen oben. Tippe auf das Symbol, um Teilelisten zu pinnen oder zu entpinnen."
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={partListModalSearch}
-              onChange={(event) => setPartListModalSearch(event.target.value)}
-              placeholder="Teilelisten suchen..."
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
-              aria-label="Teilelisten suchen"
-            />
-          </div>
-
-          {partListsQuery.isLoading ? (
-            <p className="text-sm text-muted-foreground">Teilelisten werden geladen...</p>
-          ) : null}
-          {partListsQuery.error ? (
-            <p className="text-sm text-destructive">Teilelisten konnten nicht geladen werden.</p>
-          ) : null}
-
-          {!partListsQuery.isLoading && !partListsQuery.error ? (
-            <div className="space-y-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Gepinnt ({pinnedPartLists.length})
-                </p>
-                {filteredPinnedPartListsForModal.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {pinnedPartLists.length === 0
-                      ? "Du hast noch keine gepinnten Teilelisten."
-                      : "Keine gepinnten Teilelisten passen zur Suche."}
-                  </p>
-                ) : (
-                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {filteredPinnedPartListsForModal.map((partList) => {
-                      const quantityInput = quantitiesByPartList[partList.id] ?? "1";
-                      return (
-                      <div
-                        key={`pinned-${partList.id}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          setShowAllPartListsModal(false);
-                          router.push(`/parts-list/${partList.id}`);
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setShowAllPartListsModal(false);
-                            router.push(`/parts-list/${partList.id}`);
-                          }
-                        }}
-                        className="cursor-pointer rounded-xl border border-border bg-muted/40 p-3 transition hover:border-primary/50"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p
-                            className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
-                            style={{
-                              display: "-webkit-box",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 3,
-                              overflow: "hidden",
-                            }}
-                          >
-                            {partList.name}{" "}
-                            <span className="text-xs font-normal text-muted-foreground">
-                              | {partList.items.length} Produkte
-                            </span>
-                          </p>
-                          <button
-                            type="button"
-                            className="grid h-6 w-6 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              togglePinnedPartListMutation.mutate({ partListId: partList.id });
-                            }}
-                            aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
-                          >
-                            <span className="pt-1 pr-1">
-                              <PinIcon size={12} className="text-primary" filled />
-                            </span>
-                          </button>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={quantityInput}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              setQuantitiesByPartList((prev) => ({
-                                ...prev,
-                                [partList.id]: event.target.value,
-                              }))
-                            }
-                            className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
-                            aria-label={`Menge fuer Teileliste ${partList.name}`}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-9 flex-1"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
-                              setPartListWarning(null);
-                              setActiveAddPartListId(partList.id);
-                              addPartListMutation.mutate({
-                                sessionId,
-                                partListId: partList.id,
-                                quantity: requestedQuantity,
-                              });
-                            }}
-                            disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                          >
-                            {addPartListMutation.isPending && activeAddPartListId === partList.id ? "..." : "In den Warenkorb"}
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Alle Teilelisten ({filteredPartListsForModal.length})
-                </p>
-                {filteredPartListsForModal.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">Keine Teilelisten passen zur Suche.</p>
-                ) : (
-                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {filteredPartListsForModal.map((partList) => {
-                      const isPinned = pinnedPartListIds.has(partList.id);
-                      const quantityInput = quantitiesByPartList[partList.id] ?? "1";
-                      return (
-                        <div
-                          key={partList.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            setShowAllPartListsModal(false);
-                            router.push(`/parts-list/${partList.id}`);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setShowAllPartListsModal(false);
-                              router.push(`/parts-list/${partList.id}`);
-                            }
-                          }}
-                          className="cursor-pointer rounded-xl border border-border bg-card p-3 transition hover:border-primary/50"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <p
-                              className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
-                              style={{
-                                display: "-webkit-box",
-                                WebkitBoxOrient: "vertical",
-                                WebkitLineClamp: 3,
-                                overflow: "hidden",
-                              }}
-                            >
-                              {partList.name}{" "}
-                              <span className="text-xs font-normal text-muted-foreground">
-                                | {partList.items.length} Produkte
-                              </span>
-                            </p>
-                            <button
-                              type="button"
-                              className={`grid h-6 w-6 place-items-start justify-items-end rounded-md hover:bg-accent ${
-                                isPinned ? "text-primary" : "text-muted-foreground"
-                              }`}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                togglePinnedPartListMutation.mutate({ partListId: partList.id });
-                              }}
-                              aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
-                            >
-                              <span className="pt-1 pr-1">
-                                <PinIcon size={12} className={isPinned ? "text-primary" : "text-muted-foreground"} filled={isPinned} />
-                              </span>
-                            </button>
-                          </div>
-                          <div className="mt-3 flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                            <input
-                              type="number"
-                              min={1}
-                              step={1}
-                              value={quantityInput}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setQuantitiesByPartList((prev) => ({
-                                  ...prev,
-                                  [partList.id]: event.target.value,
-                                }))
-                              }
-                              className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
-                              aria-label={`Menge fuer Teileliste ${partList.name}`}
-                            />
-                            <Button
-                              size="sm"
-                              className="h-9 flex-1"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
-                                setPartListWarning(null);
-                                setActiveAddPartListId(partList.id);
-                                addPartListMutation.mutate({
-                                  sessionId,
-                                  partListId: partList.id,
-                                  quantity: requestedQuantity,
-                                });
-                              }}
-                              disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                            >
-                              {addPartListMutation.isPending && activeAddPartListId === partList.id ? "..." : "In den Warenkorb"}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </Dialog>
 
       {showCartModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
