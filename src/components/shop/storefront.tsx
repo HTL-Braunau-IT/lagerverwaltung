@@ -286,9 +286,9 @@ export function Storefront() {
                   </div>
                 )}
 
-                <div className="flex h-full flex-col justify-between p-4">
-                  <div>
-                    <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
+                <div className="flex h-full flex-col p-3">
+                  <div className="space-y-2">
+                    <div className="overflow-hidden rounded-xl border border-border bg-muted">
                       {showImagePlaceholder ? (
                         <div
                           className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
@@ -313,88 +313,90 @@ export function Storefront() {
                         />
                       )}
                     </div>
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <h2 className="line-clamp-2 text-base font-semibold text-foreground">
+
+                    <div className="grid grid-cols-1 gap-1.5">
+                      <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
                         {product.name}
                       </h2>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                    </p>
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      {product.description ?? "Keine Beschreibung."}
-                    </p>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    <p className="text-lg font-semibold text-primary">{formatPrice(product.price)}</p>
-                    <div className="flex w-full flex-wrap items-center justify-end gap-2">
-                      <div
-                        className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <Button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            const currentQuantity =
-                              Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                                ? parsedQuantity
-                                : unitStep;
-                            const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                            setQuantitiesByProduct((prev) => ({
-                              ...prev,
-                              [product.id]: nextQuantity.toString(),
-                            }));
-                          }}
-                          variant="ghost"
-                          className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
-                          aria-label={`Menge fuer ${product.name} reduzieren`}
-                        >
-                          -
-                        </Button>
-                        <input
-                          type="number"
-                          min={unitStep}
-                          max={stockOnHand}
-                          step={unitStep}
-                          value={quantityInput}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) => {
-                            setQuantitiesByProduct((prev) => ({
-                              ...prev,
-                              [product.id]: event.target.value,
-                            }));
-                          }}
-                          className="w-9 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          aria-label={`Menge fuer ${product.name}`}
-                        />
-                        <Button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            const currentQuantity =
-                              Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                                ? parsedQuantity
-                                : unitStep;
-                            const nextQuantity =
-                              stockOnHand > 0
-                                ? Math.min(stockOnHand, currentQuantity + unitStep)
-                                : unitStep;
-                            setQuantitiesByProduct((prev) => ({
-                              ...prev,
-                              [product.id]: nextQuantity.toString(),
-                            }));
-                          }}
-                          variant="ghost"
-                          className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
-                          aria-label={`Menge fuer ${product.name} erhoehen`}
-                        >
-                          +
-                        </Button>
-                        <span className="pr-2 text-xs text-muted-foreground">
-                          {product.baseUnit.toLowerCase()}
-                        </span>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          {product.description ?? "Keine Beschreibung."}
+                        </p>
+                        <p className="shrink-0 text-base font-semibold tabular-nums text-primary">
+                          {formatPrice(product.price)}
+                        </p>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-2">
+                    <div
+                      className="flex w-full items-stretch gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="overflow-hidden flex h-8 items-center rounded-lg border border-slate-300 bg-white shadow-sm">
+                       <div>
+                          <Button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const currentQuantity =
+                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                                  ? parsedQuantity
+                                  : unitStep;
+                              const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: nextQuantity.toString(),
+                              }));
+                            }}
+                            variant="ghost"
+                            className="h-8 w-6 rounded-none rounded-l-lg border-r border-border px-0 text-xs text-muted-foreground"
+                            aria-label={`Menge fuer ${product.name} reduzieren`}
+                          >
+                            -
+                          </Button>
+                          <input
+                            type="number"
+                            min={unitStep}
+                            max={stockOnHand}
+                            step={unitStep}
+                            value={quantityInput}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) => {
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: event.target.value,
+                              }));
+                            }}
+                            className="w-8 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            aria-label={`Menge fuer ${product.name}`}
+                          />
+                          <Button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const currentQuantity =
+                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                                  ? parsedQuantity
+                                  : unitStep;
+                              const nextQuantity =
+                                stockOnHand > 0
+                                  ? Math.min(stockOnHand, currentQuantity + unitStep)
+                                  : unitStep;
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: nextQuantity.toString(),
+                              }));
+                            }}
+                            variant="ghost"
+                            className="h-8 w-6 rounded-none border-l border-border px-0 text-xs text-muted-foreground"
+                            aria-label={`Menge fuer ${product.name} erhoehen`}
+                          >
+                            +
+                          </Button>
+                          </div>
+                        </div>
                       <Button
                         onClick={(event) => {
                           event.stopPropagation();
@@ -411,12 +413,17 @@ export function Storefront() {
                           });
                         }}
                         disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                        className="h-10 shrink-0 whitespace-nowrap rounded-xl px-2.5"
+                        className="h-8 flex-1 whitespace-nowrap rounded-xl px-3"
                       >
                         {addItemMutation.isPending && activeAddProductId === product.id
                           ? "Wird hinzugefuegt..."
                           : "In den Warenkorb"}
                       </Button>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground pb-2">
+                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
+                      </p>
                     </div>
                   </div>
                 </div>
