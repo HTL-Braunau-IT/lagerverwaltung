@@ -188,7 +188,7 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))]">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
