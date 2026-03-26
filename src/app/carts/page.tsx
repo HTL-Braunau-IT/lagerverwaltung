@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { WastebinIcon } from "~/components/layout/icon-renders";
 import { Button } from "~/components/ui/button";
+import { Dialog } from "~/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { api } from "~/trpc/react";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -54,6 +56,8 @@ export default function CartsPage() {
     },
   );
   const savedCartsQuery = api.cart.listSavedCarts.useQuery();
+  type SavedCart = NonNullable<typeof savedCartsQuery.data>[number];
+  const [savedCartPreview, setSavedCartPreview] = useState<SavedCart | null>(null);
 
   const setQuantityMutation = api.cart.setItemQuantity.useMutation({
     onSuccess: async () => {
@@ -92,6 +96,17 @@ export default function CartsPage() {
       return total + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
     }, 0);
   }, [cartQuery.data?.items]);
+
+  const savedCartPreviewTotals = useMemo(() => {
+    if (!savedCartPreview) return { itemCount: 0, total: 0 };
+    const total = savedCartPreview.items.reduce((sum, item) => {
+      return sum + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
+    }, 0);
+    const itemCount = savedCartPreview.items.reduce((sum, item) => {
+      return sum + decimalToNumber(item.quantity);
+    }, 0);
+    return { itemCount, total };
+  }, [savedCartPreview]);
 
   const activeItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items]);
   const groupedCartItems = useMemo(() => {
@@ -212,6 +227,67 @@ export default function CartsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <Dialog
+        open={savedCartPreview !== null}
+        onClose={() => setSavedCartPreview(null)}
+        title={savedCartPreview?.name ?? "Gespeicherter Warenkorb"}
+        description={
+          savedCartPreview
+            ? `${savedCartPreviewTotals.itemCount} Artikel · ${formatPrice(savedCartPreviewTotals.total)}`
+            : undefined
+        }
+        headerRight={
+          <Button type="button" variant="outline" size="sm" onClick={() => setSavedCartPreview(null)}>
+            Schließen
+          </Button>
+        }
+      >
+        {savedCartPreview ? (
+          <div className="space-y-0">
+            <Table className="min-w-[520px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Produkt</TableHead>
+                  <TableHead className="w-[100px] text-right">Menge</TableHead>
+                  <TableHead className="w-[110px] text-right">Einheit</TableHead>
+                  <TableHead className="w-[140px] text-right">Stückpreis</TableHead>
+                  <TableHead className="w-[160px] text-right">Summe</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {savedCartPreview.items.map((item, idx) => {
+                  const qty = decimalToNumber(item.quantity);
+                  const price = decimalToNumber(item.product.price);
+                  return (
+                    <TableRow key={`${item.productId}:${idx}`}>
+                      <TableCell className="min-w-[260px]">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-900">{item.product.name}</span>
+                          <span className="text-xs text-slate-500">{item.product.sku || item.productId}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{qty}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {String(item.product.baseUnit).toLowerCase()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{formatPrice(price)}</TableCell>
+                      <TableCell className="text-right font-semibold text-sky-800 tabular-nums">
+                        {formatPrice(qty * price)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-3 pr-3">
+              <span className="text-sm text-slate-500">Gesamt</span>
+              <span className="text-sm font-bold text-sky-800 tabular-nums">
+                {formatPrice(savedCartPreviewTotals.total)}
+              </span>
+            </div>
+          </div>
+        ) : null}
+      </Dialog>
       <header className="px-4 py-1 md:px-4 py-2">
         <h1 className="text-2xl font-semibold text-slate-900">Warenkörbe</h1>
         <p className="mt-1 text-sm text-slate-600">
@@ -219,7 +295,7 @@ export default function CartsPage() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_1fr]">
+      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Aktuellen Warenkorb speichern</h2>
@@ -273,37 +349,54 @@ export default function CartsPage() {
                 }, 0);
 
                 return (
-                  <div key={savedCart.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div
+                    key={savedCart.id}
+                    className="group cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100/70"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSavedCartPreview(savedCart)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSavedCartPreview(savedCart);
+                      }
+                    }}
+                    aria-label={`Gespeicherten Warenkorb "${savedCart.name}" anzeigen`}
+                  >
                     <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                      <p className="text-sm font-semibold text-slate-900">{savedCart.name}</p>
-                      <p className="text-xs text-slate-500 whitespace-nowrap">
+                      <p className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-sky-900">
+                        {savedCart.name}
+                      </p>
+                      <p className="text-xs text-slate-500 whitespace-nowrap group-hover:text-slate-600">
                         {itemCount} Artikel · {formatPrice(total)}
                       </p>
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button
-                        onClick={() =>
-                          loadSavedCartMutation.mutate({
-                            sessionId,
-                            savedCartId: savedCart.id,
-                          })
-                        }
-                        disabled={sessionId.length === 0 || loadSavedCartMutation.isPending}
-                        className="flex-1 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Laden
-                      </button>
-                      <button
-                        onClick={() =>
+                        onClick={(event) => {
+                          event.stopPropagation();
                           deleteSavedCartMutation.mutate({
                             savedCartId: savedCart.id,
-                          })
-                        }
+                          });
+                        }}
                         disabled={deleteSavedCartMutation.isPending}
                         className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label={`Gespeicherten Warenkorb "${savedCart.name}" löschen`}
                       >
                         Löschen
+                      </button>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          loadSavedCartMutation.mutate({
+                            sessionId,
+                            savedCartId: savedCart.id,
+                          });
+                        }}
+                        disabled={sessionId.length === 0 || loadSavedCartMutation.isPending}
+                        className="flex-1 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Laden
                       </button>
                     </div>
                   </div>
@@ -390,7 +483,7 @@ export default function CartsPage() {
             )}
             {groupedCartItems.partLists.map((group) => (
               <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
-                <p className="text-sm font-semibold text-slate-900">{group.name}</p>
+                <p className="text-sm font-semibold text-slate-900"> Stückliste - {group.name}</p>
                 <div className="mt-2 space-y-2">
                   {group.items.map((item) => (
                     <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-1.5">
