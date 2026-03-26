@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { WastebinIcon } from "~/components/layout/icon-renders";
 import { api } from "~/trpc/react";
 
@@ -40,6 +40,8 @@ export default function CartsPage() {
     typeof window === "undefined" ? "" : getOrCreateSessionId(),
   );
   const [cartName, setCartName] = useState("");
+  const [isClearingCart, setIsClearingCart] = useState(false);
+  const [confirmClearCart, setConfirmClearCart] = useState(false);
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -102,6 +104,57 @@ export default function CartsPage() {
 
     return { standalone, partLists: [...partLists.values()] };
   }, [activeItems]);
+
+  useEffect(() => {
+    if (activeItems.length === 0) setConfirmClearCart(false);
+  }, [activeItems.length]);
+
+  useEffect(() => {
+    if (!confirmClearCart) return;
+    const timeout = window.setTimeout(() => setConfirmClearCart(false), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [confirmClearCart]);
+
+  const clearCart = async () => {
+    if (sessionId.length === 0 || activeItems.length === 0) return;
+
+    const lines = new Map<
+      string,
+      { productId: string; sourcePartListId: string | null | undefined }
+    >();
+    for (const item of activeItems) {
+      lines.set(`${item.productId}:${item.sourcePartListId ?? ""}`, {
+        productId: item.productId,
+        sourcePartListId: item.sourcePartListId,
+      });
+    }
+
+    setIsClearingCart(true);
+    try {
+      await Promise.all(
+        [...lines.values()].map((line) =>
+          setQuantityMutation.mutateAsync({
+            sessionId,
+            line,
+            quantity: 0,
+          }),
+        ),
+      );
+      await utils.cart.get.invalidate({ sessionId });
+    } finally {
+      setIsClearingCart(false);
+    }
+  };
+
+  const onClearCartClick = () => {
+    if (isClearingCart || setQuantityMutation.isPending) return;
+    if (!confirmClearCart) {
+      setConfirmClearCart(true);
+      return;
+    }
+    setConfirmClearCart(false);
+    void clearCart();
+  };
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -204,8 +257,37 @@ export default function CartsPage() {
         </aside>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <h2 className="text-base font-semibold text-slate-900">Aktueller Warenkorb</h2>
-          <p className="mt-1 text-xs text-slate-500">Artikel in dieser Browser-Sitzung</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">Aktueller Warenkorb</h2>
+              <p className="text-xs text-slate-500">Artikel in dieser Browser-Sitzung</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                onClick={onClearCartClick}
+                disabled={
+                  sessionId.length === 0 ||
+                  activeItems.length === 0 ||
+                  isClearingCart ||
+                  setQuantityMutation.isPending
+                }
+                className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isClearingCart
+                  ? "Wird gelöscht..."
+                  : confirmClearCart
+                    ? "Nochmal klicken zum Löschen"
+                    : "Alle Produkte löschen"}
+              </button>
+              <Link
+                href="/checkout"
+                className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
+              >
+                Bestellen
+              </Link>
+            </div>
+          </div>
+          
 
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>}
@@ -217,7 +299,7 @@ export default function CartsPage() {
                 <p className="text-sm font-semibold text-slate-900">{group.name}</p>
                 <div className="mt-2 space-y-2">
                   {group.items.map((item) => (
-                    <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-2">
+                    <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-1.5">
                       <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-start gap-3">
                         <div>
                           <div className="flex items-start justify-between gap-2">
@@ -234,7 +316,7 @@ export default function CartsPage() {
                                 })
                               }
                               disabled={setQuantityMutation.isPending}
-                              className="rounded-lg translate-y-1 translate-x-1 p-1 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="rounded-lg translate-y-1 translate-x-1 p-1 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                               aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
                             >
                               <WastebinIcon size={14} />
@@ -315,7 +397,7 @@ export default function CartsPage() {
                           })
                         }
                         disabled={setQuantityMutation.isPending}
-                        className="rounded-lg translate-y-1 translate-x-1 p-1 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg translate-y-1 translate-x-1 p-1 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                         aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
                       >
                         <WastebinIcon size={14} />
