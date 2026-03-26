@@ -105,26 +105,11 @@ export default function CartsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-sky-700">HTL Lager</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Warenkoerbe</h1>
+      <header className="p-4 md:p-5">
+        <h1 className="text-2xl font-semibold text-slate-900">Warenkörbe</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Verwalte deinen aktuellen Warenkorb und speichere Vorlagen fuer spaeter.
+          Verwalte deinen aktuellen Warenkorb und speichere Vorlagen für später.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/"
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
-          >
-            Zur Produktliste
-          </Link>
-          <Link
-            href="/checkout"
-            className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
-          >
-            Bestellen
-          </Link>
-        </div>
       </header>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
