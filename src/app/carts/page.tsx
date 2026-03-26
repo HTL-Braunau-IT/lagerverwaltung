@@ -213,72 +213,84 @@ export default function CartsPage() {
               <p className="text-sm text-slate-500">Keine Artikel im Warenkorb.</p>
             )}
             {groupedCartItems.partLists.map((group) => (
-              <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
                 <p className="text-sm font-semibold text-slate-900">{group.name}</p>
                 <div className="mt-2 space-y-2">
                   {group.items.map((item) => (
                     <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-2">
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-start gap-3">
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
+                            <button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity: 0,
+                                })
+                              }
+                              disabled={setQuantityMutation.isPending}
+                              className="rounded-lg translate-y-1 translate-x-1 p-1 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                            >
+                              <WastebinIcon size={14} />
+                            </button>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-500">{item.product.sku}</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-start gap-1">
+                            <button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                                })
+                              }
+                              className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
+                            >
+                              -
+                            </button>
+                            <span className="min-w-8 pt-1 text-center text-sm text-slate-900">
+                              {decimalToNumber(item.quantity)}
+                            </span>
+                            <button
+                              onClick={() =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity: decimalToNumber(item.quantity) + 1,
+                                })
+                              }
+                              className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <p className="text-center text-[11px] text-slate-500">
+                            Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
+                            {item.product.baseUnit.toLowerCase()}
+                          </p>
+                        </div>
+                        <div className="justify-self-end">
+                          <p className="text-sm text-right font-semibold text-sky-800">
+                            {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
+                          </p>
+                          <p className="mt-2 text-xs text-right text-slate-500">
                             {formatPrice(item.product.price)} pro {item.product.baseUnit.toLowerCase()}
                           </p>
                         </div>
-                        <p className="text-sm font-semibold text-sky-800">
-                          {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
-                        </p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setQuantityMutation.mutate({
-                              sessionId,
-                              line: {
-                                productId: item.productId,
-                                sourcePartListId: item.sourcePartListId,
-                              },
-                              quantity: 0,
-                            })
-                          }
-                          className="rounded-lg border border-rose-300 bg-white px-2 py-1 text-rose-700 transition hover:bg-rose-50"
-                          aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                        >
-                          <WastebinIcon />
-                        </button>
-                        <button
-                          onClick={() =>
-                            setQuantityMutation.mutate({
-                              sessionId,
-                              line: {
-                                productId: item.productId,
-                                sourcePartListId: item.sourcePartListId,
-                              },
-                              quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                            })
-                          }
-                          className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
-                        >
-                          -
-                        </button>
-                        <span className="min-w-8 text-center text-sm text-slate-900">
-                          {decimalToNumber(item.quantity)}
-                        </span>
-                        <button
-                          onClick={() =>
-                            setQuantityMutation.mutate({
-                              sessionId,
-                              line: {
-                                productId: item.productId,
-                                sourcePartListId: item.sourcePartListId,
-                              },
-                              quantity: decimalToNumber(item.quantity) + 1,
-                            })
-                          }
-                          className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
-                        >
-                          +
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -286,68 +298,80 @@ export default function CartsPage() {
               </div>
             ))}
             {groupedCartItems.standalone.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="flex items-start justify-between gap-3">
+              <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-start gap-3">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
+                      <button
+                        onClick={() =>
+                          setQuantityMutation.mutate({
+                            sessionId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
+                            quantity: 0,
+                          })
+                        }
+                        disabled={setQuantityMutation.isPending}
+                        className="rounded-lg translate-y-1 translate-x-1 p-1 bg-white text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
+                      >
+                        <WastebinIcon size={14} />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{item.product.sku}</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() =>
+                          setQuantityMutation.mutate({
+                            sessionId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
+                            quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                          })
+                        }
+                        className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
+                      >
+                        -
+                      </button>
+                      <span className="min-w-8 text-center text-sm text-slate-900">
+                        {decimalToNumber(item.quantity)}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setQuantityMutation.mutate({
+                            sessionId,
+                            line: {
+                              productId: item.productId,
+                              sourcePartListId: item.sourcePartListId,
+                            },
+                            quantity: decimalToNumber(item.quantity) + 1,
+                          })
+                        }
+                        className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <p className="text-center text-[11px] text-slate-500">
+                      Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
+                      {item.product.baseUnit.toLowerCase()}
+                    </p>
+                  </div>
+                  <div className="justify-self-end">
+                    <p className="text-sm text-right font-semibold text-sky-800">
+                      {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
+                    </p>
+                    <p className="mt-2 text-xs text-right text-slate-500">
                       {formatPrice(item.product.price)} pro {item.product.baseUnit.toLowerCase()}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-sky-800">
-                    {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={() =>
-                      setQuantityMutation.mutate({
-                        sessionId,
-                        line: {
-                          productId: item.productId,
-                          sourcePartListId: item.sourcePartListId,
-                        },
-                        quantity: 0,
-                      })
-                    }
-                    className="rounded-lg border border-rose-300 bg-white px-2 py-1 text-rose-700 transition hover:bg-rose-50"
-                    aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
-                  >
-                    <WastebinIcon />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setQuantityMutation.mutate({
-                        sessionId,
-                        line: {
-                          productId: item.productId,
-                          sourcePartListId: item.sourcePartListId,
-                        },
-                        quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
-                      })
-                    }
-                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-8 text-center text-sm text-slate-900">
-                    {decimalToNumber(item.quantity)}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setQuantityMutation.mutate({
-                        sessionId,
-                        line: {
-                          productId: item.productId,
-                          sourcePartListId: item.sourcePartListId,
-                        },
-                        quantity: decimalToNumber(item.quantity) + 1,
-                      })
-                    }
-                    className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-slate-700"
-                  >
-                    +
-                  </button>
                 </div>
               </div>
             ))}
