@@ -112,7 +112,97 @@ export default function CartsPage() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr]">
+        <aside className="space-y-4">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">Warenkorb speichern</h2>
+            <p className="mt-1 text-xs text-slate-500">Name fuer spaeteres Laden vergeben</p>
+            <input
+              value={cartName}
+              onChange={(event) => setCartName(event.target.value)}
+              placeholder="z. B. Elektronik Klasse 3BHELS"
+              className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+            />
+            <button
+              onClick={() =>
+                saveCurrentCartMutation.mutate({
+                  sessionId,
+                  name: cartName.trim(),
+                })
+              }
+              disabled={
+                sessionId.length === 0 ||
+                cartName.trim().length === 0 ||
+                activeItems.length === 0 ||
+                saveCurrentCartMutation.isPending
+              }
+              className="mt-3 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saveCurrentCartMutation.isPending ? "Wird gespeichert..." : "Warenkorb speichern"}
+            </button>
+            {saveCurrentCartMutation.error && (
+              <p className="mt-2 text-xs text-rose-700">Speichern fehlgeschlagen. Bitte erneut versuchen.</p>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkoerbe</h2>
+            {loadSavedCartMutation.error?.message === "MIXED_STORAGE_ROOMS" ? (
+              <p className="mt-2 text-sm text-rose-700">
+                Dieser Warenkorb enthaelt Produkte aus mehreren Lagerraeumen und kann nicht geladen werden.
+              </p>
+            ) : null}
+            <div className="mt-3 space-y-3">
+              {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkoerbe werden geladen...</p>}
+              {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (
+                <p className="text-sm text-slate-500">Noch keine gespeicherten Warenkoerbe.</p>
+              )}
+              {savedCartsQuery.data?.map((savedCart) => {
+                const total = savedCart.items.reduce((sum, item) => {
+                  return sum + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
+                }, 0);
+                const itemCount = savedCart.items.reduce((sum, item) => {
+                  return sum + decimalToNumber(item.quantity);
+                }, 0);
+
+                return (
+                  <div key={savedCart.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-900">{savedCart.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {itemCount} Artikel - {formatPrice(total)}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() =>
+                          loadSavedCartMutation.mutate({
+                            sessionId,
+                            savedCartId: savedCart.id,
+                          })
+                        }
+                        disabled={sessionId.length === 0 || loadSavedCartMutation.isPending}
+                        className="flex-1 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Laden
+                      </button>
+                      <button
+                        onClick={() =>
+                          deleteSavedCartMutation.mutate({
+                            savedCartId: savedCart.id,
+                          })
+                        }
+                        disabled={deleteSavedCartMutation.isPending}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Loeschen
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </aside>
+
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
           <h2 className="text-base font-semibold text-slate-900">Aktueller Warenkorb</h2>
           <p className="mt-1 text-xs text-slate-500">Artikel in dieser Browser-Sitzung</p>
@@ -270,96 +360,6 @@ export default function CartsPage() {
             </div>
           </div>
         </article>
-
-        <aside className="space-y-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Warenkorb speichern</h2>
-            <p className="mt-1 text-xs text-slate-500">Name fuer spaeteres Laden vergeben</p>
-            <input
-              value={cartName}
-              onChange={(event) => setCartName(event.target.value)}
-              placeholder="z. B. Elektronik Klasse 3BHELS"
-              className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
-            />
-            <button
-              onClick={() =>
-                saveCurrentCartMutation.mutate({
-                  sessionId,
-                  name: cartName.trim(),
-                })
-              }
-              disabled={
-                sessionId.length === 0 ||
-                cartName.trim().length === 0 ||
-                activeItems.length === 0 ||
-                saveCurrentCartMutation.isPending
-              }
-              className="mt-3 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saveCurrentCartMutation.isPending ? "Wird gespeichert..." : "Warenkorb speichern"}
-            </button>
-            {saveCurrentCartMutation.error && (
-              <p className="mt-2 text-xs text-rose-700">Speichern fehlgeschlagen. Bitte erneut versuchen.</p>
-            )}
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkoerbe</h2>
-            {loadSavedCartMutation.error?.message === "MIXED_STORAGE_ROOMS" ? (
-              <p className="mt-2 text-sm text-rose-700">
-                Dieser Warenkorb enthaelt Produkte aus mehreren Lagerraeumen und kann nicht geladen werden.
-              </p>
-            ) : null}
-            <div className="mt-3 space-y-3">
-              {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkoerbe werden geladen...</p>}
-              {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (
-                <p className="text-sm text-slate-500">Noch keine gespeicherten Warenkoerbe.</p>
-              )}
-              {savedCartsQuery.data?.map((savedCart) => {
-                const total = savedCart.items.reduce((sum, item) => {
-                  return sum + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
-                }, 0);
-                const itemCount = savedCart.items.reduce((sum, item) => {
-                  return sum + decimalToNumber(item.quantity);
-                }, 0);
-
-                return (
-                  <div key={savedCart.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-sm font-semibold text-slate-900">{savedCart.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {itemCount} Artikel - {formatPrice(total)}
-                    </p>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={() =>
-                          loadSavedCartMutation.mutate({
-                            sessionId,
-                            savedCartId: savedCart.id,
-                          })
-                        }
-                        disabled={sessionId.length === 0 || loadSavedCartMutation.isPending}
-                        className="flex-1 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Laden
-                      </button>
-                      <button
-                        onClick={() =>
-                          deleteSavedCartMutation.mutate({
-                            savedCartId: savedCart.id,
-                          })
-                        }
-                        disabled={deleteSavedCartMutation.isPending}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Loeschen
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        </aside>
       </section>
     </main>
   );
