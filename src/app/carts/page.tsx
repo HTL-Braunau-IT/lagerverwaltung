@@ -165,7 +165,7 @@ export default function CartsPage() {
         </p>
       </header>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[360px_1fr]">
+      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-base font-semibold text-slate-900">Warenkorb speichern</h2>
@@ -460,9 +460,9 @@ export default function CartsPage() {
           </div>
 
           <div className="mt-4 border-t border-slate-200 pt-3">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-end text-sm">
               <span className="text-slate-500">Zwischensumme</span>
-              <span className="font-semibold text-sky-800">{formatPrice(cartTotal)}</span>
+              <span className="font-bold text-sky-800 px-4">{formatPrice(cartTotal)}</span>
             </div>
           </div>
         </article>
