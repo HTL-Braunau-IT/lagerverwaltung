@@ -212,7 +212,7 @@ export default function CartsPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="p-4 md:p-5">
+      <header className="px-4 py-1 md:px-4 py-2">
         <h1 className="text-2xl font-semibold text-slate-900">Warenkörbe</h1>
         <p className="mt-1 text-sm text-slate-600">
           Verwalte deinen aktuellen Warenkorb und speichere Vorlagen für später.
@@ -222,8 +222,8 @@ export default function CartsPage() {
       <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Warenkorb speichern</h2>
-            <p className="mt-1 text-xs text-slate-500">Name fuer spaeteres Laden vergeben</p>
+            <h2 className="text-base font-semibold text-slate-900">Aktuellen Warenkorb speichern</h2>
+            <p className="mt-1 text-xs text-slate-500">Name für späteres Laden vergeben</p>
             <input
               value={cartName}
               onChange={(event) => setCartName(event.target.value)}
@@ -253,7 +253,7 @@ export default function CartsPage() {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkoerbe</h2>
+            <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkörbe</h2>
             {loadSavedCartMutation.error?.message === "MIXED_STORAGE_ROOMS" ? (
               <p className="mt-2 text-sm text-rose-700">
                 Dieser Warenkorb enthaelt Produkte aus mehreren Lagerraeumen und kann nicht geladen werden.
@@ -274,10 +274,12 @@ export default function CartsPage() {
 
                 return (
                   <div key={savedCart.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-sm font-semibold text-slate-900">{savedCart.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {itemCount} Artikel - {formatPrice(total)}
-                    </p>
+                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                      <p className="text-sm font-semibold text-slate-900">{savedCart.name}</p>
+                      <p className="text-xs text-slate-500 whitespace-nowrap">
+                        {itemCount} Artikel · {formatPrice(total)}
+                      </p>
+                    </div>
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={() =>
@@ -298,9 +300,10 @@ export default function CartsPage() {
                           })
                         }
                         disabled={deleteSavedCartMutation.isPending}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label={`Gespeicherten Warenkorb "${savedCart.name}" löschen`}
                       >
-                        Loeschen
+                        Löschen
                       </button>
                     </div>
                   </div>
