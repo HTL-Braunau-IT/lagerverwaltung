@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { WastebinIcon } from "~/components/layout/icon-renders";
+import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -42,6 +43,9 @@ export default function CartsPage() {
   const [cartName, setCartName] = useState("");
   const [isClearingCart, setIsClearingCart] = useState(false);
   const [confirmClearCart, setConfirmClearCart] = useState(false);
+  const [expressSku, setExpressSku] = useState("");
+  const [expressQuantity, setExpressQuantity] = useState("1");
+  const [expressAddError, setExpressAddError] = useState<string | null>(null);
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -73,6 +77,12 @@ export default function CartsPage() {
   const deleteSavedCartMutation = api.cart.deleteSavedCart.useMutation({
     onSuccess: async () => {
       await utils.cart.listSavedCarts.invalidate();
+    },
+  });
+
+  const addItemMutation = api.cart.addItem.useMutation({
+    onSuccess: async () => {
+      await utils.cart.get.invalidate({ sessionId });
     },
   });
 
@@ -154,6 +164,50 @@ export default function CartsPage() {
     }
     setConfirmClearCart(false);
     void clearCart();
+  };
+
+  const onExpressAddSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setExpressAddError(null);
+
+    const sku = expressSku.trim();
+    if (sku.length === 0) {
+      setExpressAddError("Bitte SKU eingeben.");
+      return;
+    }
+
+    const quantity = Number(expressQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setExpressAddError("Bitte eine gueltige Menge eingeben.");
+      return;
+    }
+
+    if (sessionId.length === 0) {
+      setExpressAddError("Session nicht verfuegbar. Bitte Seite neu laden.");
+      return;
+    }
+
+    try {
+      const result = await utils.product.list.fetch({ search: sku, limit: 5 });
+      const match =
+        result.items.find((item) => item.sku.toLowerCase() === sku.toLowerCase()) ?? result.items[0];
+      if (!match) {
+        setExpressAddError("Kein Produkt mit dieser SKU gefunden.");
+        return;
+      }
+
+      await addItemMutation.mutateAsync({
+        sessionId,
+        productId: match.id,
+        quantity,
+      });
+
+      setExpressSku("");
+      setExpressQuantity("1");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unbekannter Fehler";
+      setExpressAddError(message);
+    }
   };
 
   return (
@@ -287,7 +341,44 @@ export default function CartsPage() {
               </Link>
             </div>
           </div>
-          
+
+          <section className="mt-3 w-full">
+            <form onSubmit={onExpressAddSubmit} className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 -mb-2">
+              <div className="flex items-baseline gap-2">
+                <p className="text-xs font-semibold text-slate-700">Schnellbestellung</p>
+              </div>
+              <label className="flex flex-1 items-center gap-2 min-w-[260px]">
+                <span className="text-xs text-slate-600 whitespace-nowrap">SKU</span>
+                <input
+                  value={expressSku}
+                  onChange={(e) => setExpressSku(e.target.value)}
+                  placeholder="z.B. BESKO00047F055V"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-xs text-slate-600 whitespace-nowrap">Menge</span>
+                <input
+                  value={expressQuantity}
+                  onChange={(e) => setExpressQuantity(e.target.value)}
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+                />
+              </label>
+              <Button
+                type="submit"
+                disabled={addItemMutation.isPending || sessionId.length === 0}
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 whitespace-nowrap rounded-xl px-2.5 text-slate-700 hover:bg-slate-100"
+              >
+                {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
+              </Button>
+              {expressAddError ? <p className="text-xs text-rose-700">{expressAddError}</p> : null}
+            </form>
+          </section>
 
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>}
