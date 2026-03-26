@@ -406,7 +406,7 @@ export function ShopPartListsAside({
                             </p>
                             <button
                               type="button"
-                              className="grid h-6 w-6 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
+                              className="grid h-5 w-5 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 togglePinnedPartListMutation.mutate({ partListId: partList.id });
@@ -419,7 +419,7 @@ export function ShopPartListsAside({
                             </button>
                           </div>
                           <div
-                            className="mt-3 flex items-center gap-2"
+                            className="mt-3 flex items-center gap-2" 
                             onClick={(event) => event.stopPropagation()}
                           >
                             <input
@@ -511,7 +511,7 @@ export function ShopPartListsAside({
                             </p>
                             <button
                               type="button"
-                              className={`grid h-6 w-6 place-items-start justify-items-end rounded-md hover:bg-accent ${
+                              className={`grid h-5 w-5 place-items-start justify-items-end rounded-md hover:bg-accent ${
                                 isPinned ? "text-primary" : "text-muted-foreground"
                               }`}
                               onClick={(event) => {
