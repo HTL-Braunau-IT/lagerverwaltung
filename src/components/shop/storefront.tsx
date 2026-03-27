@@ -331,11 +331,11 @@ export function Storefront() {
 
                   <div className="mt-auto pt-2">
                     <div
-                      className="flex w-full items-stretch gap-2"
+                      className="flex w-full items-start gap-2 bg-white"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <div className="overflow-hidden flex h-8 items-center rounded-lg border border-slate-300 bg-white shadow-sm">
-                       <div>
+                      <div className="flex min-w-0 flex-col items-center gap-1">
+                        <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
                           <Button
                             type="button"
                             onClick={(event) => {
@@ -350,11 +350,15 @@ export function Storefront() {
                                 [product.id]: nextQuantity.toString(),
                               }));
                             }}
+                            size="sm"
                             variant="ghost"
-                            className="h-8 w-6 rounded-none rounded-l-lg border-r border-border px-0 text-xs text-muted-foreground"
+                            className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
                             aria-label={`Menge fuer ${product.name} reduzieren`}
                           >
-                            -
+                            <span
+                            className="block leading-none">
+                              -
+                            </span>
                           </Button>
                           <input
                             type="number"
@@ -389,14 +393,21 @@ export function Storefront() {
                                 [product.id]: nextQuantity.toString(),
                               }));
                             }}
+                            size="sm"
                             variant="ghost"
-                            className="h-8 w-6 rounded-none border-l border-border px-0 text-xs text-muted-foreground"
+                            className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
                             aria-label={`Menge fuer ${product.name} erhoehen`}
                           >
-                            +
+                            <span
+                            className="block leading-none">
+                              +
+                            </span>
                           </Button>
-                          </div>
                         </div>
+                        <p className="text-xs text-muted-foreground text-center whitespace-nowrap">
+                          Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
+                        </p>
+                      </div>
                       <Button
                         onClick={(event) => {
                           event.stopPropagation();
@@ -419,11 +430,6 @@ export function Storefront() {
                           ? "Wird hinzugefuegt..."
                           : "In den Warenkorb"}
                       </Button>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground pb-2">
-                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                      </p>
                     </div>
                   </div>
                 </div>
