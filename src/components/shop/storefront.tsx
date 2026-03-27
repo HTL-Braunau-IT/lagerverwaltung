@@ -8,9 +8,18 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-side-asides";
+import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
+
+function hueFromString(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % 360;
+}
 
 function getOrCreateSessionId() {
   if (typeof window === "undefined") return "";
@@ -74,6 +83,8 @@ export function Storefront() {
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [lastAddedProductName, setLastAddedProductName] = useState<string | null>(null);
+  const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
   const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const canSeePartListProductCount =
@@ -180,7 +191,7 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))]">
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -243,6 +254,9 @@ export function Storefront() {
             const selectedQuantity =
               Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
             const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
+            const storageRoomName = product.storageLocation?.storageRoom?.name?.trim() ?? "";
+            const storageRoomBadgeLetter = storageRoomName ? storageRoomName[0]?.toUpperCase() : null;
+            const storageRoomHue = storageRoomName ? hueFromString(storageRoomName) : null;
             return (
               <Card
                 key={product.id}
@@ -255,130 +269,173 @@ export function Storefront() {
                     router.push(`/products/${product.id}`);
                   }
                 }}
-                className="flex h-full cursor-pointer flex-col justify-between rounded-2xl p-4 transition hover:border-primary/50"
+                className="relative h-full cursor-pointer overflow-hidden rounded-2xl transition hover:border-primary/50"
               >
-                <div>
-                  <div className="mb-3 overflow-hidden rounded-xl border border-border bg-muted">
-                    {showImagePlaceholder ? (
-                      <div
-                        className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
-                        aria-label={`${product.name} Platzhalterbild`}
-                      >
-                        Kein Produktbild
+                {storageRoomBadgeLetter && (
+                  <div
+                    className="absolute -right-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-bl-md text-[10px] font-semibold leading-none backdrop-blur-sm border-4 border-white"
+                    title={`Lagerraum: ${storageRoomName}`}
+                    aria-label={`Lagerraum: ${storageRoomName}`}
+                    style={
+                      storageRoomHue === null
+                        ? undefined
+                        : {
+                            backgroundColor: `hsla(${storageRoomHue} 70% 85% / 0.9)`,
+                            color: `hsl(${storageRoomHue} 40% 22%)`,
+                          }
+                    }
+                  >
+                    {storageRoomBadgeLetter}
+                  </div>
+                )}
+
+                <div className="flex h-full flex-col p-3">
+                  <div className="space-y-2">
+                    <div className="overflow-hidden rounded-xl border border-border bg-muted">
+                      {showImagePlaceholder ? (
+                        <div
+                          className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
+                          aria-label={`${product.name} Platzhalterbild`}
+                        >
+                          Kein Produktbild
+                        </div>
+                      ) : (
+                        <img
+                          src={previewImage.url}
+                          alt={previewImage.altText ?? `${product.name} Produktbild`}
+                          className="h-40 w-full object-cover"
+                          loading="lazy"
+                          onError={() => {
+                            setFailedProductImages((prev) => {
+                              if (prev.has(product.id)) return prev;
+                              const next = new Set(prev);
+                              next.add(product.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-1.5">
+                      <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
+                        {product.name}
+                      </h2>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          {product.description ?? "Keine Beschreibung."}
+                        </p>
+                        <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
+                          {formatPrice(product.price)}
+                        </p>
                       </div>
-                    ) : (
-                      <img
-                        src={previewImage.url}
-                        alt={previewImage.altText ?? `${product.name} Produktbild`}
-                        className="h-40 w-full object-cover"
-                        loading="lazy"
-                        onError={() => {
-                          setFailedProductImages((prev) => {
-                            if (prev.has(product.id)) return prev;
-                            const next = new Set(prev);
-                            next.add(product.id);
-                            return next;
-                          });
-                        }}
-                      />
-                    )}
+                    </div>
                   </div>
-                  <div className="mb-3 flex items-start justify-between gap-2">
-                    <h2 className="line-clamp-2 text-base font-semibold text-foreground">{product.name}</h2>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                  </p>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    {product.description ?? "Keine Beschreibung."}
-                  </p>
-                </div>
-                <div className="mt-2 space-y-2">
-                  <p className="text-lg font-semibold text-primary">{formatPrice(product.price)}</p>
-                  <div className="flex w-full flex-wrap items-center justify-end gap-2">
+
+                  <div className="mt-auto pt-2">
                     <div
-                      className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm"
+                      className="flex w-full items-start gap-2 bg-white"
                       onClick={(event) => event.stopPropagation()}
                     >
+                      <div className="flex min-w-0 flex-col items-center gap-1">
+                        <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+                          <Button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const currentQuantity =
+                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                                  ? parsedQuantity
+                                  : unitStep;
+                              const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: nextQuantity.toString(),
+                              }));
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                            aria-label={`Menge fuer ${product.name} reduzieren`}
+                          >
+                            <span
+                            className="block leading-none">
+                              -
+                            </span>
+                          </Button>
+                          <input
+                            type="number"
+                            min={unitStep}
+                            max={stockOnHand}
+                            step={unitStep}
+                            value={quantityInput}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) => {
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: event.target.value,
+                              }));
+                            }}
+                            className="w-8 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            aria-label={`Menge fuer ${product.name}`}
+                          />
+                          <Button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const currentQuantity =
+                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                                  ? parsedQuantity
+                                  : unitStep;
+                              const nextQuantity =
+                                stockOnHand > 0
+                                  ? Math.min(stockOnHand, currentQuantity + unitStep)
+                                  : unitStep;
+                              setQuantitiesByProduct((prev) => ({
+                                ...prev,
+                                [product.id]: nextQuantity.toString(),
+                              }));
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                            aria-label={`Menge fuer ${product.name} erhoehen`}
+                          >
+                            <span
+                            className="block leading-none">
+                              +
+                            </span>
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-center whitespace-nowrap">
+                          Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
+                        </p>
+                      </div>
                       <Button
-                        type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const currentQuantity =
+                          const quantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
                               : unitStep;
-                          const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                          setQuantitiesByProduct((prev) => ({
-                            ...prev,
-                            [product.id]: nextQuantity.toString(),
-                          }));
+                          if (stockOnHand <= 0 || quantity > stockOnHand) return;
+                          setActiveAddProductId(product.id);
+                          setLastAddedProductName(product.name);
+                          setLastAddedProductQuantity(quantity);
+                          addItemMutation.mutate({
+                            sessionId,
+                            productId: product.id,
+                            quantity,
+                          });
                         }}
-                        variant="ghost"
-                        className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
-                        aria-label={`Menge fuer ${product.name} reduzieren`}
+                        disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
+                        className="h-8 flex-1 whitespace-nowrap rounded-xl px-3"
                       >
-                        -
+                        {addItemMutation.isPending && activeAddProductId === product.id
+                          ? "Hinzufügen..."
+                          : "In den Warenkorb"}
                       </Button>
-                      <input
-                        type="number"
-                        min={unitStep}
-                        max={stockOnHand}
-                        step={unitStep}
-                        value={quantityInput}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={(event) => {
-                          setQuantitiesByProduct((prev) => ({
-                            ...prev,
-                            [product.id]: event.target.value,
-                          }));
-                        }}
-                        className="w-9 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        aria-label={`Menge fuer ${product.name}`}
-                      />
-                      <Button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          const currentQuantity =
-                            Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                              ? parsedQuantity
-                              : unitStep;
-                          const nextQuantity =
-                            stockOnHand > 0 ? Math.min(stockOnHand, currentQuantity + unitStep) : unitStep;
-                          setQuantitiesByProduct((prev) => ({
-                            ...prev,
-                            [product.id]: nextQuantity.toString(),
-                          }));
-                        }}
-                        variant="ghost"
-                        className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
-                        aria-label={`Menge fuer ${product.name} erhoehen`}
-                      >
-                        +
-                      </Button>
-                      <span className="pr-2 text-xs text-muted-foreground">{product.baseUnit.toLowerCase()}</span>
                     </div>
-                    <Button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        const quantity =
-                          Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : unitStep;
-                        if (stockOnHand <= 0 || quantity > stockOnHand) return;
-                        setActiveAddProductId(product.id);
-                        addItemMutation.mutate({
-                          sessionId,
-                          productId: product.id,
-                          quantity,
-                        });
-                      }}
-                      disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                      className="h-10 shrink-0 whitespace-nowrap rounded-xl px-2.5"
-                    >
-                      {addItemMutation.isPending && activeAddProductId === product.id
-                        ? "Wird hinzugefuegt..."
-                        : "In den Warenkorb"}
-                    </Button>
                   </div>
                 </div>
               </Card>
@@ -401,40 +458,26 @@ export function Storefront() {
           stickyTopOffset={stickyTopOffset}
           sessionId={sessionId}
           canSeePartListProductCount={canSeePartListProductCount}
-          onAddedToCart={() => setShowCartModal(true)}
+          onAddedToCart={() => {
+            setLastAddedProductName(null);
+            setLastAddedProductQuantity(null);
+            setShowCartModal(true);
+          }}
           warning={partListWarning}
           onWarningChange={setPartListWarning}
         />
       </section>
 
-      {showCartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-foreground">Artikel hinzugefuegt</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Der Artikel wurde in den Warenkorb gelegt.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Button
-                onClick={() => setShowCartModal(false)}
-                variant="outline"
-                className="flex-1 rounded-xl"
-              >
-                Weiter einkaufen
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowCartModal(false);
-                  router.push("/carts");
-                }}
-                className="flex-1 rounded-xl"
-              >
-                Zu Warenkoerben
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CartAddedModal
+        open={showCartModal}
+        itemName={lastAddedProductName}
+        itemQuantity={lastAddedProductQuantity}
+        onContinueShopping={() => setShowCartModal(false)}
+        onGoToCart={() => {
+          setShowCartModal(false);
+          router.push("/carts");
+        }}
+      />
     </main>
   );
 }

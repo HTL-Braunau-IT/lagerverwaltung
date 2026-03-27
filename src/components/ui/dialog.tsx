@@ -8,10 +8,11 @@ type DialogProps = {
   onClose: () => void;
   title: string;
   description?: string;
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
 };
 
-export function Dialog({ open, onClose, title, description, children }: DialogProps) {
+export function Dialog({ open, onClose, title, description, headerRight, children }: DialogProps) {
   useEffect(() => {
     if (!open) return;
 
@@ -43,9 +44,12 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
         className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 text-card-foreground shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+          </div>
+          {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
         </div>
         {children}
       </div>

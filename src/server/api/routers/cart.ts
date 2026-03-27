@@ -965,6 +965,7 @@ export const cartRouter = createTRPCRouter({
               select: {
                 id: true,
                 name: true,
+                sku: true,
                 price: true,
                 baseUnit: true,
               },

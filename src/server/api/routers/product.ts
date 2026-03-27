@@ -130,6 +130,12 @@ export const productRouter = createTRPCRouter({
             id: true,
             code: true,
             name: true,
+            storageRoom: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         images: {

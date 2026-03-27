@@ -17,19 +17,12 @@ export function LendingIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
       <path
-        d="M7 7h10v4H7V7Zm-2 6h14v9H5v-9Z"
+        d="M 4 4 h 8 v 16 H 4 z M 12 12 h 7 M 16 9 l 5 3 l -5 3"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-      <path
-        d="M9 11v9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
       />
     </svg>
   );
@@ -143,6 +136,40 @@ export function PinIcon({
         fill="currentColor"
       />
     </g>
+    </svg>
+  );
+}
+
+export function WastebinIcon({
+  size = 20,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
+  const style = {
+    width: size,
+    height: size,
+    minWidth: size,
+    minHeight: size,
+    display: "block",
+  } as const;
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      className={className}
+      style={style}
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </svg>
   );
 }

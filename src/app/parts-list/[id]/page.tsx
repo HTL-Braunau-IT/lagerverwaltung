@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
-import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-side-asides";
+import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -58,6 +59,7 @@ export default function PartListDetailPage() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [quantityInput, setQuantityInput] = useState("1");
+  const [lastAddedPartListQuantity, setLastAddedPartListQuantity] = useState<number | null>(null);
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
@@ -203,6 +205,7 @@ export default function PartListDetailPage() {
                   <Button
                     onClick={() => {
                       const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                      setLastAddedPartListQuantity(requestedQuantity);
                       setPartListWarning(null);
                       addPartListMutation.mutate({
                         sessionId,
@@ -299,28 +302,16 @@ export default function PartListDetailPage() {
         />
       </section>
 
-      {showCartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-foreground">Artikel hinzugefuegt</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Die Teileliste wurde in den Warenkorb gelegt.</p>
-            <div className="mt-4 flex gap-2">
-              <Button onClick={() => setShowCartModal(false)} variant="outline" className="flex-1 rounded-xl">
-                Weiter einkaufen
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowCartModal(false);
-                  router.push("/carts");
-                }}
-                className="flex-1 rounded-xl"
-              >
-                Zu Warenkoerben
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CartAddedModal
+        open={showCartModal}
+        itemName={`Stückliste - ${selectedPartList.name}`}
+        itemQuantity={lastAddedPartListQuantity}
+        onContinueShopping={() => setShowCartModal(false)}
+        onGoToCart={() => {
+          setShowCartModal(false);
+          router.push("/carts");
+        }}
+      />
     </main>
   );
 }
