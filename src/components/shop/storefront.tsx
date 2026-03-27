@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -467,43 +468,16 @@ export function Storefront() {
         />
       </section>
 
-      {showCartModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
-            {lastAddedProductName ? (
-              <p className="mt-1 flex items-center justify-center gap-2 text-center text-sm font-medium text-foreground">
-                {lastAddedProductQuantity !== null ? (
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs tabular-nums">
-                    {lastAddedProductQuantity}x
-                  </span>
-                ) : null}
-                <span>{lastAddedProductName}</span>
-              </p>
-            ) : null}
-            <p className="mt-1 text-sm text-muted-foreground text-center">
-              Wurde in den Warenkorb gelegt.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <Button
-                onClick={() => setShowCartModal(false)}
-                variant="outline"
-                className="flex-1 rounded-xl"
-              >
-                Weiter einkaufen
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowCartModal(false);
-                  router.push("/carts");
-                }}
-                className="flex-1 rounded-xl"
-              >
-                Zum Warenkorb
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CartAddedModal
+        open={showCartModal}
+        itemName={lastAddedProductName}
+        itemQuantity={lastAddedProductQuantity}
+        onContinueShopping={() => setShowCartModal(false)}
+        onGoToCart={() => {
+          setShowCartModal(false);
+          router.push("/carts");
+        }}
+      />
     </main>
   );
 }
