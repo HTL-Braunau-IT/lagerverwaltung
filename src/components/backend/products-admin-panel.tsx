@@ -52,11 +52,18 @@ type ProductCreateFormState = ProductFormState & {
 };
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function createInitialForm(product: {
@@ -206,6 +213,8 @@ export function ProductsAdminPanel() {
   const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
+  const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
   const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
@@ -333,6 +342,37 @@ export function ProductsAdminPanel() {
     }
 
     return result.url;
+  };
+
+  const uploadProductDocument = async (productId: string, file: File) => {
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      throw new Error("Das Dokument ist zu gross. Maximal 12 MB erlaubt.");
+    }
+
+    const body = new FormData();
+    body.append("productId", productId);
+    body.append("file", file);
+
+    const response = await fetch("/api/backend/products/upload-document", {
+      method: "POST",
+      body,
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
+    if (!response.ok) {
+      throw new Error(result?.message ?? "Dokument konnte nicht hochgeladen werden.");
+    }
+  };
+
+  const deleteProductDocument = async (documentId: string) => {
+    const response = await fetch("/api/backend/products/delete-document", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId }),
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
+    if (!response.ok) {
+      throw new Error(result?.message ?? "Dokument konnte nicht geloescht werden.");
+    }
   };
 
   return (
@@ -886,6 +926,104 @@ export function ProductsAdminPanel() {
                               />
                             </div>
                           ) : null}
+
+                          <div className="rounded-lg border border-slate-300 bg-white p-3 md:col-span-2">
+                            <p className="text-xs font-medium text-slate-700">Dokumente</p>
+                            <input
+                              type="file"
+                              accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={async (event) => {
+                                const file = event.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: true }));
+                                  setEditDocumentUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                  await uploadProductDocument(product.id, file);
+                                  await utils.product.backendList.invalidate();
+                                } catch (error) {
+                                  setEditDocumentUploadErrorById((current) => ({
+                                    ...current,
+                                    [product.id]:
+                                      error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.",
+                                  }));
+                                } finally {
+                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: false }));
+                                  event.target.value = "";
+                                }
+                              }}
+                              className="mt-2 block w-full text-xs text-slate-700"
+                            />
+                            {editDocumentUploadPendingById[product.id] ? (
+                              <p className="mt-1 text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
+                            ) : null}
+                            {editDocumentUploadErrorById[product.id] ? (
+                              <p className="mt-1 text-xs text-destructive">{editDocumentUploadErrorById[product.id]}</p>
+                            ) : null}
+                            <div className="mt-3 space-y-1.5">
+                              {(product.documents ?? []).length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                              ) : (
+                                (product.documents ?? []).map((document) => (
+                                  <div
+                                    key={document.id}
+                                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
+                                  >
+                                    <a
+                                      href={document.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(event) => event.stopPropagation()}
+                                      className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                    >
+                                      {document.originalName}
+                                    </a>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {formatBytes(document.sizeBytes)}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={async (event) => {
+                                          event.stopPropagation();
+                                          try {
+                                            setEditDocumentUploadPendingById((current) => ({
+                                              ...current,
+                                              [product.id]: true,
+                                            }));
+                                            setEditDocumentUploadErrorById((current) => ({
+                                              ...current,
+                                              [product.id]: null,
+                                            }));
+                                            await deleteProductDocument(document.id);
+                                            await utils.product.backendList.invalidate();
+                                          } catch (error) {
+                                            setEditDocumentUploadErrorById((current) => ({
+                                              ...current,
+                                              [product.id]:
+                                                error instanceof Error
+                                                  ? error.message
+                                                  : "Dokument konnte nicht geloescht werden.",
+                                            }));
+                                          } finally {
+                                            setEditDocumentUploadPendingById((current) => ({
+                                              ...current,
+                                              [product.id]: false,
+                                            }));
+                                          }
+                                        }}
+                                        disabled={editDocumentUploadPendingById[product.id]}
+                                      >
+                                        Entfernen
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
@@ -934,7 +1072,11 @@ export function ProductsAdminPanel() {
                                 imageAltText: form.imageAltText.trim() || null,
                               });
                             }}
-                            disabled={updateMutation.isPending || editUploadPendingById[product.id]}
+                            disabled={
+                              updateMutation.isPending ||
+                              editUploadPendingById[product.id] ||
+                              editDocumentUploadPendingById[product.id]
+                            }
                             className="disabled:opacity-60"
                           >
                             {updateMutation.isPending ? "Speichert..." : "Speichern"}

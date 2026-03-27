@@ -15,6 +15,10 @@ function isValidImageUrl(value: string): boolean {
   return z.string().url().safeParse(trimmed).success;
 }
 
+function normalizeProductDocumentUrl(documentId: string) {
+  return `/api/backend/products/document/${documentId}`;
+}
+
 const listProductsInput = z.object({
   search: z.string().trim().optional(),
   categoryId: z.string().min(1).optional(),
@@ -162,7 +166,7 @@ export const productRouter = createTRPCRouter({
   byId: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.product.findFirst({
+      const product = await ctx.db.product.findFirst({
         where: { id: input.id, isVisible: true },
         select: {
           id: true,
@@ -204,8 +208,26 @@ export const productRouter = createTRPCRouter({
               sortOrder: true,
             },
           },
+          documents: {
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            select: {
+              id: true,
+              originalName: true,
+              url: true,
+              mimeType: true,
+              sizeBytes: true,
+            },
+          },
         },
       });
+      if (!product) return null;
+      return {
+        ...product,
+        documents: product.documents.map((document) => ({
+          ...document,
+          url: normalizeProductDocumentUrl(document.id),
+        })),
+      };
     }),
 
   backendList: adminProcedure
@@ -291,6 +313,17 @@ export const productRouter = createTRPCRouter({
               altText: true,
             },
           },
+          documents: {
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            select: {
+              id: true,
+              originalName: true,
+              url: true,
+              mimeType: true,
+              sizeBytes: true,
+              createdAt: true,
+            },
+          },
         },
       });
 
@@ -300,7 +333,16 @@ export const productRouter = createTRPCRouter({
         nextCursor = nextItem?.id;
       }
 
-      return { items, nextCursor };
+      return {
+        items: items.map((item) => ({
+          ...item,
+          documents: item.documents.map((document) => ({
+            ...document,
+            url: normalizeProductDocumentUrl(document.id),
+          })),
+        })),
+        nextCursor,
+      };
     }),
 
   backendUpdate: adminProcedure

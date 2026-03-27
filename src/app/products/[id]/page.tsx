@@ -48,6 +48,12 @@ function formatDecimal(value: number, fractionDigits = 3) {
   }).format(value);
 }
 
+function formatFileSize(sizeBytes: number) {
+  if (sizeBytes < 1024) return `${sizeBytes} B`;
+  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
+  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ProductDetailPage() {
   const { data: session } = useSession();
   const params = useParams<{ id: string }>();
@@ -332,6 +338,30 @@ export default function ProductDetailPage() {
                 >
                   {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
                 </Button>
+              </div>
+
+              <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
+                <h2 className="text-sm font-semibold text-foreground">Dokumente</h2>
+                <div className="mt-3 space-y-2">
+                  {product.documents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
+                  ) : (
+                    product.documents.map((document) => (
+                      <a
+                        key={document.id}
+                        href={document.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-lg border border-border bg-card p-2 transition hover:border-primary/50"
+                      >
+                        <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {document.mimeType} · {formatFileSize(document.sizeBytes)}
+                        </p>
+                      </a>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
