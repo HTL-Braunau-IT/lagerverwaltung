@@ -80,7 +80,8 @@ export function ShopCategoriesAside({
             onCategoryPicked?.(undefined);
           }}
           variant={currentSelected === undefined ? "secondary" : "ghost"}
-          className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+          size="lg"
+          className={`h-7 w-full justify-between rounded-lg px-3 text-left text-sm ${
             currentSelected === undefined ? "" : "text-muted-foreground"
           }`}
         >
@@ -94,7 +95,8 @@ export function ShopCategoriesAside({
               onCategoryPicked?.(category.id);
             }}
             variant={currentSelected === category.id ? "secondary" : "ghost"}
-            className={`h-9 w-full justify-between rounded-lg px-3 text-left text-sm ${
+            size="lg"
+            className={`h-7 w-full justify-between rounded-lg px-3 text-left text-sm ${
               currentSelected === category.id ? "" : "text-muted-foreground"
             }`}
           >
