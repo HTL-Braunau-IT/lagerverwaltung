@@ -270,7 +270,7 @@ export function Storefront() {
               >
                 {storageRoomBadgeLetter && (
                   <div
-                    className="absolute bottom-0 left-0 z-10 flex h-5 w-5 items-center justify-center rounded-tr-md text-[10px] font-semibold leading-none backdrop-blur-sm"
+                    className="absolute -right-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-bl-md text-[10px] font-semibold leading-none backdrop-blur-sm border-4 border-white"
                     title={`Lagerraum: ${storageRoomName}`}
                     aria-label={`Lagerraum: ${storageRoomName}`}
                     style={
@@ -322,7 +322,7 @@ export function Storefront() {
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                           {product.description ?? "Keine Beschreibung."}
                         </p>
-                        <p className="shrink-0 text-base font-semibold tabular-nums text-primary">
+                        <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
                           {formatPrice(product.price)}
                         </p>
                       </div>
