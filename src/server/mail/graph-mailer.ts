@@ -10,7 +10,8 @@ type SendGraphMailInput = {
   cc?: MailRecipient[];
   bcc?: MailRecipient[];
   subject: string;
-  textBody: string;
+  htmlBody: string;
+  textFallback?: string;
 };
 
 function toAddress(recipient: MailRecipient) {
@@ -85,8 +86,8 @@ export async function sendGraphMail(input: SendGraphMailInput) {
       message: {
         subject: input.subject,
         body: {
-          contentType: "Text",
-          content: input.textBody,
+          contentType: "HTML",
+          content: input.htmlBody,
         },
         toRecipients: to.map(toAddress),
         ccRecipients: cc.map(toAddress),

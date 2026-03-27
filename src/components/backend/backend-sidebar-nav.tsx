@@ -55,7 +55,7 @@ export function BackendSidebarNav() {
                 {entry.href === "/backend/loans" && openLoansCount > 0 ? (
                   <span
                     className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 py-0.5 text-xs font-semibold leading-none text-white"
-                    aria-label={`${openLoansCount} offene Ausleihen`}
+                    aria-label={`${openLoansCount} offene Anfragen`}
                   >
                     {openLoansLabel}
                   </span>

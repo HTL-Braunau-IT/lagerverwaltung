@@ -581,7 +581,7 @@ export const loanRouter = createTRPCRouter({
     });
 
     if (!loan) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Ausleihe wurde nicht gefunden." });
+      throw new TRPCError({ code: "NOT_FOUND", message: "Wurde nicht gefunden." });
     }
 
     return loan;
@@ -615,8 +615,8 @@ export const loanRouter = createTRPCRouter({
         },
       });
 
-      if (!loan) throw new TRPCError({ code: "NOT_FOUND", message: "Ausleihe wurde nicht gefunden." });
-      if (loan.status !== "APPROVED") throw new TRPCError({ code: "BAD_REQUEST", message: "Ausleihe ist nicht freigegeben." });
+      if (!loan) throw new TRPCError({ code: "NOT_FOUND", message: "Wwurde nicht gefunden." });
+      if (loan.status !== "APPROVED") throw new TRPCError({ code: "BAD_REQUEST", message: "Ist nicht freigegeben." });
       assertStorageRoomAllowed(access, loan.storageRoomId);
 
       const now = new Date();
@@ -715,8 +715,8 @@ export const loanRouter = createTRPCRouter({
         },
       });
 
-      if (!loan) throw new TRPCError({ code: "NOT_FOUND", message: "Ausleihe wurde nicht gefunden." });
-      if (loan.status !== "APPROVED") throw new TRPCError({ code: "BAD_REQUEST", message: "Ausleihe ist nicht freigegeben." });
+      if (!loan) throw new TRPCError({ code: "NOT_FOUND", message: "Wurde nicht gefunden." });
+      if (loan.status !== "APPROVED") throw new TRPCError({ code: "BAD_REQUEST", message: "Ist nicht freigegeben." });
       assertStorageRoomAllowed(access, loan.storageRoomId);
 
       const updates = input.items.map((entry) => {
@@ -812,7 +812,7 @@ export const loanRouter = createTRPCRouter({
 
     const activeBorrowed = Number(item.quantityHandedOver) - Number(item.quantityReturned);
     if (activeBorrowed <= 0) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Für diese Position ist keine aktive Ausleihe vorhanden." });
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Diese Position wurde nicht verliehen." });
     }
     if (!item.borrowedAt || !item.loan.borrower.email) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "Rückfrage nicht moeglich (fehlende Zeit/Email)." });

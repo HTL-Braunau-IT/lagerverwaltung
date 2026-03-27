@@ -92,7 +92,7 @@ export function LoansAdminPanel() {
     <Card className="rounded-2xl p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Ausleihen</h2>
+          <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
           <p className="text-sm text-muted-foreground">Uebergabe, Rueckgabe und Erinnerungen verwalten.</p>
         </div>
       </div>
@@ -129,7 +129,7 @@ export function LoansAdminPanel() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Ausleihe</TableHead>
+              <TableHead>Ausleihen</TableHead>
               <TableHead>Person</TableHead>
               <TableHead>Datum</TableHead>
               <TableHead>Status</TableHead>
@@ -141,7 +141,7 @@ export function LoansAdminPanel() {
             {loansQuery.isLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-muted-foreground">
-                  Ausleihen werden geladen...
+                  Werkzeuge werden geladen...
                 </TableCell>
               </TableRow>
             ) : null}
@@ -149,7 +149,7 @@ export function LoansAdminPanel() {
             {loansQuery.error ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-destructive">
-                  Ausleihen konnten nicht geladen werden.
+                  Werkzeuge konnten nicht geladen werden.
                 </TableCell>
               </TableRow>
             ) : null}
@@ -157,7 +157,7 @@ export function LoansAdminPanel() {
             {!loansQuery.isLoading && !loansQuery.error && sortedLoans.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-muted-foreground">
-                  Keine Ausleihen gefunden.
+                  Keine Werkzeuge gefunden.
                 </TableCell>
               </TableRow>
             ) : null}

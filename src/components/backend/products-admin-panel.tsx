@@ -60,6 +60,13 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
+function isNearMinimumStock(quantityOnHand: unknown, minimumQuantity: unknown): boolean {
+  const minimum = toNumber(minimumQuantity);
+  if (minimum <= 0) return false;
+  const quantity = toNumber(quantityOnHand);
+  return quantity <= minimum * 1.1;
+}
+
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -205,6 +212,7 @@ export function ProductsAdminPanel() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [storageRoomFilter, setStorageRoomFilter] = useState("");
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
+  const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [createOpen, setCreateOpen] = useState(false);
@@ -283,6 +291,12 @@ export function ProductsAdminPanel() {
       ),
     [productsQuery.data],
   );
+  const visibleProducts = useMemo(() => {
+    if (!showNearMinimumOnly) return sortedProducts;
+    return sortedProducts.filter((product) =>
+      isNearMinimumStock(product.quantityOnHand, product.minimumQuantity),
+    );
+  }, [showNearMinimumOnly, sortedProducts]);
   const storageLocationsById = useMemo(() => {
     return new Map((storageLocationsQuery.data ?? []).map((storageLocation) => [storageLocation.id, storageLocation]));
   }, [storageLocationsQuery.data]);
@@ -395,7 +409,7 @@ export function ProductsAdminPanel() {
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-4">
+      <div className="mb-4 grid gap-3 md:grid-cols-5">
         <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
           Suche nach Name, SKU oder Beschreibung
           <Input
@@ -451,6 +465,16 @@ export function ProductsAdminPanel() {
             ))}
           </select>
         </label>
+        <div className="mb-1 flex items-end">
+          <Button
+            type="button"
+            variant={showNearMinimumOnly ? "default" : "outline"}
+            className="h-10 w-full rounded-xl"
+            onClick={() => setShowNearMinimumOnly((current) => !current)}
+          >
+            {showNearMinimumOnly ? "Filter aktiv: nahe Mindestbestand" : "Nahe Mindestbestand (<= 110%)"}
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -482,7 +506,7 @@ export function ProductsAdminPanel() {
               </tr>
             ) : null}
 
-            {!productsQuery.isLoading && !productsQuery.error && sortedProducts.length === 0 ? (
+            {!productsQuery.isLoading && !productsQuery.error && visibleProducts.length === 0 ? (
               <tr>
                 <TableCell colSpan={6} className="text-muted-foreground">
                   Keine Produkte gefunden.
@@ -490,8 +514,9 @@ export function ProductsAdminPanel() {
               </tr>
             ) : null}
 
-            {sortedProducts.map((product) => {
+            {visibleProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
+              const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
               const form = formsById[product.id] ?? createInitialForm(product);
               const previewImage = product.images[0];
               const locationText = product.storageLocation
@@ -520,7 +545,7 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${isNearMinimum ? "outline outline-2 -outline-offset-2 outline-yellow-400" : ""}`}
                   >
                     <TableCell className="font-medium text-foreground">
                       <div className="relative inline-block">
