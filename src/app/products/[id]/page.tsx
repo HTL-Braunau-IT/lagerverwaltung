@@ -69,6 +69,7 @@ export default function ProductDetailPage() {
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
   const productQuery = api.product.byId.useQuery({ id: productId }, { enabled: Boolean(productId) });
+  const categoriesQuery = api.category.list.useQuery();
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
@@ -171,7 +172,17 @@ export default function ProductDetailPage() {
       : unitStep;
   const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
 
-  const categoryName = product.category?.name ?? "Ohne Kategorie";
+  const allCategoryNames = Array.from(
+    new Set(
+      product.categories
+        .map((entry) => categoriesQuery.data?.find((category) => category.id === entry.categoryId)?.name)
+        .filter((name): name is string => Boolean(name)) ?? [],
+    ),
+  );
+  if (allCategoryNames.length === 0 && product.category?.name) {
+    allCategoryNames.push(product.category.name);
+  }
+  const categoryLabel = allCategoryNames.length > 0 ? allCategoryNames.join(" • ") : "Ohne Kategorie";
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
   const images =
     product.images.length === 0
@@ -203,7 +214,7 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <ProductImageGallery images={images} productName={product.name} />
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryName}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">SKU: {product.sku}</p>
               <p className="mt-4 text-sm text-foreground">
