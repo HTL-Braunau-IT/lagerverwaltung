@@ -218,8 +218,13 @@ export default function ProductDetailPage() {
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">SKU: {product.sku}</p>
               <p className="mt-4 text-sm text-foreground">
-                {product.description ?? "Keine Beschreibung verfuegbar."}
+                {product.description ?? ""}
               </p>
+              <div className="mt-3">
+                <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
+                  {formatPrice(product.price)}
+                </p>
+              </div>
 
               <div className="mt-5 flex w-full items-start gap-2">
                 {isAreaProduct ? (
