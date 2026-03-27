@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -200,24 +201,7 @@ export default function ProductDetailPage() {
             Zurück zur Produktliste
           </Link>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-3">
-              {images.map((image) => (
-                <div
-                  key={image.id}
-                  className="overflow-hidden rounded-xl border border-border bg-muted"
-                >
-                  <img
-                    src={image.url}
-                    alt={image.altText ?? `${product.name} Produktbild`}
-                    className="h-56 w-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src = "/pictures/placeholder.jpg";
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
+            <ProductImageGallery images={images} productName={product.name} />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryName}</p>
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
