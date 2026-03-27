@@ -217,6 +217,7 @@ export default function ProductDetailPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
               <p className="mt-1 text-sm text-muted-foreground">SKU: {product.sku}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Lagerplatz: {product.storageLocation?.name}</p>
               <p className="mt-4 text-sm text-foreground">
                 {product.description ?? ""}
               </p>
