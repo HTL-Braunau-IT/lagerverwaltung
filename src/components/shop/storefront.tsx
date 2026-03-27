@@ -82,6 +82,8 @@ export function Storefront() {
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [lastAddedProductName, setLastAddedProductName] = useState<string | null>(null);
+  const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
   const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const canSeePartListProductCount =
@@ -417,6 +419,8 @@ export function Storefront() {
                               : unitStep;
                           if (stockOnHand <= 0 || quantity > stockOnHand) return;
                           setActiveAddProductId(product.id);
+                          setLastAddedProductName(product.name);
+                          setLastAddedProductQuantity(quantity);
                           addItemMutation.mutate({
                             sessionId,
                             productId: product.id,
@@ -427,7 +431,7 @@ export function Storefront() {
                         className="h-8 flex-1 whitespace-nowrap rounded-xl px-3"
                       >
                         {addItemMutation.isPending && activeAddProductId === product.id
-                          ? "Wird hinzugefuegt..."
+                          ? "Hinzufügen..."
                           : "In den Warenkorb"}
                       </Button>
                     </div>
@@ -453,7 +457,11 @@ export function Storefront() {
           stickyTopOffset={stickyTopOffset}
           sessionId={sessionId}
           canSeePartListProductCount={canSeePartListProductCount}
-          onAddedToCart={() => setShowCartModal(true)}
+          onAddedToCart={() => {
+            setLastAddedProductName(null);
+            setLastAddedProductQuantity(null);
+            setShowCartModal(true);
+          }}
           warning={partListWarning}
           onWarningChange={setPartListWarning}
         />
@@ -462,9 +470,18 @@ export function Storefront() {
       {showCartModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-foreground">Artikel hinzugefuegt</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Der Artikel wurde in den Warenkorb gelegt.
+            {lastAddedProductName ? (
+              <p className="mt-1 flex items-center justify-center gap-2 text-center text-sm font-medium text-foreground">
+                {lastAddedProductQuantity !== null ? (
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs tabular-nums">
+                    {lastAddedProductQuantity}x
+                  </span>
+                ) : null}
+                <span>{lastAddedProductName}</span>
+              </p>
+            ) : null}
+            <p className="mt-1 text-sm text-muted-foreground text-center">
+              Wurde in den Warenkorb gelegt.
             </p>
             <div className="mt-4 flex gap-2">
               <Button
@@ -481,7 +498,7 @@ export function Storefront() {
                 }}
                 className="flex-1 rounded-xl"
               >
-                Zu Warenkoerben
+                Zum Warenkorb
               </Button>
             </div>
           </div>
