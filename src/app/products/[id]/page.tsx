@@ -226,14 +226,7 @@ export default function ProductDetailPage() {
                 {product.description ?? "Keine Beschreibung verfuegbar."}
               </p>
 
-              <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-lg font-semibold text-primary">{formatPrice(product.price)}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                </p>
-              </div>
-
-              <div className="mt-5 flex w-full flex-wrap items-center gap-2">
+              <div className="mt-5 flex w-full items-start gap-2">
                 {isAreaProduct ? (
                   <div className="w-full rounded-xl border border-border bg-muted/40 p-3">
                     <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
@@ -272,46 +265,55 @@ export default function ProductDetailPage() {
                       {" · "}
                       {formatDecimal(areaInSquareMillimeters > 0 ? areaInSquareMillimeters : 0, 0)} mm²
                     </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
+                    </p>
                   </div>
                 ) : (
-                  <div className="shrink-0 flex h-10 items-center rounded-xl border border-slate-300 bg-white shadow-sm">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                        const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      variant="ghost"
-                      className="h-10 w-8 rounded-none rounded-l-xl border-r border-border px-0 text-muted-foreground"
-                      aria-label={`Menge fuer ${product.name} reduzieren`}
-                    >
-                      -
-                    </Button>
-                    <input
-                      type="number"
-                      min={unitStep}
-                      max={stockOnHand}
-                      step={unitStep}
-                      value={quantityInput}
-                      onChange={(event) => setQuantityInput(event.target.value)}
-                      className="w-12 border-none bg-transparent text-center text-sm font-medium text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      aria-label={`Menge fuer ${product.name}`}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                        const nextQuantity = currentQuantity + unitStep;
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      variant="ghost"
-                      className="h-10 w-8 rounded-none border-l border-border px-0 text-muted-foreground"
-                      aria-label={`Menge fuer ${product.name} erhoehen`}
-                    >
-                      +
-                    </Button>
-                    <span className="pr-2 text-xs text-muted-foreground">{product.baseUnit.toLowerCase()}</span>
+                  <div className="flex min-w-0 flex-col items-center gap-1">
+                    <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
+                          const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
+                          setQuantityInput(nextQuantity.toString());
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                        aria-label={`Menge fuer ${product.name} reduzieren`}
+                      >
+                        <span className="block leading-none">-</span>
+                      </Button>
+                      <input
+                        type="number"
+                        min={unitStep}
+                        max={stockOnHand}
+                        step={unitStep}
+                        value={quantityInput}
+                        onChange={(event) => setQuantityInput(event.target.value)}
+                        className="w-12 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        aria-label={`Menge fuer ${product.name}`}
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
+                          const nextQuantity = currentQuantity + unitStep;
+                          setQuantityInput(nextQuantity.toString());
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                        aria-label={`Menge fuer ${product.name} erhoehen`}
+                      >
+                        <span className="block leading-none">+</span>
+                      </Button>
+                    </div>
+                    <p className="text-xs text-center whitespace-nowrap text-muted-foreground">
+                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
+                    </p>
                   </div>
                 )}
                 <Button
@@ -325,7 +327,7 @@ export default function ProductDetailPage() {
                     });
                   }}
                   disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                  className="h-10 rounded-xl px-3"
+                  className="h-8 whitespace-nowrap rounded-xl px-3"
                 >
                   {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
                 </Button>
