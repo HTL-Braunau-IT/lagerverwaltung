@@ -466,13 +466,13 @@ export default function ProductDetailPage() {
             ))}
           </div>
 
-          <div className="p-4 sm:p-5">
+          <div className="p-3">
             {productDetailTab === "details" ? (
               <div
                 id="product-tab-panel-details"
                 role="tabpanel"
                 aria-labelledby="product-tab-details"
-                className="space-y-4"
+                className="space-y-2"
               >
                 {product.description?.trim() ? (
                   <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition hover:border-primary/40">
