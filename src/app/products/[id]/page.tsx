@@ -222,9 +222,14 @@ export default function ProductDetailPage() {
                 {product.description ?? ""}
               </p>
               <div className="mt-3">
-                <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
-                  {formatPrice(product.price)} / {product.baseUnit}
-                </p>
+                <div className="flex flex-wrap items-baseline gap-1">
+                  <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xl">
+                    {formatPrice(product.price)} 
+                  </p>
+                  <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xs">
+                    / {product.baseUnit}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-5 flex w-full items-start gap-2">
