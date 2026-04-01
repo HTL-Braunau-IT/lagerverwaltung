@@ -148,7 +148,7 @@ export function ProductImageGallery({
           <img
             src={image.url}
             alt={image.altText ?? `${productName} Produktbild`}
-            className="max-h-96 w-full object-contain"
+            className="mx-auto max-h-64 w-full max-w-[min(100%,320px)] object-contain sm:max-h-64"
             loading="lazy"
             onLoad={(event) => {
               const palette = buildEdgePalette(event.currentTarget);

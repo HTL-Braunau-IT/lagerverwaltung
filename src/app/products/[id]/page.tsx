@@ -54,6 +54,8 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+type ProductDetailTab = "description" | "documents";
+
 export default function ProductDetailPage() {
   const { data: session } = useSession();
   const params = useParams<{ id: string }>();
@@ -72,6 +74,7 @@ export default function ProductDetailPage() {
   const [areaWidthInput, setAreaWidthInput] = useState("1");
   const [areaHeightInput, setAreaHeightInput] = useState("1");
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
+  const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("description");
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
   const productQuery = api.product.byId.useQuery({ id: productId }, { enabled: Boolean(productId) });
@@ -212,6 +215,7 @@ export default function ProductDetailPage() {
           }}
         />
 
+        <div className="flex min-w-0 flex-col gap-6">
         <Card className="self-start rounded-2xl p-6 shadow-sm">
           <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80">
             <span aria-hidden="true">←</span>
@@ -246,9 +250,6 @@ export default function ProductDetailPage() {
                   </Link>
                 ) : null}
               </div>
-              <p className="mt-4 text-sm text-foreground">
-                {product.description ?? ""}
-              </p>
               <div className="mt-5">
                 <div className="flex flex-wrap items-baseline gap-1">
                   <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xl">
@@ -366,33 +367,92 @@ export default function ProductDetailPage() {
                   {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
                 </Button>
               </div>
-
-              <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-                <h2 className="text-sm font-semibold text-foreground">Dokumente</h2>
-                <div className="mt-3 space-y-2">
-                  {product.documents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
-                  ) : (
-                    product.documents.map((document) => (
-                      <a
-                        key={document.id}
-                        href={document.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block rounded-lg border border-border bg-card p-2 transition hover:border-primary/50"
-                      >
-                        <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {document.mimeType} · {formatFileSize(document.sizeBytes)}
-                        </p>
-                      </a>
-                    ))
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </Card>
+
+        <section
+          className="overflow-hidden rounded-2xl border border-border bg-muted/30 shadow-sm"
+          aria-label="Produktdetails"
+        >
+          <div
+            className="flex flex-wrap gap-0 border-b border-border bg-card/50"
+            role="tablist"
+            aria-orientation="horizontal"
+          >
+            {(
+              [
+                { id: "description" as const, label: "Beschreibung" },
+                { id: "documents" as const, label: "Dokumente" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`product-tab-${tab.id}`}
+                aria-selected={productDetailTab === tab.id}
+                aria-controls={`product-tab-panel-${tab.id}`}
+                onClick={() => setProductDetailTab(tab.id)}
+                className={[
+                  "-mb-px min-h-[44px] border-b-2 px-3 py-2.5 text-sm font-medium transition-colors sm:px-4",
+                  productDetailTab === tab.id
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4 sm:p-5">
+            {productDetailTab === "description" ? (
+              <div
+                id="product-tab-panel-description"
+                role="tabpanel"
+                aria-labelledby="product-tab-description"
+              >
+                {product.description?.trim() ? (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                    {product.description}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Keine Beschreibung hinterlegt.</p>
+                )}
+              </div>
+            ) : null}
+
+            {productDetailTab === "documents" ? (
+              <div
+                id="product-tab-panel-documents"
+                role="tabpanel"
+                aria-labelledby="product-tab-documents"
+                className="space-y-2"
+              >
+                {product.documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
+                ) : (
+                  product.documents.map((document) => (
+                    <a
+                      key={document.id}
+                      href={document.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-lg border border-border bg-card p-3 transition hover:border-primary/50"
+                    >
+                      <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {document.mimeType} · {formatFileSize(document.sizeBytes)}
+                      </p>
+                    </a>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+        </section>
+        </div>
 
         <ShopPartListsAside
           appHeaderOffset={appHeaderOffset}
