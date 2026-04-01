@@ -119,7 +119,7 @@ export default async function RootLayout({
                   />
                   <HeaderNavLink
                     href="/ausleihe"
-                    label="Ausleihe"
+                    label="Ausleihen"
                     hoverClassName="hover:text-amber-600"
                     icon={<LendingIcon />}
                   />

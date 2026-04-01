@@ -52,11 +52,25 @@ type ProductCreateFormState = ProductFormState & {
 };
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+function isNearMinimumStock(quantityOnHand: unknown, minimumQuantity: unknown): boolean {
+  const minimum = toNumber(minimumQuantity);
+  if (minimum <= 0) return false;
+  const quantity = toNumber(quantityOnHand);
+  return quantity <= minimum * 1.1;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function createInitialForm(product: {
@@ -198,6 +212,7 @@ export function ProductsAdminPanel() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [storageRoomFilter, setStorageRoomFilter] = useState("");
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
+  const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [createOpen, setCreateOpen] = useState(false);
@@ -206,6 +221,8 @@ export function ProductsAdminPanel() {
   const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
+  const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
   const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
@@ -274,6 +291,12 @@ export function ProductsAdminPanel() {
       ),
     [productsQuery.data],
   );
+  const visibleProducts = useMemo(() => {
+    if (!showNearMinimumOnly) return sortedProducts;
+    return sortedProducts.filter((product) =>
+      isNearMinimumStock(product.quantityOnHand, product.minimumQuantity),
+    );
+  }, [showNearMinimumOnly, sortedProducts]);
   const storageLocationsById = useMemo(() => {
     return new Map((storageLocationsQuery.data ?? []).map((storageLocation) => [storageLocation.id, storageLocation]));
   }, [storageLocationsQuery.data]);
@@ -335,6 +358,37 @@ export function ProductsAdminPanel() {
     return result.url;
   };
 
+  const uploadProductDocument = async (productId: string, file: File) => {
+    if (file.size > MAX_DOCUMENT_UPLOAD_BYTES) {
+      throw new Error("Das Dokument ist zu gross. Maximal 12 MB erlaubt.");
+    }
+
+    const body = new FormData();
+    body.append("productId", productId);
+    body.append("file", file);
+
+    const response = await fetch("/api/backend/products/upload-document", {
+      method: "POST",
+      body,
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
+    if (!response.ok) {
+      throw new Error(result?.message ?? "Dokument konnte nicht hochgeladen werden.");
+    }
+  };
+
+  const deleteProductDocument = async (documentId: string) => {
+    const response = await fetch("/api/backend/products/delete-document", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ documentId }),
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
+    if (!response.ok) {
+      throw new Error(result?.message ?? "Dokument konnte nicht geloescht werden.");
+    }
+  };
+
   return (
     <Card className="rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -355,7 +409,7 @@ export function ProductsAdminPanel() {
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-4">
+      <div className="mb-4 grid gap-3 md:grid-cols-5">
         <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
           Suche nach Name, SKU oder Beschreibung
           <Input
@@ -411,6 +465,16 @@ export function ProductsAdminPanel() {
             ))}
           </select>
         </label>
+        <div className="mb-1 flex items-end">
+          <Button
+            type="button"
+            variant={showNearMinimumOnly ? "default" : "outline"}
+            className="h-10 w-full rounded-xl"
+            onClick={() => setShowNearMinimumOnly((current) => !current)}
+          >
+            {showNearMinimumOnly ? "Filter aktiv: nahe Mindestbestand" : "Nahe Mindestbestand (<= 110%)"}
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -442,7 +506,7 @@ export function ProductsAdminPanel() {
               </tr>
             ) : null}
 
-            {!productsQuery.isLoading && !productsQuery.error && sortedProducts.length === 0 ? (
+            {!productsQuery.isLoading && !productsQuery.error && visibleProducts.length === 0 ? (
               <tr>
                 <TableCell colSpan={6} className="text-muted-foreground">
                   Keine Produkte gefunden.
@@ -450,8 +514,9 @@ export function ProductsAdminPanel() {
               </tr>
             ) : null}
 
-            {sortedProducts.map((product) => {
+            {visibleProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
+              const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
               const form = formsById[product.id] ?? createInitialForm(product);
               const previewImage = product.images[0];
               const locationText = product.storageLocation
@@ -480,7 +545,7 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${isNearMinimum ? "outline outline-2 -outline-offset-2 outline-yellow-400" : ""}`}
                   >
                     <TableCell className="font-medium text-foreground">
                       <div className="relative inline-block">
@@ -886,6 +951,104 @@ export function ProductsAdminPanel() {
                               />
                             </div>
                           ) : null}
+
+                          <div className="rounded-lg border border-slate-300 bg-white p-3 md:col-span-2">
+                            <p className="text-xs font-medium text-slate-700">Dokumente</p>
+                            <input
+                              type="file"
+                              accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={async (event) => {
+                                const file = event.target.files?.[0];
+                                if (!file) return;
+                                try {
+                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: true }));
+                                  setEditDocumentUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                  await uploadProductDocument(product.id, file);
+                                  await utils.product.backendList.invalidate();
+                                } catch (error) {
+                                  setEditDocumentUploadErrorById((current) => ({
+                                    ...current,
+                                    [product.id]:
+                                      error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.",
+                                  }));
+                                } finally {
+                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: false }));
+                                  event.target.value = "";
+                                }
+                              }}
+                              className="mt-2 block w-full text-xs text-slate-700"
+                            />
+                            {editDocumentUploadPendingById[product.id] ? (
+                              <p className="mt-1 text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
+                            ) : null}
+                            {editDocumentUploadErrorById[product.id] ? (
+                              <p className="mt-1 text-xs text-destructive">{editDocumentUploadErrorById[product.id]}</p>
+                            ) : null}
+                            <div className="mt-3 space-y-1.5">
+                              {(product.documents ?? []).length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                              ) : (
+                                (product.documents ?? []).map((document) => (
+                                  <div
+                                    key={document.id}
+                                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
+                                  >
+                                    <a
+                                      href={document.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      onClick={(event) => event.stopPropagation()}
+                                      className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                    >
+                                      {document.originalName}
+                                    </a>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {formatBytes(document.sizeBytes)}
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={async (event) => {
+                                          event.stopPropagation();
+                                          try {
+                                            setEditDocumentUploadPendingById((current) => ({
+                                              ...current,
+                                              [product.id]: true,
+                                            }));
+                                            setEditDocumentUploadErrorById((current) => ({
+                                              ...current,
+                                              [product.id]: null,
+                                            }));
+                                            await deleteProductDocument(document.id);
+                                            await utils.product.backendList.invalidate();
+                                          } catch (error) {
+                                            setEditDocumentUploadErrorById((current) => ({
+                                              ...current,
+                                              [product.id]:
+                                                error instanceof Error
+                                                  ? error.message
+                                                  : "Dokument konnte nicht geloescht werden.",
+                                            }));
+                                          } finally {
+                                            setEditDocumentUploadPendingById((current) => ({
+                                              ...current,
+                                              [product.id]: false,
+                                            }));
+                                          }
+                                        }}
+                                        disabled={editDocumentUploadPendingById[product.id]}
+                                      >
+                                        Entfernen
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
@@ -934,7 +1097,11 @@ export function ProductsAdminPanel() {
                                 imageAltText: form.imageAltText.trim() || null,
                               });
                             }}
-                            disabled={updateMutation.isPending || editUploadPendingById[product.id]}
+                            disabled={
+                              updateMutation.isPending ||
+                              editUploadPendingById[product.id] ||
+                              editDocumentUploadPendingById[product.id]
+                            }
                             className="disabled:opacity-60"
                           >
                             {updateMutation.isPending ? "Speichert..." : "Speichern"}

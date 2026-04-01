@@ -180,7 +180,7 @@ export function LendableItemsAdminPanel() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Ausleihartikel</h2>
-          <p className="text-sm text-muted-foreground">Eigener Katalog fuer die Ausleihe (unabhaengig von Produkten).</p>
+          <p className="text-sm text-muted-foreground">Eigener Katalog fuer die Werkzeuge.</p>
         </div>
         <Button
           onClick={() => {
@@ -317,7 +317,7 @@ export function LendableItemsAdminPanel() {
                                 }))
                               }
                             />
-                            Sichtbar fuer Ausleihe
+                            Ausleihbar
                           </label>
                           <label className="text-xs text-muted-foreground md:col-span-2">
                             Bild hochladen (optional)
@@ -485,7 +485,7 @@ export function LendableItemsAdminPanel() {
               checked={form.isVisible}
               onChange={(e) => setForm((prev) => ({ ...prev, isVisible: e.target.checked }))}
             />
-            Sichtbar fuer Ausleihe
+            Ausleihbar
           </label>
 
           {form.id ? (

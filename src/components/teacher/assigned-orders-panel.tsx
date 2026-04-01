@@ -421,7 +421,7 @@ export function AssignedOrdersPanel() {
                       disabled={!hasItems || isAnyMutationPending || approveLoanMutation.isPending}
                       className="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {approveLoanMutation.isPending ? "Wird freigegeben..." : "Ausleihe freigeben"}
+                      {approveLoanMutation.isPending ? "Wird freigegeben..." : "Freigeben"}
                     </button>
                   </div>
                 </article>

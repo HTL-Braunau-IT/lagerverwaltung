@@ -91,9 +91,9 @@ export default function AusleihePage() {
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
         <p className="text-xs uppercase tracking-[0.2em] text-amber-700">HTL Lager</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Ausleihe</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Ausleihen</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Hier kannst du Materialien ausleihen und den Status verfolgen.
+          Hier kannst du Werkzeuge ausleihen und den Status verfolgen.
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -188,7 +188,7 @@ export default function AusleihePage() {
           open={dueInfoOpen}
           onClose={() => setDueInfoOpen(false)}
           title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
-          description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Ausleihe ans Lager."
+          description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
         >
           {selectedItem ? (
             <div className="mt-1 space-y-4">
@@ -259,7 +259,7 @@ export default function AusleihePage() {
                     }}
                     disabled={!canBorrow || createLoanMutation.isPending}
                   >
-                    {createLoanMutation.isPending ? "Wird erstellt..." : "Ausleihe anfragen"}
+                    {createLoanMutation.isPending ? "Wird erstellt..." : "Anfrage senden"}
                   </Button>
                 </div>
               </div>
@@ -270,16 +270,16 @@ export default function AusleihePage() {
       <section className="space-y-4">
         <Card className="rounded-2xl p-5">
           <div className="mb-2">
-            <h2 className="text-xl font-semibold text-slate-900">Meine Ausleihen</h2>
-            <p className="mt-1 text-sm text-slate-600">Hier siehst du offene, freigegebene und erledigte Ausleihen.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Meine Ausgeliehen Werkzeuge</h2>
+            <p className="mt-1 text-sm text-slate-600">Hier siehst du offene, freigegebene und erledigte Anfragen.</p>
           </div>
 
           {myLoansQuery.isLoading ? (
-            <p className="text-sm text-slate-600">Ausleihen werden geladen...</p>
+            <p className="text-sm text-slate-600">Werkzeuge werden geladen...</p>
           ) : null}
 
           {!myLoansQuery.isLoading && myLoansQuery.data && myLoansQuery.data.length === 0 ? (
-            <p className="text-sm text-slate-600">Noch keine Ausleihen vorhanden.</p>
+            <p className="text-sm text-slate-600">Noch keine Anfragen vorhanden.</p>
           ) : null}
 
           <div className="mt-4 space-y-4">
