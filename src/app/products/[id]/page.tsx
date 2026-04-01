@@ -215,8 +215,8 @@ export default function ProductDetailPage() {
             <ProductImageGallery images={images} productName={product.name} />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
-              <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <h1 className="mt-2 text-2xl font-semibold text-foreground">{product.name}</h1>
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Link
                   href={`/?search=${encodeURIComponent(product.sku)}`}
                   className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -243,7 +243,7 @@ export default function ProductDetailPage() {
               <p className="mt-4 text-sm text-foreground">
                 {product.description ?? ""}
               </p>
-              <div className="mt-3">
+              <div className="mt-5">
                 <div className="flex flex-wrap items-baseline gap-1">
                   <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xl">
                     {formatPrice(product.price)} 
