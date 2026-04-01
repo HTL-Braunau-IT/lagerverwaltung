@@ -55,7 +55,7 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type ProductDetailTab = "description" | "documents";
+type ProductDetailTab = "details" | "documents";
 
 const SKU_COPY_FEEDBACK_MS = 1500;
 
@@ -131,7 +131,7 @@ export default function ProductDetailPage() {
   const [areaWidthInput, setAreaWidthInput] = useState("1");
   const [areaHeightInput, setAreaHeightInput] = useState("1");
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
-  const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("description");
+  const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("details");
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
   const productQuery = api.product.byId.useQuery({ id: productId }, { enabled: Boolean(productId) });
@@ -238,17 +238,18 @@ export default function ProductDetailPage() {
       : unitStep;
   const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
 
-  const allCategoryNames = Array.from(
-    new Set(
-      product.categories
-        .map((entry) => categoriesQuery.data?.find((category) => category.id === entry.categoryId)?.name)
-        .filter((name): name is string => Boolean(name)) ?? [],
-    ),
-  );
-  if (allCategoryNames.length === 0 && product.category?.name) {
-    allCategoryNames.push(product.category.name);
+  const categoryEntries: { id: string; name: string }[] = [];
+  const seenCategoryIds = new Set<string>();
+  for (const entry of product.categories) {
+    const cat = categoriesQuery.data?.find((c) => c.id === entry.categoryId);
+    if (cat && !seenCategoryIds.has(cat.id)) {
+      seenCategoryIds.add(cat.id);
+      categoryEntries.push({ id: cat.id, name: cat.name });
+    }
   }
-  const categoryLabel = allCategoryNames.length > 0 ? allCategoryNames.join(" • ") : "Ohne Kategorie";
+  if (categoryEntries.length === 0 && product.category) {
+    categoryEntries.push({ id: product.category.id, name: product.category.name });
+  }
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
   const images =
     product.images.length === 0
@@ -281,8 +282,7 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <ProductImageGallery images={images} productName={product.name} />
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
-              <h1 className="mt-2 text-2xl font-semibold text-foreground">{product.name}</h1>
+              <h1 className="text-2xl font-semibold text-foreground">{product.name}</h1>
               <div className="mt-4 flex flex-wrap gap-2">
                 <div className="inline-flex max-w-full min-h-0 items-stretch overflow-hidden rounded-full border border-border bg-muted/50 text-sm text-foreground shadow-sm">
                   <Link
@@ -442,7 +442,7 @@ export default function ProductDetailPage() {
           >
             {(
               [
-                { id: "description" as const, label: "Beschreibung" },
+                { id: "details" as const, label: "Details" },
                 { id: "documents" as const, label: "Dokumente" },
               ] as const
             ).map((tab) => (
@@ -467,19 +467,47 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="p-4 sm:p-5">
-            {productDetailTab === "description" ? (
+            {productDetailTab === "details" ? (
               <div
-                id="product-tab-panel-description"
+                id="product-tab-panel-details"
                 role="tabpanel"
-                aria-labelledby="product-tab-description"
+                aria-labelledby="product-tab-details"
+                className="space-y-4"
               >
                 {product.description?.trim() ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                    {product.description}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Keine Beschreibung hinterlegt.</p>
-                )}
+                  <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition hover:border-primary/40">
+                    <p className="truncate text-sm font-medium text-primary">Beschreibung</p>
+                    <div className="mt-2 border-t border-border/60 pt-3">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="rounded-lg border border-border bg-white p-3 shadow-sm dark:bg-card">
+                  <p className="truncate text-sm font-medium text-primary">Kategorien</p>
+                  <div className="mt-2 border-t border-border/60 pt-2.5">
+                    {categoryEntries.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {categoryEntries.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/?categoryId=${encodeURIComponent(cat.id)}`}
+                            className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            title="Alle Produkte in dieser Kategorie anzeigen"
+                          >
+                            <span className="truncate font-medium">{cat.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="inline-flex max-w-full min-h-0 items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground shadow-sm">
+                        Ohne Kategorie
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : null}
 
