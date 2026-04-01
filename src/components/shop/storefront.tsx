@@ -326,7 +326,7 @@ export function Storefront() {
                           {product.description ?? "Keine Beschreibung."}
                         </p>
                         <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
-                          {formatPrice(product.price)}
+                          {formatPrice(product.price)} 
                         </p>
                       </div>
                     </div>

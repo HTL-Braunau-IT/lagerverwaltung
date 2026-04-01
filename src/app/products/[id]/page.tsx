@@ -223,7 +223,7 @@ export default function ProductDetailPage() {
               </p>
               <div className="mt-3">
                 <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
-                  {formatPrice(product.price)}
+                  {formatPrice(product.price)} / {product.baseUnit}
                 </p>
               </div>
 
