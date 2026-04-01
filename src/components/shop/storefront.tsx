@@ -75,8 +75,12 @@ export function Storefront() {
   const utils = api.useUtils();
   const searchFromUrl = searchParams.get("search") ?? "";
   const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
+  const storageLocationIdFromUrl = searchParams.get("storageLocationId") ?? undefined;
   const [sessionId, setSessionId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(categoryFromUrl);
+  const [selectedStorageLocationId, setSelectedStorageLocationId] = useState<string | undefined>(
+    storageLocationIdFromUrl,
+  );
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
@@ -110,6 +114,10 @@ export function Storefront() {
   }, [searchFromUrl]);
 
   useEffect(() => {
+    setSelectedStorageLocationId(storageLocationIdFromUrl ?? undefined);
+  }, [storageLocationIdFromUrl]);
+
+  useEffect(() => {
     const updateAppHeaderOffset = () => {
       const appHeader = document.querySelector<HTMLElement>('[data-app-shell-header="true"]');
       setAppHeaderOffset(appHeader?.offsetHeight ?? 0);
@@ -124,6 +132,7 @@ export function Storefront() {
     {
       search: searchTerm || undefined,
       categoryId: selectedCategoryId,
+      storageLocationId: selectedStorageLocationId,
       limit: 24,
     },
     {
@@ -155,7 +164,8 @@ export function Storefront() {
     [productQuery.data?.pages],
   );
   const hasProducts = products.length > 0;
-  const hasActiveFilters = Boolean(searchTerm) || Boolean(selectedCategoryId);
+  const hasActiveFilters =
+    Boolean(searchTerm) || Boolean(selectedCategoryId) || Boolean(selectedStorageLocationId);
 
   useEffect(() => {
     const target = loadMoreRef.current;
@@ -233,6 +243,8 @@ export function Storefront() {
                     setSearchInput("");
                     setSearchTerm("");
                     setSelectedCategoryId(undefined);
+                    setSelectedStorageLocationId(undefined);
+                    router.replace("/");
                   }}
                   variant="outline"
                   className="mt-3"

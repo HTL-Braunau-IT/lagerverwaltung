@@ -216,8 +216,30 @@ export default function ProductDetailPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">SKU: {product.sku}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Lagerplatz: {product.storageLocation?.name}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Link
+                  href={`/?search=${encodeURIComponent(product.sku)}`}
+                  className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  title={`Alle Produkte mit dieser SKU anzeigen`}
+                >
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    SKU
+                  </span>
+                  <span className="truncate font-medium tabular-nums">{product.sku}</span>
+                </Link>
+                {product.storageLocation ? (
+                  <Link
+                    href={`/?storageLocationId=${encodeURIComponent(product.storageLocation.id)}`}
+                    className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    title={`Alle Produkte an diesem Lagerplatz anzeigen`}
+                  >
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Lagerplatz
+                    </span>
+                    <span className="truncate font-medium">{product.storageLocation.name}</span>
+                  </Link>
+                ) : null}
+              </div>
               <p className="mt-4 text-sm text-foreground">
                 {product.description ?? ""}
               </p>
