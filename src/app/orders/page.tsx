@@ -264,6 +264,8 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
+                  <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+
                   <div className="mt-7 grid gap-6">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
                       <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-3 sm:gap-6">
