@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
+import { CheckIcon, ClipboardCopyIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -40,6 +42,62 @@ function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
 
 function userLabel(user: { name: string | null; email: string | null }) {
   return user.name?.trim() || user.email?.trim() || "Unbekannt";
+}
+
+const SKU_COPY_FEEDBACK_MS = 1500;
+
+function SkuCopyButton({ sku }: { sku: string }) {
+  const [copied, setCopied] = useState(false);
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetRef.current) clearTimeout(resetRef.current);
+    };
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="inline-flex shrink-0 items-center justify-center rounded-full px-2 text-slate-500 transition hover:bg-slate-200/60 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+      title={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
+      aria-label={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(sku);
+        } catch {
+          return;
+        }
+        setCopied(true);
+        if (resetRef.current) clearTimeout(resetRef.current);
+        resetRef.current = setTimeout(() => {
+          setCopied(false);
+          resetRef.current = null;
+        }, SKU_COPY_FEEDBACK_MS);
+      }}
+    >
+      <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
+        <span
+          className={[
+            "transition-opacity duration-200 ease-out",
+            copied ? "pointer-events-none opacity-0" : "opacity-100",
+          ].join(" ")}
+          aria-hidden
+        >
+          <ClipboardCopyIcon size={14} />
+        </span>
+        <span
+          className={[
+            "absolute inset-0 flex items-center justify-center text-emerald-600 transition-opacity duration-200 ease-out",
+            copied ? "opacity-100" : "pointer-events-none opacity-0",
+          ].join(" ")}
+          aria-hidden
+        >
+          <CheckIcon size={14} />
+        </span>
+      </span>
+    </button>
+  );
 }
 
 export default function OrdersPage() {
@@ -206,37 +264,82 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                    <p className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-slate-500">Datum</span>
-                      <span className="min-w-0 truncate text-slate-900">
-                        {formatOrderDate(order.createdAt)}
-                      </span>
-                    </p>
-                    <p className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-slate-500">Kostenstelle</span>
-                      <span className="min-w-0 truncate text-slate-900">
-                        {order.costCenter.code} - {order.costCenter.name}
-                      </span>
-                    </p>
-                    <p className="flex min-w-0 flex-col gap-0.5">
-                      <span className="text-slate-500">Artikel gesamt</span>
-                      <span className="min-w-0 truncate text-slate-900">{itemCount}</span>
-                    </p>
-                  </div>
-
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-800">Positionen</p>
-                    <ul className="mt-2 space-y-2">
-                      {order.items.map((item) => (
-                        <li key={item.id} className="flex items-center justify-between gap-3 text-sm text-slate-700">
-                          <span>{item.product.name}</span>
-                          <span className="font-medium text-slate-900">
-                            {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                  <div className="mt-7 grid gap-6">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                      <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-3 sm:gap-6">
+                        <p className="flex min-w-0 flex-col gap-1">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Datum
                           </span>
-                        </li>
-                      ))}
-                    </ul>
+                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
+                            {formatOrderDate(order.createdAt)}
+                          </span>
+                        </p>
+                        <p className="flex min-w-0 flex-col gap-1">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Kostenstelle
+                          </span>
+                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
+                            {order.costCenter.code} - {order.costCenter.name}
+                          </span>
+                        </p>
+                        <p className="flex min-w-0 flex-col gap-1 sm:text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                            Artikel gesamt
+                          </span>
+                          <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
+                            {itemCount}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none">
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-base font-semibold text-slate-900">Positionen</p>
+                        </div>
+                        <span className="text-xs font-medium text-slate-600 group-open:hidden">
+                          Anzeigen
+                        </span>
+                        <span className="text-xs font-medium text-slate-600 hidden group-open:inline">
+                          Ausblenden
+                        </span>
+                      </summary>
+
+                      <div className="mt-8">
+                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(max-content,26ch)_max-content] items-center gap-x-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <span className="min-w-0 truncate">Name</span>
+                          <div className="justify-self-center text-center">SKU</div>
+                          <span className="shrink-0 text-right">Menge</span>
+                        </div>
+
+                        <ul className="mt-2 divide-y divide-slate-200/70">
+                          {order.items.map((item) => (
+                            <li
+                              key={item.id}
+                              className="grid grid-cols-[minmax(0,1fr)_minmax(max-content,22ch)_max-content] items-center gap-x-4 py-2.5 text-sm text-slate-700 first:pt-3 last:pb-3"
+                            >
+                              <span className="min-w-0 truncate text-[15px] font-medium text-slate-900">
+                                {item.product.name}
+                              </span>
+                              <span className="justify-self-center">
+                                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-slate-700 shadow-sm">
+                                  <span className="whitespace-nowrap">{item.product.sku}</span>
+                                  <SkuCopyButton sku={item.product.sku} />
+                                </span>
+                              </span>
+                              <span className="justify-self-end whitespace-nowrap text-right text-[15px] font-semibold tabular-nums text-slate-900">
+                                {decimalToNumber(item.quantity)}{" "}
+                                <span className="font-medium text-slate-600">
+                                  {item.product.baseUnit.toLowerCase()}
+                                </span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
                   </div>
                     </article>
                   );
