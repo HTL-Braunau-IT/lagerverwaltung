@@ -133,14 +133,18 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
-    return lists.map((list) => ({
-      ...list,
-      imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
-      documents: list.documents.map((document) => ({
-        ...document,
-        url: normalizePartListDocumentUrl(document.id),
-      })),
-    }));
+    return lists.map((list) => {
+      const maxOrderable = calculatePartListMaxOrderable(list.items);
+      return {
+        ...list,
+        maxOrderable,
+        imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
+        documents: list.documents.map((document) => ({
+          ...document,
+          url: normalizePartListDocumentUrl(document.id),
+        })),
+      };
+    });
   }),
   pinnedForUser: teacherProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;

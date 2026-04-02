@@ -8,6 +8,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
 import { PinIcon } from "~/components/layout/icon-renders";
+import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 
 type StickySizing = {
   appHeaderOffset: number;
@@ -26,6 +27,12 @@ function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+function canAddPartListQuantity(quantityInput: string, maxOrderable: number): boolean {
+  const parsed = Number(quantityInput);
+  const qty = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+  return maxOrderable > 0 && qty >= 1 && qty <= maxOrderable;
 }
 
 function toMixedStorageRoomWarning(message: string | null | undefined): string | null {
@@ -162,7 +169,7 @@ export function ShopPartListsAside({
       }
 
       if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
-        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfuegbar.`);
+        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfügbar.`);
         return;
       }
 
@@ -243,6 +250,8 @@ export function ShopPartListsAside({
               <div className="mt-2 space-y-2">
                 {pinnedPartLists.map((partList) => {
                   const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                  const maxOrderable = partList.maxOrderable;
+                  const canAdd = canAddPartListQuantity(quantityInput, maxOrderable);
                   return (
                     <div
                       key={partList.id}
@@ -286,28 +295,28 @@ export function ShopPartListsAside({
                           </span>
                         </button>
                       </div>
-                      <div className="mt-2 flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
+                      <div
+                        className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <ShopQuantityStepper
                           value={quantityInput}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) =>
-                            setQuantitiesByPartList((prev) => ({
-                              ...prev,
-                              [partList.id]: event.target.value,
-                            }))
+                          onChange={(next) =>
+                            setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
                           }
-                          className="h-8 w-12 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground"
-                          aria-label={`Menge fuer Teileliste ${partList.name}`}
+                          min={1}
+                          max={maxOrderable > 0 ? maxOrderable : undefined}
+                          step={1}
+                          decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
+                          increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
+                          inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
                         />
-                        <Button
-                          size="sm"
-                          className="h-8 flex-1 text-xs"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                        <ShopAddToCartButton
+                          className="min-w-0 flex-1 text-xs"
+                          onClick={() => {
+                            const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                            const requestedQuantity =
+                              maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
                             setPartListWarning(null);
                             setActiveAddPartListId(partList.id);
                             addPartListMutation.mutate({
@@ -316,12 +325,15 @@ export function ShopPartListsAside({
                               quantity: requestedQuantity,
                             });
                           }}
-                          disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                        >
-                          {addPartListMutation.isPending && activeAddPartListId === partList.id
-                            ? "..."
-                            : "In den Warenkorb"}
-                        </Button>
+                          disabled={
+                            sessionId.length === 0 ||
+                            addPartListMutation.isPending ||
+                            !canAdd
+                          }
+                          pending={
+                            addPartListMutation.isPending && activeAddPartListId === partList.id
+                          }
+                        />
                       </div>
                     </div>
                   );
@@ -373,6 +385,8 @@ export function ShopPartListsAside({
                   <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {filteredPinnedPartListsForModal.map((partList) => {
                       const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                      const maxOrderable = partList.maxOrderable;
+                      const canAdd = canAddPartListQuantity(quantityInput, maxOrderable);
                       return (
                         <div
                           key={`pinned-${partList.id}`}
@@ -421,30 +435,27 @@ export function ShopPartListsAside({
                             </button>
                           </div>
                           <div
-                            className="mt-3 flex items-center gap-2" 
+                            className="mt-3 flex min-w-0 flex-wrap items-center gap-2"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            <input
-                              type="number"
-                              min={1}
-                              step={1}
+                            <ShopQuantityStepper
                               value={quantityInput}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setQuantitiesByPartList((prev) => ({
-                                  ...prev,
-                                  [partList.id]: event.target.value,
-                                }))
+                              onChange={(next) =>
+                                setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
                               }
-                              className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
-                              aria-label={`Menge fuer Teileliste ${partList.name}`}
+                              min={1}
+                              max={maxOrderable > 0 ? maxOrderable : undefined}
+                              step={1}
+                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
+                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
                             />
-                            <Button
-                              size="sm"
-                              className="h-9 flex-1"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                            <ShopAddToCartButton
+                              className="min-w-0 flex-1"
+                              onClick={() => {
+                                const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                                const requestedQuantity =
+                                  maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
                                 setPartListWarning(null);
                                 setActiveAddPartListId(partList.id);
                                 addPartListMutation.mutate({
@@ -453,12 +464,15 @@ export function ShopPartListsAside({
                                   quantity: requestedQuantity,
                                 });
                               }}
-                              disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                            >
-                              {addPartListMutation.isPending && activeAddPartListId === partList.id
-                                ? "..."
-                                : "In den Warenkorb"}
-                            </Button>
+                              disabled={
+                                sessionId.length === 0 ||
+                                addPartListMutation.isPending ||
+                                !canAdd
+                              }
+                              pending={
+                                addPartListMutation.isPending && activeAddPartListId === partList.id
+                              }
+                            />
                           </div>
                         </div>
                       );
@@ -478,6 +492,8 @@ export function ShopPartListsAside({
                     {filteredPartListsForModal.map((partList) => {
                       const isPinned = pinnedPartListIds.has(partList.id);
                       const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                      const maxOrderable = partList.maxOrderable;
+                      const canAdd = canAddPartListQuantity(quantityInput, maxOrderable);
                       return (
                         <div
                           key={partList.id}
@@ -532,30 +548,27 @@ export function ShopPartListsAside({
                             </button>
                           </div>
                           <div
-                            className="mt-3 flex items-center gap-2"
+                            className="mt-3 flex min-w-0 flex-wrap items-center gap-2"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            <input
-                              type="number"
-                              min={1}
-                              step={1}
+                            <ShopQuantityStepper
                               value={quantityInput}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setQuantitiesByPartList((prev) => ({
-                                  ...prev,
-                                  [partList.id]: event.target.value,
-                                }))
+                              onChange={(next) =>
+                                setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
                               }
-                              className="h-9 w-14 rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
-                              aria-label={`Menge fuer Teileliste ${partList.name}`}
+                              min={1}
+                              max={maxOrderable > 0 ? maxOrderable : undefined}
+                              step={1}
+                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
+                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
                             />
-                            <Button
-                              size="sm"
-                              className="h-9 flex-1"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                            <ShopAddToCartButton
+                              className="min-w-0 flex-1"
+                              onClick={() => {
+                                const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                                const requestedQuantity =
+                                  maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
                                 setPartListWarning(null);
                                 setActiveAddPartListId(partList.id);
                                 addPartListMutation.mutate({
@@ -564,12 +577,15 @@ export function ShopPartListsAside({
                                   quantity: requestedQuantity,
                                 });
                               }}
-                              disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                            >
-                              {addPartListMutation.isPending && activeAddPartListId === partList.id
-                                ? "..."
-                                : "In den Warenkorb"}
-                            </Button>
+                              disabled={
+                                sessionId.length === 0 ||
+                                addPartListMutation.isPending ||
+                                !canAdd
+                              }
+                              pending={
+                                addPartListMutation.isPending && activeAddPartListId === partList.id
+                              }
+                            />
                           </div>
                         </div>
                       );
