@@ -47,34 +47,6 @@ export default function OrdersPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-sky-700">HTL Lager</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Bestellhistorie</h1>
-        <p className="mt-1 text-sm text-slate-600">Hier siehst du alle deine bisherigen Bestellungen.</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link
-            href="/"
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
-          >
-            Zur Produktliste
-          </Link>
-          <Link
-            href="/carts"
-            className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-          >
-            Zu Warenkoerben
-          </Link>
-          {session?.user.role === "TEACHER" || session?.user.role === "ADMIN" ? (
-            <Link
-              href="/teacher/orders"
-              className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
-            >
-              Zu Freigaben
-            </Link>
-          ) : null}
-        </div>
-      </header>
-
       <section className="space-y-4">
         {session?.user.role === "STUDENT" && (
           <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -179,11 +151,16 @@ export default function OrdersPage() {
               </div>
             )}
 
-            {ordersQuery.data?.map((order) => {
-              const itemCount = order.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
+            {(ordersQuery.data?.length ?? 0) > 0 ? (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {ordersQuery.data!.map((order) => {
+                  const itemCount = order.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
-              return (
-                <article key={order.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  return (
+                    <article
+                      key={order.id}
+                      className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm text-slate-500">Bestellnummer</p>
@@ -232,9 +209,11 @@ export default function OrdersPage() {
                       ))}
                     </ul>
                   </div>
-                </article>
-              );
-            })}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
           </>
         ) : null}
       </section>
