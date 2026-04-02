@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter, publicProcedure, teacherProcedure } from "~/server/api/trpc";
+import { calculatePartListMaxOrderable } from "~/server/api/routers/utils/stock";
 
 const partListItemInput = z.object({
   productId: z.string().min(1),
@@ -231,8 +232,10 @@ export const partsListRouter = createTRPCRouter({
       },
     });
     if (!partList) return null;
+    const maxOrderable = calculatePartListMaxOrderable(partList.items);
     return {
       ...partList,
+      maxOrderable,
       imageUrl: normalizePartListImageUrl(partList.id, partList.imageUrl),
       documents: partList.documents.map((document) => ({
         ...document,

@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { CartIcon, PackageIcon } from "~/components/layout/icon-renders";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -46,6 +47,50 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Ampel wie bei Produkten: Rot 0, Gelb 1–2, Gruen 3+. */
+function partListAvailabilityDotClass(maxOrderable: number): string {
+  if (maxOrderable <= 0) return "bg-red-500";
+  if (maxOrderable <= 2) return "bg-amber-400";
+  return "bg-emerald-500";
+}
+
+function partListAvailabilityTitle(maxOrderable: number): string {
+  if (maxOrderable <= 0) {
+    return "Nicht bestellbar: fuer eine komplette Teileliste reicht der Bestand nicht";
+  }
+  if (maxOrderable <= 2) {
+    return "Niedrig: nur wenige komplette Teilelisten sind gleichzeitig aus dem Bestand moeglich";
+  }
+  return "Ausreichend: mehrere komplette Teilelisten sind aus dem Bestand moeglich";
+}
+
+function PartListMaxOrderableLine({
+  maxOrderable,
+  partListName,
+}: {
+  maxOrderable: number;
+  partListName: string;
+}) {
+  const dotClass = partListAvailabilityDotClass(maxOrderable);
+  const title = partListAvailabilityTitle(maxOrderable);
+  const formatted = new Intl.NumberFormat("de-AT", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(maxOrderable);
+  const srSummary = `${formatted} mal komplett als Teileliste „${partListName}“ aus aktuellem Bestand moeglich. ${title}`;
+
+  return (
+    <div className="-mt-1 mb-2 flex items-center gap-1.5 text-sm justify-start">
+      <p className="sr-only">{srSummary}</p>
+      <span className={["h-2 w-2 shrink-0 rounded-full", dotClass].join(" ")} title={title} aria-hidden />
+      <PackageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="font-semibold tabular-nums text-foreground">{formatted}</span>
+      <span className="text-muted-foreground">mal</span>
+      <span className="text-muted-foreground">verfügbar</span>
+    </div>
+  );
+}
+
 export default function PartListDetailPage() {
   const { data: session } = useSession();
   const params = useParams<{ id: string }>();
@@ -79,13 +124,25 @@ export default function PartListDetailPage() {
       }
 
       if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
-        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfuegbar.`);
+        setPartListWarning(
+          `${result.partListName}: maximal ${result.maxOrderable}x verfügbar.`,
+        );
         return;
       }
 
       setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
+
+  const shopMaxOrderable = selectedPartListQuery.data?.maxOrderable;
+
+  useEffect(() => {
+    if (shopMaxOrderable === undefined || shopMaxOrderable <= 0) return;
+    setQuantityInput((prev) => {
+      const n = Math.max(1, Math.floor(Number(prev) || 1));
+      return n > shopMaxOrderable ? String(shopMaxOrderable) : prev;
+    });
+  }, [shopMaxOrderable]);
 
   useEffect(() => {
     const updateAppHeaderOffset = () => {
@@ -143,6 +200,14 @@ export default function PartListDetailPage() {
   }
 
   const selectedPartList = selectedPartListQuery.data;
+  const maxOrderable = selectedPartList.maxOrderable;
+  const parsedQuantity = Number(quantityInput);
+  const selectedQuantity =
+    Number.isFinite(parsedQuantity) && parsedQuantity > 0
+      ? Math.floor(parsedQuantity)
+      : 1;
+  const canAddPartListToCart =
+    maxOrderable > 0 && selectedQuantity >= 1 && selectedQuantity <= maxOrderable;
   const selectedImageUrl = selectedPartList.imageUrl ?? "/pictures/placeholder.jpg";
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
 
@@ -164,8 +229,9 @@ export default function PartListDetailPage() {
         />
 
         <Card className="self-start rounded-2xl p-6 shadow-sm">
-          <Link href="/" className="mb-4 inline-flex text-sm font-medium text-primary hover:opacity-80">
-            Zurueck zur Produktliste
+          <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80">
+            <span aria-hidden="true">←</span>
+            Zurück zur Produktliste
           </Link>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -187,24 +253,61 @@ export default function PartListDetailPage() {
               <p className="mt-4 text-sm text-foreground">
                 {selectedPartList.description ?? "Keine Beschreibung verfuegbar."}
               </p>
-              <div className="mt-5 rounded-xl border border-border bg-muted/40 p-4">
-                <p className="text-sm text-muted-foreground">
-                  Enthaltene Produkte:{" "}
-                  <span className="font-semibold text-foreground">{selectedPartList.items.length}</span>
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={quantityInput}
-                    onChange={(event) => setQuantityInput(event.target.value)}
-                    className="h-10 w-20 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                    aria-label={`Menge fuer Teileliste ${selectedPartList.name}`}
+              <div className="mt-5">
+                <div className="mt-2">
+                  <PartListMaxOrderableLine
+                    maxOrderable={maxOrderable}
+                    partListName={selectedPartList.name}
                   />
+                </div>
+                <div className="mt-3 flex w-full flex-nowrap items-center gap-2">
+                  <div className="flex h-8 min-w-0 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentQuantity = Math.max(Number(quantityInput) || 1, 1);
+                        const nextQuantity = Math.max(1, currentQuantity - 1);
+                        setQuantityInput(nextQuantity.toString());
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                      aria-label={`Menge fuer Teileliste ${selectedPartList.name} reduzieren`}
+                    >
+                      <span className="block leading-none">-</span>
+                    </Button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={maxOrderable > 0 ? maxOrderable : undefined}
+                      step={1}
+                      value={quantityInput}
+                      onChange={(event) => setQuantityInput(event.target.value)}
+                      className="w-11 min-w-0 shrink border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label={`Menge fuer Teileliste ${selectedPartList.name}`}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentQuantity = Math.max(Number(quantityInput) || 1, 1);
+                        const cap = maxOrderable > 0 ? maxOrderable : Number.POSITIVE_INFINITY;
+                        const nextQuantity = Math.min(cap, currentQuantity + 1);
+                        setQuantityInput(nextQuantity.toString());
+                      }}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+                      aria-label={`Menge fuer Teileliste ${selectedPartList.name} erhoehen`}
+                    >
+                      <span className="block leading-none">+</span>
+                    </Button>
+                  </div>
                   <Button
+                    size="sm"
                     onClick={() => {
-                      const requestedQuantity = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                      const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                      const requestedQuantity =
+                        maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
                       setLastAddedPartListQuantity(requestedQuantity);
                       setPartListWarning(null);
                       addPartListMutation.mutate({
@@ -213,10 +316,17 @@ export default function PartListDetailPage() {
                         quantity: requestedQuantity,
                       });
                     }}
-                    disabled={sessionId.length === 0 || addPartListMutation.isPending}
-                    className="h-10 rounded-xl px-3"
+                    disabled={
+                      sessionId.length === 0 ||
+                      addPartListMutation.isPending ||
+                      !canAddPartListToCart
+                    }
+                    className="h-8 min-h-8 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
                   >
-                    {addPartListMutation.isPending ? "..." : "In den Warenkorb"}
+                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center [&_svg]:h-4 [&_svg]:w-4">
+                      <CartIcon />
+                    </span>
+                    {addPartListMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
                   </Button>
                 </div>
               </div>
@@ -225,7 +335,10 @@ export default function PartListDetailPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-border bg-muted/30 p-4">
-              <h2 className="text-sm font-semibold text-foreground">Enthaltene Produkte</h2>
+                <h2 className="text-sm text-muted-foreground">
+                  Enthaltene Produkte:{" "}
+                  <span className="font-semibold text-foreground">{selectedPartList.items.length}</span>
+                </h2>
               <div className="mt-3 space-y-2">
                 {selectedPartList.items.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Keine Produkte in dieser Teileliste.</p>
