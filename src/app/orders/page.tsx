@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 import { api } from "~/trpc/react";
+import { Badge } from "~/components/ui/badge";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -23,6 +24,12 @@ function formatStatus(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
   if (status === "OPEN") return "Offen";
   if (status === "PREPARING") return "In Vorbereitung";
   return "Abholbereit";
+}
+
+function orderStatusBadgeVariant(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP"): Parameters<typeof Badge>[0]["variant"] {
+  if (status === "OPEN") return "destructive";
+  if (status === "PREPARING") return "secondary";
+  return "success";
 }
 
 function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
@@ -85,7 +92,7 @@ export default function OrdersPage() {
                         </p>
                         <p className="text-xs text-slate-500">{request.teacherEmail}</p>
                       </div>
-                      <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-800">
+                      <span className="rounded-full bg-slate-200 px-3 py-1   text-xs font-medium text-slate-800">
                         {formatRequestStatus(request.status)}
                       </span>
                     </div>
@@ -104,9 +111,11 @@ export default function OrdersPage() {
                       </p>
                     </div>
                     {request.approvedOrder ? (
-                      <p className="mt-2 text-sm text-slate-700">
-                        <span className="text-slate-500">Bestellstatus: </span>
-                        {formatStatus(request.approvedOrder.status)}
+                      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                        <span className="text-slate-500">Bestellstatus:</span>
+                        <Badge variant={orderStatusBadgeVariant(request.approvedOrder.status)}>
+                          {formatStatus(request.approvedOrder.status)}
+                        </Badge>
                       </p>
                     ) : null}
                     {request.status === "REJECTED" ? (
@@ -161,38 +170,58 @@ export default function OrdersPage() {
                       key={order.id}
                       className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                  <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
+                    <div className="justify-self-start">
                       <p className="text-sm text-slate-500">Bestellnummer</p>
                       <h2 className="text-lg font-semibold text-slate-900">{order.orderNumber}</h2>
+                    </div>
+
+                    <div className="justify-self-center self-start -mt-5">
                       {order.sourceRequest ? (
-                        <div className="mt-2 space-y-1">
-                          <span className="inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
-                            Aus Schuelerfreigabe
-                          </span>
-                          <p className="text-xs text-slate-600">
+                        <div className="flex flex-col items-center gap-0.5 text-center">
+                          <div className="relative">
+                            <div
+                              aria-hidden="true"
+                              className="absolute left-1/2 top-0 z-0 h-8 w-[190px] -translate-x-1/2 border border-violet-200 bg-violet-100 shadow-sm rounded-b-md"
+                            >
+                            </div>
+                            <Badge
+                              variant="default"
+                              className="relative z-10 rounded-none border-0 bg-transparent p-4 mt-1.5 text-violet-800 shadow-none leading-none"
+                            >
+                              Aus Schuelerfreigabe
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-600">
                             Schueler: {userLabel(order.sourceRequest.student)}
                           </p>
                         </div>
                       ) : null}
                     </div>
-                    <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
-                      {formatStatus(order.status)}
-                    </span>
+
+                    <div className="justify-self-end">
+                      <Badge variant={orderStatusBadgeVariant(order.status)}>
+                        {formatStatus(order.status)}
+                      </Badge>
+                    </div>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                    <p>
-                      <span className="text-slate-500">Datum: </span>
-                      {formatOrderDate(order.createdAt)}
+                  <div className="mt-6 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+                    <p className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-slate-500">Datum</span>
+                      <span className="min-w-0 truncate text-slate-900">
+                        {formatOrderDate(order.createdAt)}
+                      </span>
                     </p>
-                    <p>
-                      <span className="text-slate-500">Kostenstelle: </span>
-                      {order.costCenter.code} - {order.costCenter.name}
+                    <p className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-slate-500">Kostenstelle</span>
+                      <span className="min-w-0 truncate text-slate-900">
+                        {order.costCenter.code} - {order.costCenter.name}
+                      </span>
                     </p>
-                    <p>
-                      <span className="text-slate-500">Artikel gesamt: </span>
-                      {itemCount}
+                    <p className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-slate-500">Artikel gesamt</span>
+                      <span className="min-w-0 truncate text-slate-900">{itemCount}</span>
                     </p>
                   </div>
 
