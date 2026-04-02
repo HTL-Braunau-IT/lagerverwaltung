@@ -9,13 +9,9 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
-import {
-  CartIcon,
-  CheckIcon,
-  ClipboardCopyIcon,
-  PackageIcon,
-} from "~/components/layout/icon-renders";
+import { CheckIcon, ClipboardCopyIcon, PackageIcon } from "~/components/layout/icon-renders";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -436,49 +432,18 @@ export default function ProductDetailPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="flex h-8 min-w-0 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                        const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                      aria-label={`Menge fuer ${product.name} reduzieren`}
-                    >
-                      <span className="block leading-none">-</span>
-                    </Button>
-                    <input
-                      type="number"
-                      min={unitStep}
-                      max={stockOnHand}
-                      step={unitStep}
-                      value={quantityInput}
-                      onChange={(event) => setQuantityInput(event.target.value)}
-                      className="w-11 min-w-0 shrink border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      aria-label={`Menge fuer ${product.name}`}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                        const nextQuantity = currentQuantity + unitStep;
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                      aria-label={`Menge fuer ${product.name} erhoehen`}
-                    >
-                      <span className="block leading-none">+</span>
-                    </Button>
-                  </div>
+                  <ShopQuantityStepper
+                    value={quantityInput}
+                    onChange={setQuantityInput}
+                    min={unitStep}
+                    max={stockOnHand}
+                    step={unitStep}
+                    decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
+                    increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
+                    inputAriaLabel={`Menge fuer ${product.name}`}
+                  />
                 )}
-                <Button
-                  size="sm"
+                <ShopAddToCartButton
                   onClick={() => {
                     if (stockOnHand <= 0 || selectedQuantity <= 0 || selectedQuantity > stockOnHand) return;
                     setLastAddedProductQuantity(selectedQuantity);
@@ -489,13 +454,8 @@ export default function ProductDetailPage() {
                     });
                   }}
                   disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                  className="h-8 min-h-8 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
-                >
-                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center [&_svg]:h-4 [&_svg]:w-4">
-                    <CartIcon />
-                  </span>
-                  {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
-                </Button>
+                  pending={addItemMutation.isPending}
+                />
               </div>
             </div>
           </div>

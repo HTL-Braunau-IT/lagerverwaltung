@@ -9,7 +9,8 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { api } from "~/trpc/react";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
-import { CartIcon, PackageIcon } from "~/components/layout/icon-renders";
+import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
+import { PackageIcon } from "~/components/layout/icon-renders";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -261,49 +262,17 @@ export default function PartListDetailPage() {
                   />
                 </div>
                 <div className="mt-3 flex w-full flex-nowrap items-center gap-2">
-                  <div className="flex h-8 min-w-0 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || 1, 1);
-                        const nextQuantity = Math.max(1, currentQuantity - 1);
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                      aria-label={`Menge fuer Teileliste ${selectedPartList.name} reduzieren`}
-                    >
-                      <span className="block leading-none">-</span>
-                    </Button>
-                    <input
-                      type="number"
-                      min={1}
-                      max={maxOrderable > 0 ? maxOrderable : undefined}
-                      step={1}
-                      value={quantityInput}
-                      onChange={(event) => setQuantityInput(event.target.value)}
-                      className="w-11 min-w-0 shrink border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                      aria-label={`Menge fuer Teileliste ${selectedPartList.name}`}
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        const currentQuantity = Math.max(Number(quantityInput) || 1, 1);
-                        const cap = maxOrderable > 0 ? maxOrderable : Number.POSITIVE_INFINITY;
-                        const nextQuantity = Math.min(cap, currentQuantity + 1);
-                        setQuantityInput(nextQuantity.toString());
-                      }}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                      aria-label={`Menge fuer Teileliste ${selectedPartList.name} erhoehen`}
-                    >
-                      <span className="block leading-none">+</span>
-                    </Button>
-                  </div>
-                  <Button
-                    size="sm"
+                  <ShopQuantityStepper
+                    value={quantityInput}
+                    onChange={setQuantityInput}
+                    min={1}
+                    max={maxOrderable > 0 ? maxOrderable : undefined}
+                    step={1}
+                    decreaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} reduzieren`}
+                    increaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} erhoehen`}
+                    inputAriaLabel={`Menge fuer Teileliste ${selectedPartList.name}`}
+                  />
+                  <ShopAddToCartButton
                     onClick={() => {
                       const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                       const requestedQuantity =
@@ -321,13 +290,8 @@ export default function PartListDetailPage() {
                       addPartListMutation.isPending ||
                       !canAddPartListToCart
                     }
-                    className="h-8 min-h-8 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
-                  >
-                    <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center [&_svg]:h-4 [&_svg]:w-4">
-                      <CartIcon />
-                    </span>
-                    {addPartListMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
-                  </Button>
+                    pending={addPartListMutation.isPending}
+                  />
                 </div>
               </div>
             </div>
