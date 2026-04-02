@@ -89,87 +89,88 @@ export default function AusleihePage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <section className="space-y-4">
-        <Card className="rounded-2xl p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-            <label className="w-full max-w-[340px] text-sm text-slate-600">
-              Suche
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="z. B. Bohrer, Leiter, Material..."
-                className="mt-1 h-10 rounded-xl"
-              />
-            </label>
-          </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(340px,420px)_minmax(0,1fr)] lg:items-start">
+        <section className="order-2 space-y-4 lg:order-2">
+          <Card className="rounded-2xl p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+              <label className="w-full max-w-[340px] text-sm text-slate-600">
+                Suche
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="z. B. Bohrer, Leiter, Material..."
+                  className="mt-1 h-10 rounded-xl"
+                />
+              </label>
+            </div>
 
-          {lendableItemsQuery.isLoading ? (
-            <p className="text-sm text-slate-600">Artikel werden geladen...</p>
-          ) : null}
-          {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
-            <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
-          ) : null}
+            {lendableItemsQuery.isLoading ? (
+              <p className="text-sm text-slate-600">Artikel werden geladen...</p>
+            ) : null}
+            {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
+              <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
+            ) : null}
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(lendableItemsQuery.data ?? []).map((item: any) => (
-              <div key={item.id}>
-                <Card className="rounded-xl p-4 shadow-sm">
-                  {item.image?.url ? (
-                    <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                      <img
-                        src={item.image.url}
-                        alt={item.image.altText || `${item.name} Bild`}
-                        className="h-40 w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = "/pictures/placeholder.jpg";
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {(lendableItemsQuery.data ?? []).map((item: any) => (
+                <div key={item.id}>
+                  <Card className="rounded-xl p-4 shadow-sm">
+                    {item.image?.url ? (
+                      <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                        <img
+                          src={item.image.url}
+                          alt={item.image.altText || `${item.name} Bild`}
+                          className="h-40 w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = "/pictures/placeholder.jpg";
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
+                        {item.description ? (
+                          <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p>
+                        ) : null}
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">Verfuegbar</p>
+                        <p className="text-lg font-semibold text-slate-900">
+                          {Math.floor(decimalToNumber(item.effectiveAvailable))} Stk
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <Button
+                        type="button"
+                        disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
+                        onClick={() => {
+                          setSelectedItemId(item.id);
+                          setQuantityDraft("1");
+                          setDueInfoOpen(true);
                         }}
-                      />
+                      >
+                        Ausleihen
+                      </Button>
                     </div>
-                  ) : null}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
-                      {item.description ? (
-                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p>
-                      ) : null}
-                    </div>
+                  </Card>
+                </div>
+              ))}
+            </div>
+          </Card>
 
-                    <div className="text-right">
-                      <p className="text-xs text-slate-500">Verfuegbar</p>
-                      <p className="text-lg font-semibold text-slate-900">
-                        {Math.floor(decimalToNumber(item.effectiveAvailable))} Stk
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <Button
-                      type="button"
-                      disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
-                      onClick={() => {
-                        setSelectedItemId(item.id);
-                        setQuantityDraft("1");
-                        setDueInfoOpen(true);
-                      }}
-                    >
-                      Ausleihen
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Dialog
-          open={dueInfoOpen}
-          onClose={() => setDueInfoOpen(false)}
-          title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
-          description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
-        >
-          {selectedItem ? (
-            <div className="mt-1 space-y-4">
+          <Dialog
+            open={dueInfoOpen}
+            onClose={() => setDueInfoOpen(false)}
+            title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
+            description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
+          >
+            {selectedItem ? (
+              <div className="mt-1 space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm text-slate-700">
                     Menge
@@ -214,11 +215,7 @@ export default function AusleihePage() {
                 ) : null}
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDueInfoOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setDueInfoOpen(false)}>
                     Abbrechen
                   </Button>
                   <Button
@@ -241,190 +238,219 @@ export default function AusleihePage() {
                   </Button>
                 </div>
               </div>
-          ) : null}
-        </Dialog>
-      </section>
-
-      <section className="space-y-4">
-        <Card className="rounded-2xl p-5">
-          <div className="mb-2">
-            <h2 className="text-xl font-semibold text-slate-900">Meine Ausgeliehen Werkzeuge</h2>
-            <p className="mt-1 text-sm text-slate-600">Hier siehst du offene, freigegebene und erledigte Anfragen.</p>
-          </div>
-
-          {myLoansQuery.isLoading ? (
-            <p className="text-sm text-slate-600">Werkzeuge werden geladen...</p>
-          ) : null}
-
-          {!myLoansQuery.isLoading && myLoansQuery.data && myLoansQuery.data.length === 0 ? (
-            <p className="text-sm text-slate-600">Noch keine Anfragen vorhanden.</p>
-          ) : null}
-
-          <div className="mt-4 space-y-4">
-            {openLoans.map((loan: any) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {requestStatusLabel(loan.status)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                  </div>
-
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            ))}
-
-            {closedLoansNotHandedOver.length > 0 ? (
-              <div className="pt-2">
-                <h3 className="text-sm font-semibold text-slate-900">Erledigt (neu)</h3>
-                <p className="mt-1 text-xs text-slate-500">Noch nicht uebergeben.</p>
-              </div>
             ) : null}
-            {closedLoansNotHandedOver.map((loan) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{requestStatusLabel(loan.status)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            ))}
+          </Dialog>
+        </section>
 
-            {closedLoansHandedOver.length > 0 ? (
-              <div className="pt-2">
-                <h3 className="text-sm font-semibold text-slate-900">Erledigt (uebergeben)</h3>
-                <p className="mt-1 text-xs text-slate-500">Bereits uebergeben.</p>
-              </div>
+        <section className="order-1 space-y-4 lg:order-1 lg:sticky lg:top-6">
+          <Card className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-2">
+              <h2 className="text-xl font-semibold text-foreground">Meine ausgeliehenen Werkzeuge</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Hier siehst du offene, freigegebene und erledigte Anfragen.
+              </p>
+            </div>
+
+            {myLoansQuery.isLoading ? <p className="text-sm text-muted-foreground">Werkzeuge werden geladen...</p> : null}
+
+            {!myLoansQuery.isLoading && myLoansQuery.data && myLoansQuery.data.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Noch keine Anfragen vorhanden.</p>
             ) : null}
-            {closedLoansHandedOver.map((loan: any) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{requestStatusLabel(loan.status)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
+
+            <div className="mt-4 space-y-4">
+              {openLoans.map((loan: any) => (
+                <Card
+                  key={loan.id}
+                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {loan.storageRoom?.name ?? "Lagerraum"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
+                    </div>
+
+                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
+                      {loan.items.reduce(
+                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
+                        0,
+                      )}{" "}
+                      gesamt
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
+
+                  <div className="mt-3 space-y-2">
+                    {loan.items.map((item: any) => {
+                      const activeBorrowed =
+                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
+                      const isActive = activeBorrowed > 0;
+                      return (
+                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-foreground">
+                              {item.lendableItem?.name ?? "Unbekannt"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
+                            </p>
                           </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+
+                          {item.borrowedAt && item.dueAt ? (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
+                              {formatDateTime(item.dueAt)}
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
+                          )}
+
+                          {isActive ? (
+                            <div className="mt-2">
+                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                Rueckgabe geplant
+                              </Badge>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              ))}
+
+              {closedLoansNotHandedOver.length > 0 ? (
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-foreground">Erledigt (neu)</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </Card>
-      </section>
+              ) : null}
+              {closedLoansNotHandedOver.map((loan) => (
+                <Card
+                  key={loan.id}
+                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {loan.storageRoom?.name ?? "Lagerraum"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
+                    </div>
+                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
+                      {loan.items.reduce(
+                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
+                        0,
+                      )}{" "}
+                      gesamt
+                    </Badge>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {loan.items.map((item: any) => {
+                      const activeBorrowed =
+                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
+                      const isActive = activeBorrowed > 0;
+                      return (
+                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-foreground">
+                              {item.lendableItem?.name ?? "Unbekannt"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
+                            </p>
+                          </div>
+                          {item.borrowedAt && item.dueAt ? (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
+                              {formatDateTime(item.dueAt)}
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
+                          )}
+                          {isActive ? (
+                            <div className="mt-2">
+                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                Rueckgabe geplant
+                              </Badge>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              ))}
+
+              {closedLoansHandedOver.length > 0 ? (
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-foreground">Erledigt (uebergeben)</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Bereits uebergeben.</p>
+                </div>
+              ) : null}
+              {closedLoansHandedOver.map((loan: any) => (
+                <Card
+                  key={loan.id}
+                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {loan.storageRoom?.name ?? "Lagerraum"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
+                    </div>
+                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
+                      {loan.items.reduce(
+                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
+                        0,
+                      )}{" "}
+                      gesamt
+                    </Badge>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {loan.items.map((item: any) => {
+                      const activeBorrowed =
+                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
+                      const isActive = activeBorrowed > 0;
+                      return (
+                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-foreground">
+                              {item.lendableItem?.name ?? "Unbekannt"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
+                            </p>
+                          </div>
+                          {item.borrowedAt && item.dueAt ? (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
+                              {formatDateTime(item.dueAt)}
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
+                          )}
+                          {isActive ? (
+                            <div className="mt-2">
+                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                Rueckgabe geplant
+                              </Badge>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Card>
+        </section>
+      </div>
     </main>
   );
 }
