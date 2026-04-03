@@ -44,6 +44,122 @@ function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSE
   return "Erledigt";
 }
 
+function loanStatusBadgeVariant(
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED",
+): Parameters<typeof Badge>[0]["variant"] {
+  if (status === "PENDING") return "secondary";
+  if (status === "APPROVED") return "success";
+  if (status === "REJECTED") return "destructive";
+  return "secondary";
+}
+
+function sumApprovedAcrossLoan(items: any[]) {
+  return items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0);
+}
+
+function sumOutstandingAcrossLoan(items: any[]) {
+  return items.reduce((sum: number, item: any) => {
+    const line =
+      Math.max(0, decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned));
+    return sum + line;
+  }, 0);
+}
+
+function outstandingForLine(item: any) {
+  return Math.max(
+    0,
+    decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned),
+  );
+}
+
+function LoanRequestCard({ loan }: { loan: any }) {
+  const approvedTotal = sumApprovedAcrossLoan(loan.items);
+  const outstandingTotal = sumOutstandingAcrossLoan(loan.items);
+
+  return (
+    <Card className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs tracking-wide text-muted-foreground">
+            Lagerraum: {loan.storageRoom?.name ?? "Lagerraum"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
+        </div>
+        <Badge variant={loanStatusBadgeVariant(loan.status)} className="shrink-0">
+          {requestStatusLabel(loan.status)}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2">
+        <div className="rounded-lg bg-muted/40 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Freigegeben (alle Positionen)
+          </p>
+          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+            {formatInventoryQuantity(approvedTotal)} Stk
+          </p>
+        </div>
+        <div className="rounded-lg bg-muted/40 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Noch bei dir (Summe)
+          </p>
+          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+            {formatInventoryQuantity(outstandingTotal)} Stk
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Positionen</p>
+        {loan.items.map((item: any) => {
+          const outstanding = outstandingForLine(item);
+          const isActive = outstanding > 0;
+          return (
+            <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+                  {item.lendableItem?.name ?? "Unbekannt"}
+                </p>
+                <div className="shrink-0 text-right">
+                  {outstanding > 0 ? (
+                    <p className="text-xs text-foreground">
+                      <span className="text-muted-foreground">Noch bei dir: </span>
+                      <span className="font-semibold tabular-nums">
+                        {formatInventoryQuantity(outstanding)} Stk
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Nicht bei dir</p>
+                  )}
+                </div>
+              </div>
+
+              {item.borrowedAt && item.dueAt ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
+              )}
+
+              {isActive ? (
+                <div className="mt-2">
+                  <Badge
+                    variant="secondary"
+                    className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  >
+                    Rueckgabe geplant
+                  </Badge>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 export default function AusleihePage() {
   const { data: session } = useSession();
   const userRole = session?.user.role;
@@ -294,65 +410,7 @@ export default function AusleihePage() {
 
             <div className="mt-4 space-y-4">
               {openLoans.map((loan: any) => (
-                <Card
-                  key={loan.id}
-                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {loan.storageRoom?.name ?? "Lagerraum"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                    </div>
-
-                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
-                      {loan.items.reduce(
-                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
-                        0,
-                      )}{" "}
-                      gesamt
-                    </Badge>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    {loan.items.map((item: any) => {
-                      const activeBorrowed =
-                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                      const isActive = activeBorrowed > 0;
-                      return (
-                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-foreground">
-                              {item.lendableItem?.name ?? "Unbekannt"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                            </p>
-                          </div>
-
-                          {item.borrowedAt && item.dueAt ? (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
-                              {formatDateTime(item.dueAt)}
-                            </p>
-                          ) : (
-                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
-                          )}
-
-                          {isActive ? (
-                            <div className="mt-2">
-                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                Rueckgabe geplant
-                              </Badge>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
+                <LoanRequestCard key={loan.id} loan={loan} />
               ))}
 
               {closedLoansNotHandedOver.length > 0 ? (
@@ -362,61 +420,7 @@ export default function AusleihePage() {
                 </div>
               ) : null}
               {closedLoansNotHandedOver.map((loan) => (
-                <Card
-                  key={loan.id}
-                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {loan.storageRoom?.name ?? "Lagerraum"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                    </div>
-                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
-                      {loan.items.reduce(
-                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
-                        0,
-                      )}{" "}
-                      gesamt
-                    </Badge>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {loan.items.map((item: any) => {
-                      const activeBorrowed =
-                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                      const isActive = activeBorrowed > 0;
-                      return (
-                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-foreground">
-                              {item.lendableItem?.name ?? "Unbekannt"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                            </p>
-                          </div>
-                          {item.borrowedAt && item.dueAt ? (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
-                              {formatDateTime(item.dueAt)}
-                            </p>
-                          ) : (
-                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
-                          )}
-                          {isActive ? (
-                            <div className="mt-2">
-                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                Rueckgabe geplant
-                              </Badge>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
+                <LoanRequestCard key={loan.id} loan={loan} />
               ))}
 
               {closedLoansHandedOver.length > 0 ? (
@@ -426,61 +430,7 @@ export default function AusleihePage() {
                 </div>
               ) : null}
               {closedLoansHandedOver.map((loan: any) => (
-                <Card
-                  key={loan.id}
-                  className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {loan.storageRoom?.name ?? "Lagerraum"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">{requestStatusLabel(loan.status)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                    </div>
-                    <Badge variant="secondary" className="border border-border bg-muted/50 text-foreground shadow-sm">
-                      {loan.items.reduce(
-                        (sum: number, item: any) => sum + decimalToNumber(item.quantityApproved),
-                        0,
-                      )}{" "}
-                      gesamt
-                    </Badge>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {loan.items.map((item: any) => {
-                      const activeBorrowed =
-                        decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                      const isActive = activeBorrowed > 0;
-                      return (
-                        <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-foreground">
-                              {item.lendableItem?.name ?? "Unbekannt"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                            </p>
-                          </div>
-                          {item.borrowedAt && item.dueAt ? (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig:{" "}
-                              {formatDateTime(item.dueAt)}
-                            </p>
-                          ) : (
-                            <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
-                          )}
-                          {isActive ? (
-                            <div className="mt-2">
-                              <Badge variant="secondary" className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                Rueckgabe geplant
-                              </Badge>
-                            </div>
-                          ) : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
+                <LoanRequestCard key={loan.id} loan={loan} />
               ))}
             </div>
           </Card>
