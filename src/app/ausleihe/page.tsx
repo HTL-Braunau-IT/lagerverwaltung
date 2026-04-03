@@ -3,19 +3,25 @@
 import { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
-import Link from "next/link";
-
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import { PackageIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+function formatInventoryQuantity(value: number) {
+  return new Intl.NumberFormat("de-AT", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(value);
 }
 
 function formatDateTime(value: Date | string | null | undefined) {
@@ -47,6 +53,7 @@ export default function AusleihePage() {
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantityDraft, setQuantityDraft] = useState<string>("1");
+  const [quantitiesByItem, setQuantitiesByItem] = useState<Record<string, string>>({});
   const [selectedTeacherExternalId, setSelectedTeacherExternalId] = useState<string>("");
   const [dueInfoOpen, setDueInfoOpen] = useState(false);
 
@@ -111,7 +118,7 @@ export default function AusleihePage() {
               <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
             ) : null}
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {(lendableItemsQuery.data ?? []).map((item: any) => (
                 <div key={item.id}>
                   <Card className="rounded-xl p-4 shadow-sm">
@@ -128,29 +135,94 @@ export default function AusleihePage() {
                         />
                       </div>
                     ) : null}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
-                        {item.description ? (
-                          <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p>
-                        ) : null}
-                      </div>
+                    <div className="min-w-0">
+                      <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
+                      {item.description ? (
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p>
+                      ) : null}
+                    </div>
 
-                      <div className="text-right">
-                        <p className="text-xs text-slate-500">Verfuegbar</p>
-                        <p className="text-lg font-semibold text-slate-900">
-                          {Math.floor(decimalToNumber(item.effectiveAvailable))} Stk
-                        </p>
-                      </div>
+                    <div className="mt-3 flex items-center gap-1.5 text-sm">
+                      <PackageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {formatInventoryQuantity(Math.floor(decimalToNumber(item.effectiveAvailable)))}
+                      </span>
+                      <span className="text-muted-foreground">Stk</span>
+                      <span className="text-muted-foreground">verfügbar</span>
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
+                      {(() => {
+                        const max = Math.floor(decimalToNumber(item.effectiveAvailable));
+                        const quantityInput = quantitiesByItem[item.id] ?? "1";
+                        const parsedQuantity = Number(quantityInput);
+                        const selectedQuantity =
+                          Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+                        const clampedQuantity = max > 0 ? Math.min(max, Math.max(1, selectedQuantity)) : 1;
+
+                        return (
+                          <div className="flex h-8 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const nextQuantity = max > 0 ? Math.max(1, clampedQuantity - 1) : 1;
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: nextQuantity.toString(),
+                                }));
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground"
+                              aria-label={`Menge fuer ${item.name} reduzieren`}
+                              disabled={max <= 1}
+                            >
+                              <span className="block leading-none">-</span>
+                            </Button>
+                            <input
+                              type="number"
+                              min={1}
+                              max={max > 0 ? max : undefined}
+                              step={1}
+                              value={quantityInput}
+                              onChange={(event) => {
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: event.target.value,
+                                }));
+                              }}
+                              className="h-8 w-10 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              aria-label={`Menge fuer ${item.name}`}
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const nextQuantity = max > 0 ? Math.min(max, clampedQuantity + 1) : 1;
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: nextQuantity.toString(),
+                                }));
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground"
+                              aria-label={`Menge fuer ${item.name} erhoehen`}
+                              disabled={max <= 1}
+                            >
+                              <span className="block leading-none">+</span>
+                            </Button>
+                          </div>
+                        );
+                      })()}
                       <Button
                         type="button"
+                        size="sm"
                         disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
+                        className="h-8 min-h-8 shrink-0 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
                         onClick={() => {
+                          const quantityInput = quantitiesByItem[item.id] ?? "1";
                           setSelectedItemId(item.id);
-                          setQuantityDraft("1");
+                          setQuantityDraft(quantityInput);
                           setDueInfoOpen(true);
                         }}
                       >
@@ -171,43 +243,6 @@ export default function AusleihePage() {
           >
             {selectedItem ? (
               <div className="mt-1 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="text-sm text-slate-700">
-                    Menge
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={quantityDraft}
-                      onChange={(e) => setQuantityDraft(e.target.value)}
-                      className="mt-1 h-10 rounded-xl"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">
-                      Max: {Math.floor(decimalToNumber(selectedItem.effectiveAvailable))} Stk
-                    </p>
-                  </label>
-
-                  {userRole === "STUDENT" ? (
-                    <label className="text-sm text-slate-700">
-                      Lehrperson
-                      <select
-                        value={selectedTeacherExternalId}
-                        onChange={(e) => setSelectedTeacherExternalId(e.target.value)}
-                        className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"
-                      >
-                        <option value="">Bitte waehle</option>
-                        {(teachersQuery.data ?? []).map((t) => (
-                          <option key={t.externalId} value={t.externalId}>
-                            {t.displayName}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <div />
-                  )}
-                </div>
-
                 {createLoanMutation.error ? (
                   <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
                     Fehler: {createLoanMutation.error.message}
