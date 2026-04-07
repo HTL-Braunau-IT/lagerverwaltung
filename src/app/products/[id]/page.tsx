@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { CheckIcon, ClipboardCopyIcon, PackageIcon } from "~/components/layout/icon-renders";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -37,8 +39,63 @@ function formatPrice(value: unknown) {
   );
 }
 
-function formatStock(value: unknown, baseUnit: string) {
-  return `${decimalToNumber(value)} ${baseUnit.toLowerCase()}`;
+function formatBaseUnitLabel(baseUnit: string) {
+  return baseUnit.toLowerCase().replace("2", "²");
+}
+
+/** Rot: Bestand ≤ Mindestbestand. Gelb: darüber bis einschließlich 110 % des Mindestbestands. Grün: über 110 %. */
+function stockAvailabilityDotClass(minimum: number, onHand: number): string {
+  if (minimum <= 0) return "bg-muted-foreground/45";
+  if (onHand <= minimum) return "bg-red-500";
+  if (onHand <= minimum * 1.1) return "bg-amber-400";
+  return "bg-emerald-500";
+}
+
+function stockAvailabilityTitle(minimum: number, onHand: number): string {
+  if (minimum <= 0) return "Bestandslage (kein Mindestbestand hinterlegt)";
+  if (onHand <= minimum) return "Kritisch: Bestand am oder unter dem Mindestbestand";
+  if (onHand <= minimum * 1.1) return "Niedrig: Bestand nahe am Mindestbestand";
+  return "Ausreichend: Bestand über dem Warnbereich";
+}
+
+function StockOnHandLine({
+  quantityOnHand,
+  minimumQuantity,
+  baseUnit,
+  align = "start",
+}: {
+  quantityOnHand: unknown;
+  minimumQuantity: unknown;
+  baseUnit: string;
+  align?: "start" | "center";
+}) {
+  const onHand = decimalToNumber(quantityOnHand);
+  const minimum = decimalToNumber(minimumQuantity);
+  const dotClass = stockAvailabilityDotClass(minimum, onHand);
+  const title = stockAvailabilityTitle(minimum, onHand);
+  const unitLabel = formatBaseUnitLabel(baseUnit);
+
+  const srSummary = `Bestand ${formatInventoryQuantity(onHand)} ${unitLabel}. ${title}`;
+
+  return (
+    <div
+      className={[
+        "-mt-1 mb-2 flex items-center gap-1.5 text-sm",
+        align === "center" ? "justify-center" : "justify-start",
+      ].join(" ")}
+    >
+      <p className="sr-only">{srSummary}</p>
+      <span
+        className={["h-2 w-2 shrink-0 rounded-full", dotClass].join(" ")}
+        title={title}
+        aria-hidden
+      />
+      <PackageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="font-semibold tabular-nums text-foreground">{formatInventoryQuantity(onHand)}</span>
+      <span className="text-muted-foreground">{unitLabel}</span>
+      <span className="text-muted-foreground">verfügbar</span>
+    </div>
+  );
 }
 
 function formatDecimal(value: number, fractionDigits = 3) {
@@ -48,10 +105,75 @@ function formatDecimal(value: number, fractionDigits = 3) {
   }).format(value);
 }
 
+function formatInventoryQuantity(value: number) {
+  return new Intl.NumberFormat("de-AT", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(value);
+}
+
 function formatFileSize(sizeBytes: number) {
   if (sizeBytes < 1024) return `${sizeBytes} B`;
   if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+type ProductDetailTab = "details" | "documents";
+
+const SKU_COPY_FEEDBACK_MS = 1500;
+
+function SkuCopyButton({ sku }: { sku: string }) {
+  const [copied, setCopied] = useState(false);
+  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resetRef.current) clearTimeout(resetRef.current);
+    };
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="inline-flex shrink-0 items-center justify-center border-l border-border px-2 text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      title={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
+      aria-label={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(sku);
+        } catch {
+          return;
+        }
+        setCopied(true);
+        if (resetRef.current) clearTimeout(resetRef.current);
+        resetRef.current = setTimeout(() => {
+          setCopied(false);
+          resetRef.current = null;
+        }, SKU_COPY_FEEDBACK_MS);
+      }}
+    >
+      <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
+        <span
+          className={[
+            "transition-opacity duration-200 ease-out",
+            copied ? "pointer-events-none opacity-0" : "opacity-100",
+          ].join(" ")}
+          aria-hidden
+        >
+          <ClipboardCopyIcon size={14} />
+        </span>
+        <span
+          className={[
+            "absolute inset-0 flex items-center justify-center text-green-600 transition-opacity duration-200 ease-out",
+            copied ? "opacity-100" : "pointer-events-none opacity-0",
+          ].join(" ")}
+          aria-hidden
+        >
+          <CheckIcon size={14} />
+        </span>
+      </span>
+    </button>
+  );
 }
 
 export default function ProductDetailPage() {
@@ -72,6 +194,7 @@ export default function ProductDetailPage() {
   const [areaWidthInput, setAreaWidthInput] = useState("1");
   const [areaHeightInput, setAreaHeightInput] = useState("1");
   const [partListWarning, setPartListWarning] = useState<string | null>(null);
+  const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("details");
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
   const productQuery = api.product.byId.useQuery({ id: productId }, { enabled: Boolean(productId) });
@@ -178,17 +301,18 @@ export default function ProductDetailPage() {
       : unitStep;
   const canAddToCart = stockOnHand > 0 && selectedQuantity <= stockOnHand;
 
-  const allCategoryNames = Array.from(
-    new Set(
-      product.categories
-        .map((entry) => categoriesQuery.data?.find((category) => category.id === entry.categoryId)?.name)
-        .filter((name): name is string => Boolean(name)) ?? [],
-    ),
-  );
-  if (allCategoryNames.length === 0 && product.category?.name) {
-    allCategoryNames.push(product.category.name);
+  const categoryEntries: { id: string; name: string }[] = [];
+  const seenCategoryIds = new Set<string>();
+  for (const entry of product.categories) {
+    const cat = categoriesQuery.data?.find((c) => c.id === entry.categoryId);
+    if (cat && !seenCategoryIds.has(cat.id)) {
+      seenCategoryIds.add(cat.id);
+      categoryEntries.push({ id: cat.id, name: cat.name });
+    }
   }
-  const categoryLabel = allCategoryNames.length > 0 ? allCategoryNames.join(" • ") : "Ohne Kategorie";
+  if (categoryEntries.length === 0 && product.category) {
+    categoryEntries.push({ id: product.category.id, name: product.category.name });
+  }
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
   const images =
     product.images.length === 0
@@ -212,6 +336,7 @@ export default function ProductDetailPage() {
           }}
         />
 
+        <div className="flex min-w-0 flex-col gap-6">
         <Card className="self-start rounded-2xl p-6 shadow-sm">
           <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80">
             <span aria-hidden="true">←</span>
@@ -220,22 +345,55 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <ProductImageGallery images={images} productName={product.name} />
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{categoryLabel}</p>
-              <h1 className="mt-1 text-2xl font-semibold text-foreground">{product.name}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">SKU: {product.sku}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Lagerplatz: {product.storageLocation?.name}</p>
-              <p className="mt-4 text-sm text-foreground">
-                {product.description ?? ""}
-              </p>
-              <div className="mt-3">
-                <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
-                  {formatPrice(product.price)}
-                </p>
+              <h1 className="text-2xl font-semibold text-foreground">{product.name}</h1>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <div className="inline-flex max-w-full min-h-0 items-stretch overflow-hidden rounded-full border border-border bg-muted/50 text-sm text-foreground shadow-sm">
+                  <Link
+                    href={`/?search=${encodeURIComponent(product.sku)}`}
+                    className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1.5 px-3 py-1 transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    title={`Alle Produkte mit dieser SKU anzeigen`}
+                  >
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      SKU
+                    </span>
+                    <span className="truncate font-medium tabular-nums">{product.sku}</span>
+                  </Link>
+                  <SkuCopyButton key={product.id} sku={product.sku} />
+                </div>
+                {product.storageLocation ? (
+                  <Link
+                    href={`/?storageLocationId=${encodeURIComponent(product.storageLocation.id)}`}
+                    className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    title={`Alle Produkte an diesem Lagerplatz anzeigen`}
+                  >
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Lagerplatz
+                    </span>
+                    <span className="truncate font-medium">{product.storageLocation.name}</span>
+                  </Link>
+                ) : null}
+              </div>
+              <div className="mt-5">
+                <div className="flex flex-wrap items-baseline gap-1">
+                  <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xl">
+                    {formatPrice(product.price)} 
+                  </p>
+                  <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xs">
+                    / {product.baseUnit}
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <StockOnHandLine
+                    quantityOnHand={product.quantityOnHand}
+                    minimumQuantity={product.minimumQuantity}
+                    baseUnit={product.baseUnit}
+                  />
+                </div>
               </div>
 
-              <div className="mt-5 flex w-full items-start gap-2">
+              <div className="mt-5 flex w-full flex-nowrap items-center gap-2">
                 {isAreaProduct ? (
-                  <div className="w-full rounded-xl border border-border bg-muted/40 p-3">
+                  <div className="min-w-0 flex-1 rounded-xl border border-border bg-muted/40 p-3">
                     <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
                       Flaeche berechnen
                     </p>
@@ -272,58 +430,20 @@ export default function ProductDetailPage() {
                       {" · "}
                       {formatDecimal(areaInSquareMillimeters > 0 ? areaInSquareMillimeters : 0, 0)} mm²
                     </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                    </p>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 flex-col items-center gap-1">
-                    <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                          const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                          setQuantityInput(nextQuantity.toString());
-                        }}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                        aria-label={`Menge fuer ${product.name} reduzieren`}
-                      >
-                        <span className="block leading-none">-</span>
-                      </Button>
-                      <input
-                        type="number"
-                        min={unitStep}
-                        max={stockOnHand}
-                        step={unitStep}
-                        value={quantityInput}
-                        onChange={(event) => setQuantityInput(event.target.value)}
-                        className="w-12 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        aria-label={`Menge fuer ${product.name}`}
-                      />
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          const currentQuantity = Math.max(Number(quantityInput) || unitStep, unitStep);
-                          const nextQuantity = currentQuantity + unitStep;
-                          setQuantityInput(nextQuantity.toString());
-                        }}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                        aria-label={`Menge fuer ${product.name} erhoehen`}
-                      >
-                        <span className="block leading-none">+</span>
-                      </Button>
-                    </div>
-                    <p className="text-xs text-center whitespace-nowrap text-muted-foreground">
-                      Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                    </p>
-                  </div>
+                  <ShopQuantityStepper
+                    value={quantityInput}
+                    onChange={setQuantityInput}
+                    min={unitStep}
+                    max={stockOnHand}
+                    step={unitStep}
+                    decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
+                    increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
+                    inputAriaLabel={`Menge fuer ${product.name}`}
+                  />
                 )}
-                <Button
+                <ShopAddToCartButton
                   onClick={() => {
                     if (stockOnHand <= 0 || selectedQuantity <= 0 || selectedQuantity > stockOnHand) return;
                     setLastAddedProductQuantity(selectedQuantity);
@@ -334,38 +454,123 @@ export default function ProductDetailPage() {
                     });
                   }}
                   disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                  className="h-8 whitespace-nowrap rounded-xl px-3"
-                >
-                  {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
-                </Button>
-              </div>
-
-              <div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-                <h2 className="text-sm font-semibold text-foreground">Dokumente</h2>
-                <div className="mt-3 space-y-2">
-                  {product.documents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
-                  ) : (
-                    product.documents.map((document) => (
-                      <a
-                        key={document.id}
-                        href={document.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block rounded-lg border border-border bg-card p-2 transition hover:border-primary/50"
-                      >
-                        <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {document.mimeType} · {formatFileSize(document.sizeBytes)}
-                        </p>
-                      </a>
-                    ))
-                  )}
-                </div>
+                  pending={addItemMutation.isPending}
+                />
               </div>
             </div>
           </div>
         </Card>
+
+        <section
+          className="overflow-hidden rounded-2xl border border-border bg-muted/30 shadow-sm"
+          aria-label="Produktdetails"
+        >
+          <div
+            className="flex flex-wrap gap-0 border-b border-border bg-card/50"
+            role="tablist"
+            aria-orientation="horizontal"
+          >
+            {(
+              [
+                { id: "details" as const, label: "Details" },
+                { id: "documents" as const, label: "Dokumente" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`product-tab-${tab.id}`}
+                aria-selected={productDetailTab === tab.id}
+                aria-controls={`product-tab-panel-${tab.id}`}
+                onClick={() => setProductDetailTab(tab.id)}
+                className={[
+                  "-mb-px min-h-[44px] border-b-2 px-3 py-2.5 text-sm font-medium transition-colors sm:px-4",
+                  productDetailTab === tab.id
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-3">
+            {productDetailTab === "details" ? (
+              <div
+                id="product-tab-panel-details"
+                role="tabpanel"
+                aria-labelledby="product-tab-details"
+                className="space-y-2"
+              >
+                {product.description?.trim() ? (
+                  <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition hover:border-primary/40">
+                    <p className="truncate text-sm font-medium text-primary">Beschreibung</p>
+                    <div className="mt-2 border-t border-border/60 pt-3">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                        {product.description}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="rounded-lg border border-border bg-white p-3 shadow-sm dark:bg-card">
+                  <p className="truncate text-sm font-medium text-primary">Kategorien</p>
+                  <div className="mt-2 border-t border-border/60 pt-2.5">
+                    {categoryEntries.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {categoryEntries.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/?categoryId=${encodeURIComponent(cat.id)}`}
+                            className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            title="Alle Produkte in dieser Kategorie anzeigen"
+                          >
+                            <span className="truncate font-medium">{cat.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="inline-flex max-w-full min-h-0 items-center rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground shadow-sm">
+                        Ohne Kategorie
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {productDetailTab === "documents" ? (
+              <div
+                id="product-tab-panel-documents"
+                role="tabpanel"
+                aria-labelledby="product-tab-documents"
+                className="space-y-2"
+              >
+                {product.documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
+                ) : (
+                  product.documents.map((document) => (
+                    <a
+                      key={document.id}
+                      href={document.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-lg border border-border bg-card p-3 transition hover:border-primary/50"
+                    >
+                      <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {document.mimeType} · {formatFileSize(document.sizeBytes)}
+                      </p>
+                    </a>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+        </section>
+        </div>
 
         <ShopPartListsAside
           appHeaderOffset={appHeaderOffset}

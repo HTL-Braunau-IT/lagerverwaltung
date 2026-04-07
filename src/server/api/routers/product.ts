@@ -22,6 +22,7 @@ function normalizeProductDocumentUrl(documentId: string) {
 const listProductsInput = z.object({
   search: z.string().trim().optional(),
   categoryId: z.string().min(1).optional(),
+  storageLocationId: z.string().min(1).optional(),
   limit: z.number().int().min(1).max(100).default(24),
   cursor: z.string().min(1).optional(),
 });
@@ -91,6 +92,9 @@ export const productRouter = createTRPCRouter({
           { categories: { some: { categoryId: input.categoryId } } },
         ],
       });
+    }
+    if (input.storageLocationId) {
+      andFilters.push({ storageLocationId: input.storageLocationId });
     }
     if (search) {
       andFilters.push({

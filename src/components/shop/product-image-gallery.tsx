@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 
 type ProductImage = {
   id: string;
@@ -126,6 +126,71 @@ function paletteToFillStyle(palette: EdgePalette): CSSProperties {
   };
 }
 
+const ZOOM_SCALE = 1.85;
+
+function GalleryImageFrame({
+  image,
+  productName,
+  palette,
+  reduceMotion,
+  onPaletteFromImage,
+}: {
+  image: ProductImage;
+  productName: string;
+  palette: EdgePalette | undefined;
+  reduceMotion: boolean;
+  onPaletteFromImage: (imageId: string, palette: EdgePalette) => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const [originPct, setOriginPct] = useState({ x: 50, y: 50 });
+
+  const onMouseMove = (event: MouseEvent<HTMLDivElement>) => {
+    const el = event.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const w = rect.width || 1;
+    const h = rect.height || 1;
+    setOriginPct({
+      x: ((event.clientX - rect.left) / w) * 100,
+      y: ((event.clientY - rect.top) / h) * 100,
+    });
+  };
+
+  const zoomActive = hover && !reduceMotion;
+
+  return (
+    <div
+      className="cursor-zoom-in overflow-hidden rounded-xl border border-border bg-muted"
+      style={palette ? paletteToFillStyle(palette) : undefined}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onMouseMove={onMouseMove}
+    >
+      <img
+        src={image.url}
+        alt={image.altText ?? `${productName} Produktbild`}
+        className="mx-auto max-h-64 w-full max-w-[min(100%,320px)] object-contain sm:max-h-64 will-change-transform"
+        loading="lazy"
+        style={{
+          transform: zoomActive ? `scale(${ZOOM_SCALE})` : "scale(1)",
+          transformOrigin: `${originPct.x}% ${originPct.y}%`,
+          transition: zoomActive
+            ? "transform 80ms ease-out"
+            : "transform 280ms cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+        onLoad={(event) => {
+          const palette = buildEdgePalette(event.currentTarget);
+          if (!palette) return;
+          onPaletteFromImage(image.id, palette);
+        }}
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = "/pictures/placeholder.jpg";
+        }}
+      />
+    </div>
+  );
+}
+
 export function ProductImageGallery({
   images,
   productName,
@@ -134,36 +199,33 @@ export function ProductImageGallery({
   productName: string;
 }) {
   const [paletteByImageId, setPaletteByImageId] = useState<Record<string, EdgePalette>>({});
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   return (
     <div className="space-y-3">
       {images.map((image) => {
         const palette = paletteByImageId[image.id];
         return (
-        <div
-          key={image.id}
-          className="overflow-hidden rounded-xl border border-border bg-muted"
-          style={palette ? paletteToFillStyle(palette) : undefined}
-        >
-          <img
-            src={image.url}
-            alt={image.altText ?? `${productName} Produktbild`}
-            className="max-h-96 w-full object-contain"
-            loading="lazy"
-            onLoad={(event) => {
-              const palette = buildEdgePalette(event.currentTarget);
-              if (!palette) return;
-
+          <GalleryImageFrame
+            key={image.id}
+            image={image}
+            productName={productName}
+            palette={palette}
+            reduceMotion={reduceMotion}
+            onPaletteFromImage={(imageId, nextPalette) => {
               setPaletteByImageId((previous) =>
-                previous[image.id] ? previous : { ...previous, [image.id]: palette },
+                previous[imageId] ? previous : { ...previous, [imageId]: nextPalette },
               );
             }}
-            onError={(event) => {
-              event.currentTarget.onerror = null;
-              event.currentTarget.src = "/pictures/placeholder.jpg";
-            }}
           />
-        </div>
         );
       })}
     </div>

@@ -288,12 +288,6 @@ export default function CartsPage() {
           </div>
         ) : null}
       </Dialog>
-      <header className="px-4 py-1 md:px-4 py-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Warenkörbe</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Verwalte deinen aktuellen Warenkorb und speichere Vorlagen für später.
-        </p>
-      </header>
 
       <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_1fr]">
         <aside className="space-y-4">

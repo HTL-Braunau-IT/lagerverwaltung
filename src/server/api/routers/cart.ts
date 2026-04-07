@@ -898,6 +898,7 @@ export const cartRouter = createTRPCRouter({
               select: {
                 id: true,
                 name: true,
+                sku: true,
                 baseUnit: true,
               },
             },
@@ -937,6 +938,7 @@ export const cartRouter = createTRPCRouter({
               select: {
                 id: true,
                 name: true,
+                sku: true,
                 baseUnit: true,
               },
             },

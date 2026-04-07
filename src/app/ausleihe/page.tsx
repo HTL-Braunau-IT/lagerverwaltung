@@ -3,19 +3,25 @@
 import { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
-import Link from "next/link";
-
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
+import { PackageIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+function formatInventoryQuantity(value: number) {
+  return new Intl.NumberFormat("de-AT", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 6,
+  }).format(value);
 }
 
 function formatDateTime(value: Date | string | null | undefined) {
@@ -38,6 +44,122 @@ function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSE
   return "Erledigt";
 }
 
+function loanStatusBadgeVariant(
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED",
+): Parameters<typeof Badge>[0]["variant"] {
+  if (status === "PENDING") return "secondary";
+  if (status === "APPROVED") return "success";
+  if (status === "REJECTED") return "destructive";
+  return "secondary";
+}
+
+function sumApprovedAcrossLoan(items: any[]) {
+  return items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0);
+}
+
+function sumOutstandingAcrossLoan(items: any[]) {
+  return items.reduce((sum: number, item: any) => {
+    const line =
+      Math.max(0, decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned));
+    return sum + line;
+  }, 0);
+}
+
+function outstandingForLine(item: any) {
+  return Math.max(
+    0,
+    decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned),
+  );
+}
+
+function LoanRequestCard({ loan }: { loan: any }) {
+  const approvedTotal = sumApprovedAcrossLoan(loan.items);
+  const outstandingTotal = sumOutstandingAcrossLoan(loan.items);
+
+  return (
+    <Card className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs tracking-wide text-muted-foreground">
+            Lagerraum: {loan.storageRoom?.name ?? "Lagerraum"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
+        </div>
+        <Badge variant={loanStatusBadgeVariant(loan.status)} className="shrink-0">
+          {requestStatusLabel(loan.status)}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2">
+        <div className="rounded-lg bg-muted/40 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Freigegeben (alle Positionen)
+          </p>
+          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+            {formatInventoryQuantity(approvedTotal)} Stk
+          </p>
+        </div>
+        <div className="rounded-lg bg-muted/40 px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Noch bei dir (Summe)
+          </p>
+          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+            {formatInventoryQuantity(outstandingTotal)} Stk
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Positionen</p>
+        {loan.items.map((item: any) => {
+          const outstanding = outstandingForLine(item);
+          const isActive = outstanding > 0;
+          return (
+            <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+                  {item.lendableItem?.name ?? "Unbekannt"}
+                </p>
+                <div className="shrink-0 text-right">
+                  {outstanding > 0 ? (
+                    <p className="text-xs text-foreground">
+                      <span className="text-muted-foreground">Noch bei dir: </span>
+                      <span className="font-semibold tabular-nums">
+                        {formatInventoryQuantity(outstanding)} Stk
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Nicht bei dir</p>
+                  )}
+                </div>
+              </div>
+
+              {item.borrowedAt && item.dueAt ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
+              )}
+
+              {isActive ? (
+                <div className="mt-2">
+                  <Badge
+                    variant="secondary"
+                    className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  >
+                    Rueckgabe geplant
+                  </Badge>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 export default function AusleihePage() {
   const { data: session } = useSession();
   const userRole = session?.user.role;
@@ -47,6 +169,7 @@ export default function AusleihePage() {
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantityDraft, setQuantityDraft] = useState<string>("1");
+  const [quantitiesByItem, setQuantitiesByItem] = useState<Record<string, string>>({});
   const [selectedTeacherExternalId, setSelectedTeacherExternalId] = useState<string>("");
   const [dueInfoOpen, setDueInfoOpen] = useState(false);
 
@@ -89,67 +212,45 @@ export default function AusleihePage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-amber-700">HTL Lager</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Ausleihen</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Hier kannst du Werkzeuge ausleihen und den Status verfolgen.
-        </p>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Link
-            href="/"
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400"
-          >
-            Zur Produktliste
-          </Link>
-        </div>
-      </header>
-
-      <section className="space-y-4">
-        <Card className="rounded-2xl p-5">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-            <div>
-          <h2 className="text-xl font-semibold text-slate-900">Ausleihbare Materialien</h2>
-          <p className="mt-1 text-sm text-slate-600">Es werden nur Artikel mit verfuegbarer Menge angezeigt.</p>
+      <div className="grid gap-6 lg:grid-cols-[minmax(340px,420px)_minmax(0,1fr)] lg:items-start">
+        <section className="order-2 space-y-4 lg:order-2">
+          <Card className="rounded-2xl p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+              <label className="w-full max-w-[340px] text-sm text-slate-600">
+                Suche
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="z. B. Bohrer, Leiter, Material..."
+                  className="mt-1 h-10 rounded-xl"
+                />
+              </label>
             </div>
 
-            <label className="w-full max-w-[340px] text-sm text-slate-600">
-              Suche
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="z. B. Bohrer, Leiter, Material..."
-                className="mt-1 h-10 rounded-xl"
-              />
-            </label>
-          </div>
+            {lendableItemsQuery.isLoading ? (
+              <p className="text-sm text-slate-600">Artikel werden geladen...</p>
+            ) : null}
+            {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
+              <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
+            ) : null}
 
-          {lendableItemsQuery.isLoading ? (
-            <p className="text-sm text-slate-600">Artikel werden geladen...</p>
-          ) : null}
-          {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
-            <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
-          ) : null}
-
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(lendableItemsQuery.data ?? []).map((item: any) => (
-              <div key={item.id}>
-                <Card className="rounded-xl p-4 shadow-sm">
-                  {item.image?.url ? (
-                    <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                      <img
-                        src={item.image.url}
-                        alt={item.image.altText || `${item.name} Bild`}
-                        className="h-40 w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = "/pictures/placeholder.jpg";
-                        }}
-                      />
-                    </div>
-                  ) : null}
-                  <div className="flex items-start justify-between gap-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              {(lendableItemsQuery.data ?? []).map((item: any) => (
+                <div key={item.id}>
+                  <Card className="rounded-xl p-4 shadow-sm">
+                    {item.image?.url ? (
+                      <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                        <img
+                          src={item.image.url}
+                          alt={item.image.altText || `${item.name} Bild`}
+                          className="h-40 w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = "/pictures/placeholder.jpg";
+                          }}
+                        />
+                      </div>
+                    ) : null}
                     <div className="min-w-0">
                       <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
                       {item.description ? (
@@ -157,78 +258,107 @@ export default function AusleihePage() {
                       ) : null}
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-xs text-slate-500">Verfuegbar</p>
-                      <p className="text-lg font-semibold text-slate-900">
-                        {Math.floor(decimalToNumber(item.effectiveAvailable))} Stk
-                      </p>
+                    <div className="mt-3 flex items-center gap-1.5 text-sm">
+                      <PackageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="font-semibold tabular-nums text-foreground">
+                        {formatInventoryQuantity(Math.floor(decimalToNumber(item.effectiveAvailable)))}
+                      </span>
+                      <span className="text-muted-foreground">Stk</span>
+                      <span className="text-muted-foreground">verfügbar</span>
                     </div>
-                  </div>
 
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <Button
-                      type="button"
-                      disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
-                      onClick={() => {
-                        setSelectedItemId(item.id);
-                        setQuantityDraft("1");
-                        setDueInfoOpen(true);
-                      }}
-                    >
-                      Ausleihen
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            ))}
-          </div>
-        </Card>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      {(() => {
+                        const max = Math.floor(decimalToNumber(item.effectiveAvailable));
+                        const quantityInput = quantitiesByItem[item.id] ?? "1";
+                        const parsedQuantity = Number(quantityInput);
+                        const selectedQuantity =
+                          Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+                        const clampedQuantity = max > 0 ? Math.min(max, Math.max(1, selectedQuantity)) : 1;
 
-        <Dialog
-          open={dueInfoOpen}
-          onClose={() => setDueInfoOpen(false)}
-          title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
-          description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
-        >
-          {selectedItem ? (
-            <div className="mt-1 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="text-sm text-slate-700">
-                    Menge
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={quantityDraft}
-                      onChange={(e) => setQuantityDraft(e.target.value)}
-                      className="mt-1 h-10 rounded-xl"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">
-                      Max: {Math.floor(decimalToNumber(selectedItem.effectiveAvailable))} Stk
-                    </p>
-                  </label>
-
-                  {userRole === "STUDENT" ? (
-                    <label className="text-sm text-slate-700">
-                      Lehrperson
-                      <select
-                        value={selectedTeacherExternalId}
-                        onChange={(e) => setSelectedTeacherExternalId(e.target.value)}
-                        className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none"
+                        return (
+                          <div className="flex h-8 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const nextQuantity = max > 0 ? Math.max(1, clampedQuantity - 1) : 1;
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: nextQuantity.toString(),
+                                }));
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground"
+                              aria-label={`Menge fuer ${item.name} reduzieren`}
+                              disabled={max <= 1}
+                            >
+                              <span className="block leading-none">-</span>
+                            </Button>
+                            <input
+                              type="number"
+                              min={1}
+                              max={max > 0 ? max : undefined}
+                              step={1}
+                              value={quantityInput}
+                              onChange={(event) => {
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: event.target.value,
+                                }));
+                              }}
+                              className="h-8 w-10 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              aria-label={`Menge fuer ${item.name}`}
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                const nextQuantity = max > 0 ? Math.min(max, clampedQuantity + 1) : 1;
+                                setQuantitiesByItem((prev) => ({
+                                  ...prev,
+                                  [item.id]: nextQuantity.toString(),
+                                }));
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground"
+                              aria-label={`Menge fuer ${item.name} erhoehen`}
+                              disabled={max <= 1}
+                            >
+                              <span className="block leading-none">+</span>
+                            </Button>
+                          </div>
+                        );
+                      })()}
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
+                        className="h-8 min-h-8 shrink-0 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
+                        onClick={() => {
+                          const quantityInput = quantitiesByItem[item.id] ?? "1";
+                          setSelectedItemId(item.id);
+                          setQuantityDraft(quantityInput);
+                          setDueInfoOpen(true);
+                        }}
                       >
-                        <option value="">Bitte waehle</option>
-                        {(teachersQuery.data ?? []).map((t) => (
-                          <option key={t.externalId} value={t.externalId}>
-                            {t.displayName}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <div />
-                  )}
+                        Ausleihen
+                      </Button>
+                    </div>
+                  </Card>
                 </div>
+              ))}
+            </div>
+          </Card>
 
+          <Dialog
+            open={dueInfoOpen}
+            onClose={() => setDueInfoOpen(false)}
+            title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
+            description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
+          >
+            {selectedItem ? (
+              <div className="mt-1 space-y-4">
                 {createLoanMutation.error ? (
                   <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
                     Fehler: {createLoanMutation.error.message}
@@ -236,11 +366,7 @@ export default function AusleihePage() {
                 ) : null}
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDueInfoOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setDueInfoOpen(false)}>
                     Abbrechen
                   </Button>
                   <Button
@@ -263,190 +389,53 @@ export default function AusleihePage() {
                   </Button>
                 </div>
               </div>
-          ) : null}
-        </Dialog>
-      </section>
-
-      <section className="space-y-4">
-        <Card className="rounded-2xl p-5">
-          <div className="mb-2">
-            <h2 className="text-xl font-semibold text-slate-900">Meine Ausgeliehen Werkzeuge</h2>
-            <p className="mt-1 text-sm text-slate-600">Hier siehst du offene, freigegebene und erledigte Anfragen.</p>
-          </div>
-
-          {myLoansQuery.isLoading ? (
-            <p className="text-sm text-slate-600">Werkzeuge werden geladen...</p>
-          ) : null}
-
-          {!myLoansQuery.isLoading && myLoansQuery.data && myLoansQuery.data.length === 0 ? (
-            <p className="text-sm text-slate-600">Noch keine Anfragen vorhanden.</p>
-          ) : null}
-
-          <div className="mt-4 space-y-4">
-            {openLoans.map((loan: any) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {requestStatusLabel(loan.status)}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                  </div>
-
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            ))}
-
-            {closedLoansNotHandedOver.length > 0 ? (
-              <div className="pt-2">
-                <h3 className="text-sm font-semibold text-slate-900">Erledigt (neu)</h3>
-                <p className="mt-1 text-xs text-slate-500">Noch nicht uebergeben.</p>
-              </div>
             ) : null}
-            {closedLoansNotHandedOver.map((loan) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{requestStatusLabel(loan.status)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            ))}
+          </Dialog>
+        </section>
 
-            {closedLoansHandedOver.length > 0 ? (
-              <div className="pt-2">
-                <h3 className="text-sm font-semibold text-slate-900">Erledigt (uebergeben)</h3>
-                <p className="mt-1 text-xs text-slate-500">Bereits uebergeben.</p>
-              </div>
+        <section className="order-1 space-y-4 lg:order-1 lg:sticky lg:top-6">
+          <Card className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div className="mb-2">
+              <h2 className="text-xl font-semibold text-foreground">Meine ausgeliehenen Werkzeuge</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Hier siehst du offene, freigegebene und erledigte Anfragen.
+              </p>
+            </div>
+
+            {myLoansQuery.isLoading ? <p className="text-sm text-muted-foreground">Werkzeuge werden geladen...</p> : null}
+
+            {!myLoansQuery.isLoading && myLoansQuery.data && myLoansQuery.data.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Noch keine Anfragen vorhanden.</p>
             ) : null}
-            {closedLoansHandedOver.map((loan: any) => (
-              <Card key={loan.id} className="rounded-xl p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {loan.storageRoom?.name ?? "Lagerraum"}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{requestStatusLabel(loan.status)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Erstellt: {formatDateTime(loan.createdAt)}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-900">
-                    {loan.items.reduce((sum: number, item: any) => sum + decimalToNumber(item.quantityApproved), 0)} gesamt
-                  </Badge>
+
+            <div className="mt-4 space-y-4">
+              {openLoans.map((loan: any) => (
+                <LoanRequestCard key={loan.id} loan={loan} />
+              ))}
+
+              {closedLoansNotHandedOver.length > 0 ? (
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-foreground">Erledigt (neu)</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
                 </div>
-                <div className="mt-3 space-y-2">
-                  {loan.items.map((item: any) => {
-                    const activeBorrowed =
-                      decimalToNumber(item.quantityHandedOver) - decimalToNumber(item.quantityReturned);
-                    const isActive = activeBorrowed > 0;
-                    return (
-                      <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900">{item.lendableItem?.name ?? "Unbekannt"}</p>
-                          <p className="text-xs text-slate-600">
-                            {activeBorrowed > 0 ? "Aktiv" : "—"} {Math.floor(activeBorrowed)} Stk
-                          </p>
-                        </div>
-                        {item.borrowedAt && item.dueAt ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-slate-500">Noch nicht uebergeben.</p>
-                        )}
-                        {isActive ? (
-                          <div className="mt-2">
-                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-                              Rueckgabe geplant
-                            </Badge>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+              ) : null}
+              {closedLoansNotHandedOver.map((loan) => (
+                <LoanRequestCard key={loan.id} loan={loan} />
+              ))}
+
+              {closedLoansHandedOver.length > 0 ? (
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-foreground">Erledigt (uebergeben)</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Bereits uebergeben.</p>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </Card>
-      </section>
+              ) : null}
+              {closedLoansHandedOver.map((loan: any) => (
+                <LoanRequestCard key={loan.id} loan={loan} />
+              ))}
+            </div>
+          </Card>
+        </section>
+      </div>
     </main>
   );
 }

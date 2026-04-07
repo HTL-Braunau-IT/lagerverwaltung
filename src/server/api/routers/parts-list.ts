@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter, publicProcedure, teacherProcedure } from "~/server/api/trpc";
+import { calculatePartListMaxOrderable } from "~/server/api/routers/utils/stock";
 
 const partListItemInput = z.object({
   productId: z.string().min(1),
@@ -132,14 +133,18 @@ export const partsListRouter = createTRPCRouter({
         },
       },
     });
-    return lists.map((list) => ({
-      ...list,
-      imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
-      documents: list.documents.map((document) => ({
-        ...document,
-        url: normalizePartListDocumentUrl(document.id),
-      })),
-    }));
+    return lists.map((list) => {
+      const maxOrderable = calculatePartListMaxOrderable(list.items);
+      return {
+        ...list,
+        maxOrderable,
+        imageUrl: normalizePartListImageUrl(list.id, list.imageUrl),
+        documents: list.documents.map((document) => ({
+          ...document,
+          url: normalizePartListDocumentUrl(document.id),
+        })),
+      };
+    });
   }),
   pinnedForUser: teacherProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -231,8 +236,10 @@ export const partsListRouter = createTRPCRouter({
       },
     });
     if (!partList) return null;
+    const maxOrderable = calculatePartListMaxOrderable(partList.items);
     return {
       ...partList,
+      maxOrderable,
       imageUrl: normalizePartListImageUrl(partList.id, partList.imageUrl),
       documents: partList.documents.map((document) => ({
         ...document,
