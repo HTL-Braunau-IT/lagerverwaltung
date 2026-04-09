@@ -1,12 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
@@ -52,18 +52,11 @@ function userLabel(user: { name: string | null; email: string | null }) {
 
 export function OrdersAdminPanel() {
   const utils = api.useUtils();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
 
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | OrderStatus>("ALL");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const ordersQuery = api.order.backendList.useInfiniteQuery(
     {
@@ -101,25 +94,7 @@ export function OrdersAdminPanel() {
 
   return (
     <Card className="rounded-2xl p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
-          <p className="text-sm text-muted-foreground">Bestellungen suchen, oeffnen und Status aktualisieren.</p>
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-order-search" className="block text-xs text-muted-foreground">
-          Suche nach Bestellnummer, Lehrer, Schueler oder Kostenstelle
-          <Input
-            id="backend-order-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. 2026000001, max.mustermann, 4AH..."
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
-
+      <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
         <label className="block text-xs text-muted-foreground">
           Status
           <select

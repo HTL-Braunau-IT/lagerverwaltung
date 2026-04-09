@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { SearchField } from "~/components/layout/search-field";
 
-type HeaderSearchMode = "shop" | "ausleihe";
+type HeaderSearchMode = "shop" | "ausleihe" | "orders";
 
 function headerSearchMode(pathname: string): HeaderSearchMode | null {
   if (pathname === "/" || pathname.startsWith("/products/")) {
@@ -13,6 +13,9 @@ function headerSearchMode(pathname: string): HeaderSearchMode | null {
   }
   if (pathname === "/ausleihe" || pathname.startsWith("/ausleihe/")) {
     return "ausleihe";
+  }
+  if (pathname === "/backend/orders" || pathname.startsWith("/backend/orders/")) {
+    return "orders";
   }
   return null;
 }
@@ -59,12 +62,18 @@ export function Search() {
     return null;
   }
 
-  const placeholder =
-    mode === "ausleihe"
-      ? "Ausleihe: z. B. Bohrer, Leiter, Material..."
-      : "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
+  const placeholder = (() => {
+    if (mode === "ausleihe") return "Ausleihe: z. B. Bohrer, Leiter, Material...";
+    if (mode === "orders") return "Bestellungen: z. B. 2026000001, Mustermann, 4AH..., Kostenstelle...";
+    return "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
+  })();
 
-  const id = mode === "ausleihe" ? "header-ausleihe-search" : "global-product-search";
+  const id =
+    mode === "ausleihe"
+      ? "header-ausleihe-search"
+      : mode === "orders"
+        ? "header-orders-search"
+        : "global-product-search";
 
   return (
     <div>
