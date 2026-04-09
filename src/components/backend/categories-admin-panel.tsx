@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -30,17 +31,12 @@ function toCategorySlug(name: string): string {
 
 export function CategoriesAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [usageFilter, setUsageFilter] = useState<"ALL" | "USED" | "UNUSED">("ALL");
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<CategoryForm>(createEmptyForm);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setSearchTerm(searchInput.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const categoriesQuery = api.category.backendList.useInfiniteQuery(
     {
@@ -110,17 +106,7 @@ export function CategoriesAdminPanel() {
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-category-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name oder Slug
-          <Input
-            id="backend-category-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. Elektronik"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
+      <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
         <label className="mb-1 block text-xs text-muted-foreground">
           Nutzung
           <select

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -207,8 +208,8 @@ function BookingHistory({ productId }: { productId: string }) {
 
 export function ProductsAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [categoryFilter, setCategoryFilter] = useState("");
   const [storageRoomFilter, setStorageRoomFilter] = useState("");
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
@@ -230,13 +231,6 @@ export function ProductsAdminPanel() {
   const [bookingNoteInput, setBookingNoteInput] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const productsQuery = api.product.backendList.useInfiniteQuery(
     {
@@ -409,17 +403,7 @@ export function ProductsAdminPanel() {
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-5">
-        <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name, SKU oder Beschreibung
-          <Input
-            id="backend-product-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. HDMI, Papier, sku-1002"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
+      <div className="mb-4 grid gap-3 md:grid-cols-4">
         <label className="mb-1 block text-xs text-muted-foreground">
           Kategorie
           <select

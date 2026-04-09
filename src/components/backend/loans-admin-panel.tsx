@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
@@ -50,14 +51,15 @@ const statusBadgeClass: Record<LoanStatus, string> = {
 
 export function LoansAdminPanel() {
   const utils = api.useUtils();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
 
-  const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | LoanStatus>("ALL");
   const [expandedLoanId, setExpandedLoanId] = useState<string | null>(null);
 
   const loansQuery = api.loan.backendListLoans.useQuery({
     status: statusFilter === "ALL" ? undefined : statusFilter,
-    search: searchInput.trim() || undefined,
+    search: searchTerm || undefined,
     limit: 100,
   });
 
@@ -97,18 +99,7 @@ export function LoansAdminPanel() {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-loans-search" className="block text-xs text-muted-foreground">
-          Suche nach Person oder Material
-          <Input
-            id="backend-loans-search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="z. B. Max, Leiter, Bohrer..."
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
-
+      <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
         <label className="block text-xs text-muted-foreground">
           Status
           <select

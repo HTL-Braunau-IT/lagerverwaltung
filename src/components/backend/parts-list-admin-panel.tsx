@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -61,8 +62,8 @@ function formatBaseUnitLabel(baseUnit: string) {
 
 export function PartsListAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<PartListForm>(createEmptyForm);
@@ -79,13 +80,6 @@ export function PartsListAdminPanel() {
   const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const productInputRefs = useRef(new Map<string, HTMLInputElement>());
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -461,19 +455,6 @@ export function PartsListAdminPanel() {
         >
           Neue Teileliste
         </Button>
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="backend-part-list-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name oder Beschreibung
-          <Input
-            id="backend-part-list-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. Arduino Set"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

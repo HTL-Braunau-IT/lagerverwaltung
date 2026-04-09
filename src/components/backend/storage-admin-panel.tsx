@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -38,10 +39,8 @@ function toStorageLocationCode(name: string): string {
 
 export function StorageAdminPanel() {
   const utils = api.useUtils();
-  const [roomSearchInput, setRoomSearchInput] = useState("");
-  const [roomSearchTerm, setRoomSearchTerm] = useState("");
-  const [locationSearchInput, setLocationSearchInput] = useState("");
-  const [locationSearchTerm, setLocationSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [locationRoomFilter, setLocationRoomFilter] = useState("");
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
   const [createLocationOpen, setCreateLocationOpen] = useState(false);
@@ -52,19 +51,9 @@ export function StorageAdminPanel() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [locationForm, setLocationForm] = useState<StorageLocationForm>(createEmptyLocationForm);
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setRoomSearchTerm(roomSearchInput.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [roomSearchInput]);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setLocationSearchTerm(locationSearchInput.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [locationSearchInput]);
-
   const roomsQuery = api.storageRoom.backendList.useInfiniteQuery(
     {
-      search: roomSearchTerm || undefined,
+      search: searchTerm || undefined,
       limit: 100,
     },
     {
@@ -73,7 +62,7 @@ export function StorageAdminPanel() {
   );
   const locationsQuery = api.storageLocation.backendList.useInfiniteQuery(
     {
-      search: locationSearchTerm || undefined,
+      search: searchTerm || undefined,
       storageRoomId: locationRoomFilter || undefined,
       limit: 100,
     },
@@ -178,19 +167,6 @@ export function StorageAdminPanel() {
           >
             Neuer Lagerraum
           </Button>
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="backend-room-search" className="mb-1 block text-xs text-muted-foreground">
-            Suche nach Lagerraum
-            <Input
-              id="backend-room-search"
-              value={roomSearchInput}
-              onChange={(event) => setRoomSearchInput(event.target.value)}
-              placeholder="z. B. Keller"
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -345,17 +321,7 @@ export function StorageAdminPanel() {
           </Button>
         </div>
 
-        <div className="mb-4 grid gap-3 md:grid-cols-[1fr_260px]">
-          <label htmlFor="backend-location-search" className="mb-1 block text-xs text-muted-foreground">
-            Suche nach Code, Name oder Lagerraum
-            <Input
-              id="backend-location-search"
-              value={locationSearchInput}
-              onChange={(event) => setLocationSearchInput(event.target.value)}
-              placeholder="z. B. C390 oder Keller"
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
+        <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
           <label className="mb-1 block text-xs text-muted-foreground">
             Lagerraum
             <select

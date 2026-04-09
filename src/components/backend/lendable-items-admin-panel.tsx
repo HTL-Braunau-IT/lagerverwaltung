@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -60,7 +61,8 @@ function createFormFromItem(item: LendableItemListEntry): FormState {
 
 export function LendableItemsAdminPanel() {
   const utils = api.useUtils();
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
@@ -83,7 +85,7 @@ export function LendableItemsAdminPanel() {
 
   const roomsQuery = api.storageRoom.list.useQuery();
   const itemsQuery = api.lendableItem.backendList.useQuery({
-    search: search.trim() || undefined,
+    search: searchTerm || undefined,
     limit: 200,
   });
 
@@ -194,11 +196,6 @@ export function LendableItemsAdminPanel() {
           Neuer Ausleihartikel
         </Button>
       </div>
-
-      <label className="mb-4 block text-xs text-muted-foreground">
-        Suche
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} className="mt-1 h-10 rounded-xl" />
-      </label>
 
       <div className="overflow-x-auto overflow-y-visible rounded-xl border border-border">
         <Table>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -30,16 +31,11 @@ function toCostCenterCode(name: string): string {
 
 export function CostCentersAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setSearchTerm(searchInput.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const costCentersQuery = api.costCenter.backendList.useInfiniteQuery(
     {
@@ -103,19 +99,6 @@ export function CostCentersAdminPanel() {
         >
           Neue Kostenstelle
         </Button>
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="backend-cost-center-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Code oder Name
-          <Input
-            id="backend-cost-center-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. 4AHWII oder Werkstaette"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -25,17 +26,10 @@ function createInitialForm(user: {
 
 export function UsersAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [formsByUserId, setFormsByUserId] = useState<Record<string, UserAccessForm>>({});
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const usersQuery = api.user.backendList.useInfiniteQuery(
     {
@@ -73,19 +67,6 @@ export function UsersAdminPanel() {
             Lagerraumrechte pro Benutzer verwalten (Mehrfachauswahl oder alle Lagerraeume).
           </p>
         </div>
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="backend-user-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name oder E-Mail
-          <Input
-            id="backend-user-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. max.mustermann"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
