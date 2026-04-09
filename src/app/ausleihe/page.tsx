@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
 import { PackageIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
@@ -185,9 +185,8 @@ function LoanRequestCard({ loan }: { loan: any }) {
 export default function AusleihePage() {
   const { data: session } = useSession();
   const userRole = session?.user.role;
-
-  const [searchInput, setSearchInput] = useState("");
-  const searchTerm = searchInput.trim();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantityDraft, setQuantityDraft] = useState<string>("1");
@@ -237,26 +236,15 @@ export default function AusleihePage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(340px,420px)_minmax(0,1fr)] lg:items-start">
         <section className="order-2 space-y-4 lg:order-2">
           <Card className="rounded-2xl p-5">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-              <label className="w-full max-w-[340px] text-sm text-slate-600">
-                Suche
-                <Input
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="z. B. Bohrer, Leiter, Material..."
-                  className="mt-1 h-10 rounded-xl"
-                />
-              </label>
-            </div>
+            <div className="space-y-4">
+              {lendableItemsQuery.isLoading ? (
+                <p className="text-sm text-slate-600">Artikel werden geladen...</p>
+              ) : null}
+              {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
+                <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
+              ) : null}
 
-            {lendableItemsQuery.isLoading ? (
-              <p className="text-sm text-slate-600">Artikel werden geladen...</p>
-            ) : null}
-            {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
-              <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
-            ) : null}
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {(lendableItemsQuery.data ?? []).map((item: any) => (
                 <div key={item.id}>
                   <Card className="rounded-xl p-4 shadow-sm">
@@ -370,6 +358,7 @@ export default function AusleihePage() {
                   </Card>
                 </div>
               ))}
+              </div>
             </div>
           </Card>
 
