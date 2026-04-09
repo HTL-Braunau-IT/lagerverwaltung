@@ -156,7 +156,6 @@ export function StorageAdminPanel() {
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Lagerraeume</h2>
-            <p className="text-sm text-muted-foreground">Lagerraeume erstellen, bearbeiten und loeschen.</p>
           </div>
           <Button
             type="button"
@@ -308,7 +307,6 @@ export function StorageAdminPanel() {
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">Lagerplaetze</h2>
-            <p className="text-sm text-muted-foreground">Lagerplaetze verwalten und Lagerraeumen zuordnen.</p>
           </div>
           <Button
             type="button"

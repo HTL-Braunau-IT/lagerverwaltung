@@ -62,10 +62,7 @@ export function UsersAdminPanel() {
     <Card className="rounded-2xl p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Benutzerrechte</h2>
-          <p className="text-sm text-muted-foreground">
-            Lagerraumrechte pro Benutzer verwalten (Mehrfachauswahl oder alle Lagerraeume).
-          </p>
+          <h2 className="text-xl font-semibold text-foreground">Benutzer</h2>
         </div>
       </div>
 

@@ -182,7 +182,6 @@ export function LendableItemsAdminPanel() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Ausleihartikel</h2>
-          <p className="text-sm text-muted-foreground">Eigener Katalog fuer die Werkzeuge.</p>
         </div>
         <Button
           onClick={() => {

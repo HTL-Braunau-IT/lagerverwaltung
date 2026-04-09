@@ -93,7 +93,6 @@ export function CategoriesAdminPanel() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Kategorien</h2>
-          <p className="text-sm text-muted-foreground">Kategorien erstellen, bearbeiten und loeschen.</p>
         </div>
         <Button
           type="button"
