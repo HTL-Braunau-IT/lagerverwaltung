@@ -34,6 +34,12 @@ function requestStatusBadgeClass(status: "PENDING" | "APPROVED" | "REJECTED") {
   return "bg-rose-100 text-rose-900";
 }
 
+function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
+  if (status === "OPEN") return "Offen";
+  if (status === "PREPARING") return "In Vorbereitung";
+  return "Abholbereit";
+}
+
 export function AssignedOrdersPanel() {
   const utils = api.useUtils();
   const [costCenterByRequestId, setCostCenterByRequestId] = useState<Record<string, string>>({});
@@ -119,13 +125,6 @@ export function AssignedOrdersPanel() {
 
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-sky-700">HTL Lager</p>
-        <h1 className="text-2xl font-semibold text-slate-900">Zugewiesene Freigaben</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Hier findest du alle an dich zugewiesenen Schueleranfragen und kannst sie final bestellen.
-        </p>
-      </header>
 
       <section className="space-y-4">
         {requestsQuery.isLoading && (
@@ -184,7 +183,7 @@ export function AssignedOrdersPanel() {
               return (
                 <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{studentLabel(request.student)}</h3>
+                    <h3 className="text-sm text-slate-500">{studentLabel(request.student)}</h3>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-medium ${requestStatusBadgeClass(request.status)}`}
                     >
@@ -364,7 +363,7 @@ export function AssignedOrdersPanel() {
               return (
                 <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{studentLabel(request.borrower)}</h3>
+                    <h3 className="text-sm text-slate-500">{studentLabel(request.borrower)}</h3>
                     <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
                       Wartet auf Freigabe
                     </span>
@@ -438,75 +437,148 @@ export function AssignedOrdersPanel() {
                 Bereits bearbeitete Anfragen inklusive Freigabe-Ergebnis.
               </p>
             </div>
-            {completedRequests.map((request) => {
-              const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
-              return (
-                <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-lg font-semibold text-slate-900">{studentLabel(request.student)}</h3>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${requestStatusBadgeClass(request.status)}`}
-                    >
-                      {requestStatusLabel(request.status)}
-                    </span>
-                  </div>
 
-                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                    <p>
-                      <span className="text-slate-500">Eingang: </span>
-                      {formatDate(request.createdAt)}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Bearbeitet: </span>
-                      {formatDate(request.updatedAt)}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Artikel gesamt: </span>
-                      {itemCount}
-                    </p>
-                  </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {completedRequests.map((request) => {
+                const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
-                  {request.status === "APPROVED" && request.approvedOrder ? (
-                    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                      <p className="font-semibold">Freigabe erfolgreich als Bestellung uebernommen.</p>
-                      <p className="mt-1">
-                        Bestellnummer: <span className="font-medium">{request.approvedOrder.orderNumber}</span>
-                      </p>
-                      <p className="mt-1">
-                        Status: <span className="font-medium">{request.approvedOrder.status}</span>
-                      </p>
+                return (
+                  <article
+                    key={request.id}
+                    className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-sm text-slate-500">
+                          Bestellnummer
+                        </h3>
+                        <p className="text-lg font-semibold text-slate-900">{request.approvedOrder?.orderNumber}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${requestStatusBadgeClass(request.status)}`}
+                      >
+                        {requestStatusLabel(request.status)}
+                      </span>
                     </div>
-                  ) : null}
 
-                  {request.status === "REJECTED" ? (
-                    <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-                      Diese Anfrage wurde abgelehnt.
-                    </div>
-                  ) : null}
+                    <div className="my-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
 
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-800">Positionen</p>
-                    {request.items.length === 0 ? (
-                      <p className="mt-2 text-sm text-slate-600">Keine Positionen vorhanden.</p>
-                    ) : (
-                      <ul className="mt-2 space-y-2">
-                        {request.items.map((item) => (
-                          <li
-                            key={item.id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                          >
-                            <span className="font-medium text-slate-900">{item.product.name}</span>
-                            <span>
-                              {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                    {request.status === "APPROVED" && request.approvedOrder ? (
+                        <div className="grid grid-cols-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
+                          <p className="font-semibold">Freigabe als Bestellung übernommen.</p>
+                          <p className="text-emerald-900 text-right">
+                           Status: {" "}
+                            <span className="font-medium">
+                              {approvedOrderStatusLabel(request.approvedOrder.status)}
                             </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
+                          </p>
+                        </div>
+                      ) : null}
+
+                    <div className="mt-5 grid gap-4">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                        <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-[max-content_max-content_max-content_minmax(0,1fr)] sm:gap-6">
+                          <p className="flex min-w-0 flex-col gap-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Eingang {" "}
+                            </span>
+                            <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
+                              {formatDate(request.createdAt).split(",")[0]}
+                            </span>
+                          </p>
+                          <p className="flex min-w-0 flex-col gap-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Bearbeitet {" "}
+                            </span>
+                            <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
+                              {formatDate(request.updatedAt).split(",")[0]}
+                            </span>
+                          </p>
+                          <p className="flex min-w-0 flex-col gap-1">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              Produkte
+                            </span>
+                            <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
+                              {itemCount}
+                            </span>
+                          </p>
+                          {request.status === "APPROVED" && request.approvedOrder ? (
+                            <p className="flex min-w-0 flex-col gap-1 sm:text-right">
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Lehrperson
+                              </span>
+                              <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
+                                {request.teacherDisplayName}
+                              </span>
+                            </p>
+                          ) : (
+                            <p className="flex min-w-0 flex-col gap-1 sm:text-right">
+                              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                Bestellnummer
+                              </span>
+                              <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
+                                -
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+
+
+                      {request.status === "REJECTED" ? (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-950">
+                          <p className="font-semibold">Anfrage abgelehnt.</p>
+                        </div>
+                      ) : null}
+
+                      <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-base font-semibold text-slate-900">Positionen</p>
+                          </div>
+                          <span className="text-xs font-medium text-slate-600 group-open:hidden">Anzeigen</span>
+                          <span className="hidden text-xs font-medium text-slate-600 group-open:inline">
+                            Ausblenden
+                          </span>
+                        </summary>
+
+                        <div className="mt-6">
+                          {request.items.length === 0 ? (
+                            <p className="text-sm text-slate-600">Keine Positionen vorhanden.</p>
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                <span className="min-w-0 truncate">Name</span>
+                                <span className="shrink-0 text-right">Menge</span>
+                              </div>
+                              <ul className="mt-2 divide-y divide-slate-200/70">
+                                {request.items.map((item) => (
+                                  <li
+                                    key={item.id}
+                                    className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 py-2.5 text-sm text-slate-700 first:pt-3 last:pb-3"
+                                  >
+                                    <span className="min-w-0 truncate text-[15px] font-medium text-slate-900">
+                                      {item.product.name}
+                                    </span>
+                                    <span className="justify-self-end whitespace-nowrap text-right text-[15px] font-semibold tabular-nums text-slate-900">
+                                      {decimalToNumber(item.quantity)}{" "}
+                                      <span className="font-medium text-slate-600">
+                                        {item.product.baseUnit.toLowerCase()}
+                                      </span>
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         )}
       </section>
