@@ -13,21 +13,24 @@ type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
 const statusConfig: Record<
   OrderStatus,
-  { label: string; pillClassName: string; nextStatus: OrderStatus | null }
+  { label: string; pillClassName: string; borderClassName: string; nextStatus: OrderStatus | null }
 > = {
   OPEN: {
     label: "Offen",
     pillClassName: "",
+    borderClassName: "border-destructive/60",
     nextStatus: "PREPARING",
   },
   PREPARING: {
     label: "In Vorbereitung",
     pillClassName: "",
+    borderClassName: "border-secondary-foreground/25",
     nextStatus: "READY_FOR_PICKUP",
   },
   READY_FOR_PICKUP: {
     label: "Abholbereit",
     pillClassName: "",
+    borderClassName: "border-success/60",
     nextStatus: null,
   },
 };
@@ -93,10 +96,12 @@ export function OrdersAdminPanel() {
   );
 
   return (
-    <Card className="rounded-2xl p-5">
-      <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
+    <Card className="rounded-2xl bg-transparent">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="">
+          <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
+        </div>
         <label className="block text-xs text-muted-foreground">
-          Status
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as "ALL" | OrderStatus)}
@@ -156,7 +161,7 @@ export function OrdersAdminPanel() {
                 <Fragment key={order.id}>
                   <TableRow
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
-                    className="cursor-pointer"
+                    className={`cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : "bg-white"} select-none`}
                   >
                     <TableCell className="font-medium text-foreground">
                       <div className="flex items-center gap-2">
@@ -171,7 +176,7 @@ export function OrdersAdminPanel() {
                     <TableCell className="text-muted-foreground">
                       <p>{userLabel(order.user)}</p>
                       {order.sourceRequest?.student ? (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-[9px] text-slate-500 italic">
                           Schueler: {userLabel(order.sourceRequest.student)}
                         </p>
                       ) : null}
@@ -216,8 +221,9 @@ export function OrdersAdminPanel() {
                   </TableRow>
 
                   {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={6} className="px-3 py-4">
+                    <tr className="bg-muted/30">
+                      <td colSpan={6} className="p-3">
+                        <div className={`w-full rounded-lg border-2 bg-muted/30 p-4 ${status.borderClassName}`.trim()}>
                         {expandedOrderQuery.isLoading ? (
                           <p className="text-sm text-muted-foreground">Details werden geladen...</p>
                         ) : null}
@@ -229,7 +235,7 @@ export function OrdersAdminPanel() {
                         expandedOrderQuery.data &&
                         expandedOrderQuery.data.id === order.id ? (
                           <div className="space-y-4">
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
                               <div className="rounded-lg border border-border bg-card p-3">
                                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Bestellnummer</p>
                                 <p className="mt-1 text-sm font-semibold text-foreground">
@@ -245,10 +251,16 @@ export function OrdersAdminPanel() {
                                   {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
                                 </p>
                                 {expandedOrderQuery.data.sourceRequest?.student ? (
-                                  <p className="mt-2 text-xs text-muted-foreground">
+                                  <p className="mt-2 text-[9px] text-muted-foreground italic">
                                     Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
                                   </p>
                                 ) : null}
+                              </div>
+                              <div className="rounded-lg border border-border bg-card p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Kostenstelle</p>
+                                <p className="mt-1 text-sm font-semibold text-foreground">
+                                {order.costCenter.code} - {order.costCenter.name}
+                                </p>
                               </div>
                               <div className="rounded-lg border border-border bg-card p-3">
                                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Erstellt</p>
@@ -286,12 +298,11 @@ export function OrdersAdminPanel() {
                                       <th className="px-2.5 py-2">SKU</th>
                                       <th className="px-2.5 py-2">Lagerplatz</th>
                                       <th className="px-2.5 py-2">Menge</th>
-                                      <th className="px-2.5 py-2">Zeitpunkt</th>
                                     </tr>
                                   </thead>
-                                  <tbody>
+                                  <tbody className="bg-white">
                                     {expandedOrderQuery.data.items.map((item) => (
-                                      <tr key={item.id} className="border-t border-border">
+                                      <tr key={item.id} className="border-t border-border bg-white">
                                         <td className="px-2.5 py-2">
                                           <img
                                             src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
@@ -310,10 +321,9 @@ export function OrdersAdminPanel() {
                                             ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
                                             : "-"}
                                         </td>
-                                        <td className="px-2.5 py-2 text-foreground">
+                                        <td className="px-2.5 py-2 text-muted-foreground">
                                           {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
                                         </td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">{formatDate(item.createdAt)}</td>
                                       </tr>
                                     ))}
                                   </tbody>
@@ -322,6 +332,7 @@ export function OrdersAdminPanel() {
                             </div>
                           </div>
                         ) : null}
+                        </div>
                       </td>
                     </tr>
                   ) : null}

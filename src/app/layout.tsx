@@ -10,6 +10,7 @@ import { Search } from "~/components/layout/search";
 import {
   AdministrationIcon,
   ApprovalsIcon,
+  CartIcon,
   LendingIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
@@ -110,24 +111,28 @@ export default async function RootLayout({
                   <Search />
                 </div>
                 <div className="flex items-center gap-3">
-                  <HeaderCartLink />
+                  <HeaderCartLink
+                    label="Warenkorb"
+                    hoverClassName="hover:text-black"
+                    icon={<CartIcon />}
+                  />
                   <HeaderNavLink
                     href="/orders"
                     label="Bestellhistorie"
-                    hoverClassName="hover:text-sky-600"
+                    hoverClassName="hover:text-black"
                     icon={<OrdersIcon />}
                   />
                   <HeaderNavLink
                     href="/ausleihe"
                     label="Ausleihen"
-                    hoverClassName="hover:text-amber-600"
+                    hoverClassName="hover:text-black"
                     icon={<LendingIcon />}
                   />
                   {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
                     <HeaderNavLink
                       href="/teacher/orders"
                       label="Freigaben"
-                      hoverClassName="hover:text-emerald-600"
+                      hoverClassName="hover:text-black"
                       icon={<ApprovalsIcon />}
                       badgeLabel={openApprovalsCount > 0 ? openApprovalsLabel : undefined}
                     />
@@ -136,7 +141,7 @@ export default async function RootLayout({
                     <HeaderNavLink
                       href="/backend"
                       label="Administration"
-                      hoverClassName="hover:text-violet-600"
+                      hoverClassName="hover:text-black"
                       icon={<AdministrationIcon />}
                     />
                   ) : null}

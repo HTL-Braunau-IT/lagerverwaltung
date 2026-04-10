@@ -28,7 +28,7 @@ export function BackendSidebarNav() {
 
   return (
     <aside className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-      <p className="px-3 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Administrator</p>
+      <p className="px-3 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Administration</p>
       <nav className="space-y-1">
         {entries.map((entry) => {
           const isActive = pathname === entry.href;
