@@ -78,6 +78,7 @@ function formatBytes(bytes: number) {
 function resolveImageTabUrl(url: string): string | null {
   const t = url.trim();
   if (!t) return null;
+  if (t.startsWith("blob:")) return t;
   if (t.startsWith("http://") || t.startsWith("https://")) return t;
   if (typeof window === "undefined") return t;
   try {
@@ -234,6 +235,10 @@ export function ProductsAdminPanel() {
   const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  /** File chosen in the edit form; uploaded only when saving. */
+  const [editPendingImageById, setEditPendingImageById] = useState<
+    Record<string, { file: File; previewUrl: string } | null>
+  >({});
   /** Selected product image row in the admin grid (`null` = none, fields empty unless edited). */
   const [editSelectedImageIdById, setEditSelectedImageIdById] = useState<Record<string, string | null>>({});
   const [imageDeletePendingKey, setImageDeletePendingKey] = useState<string | null>(null);
@@ -284,6 +289,12 @@ export function ProductsAdminPanel() {
     },
     onSettled: () => {
       setImageDeletePendingKey(null);
+    },
+  });
+
+  const addProductImageMutation = api.product.backendAddProductImage.useMutation({
+    onSuccess: async () => {
+      await utils.product.backendList.invalidate();
     },
   });
 
@@ -420,6 +431,16 @@ export function ProductsAdminPanel() {
     }
   };
 
+  const clearEditPendingImage = (productId: string) => {
+    setEditPendingImageById((current) => {
+      const prev = current[productId];
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return { ...current, [productId]: null };
+    });
+  };
+
   return (
     <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -538,6 +559,7 @@ export function ProductsAdminPanel() {
               const isExpanded = expandedRowId === product.id;
               const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
               const form = formsById[product.id] ?? createInitialForm(product);
+              const pendingEditImage = editPendingImageById[product.id];
               const previewImage = product.images[0];
               const locationText = product.storageLocation
                 ? `${product.storageLocation.code} - ${product.storageLocation.name}`
@@ -990,7 +1012,7 @@ export function ProductsAdminPanel() {
                                     type="file"
                                     accept="image/*"
                                     onClick={(event) => event.stopPropagation()}
-                                    onChange={async (event) => {
+                                    onChange={(event) => {
                                       const file = event.target.files?.[0];
                                       if (!file) return;
                                       const sku = form.sku.trim();
@@ -999,46 +1021,59 @@ export function ProductsAdminPanel() {
                                           ...current,
                                           [product.id]: "Bitte zuerst eine SKU eingeben.",
                                         }));
+                                        event.target.value = "";
                                         return;
                                       }
-                                      try {
-                                        setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
-                                        setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                        const uploadedUrl = await uploadProductImage(sku, file);
-                                        setFormsById((current) => {
-                                          const f = current[product.id] ?? createInitialForm(product);
-                                          return {
-                                            ...current,
-                                            [product.id]: {
-                                              ...f,
-                                              imageUrl: uploadedUrl,
-                                              imageAltText: "",
-                                            },
-                                          };
-                                        });
-                                        setEditSelectedImageIdById((current) => ({
-                                          ...current,
-                                          [product.id]: null,
-                                        }));
-                                      } catch (error) {
+                                      if (!file.type.startsWith("image/")) {
                                         setEditUploadErrorById((current) => ({
                                           ...current,
-                                          [product.id]:
-                                            error instanceof Error
-                                              ? error.message
-                                              : "Bild konnte nicht hochgeladen werden.",
+                                          [product.id]: "Bitte eine Bilddatei auswaehlen.",
                                         }));
-                                      } finally {
-                                        setEditUploadPendingById((current) => ({ ...current, [product.id]: false }));
                                         event.target.value = "";
+                                        return;
                                       }
+                                      if (file.size > MAX_UPLOAD_BYTES) {
+                                        setEditUploadErrorById((current) => ({
+                                          ...current,
+                                          [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
+                                        }));
+                                        event.target.value = "";
+                                        return;
+                                      }
+                                      setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                      setEditPendingImageById((current) => {
+                                        const prev = current[product.id];
+                                        if (prev?.previewUrl) {
+                                          URL.revokeObjectURL(prev.previewUrl);
+                                        }
+                                        return {
+                                          ...current,
+                                          [product.id]: { file, previewUrl: URL.createObjectURL(file) },
+                                        };
+                                      });
+                                      setEditSelectedImageIdById((current) => ({
+                                        ...current,
+                                        [product.id]: null,
+                                      }));
+                                      setFormsById((current) => {
+                                        const f = current[product.id] ?? createInitialForm(product);
+                                        return {
+                                          ...current,
+                                          [product.id]: {
+                                            ...f,
+                                            imageUrl: "",
+                                            imageAltText: f.imageAltText,
+                                          },
+                                        };
+                                      });
+                                      event.target.value = "";
                                     }}
                                     className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm font-medium text-violet-950 file:mr-3 file:rounded-md file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:bg-violet-100/90"
                                   />
                                 </label>
                                 <p className="text-xs text-muted-foreground">
-                                  Klicken, um ein neues Produktbild auszuwaehlen. URL und Alt-Text werden
-                                  ausgefuellt.
+                                  Datei waehlen, optional Alt-Text setzen — das Bild wird beim Speichern
+                                  hochgeladen.
                                 </p>
                                 {editUploadPendingById[product.id] ? (
                                   <p className="text-xs text-muted-foreground">Bild wird hochgeladen...</p>
@@ -1047,27 +1082,42 @@ export function ProductsAdminPanel() {
                                   <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
                                 ) : null}
 
+                                {pendingEditImage ? (
+                                  <p className="text-sm text-slate-800" role="status">
+                                    Für Upload ausgewählt:{" "}
+                                    <span className="font-medium break-all text-slate-900">
+                                      {pendingEditImage.file.name}
+                                    </span>
+                                  </p>
+                                ) : null}
+
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
                                   <button
                                     type="button"
                                     onClick={(event) => {
                                       event.stopPropagation();
-                                      const href = resolveImageTabUrl(form.imageUrl);
+                                      const openSource =
+                                        form.imageUrl.trim() || pendingEditImage?.previewUrl || "";
+                                      const href = resolveImageTabUrl(openSource);
                                       if (href) window.open(href, "_blank", "noopener,noreferrer");
                                     }}
                                     className={`relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-40 sm:w-40 ${
-                                      form.imageUrl.trim()
+                                      form.imageUrl.trim() || pendingEditImage?.previewUrl
                                         ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
                                         : "cursor-default opacity-90"
                                     }`}
                                     aria-label={
-                                      form.imageUrl.trim()
+                                      form.imageUrl.trim() || pendingEditImage?.previewUrl
                                         ? "Bild in neuem Tab oeffnen"
                                         : "Vorschau (noch keine Bild-URL)"
                                     }
                                   >
                                     <img
-                                      src={form.imageUrl.trim() || "/pictures/placeholder.jpg"}
+                                      src={
+                                        form.imageUrl.trim() ||
+                                        pendingEditImage?.previewUrl ||
+                                        "/pictures/placeholder.jpg"
+                                      }
                                       alt=""
                                       className="h-full w-full object-cover"
                                       onError={(event) => {
@@ -1094,7 +1144,7 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        placeholder="Nach Auswahl oder Upload ausgefuellt"
+                                        placeholder="Nach Auswahl aus Liste oder nach Speichern"
                                         className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
                                       />
                                     </label>
@@ -1112,7 +1162,7 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        placeholder="Nach Auswahl oder Upload bearbeiten"
+                                        placeholder="Bearbeiten, mit Speichern uebernehmen"
                                         className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
                                       />
                                     </label>
@@ -1162,6 +1212,7 @@ export function ProductsAdminPanel() {
                                                     });
                                                     return;
                                                   }
+                                                  clearEditPendingImage(product.id);
                                                   setEditSelectedImageIdById((current) => ({
                                                     ...current,
                                                     [product.id]: image.id,
@@ -1399,6 +1450,7 @@ export function ProductsAdminPanel() {
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
+                              clearEditPendingImage(product.id);
                               setFormsById((current) => ({
                                 ...current,
                                 [product.id]: createInitialForm(product),
@@ -1416,31 +1468,111 @@ export function ProductsAdminPanel() {
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              updateMutation.mutate({
-                                id: product.id,
-                                name: form.name.trim(),
-                                sku: form.sku.trim(),
-                                description: form.description.trim() ? form.description.trim() : null,
-                                price: Number(form.price),
-                                minimumQuantity: Number(form.minimumQuantity),
-                                unitKind: form.unitKind,
-                                baseUnit: form.baseUnit,
-                                unitStep: Number(form.unitStep),
-                                isVisible: form.isVisible,
-                                categoryIds: form.categoryIds,
-                                storageLocationId: form.storageLocationId || null,
-                                imageUrl: form.imageUrl.trim() || null,
-                                imageAltText: form.imageAltText.trim() || null,
-                              });
+                              void (async () => {
+                                let editingImageId: string | undefined =
+                                  editSelectedImageIdById[product.id] ?? undefined;
+                                let imageUrl: string | null = form.imageUrl.trim() || null;
+                                let imageAltText: string | null = form.imageAltText.trim()
+                                  ? form.imageAltText.trim()
+                                  : null;
+
+                                const pending = editPendingImageById[product.id];
+                                if (pending) {
+                                  const sku = form.sku.trim();
+                                  if (!sku) {
+                                    setEditUploadErrorById((current) => ({
+                                      ...current,
+                                      [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                    }));
+                                    return;
+                                  }
+                                  try {
+                                    setEditUploadPendingById((current) => ({
+                                      ...current,
+                                      [product.id]: true,
+                                    }));
+                                    setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                    const uploadedUrl = await uploadProductImage(sku, pending.file);
+                                    const created = await addProductImageMutation.mutateAsync({
+                                      productId: product.id,
+                                      url: uploadedUrl,
+                                      altText: imageAltText,
+                                    });
+                                    URL.revokeObjectURL(pending.previewUrl);
+                                    setEditPendingImageById((current) => ({
+                                      ...current,
+                                      [product.id]: null,
+                                    }));
+                                    editingImageId = created.id;
+                                    imageUrl = uploadedUrl.trim() || null;
+                                    setFormsById((current) => {
+                                      const f = current[product.id] ?? createInitialForm(product);
+                                      return {
+                                        ...current,
+                                        [product.id]: {
+                                          ...f,
+                                          imageUrl: uploadedUrl,
+                                          imageAltText: imageAltText ?? "",
+                                        },
+                                      };
+                                    });
+                                    setEditSelectedImageIdById((current) => ({
+                                      ...current,
+                                      [product.id]: created.id,
+                                    }));
+                                  } catch (error) {
+                                    setEditUploadErrorById((current) => ({
+                                      ...current,
+                                      [product.id]:
+                                        error instanceof Error
+                                          ? error.message
+                                          : "Bild konnte nicht hochgeladen werden.",
+                                    }));
+                                    return;
+                                  } finally {
+                                    setEditUploadPendingById((current) => ({
+                                      ...current,
+                                      [product.id]: false,
+                                    }));
+                                  }
+                                }
+
+                                try {
+                                  await updateMutation.mutateAsync({
+                                    id: product.id,
+                                    name: form.name.trim(),
+                                    sku: form.sku.trim(),
+                                    description: form.description.trim() ? form.description.trim() : null,
+                                    price: Number(form.price),
+                                    minimumQuantity: Number(form.minimumQuantity),
+                                    unitKind: form.unitKind,
+                                    baseUnit: form.baseUnit,
+                                    unitStep: Number(form.unitStep),
+                                    isVisible: form.isVisible,
+                                    categoryIds: form.categoryIds,
+                                    storageLocationId: form.storageLocationId || null,
+                                    editingImageId,
+                                    imageUrl,
+                                    imageAltText,
+                                  });
+                                } catch {
+                                  // tRPC surfaces toast or error boundary elsewhere
+                                }
+                              })();
                             }}
                             disabled={
                               updateMutation.isPending ||
                               editUploadPendingById[product.id] ||
+                              addProductImageMutation.isPending ||
                               editDocumentUploadPendingById[product.id]
                             }
                             className="disabled:opacity-60"
                           >
-                            {updateMutation.isPending ? "Speichert..." : "Speichern"}
+                            {updateMutation.isPending ||
+                            editUploadPendingById[product.id] ||
+                            addProductImageMutation.isPending
+                              ? "Speichert..."
+                              : "Speichern"}
                           </Button>
                         </div>
 

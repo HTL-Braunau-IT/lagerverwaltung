@@ -72,6 +72,8 @@ const updateProductInput = z.object({
   isVisible: z.boolean(),
   categoryIds: z.array(z.string().min(1)).default([]),
   storageLocationId: z.string().min(1).nullable(),
+  /** When set, `imageUrl` / `imageAltText` update this row only; omit to leave images unchanged. */
+  editingImageId: z.string().min(1).optional(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
     message: "Invalid URL",
   }),
@@ -429,33 +431,20 @@ export const productRouter = createTRPCRouter({
           },
         });
 
-        const existingImage = await tx.productImage.findFirst({
-          where: { productId: input.id },
-          orderBy: { sortOrder: "asc" },
-          select: { id: true },
-        });
-
-        if (input.imageUrl) {
-          if (existingImage) {
+        if (input.editingImageId && input.imageUrl?.trim()) {
+          const target = await tx.productImage.findFirst({
+            where: { id: input.editingImageId, productId: input.id },
+            select: { id: true },
+          });
+          if (target) {
             await tx.productImage.update({
-              where: { id: existingImage.id },
+              where: { id: target.id },
               data: {
-                url: input.imageUrl,
+                url: input.imageUrl.trim(),
                 altText: input.imageAltText?.length ? input.imageAltText : null,
-              },
-            });
-          } else {
-            await tx.productImage.create({
-              data: {
-                productId: input.id,
-                url: input.imageUrl,
-                altText: input.imageAltText?.length ? input.imageAltText : null,
-                sortOrder: 0,
               },
             });
           }
-        } else if (existingImage) {
-          await tx.productImage.delete({ where: { id: existingImage.id } });
         }
 
         await tx.productCategory.deleteMany({
@@ -550,6 +539,44 @@ export const productRouter = createTRPCRouter({
 
         return created;
       });
+    }),
+
+  backendAddProductImage: adminProcedure
+    .input(
+      z.object({
+        productId: z.string().min(1),
+        url: z.string().trim().min(1).refine((value) => isValidImageUrl(value), {
+          message: "Invalid URL",
+        }),
+        altText: z.string().trim().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.productId]);
+
+      const maxSort = await ctx.db.productImage.aggregate({
+        where: { productId: input.productId },
+        _max: { sortOrder: true },
+      });
+      const sortOrder = (maxSort._max.sortOrder ?? -1) + 1;
+
+      const created = await ctx.db.productImage.create({
+        data: {
+          productId: input.productId,
+          url: input.url,
+          altText: input.altText?.length ? input.altText : null,
+          sortOrder,
+        },
+        select: {
+          id: true,
+          url: true,
+          altText: true,
+          sortOrder: true,
+        },
+      });
+
+      return created;
     }),
 
   backendDeleteProductImage: adminProcedure
