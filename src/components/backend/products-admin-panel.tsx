@@ -231,6 +231,7 @@ export function ProductsAdminPanel() {
   const [bookingNoteInput, setBookingNoteInput] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
+  const [editCategorySearch, setEditCategorySearch] = useState("");
 
   const productsQuery = api.product.backendList.useInfiniteQuery(
     {
@@ -300,6 +301,18 @@ export function ProductsAdminPanel() {
       (storageLocation) => storageLocation.storageRoomId === storageRoomFilter,
     );
   }, [storageLocationsQuery.data, storageRoomFilter]);
+  const categoriesById = useMemo(
+    () => new Map((categoriesQuery.data ?? []).map((category) => [category.id, category])),
+    [categoriesQuery.data],
+  );
+  const filteredEditCategories = useMemo(() => {
+    const needle = editCategorySearch.trim().toLowerCase();
+    return (categoriesQuery.data ?? []).filter((category) => category.name.toLowerCase().includes(needle));
+  }, [categoriesQuery.data, editCategorySearch]);
+
+  useEffect(() => {
+    setEditCategorySearch("");
+  }, [expandedRowId]);
 
   useEffect(() => {
     if (!storageRoomFilter || !storageLocationFilter) return;
@@ -434,7 +447,7 @@ export function ProductsAdminPanel() {
           </select>
         </label>
         <label className="mb-1 block text-xs text-muted-foreground">
-          Lagerplatz
+          Platz
           <select
             value={storageLocationFilter}
             onChange={(event) => setStorageLocationFilter(event.target.value)}
@@ -665,7 +678,7 @@ export function ProductsAdminPanel() {
                                     <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
                                   </div>
                                   <label className="block text-xs text-slate-600">
-                                    Lagerraum
+                                    Raum
                                     <select
                                       value={selectedRoomId}
                                       onClick={(event) => event.stopPropagation()}
@@ -690,7 +703,7 @@ export function ProductsAdminPanel() {
                                     </select>
                                   </label>
                                   <label className="block text-xs text-slate-600">
-                                    Lagerplatz
+                                    Platz
                                     <select
                                       value={form.storageLocationId}
                                       onClick={(event) => event.stopPropagation()}
@@ -729,7 +742,7 @@ export function ProductsAdminPanel() {
                                   </div>
                                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                     <label className="block text-xs text-slate-600">
-                                      Akt. Bestand
+                                      Bestand
                                       <input
                                         disabled
                                         value={String(toNumber(product.quantityOnHand))}
@@ -737,7 +750,7 @@ export function ProductsAdminPanel() {
                                       />
                                     </label>
                                     <label className="block text-xs text-slate-600">
-                                      Mindestbestand
+                                      Minimum
                                       <input
                                         type="number"
                                         step="0.001"
@@ -754,7 +767,7 @@ export function ProductsAdminPanel() {
                                       />
                                     </label>
                                     <label className="block text-xs text-slate-600">
-                                      Schrittweite
+                                      Schritte
                                       <input
                                         type="number"
                                         step="0.001"
@@ -847,22 +860,62 @@ export function ProductsAdminPanel() {
                               </div>
                             </div>
 
-                            <div className="flex min-h-[12rem] min-w-0 flex-col gap-3 rounded-lg border p-3 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
-                              <div className="shrink-0">
+                            <div className="flex min-h-0 min-w-0 flex-col gap-3 rounded-lg border p-3 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
+                              <div className="shrink-0 space-y-3">
                                 <p className="text-lg font-semibold text-slate-900">Kategorien</p>
-                                <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                <div className="h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                {form.categoryIds.length > 0 ? (
+                                  <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+                                    {form.categoryIds.map((categoryId) => {
+                                      const assigned = categoriesById.get(categoryId);
+                                      if (!assigned) return null;
+                                      return (
+                                        <button
+                                          key={categoryId}
+                                          type="button"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            setFormsById((current) => {
+                                              const prev = current[product.id] ?? form;
+                                              return {
+                                                ...current,
+                                                [product.id]: {
+                                                  ...prev,
+                                                  categoryIds: prev.categoryIds.filter((id) => id !== categoryId),
+                                                },
+                                              };
+                                            });
+                                          }}
+                                          className="inline-flex max-w-full min-h-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1"
+                                          aria-label={`Kategorie ${assigned.name} entfernen`}
+                                        >
+                                          <span className="truncate font-medium">{assigned.name}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null}
+                                <Input
+                                  type="search"
+                                  value={editCategorySearch}
+                                  onChange={(event) => setEditCategorySearch(event.target.value)}
+                                  onClick={(event) => event.stopPropagation()}
+                                  placeholder="Kategorien suchen..."
+                                  className="h-9 rounded-lg border-slate-300 bg-white text-sm"
+                                  aria-label="Kategorien filtern"
+                                />
                               </div>
                               <div
-                                className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white"
+                                className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white max-h-80"
                                 onClick={(event) => event.stopPropagation()}
                               >
                                 <div
-                                  className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
+                                  className="min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
                                   role="group"
                                   aria-label="Kategorien auswaehlen"
                                 >
                                   <div className="flex flex-col gap-2">
-                                    {(categoriesQuery.data ?? []).map((category) => (
+                                    {filteredEditCategories.map((category) => (
                                       <label
                                         key={category.id}
                                         className="flex cursor-pointer items-center gap-2 text-sm text-slate-900"
@@ -889,6 +942,8 @@ export function ProductsAdminPanel() {
                                     ))}
                                     {(categoriesQuery.data?.length ?? 0) === 0 ? (
                                       <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                                    ) : filteredEditCategories.length === 0 ? (
+                                      <p className="text-xs text-slate-500">Keine Treffer.</p>
                                     ) : null}
                                   </div>
                                 </div>
@@ -1327,7 +1382,7 @@ export function ProductsAdminPanel() {
             </div>
           </label>
           <label className="text-xs text-muted-foreground">
-            Lagerraum
+            Raum
             <select
               value={selectedCreateRoomId}
               onChange={(event) =>
@@ -1348,7 +1403,7 @@ export function ProductsAdminPanel() {
             </select>
           </label>
           <label className="text-xs text-muted-foreground">
-            Lagerplatz
+            Platz
             <select
               value={createForm.storageLocationId}
               onChange={(event) =>
