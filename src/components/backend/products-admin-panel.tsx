@@ -74,6 +74,19 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Resolves a stored image path or absolute URL for opening in a new browser tab. */
+function resolveImageTabUrl(url: string): string | null {
+  const t = url.trim();
+  if (!t) return null;
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  if (typeof window === "undefined") return t;
+  try {
+    return new URL(t, window.location.origin).href;
+  } catch {
+    return null;
+  }
+}
+
 function createInitialForm(product: {
   name: string;
   sku: string;
@@ -97,7 +110,6 @@ function createInitialForm(product: {
     altText: string | null;
   }>;
 }): ProductFormState {
-  const firstImage = product.images[0];
   return {
     name: product.name,
     sku: product.sku,
@@ -116,8 +128,8 @@ function createInitialForm(product: {
     ),
     storageRoomId: product.storageLocation?.storageRoomId ?? "",
     storageLocationId: product.storageLocationId ?? "",
-    imageUrl: firstImage?.url ?? "",
-    imageAltText: firstImage?.altText ?? "",
+    imageUrl: "",
+    imageAltText: "",
   };
 }
 
@@ -222,6 +234,9 @@ export function ProductsAdminPanel() {
   const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  /** Selected product image row in the admin grid (`null` = none, fields empty unless edited). */
+  const [editSelectedImageIdById, setEditSelectedImageIdById] = useState<Record<string, string | null>>({});
+  const [imageDeletePendingKey, setImageDeletePendingKey] = useState<string | null>(null);
   const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
   const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
   const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
@@ -263,6 +278,15 @@ export function ProductsAdminPanel() {
       setCreateOpen(false);
     },
   });
+  const deleteProductImageMutation = api.product.backendDeleteProductImage.useMutation({
+    onSuccess: async () => {
+      await utils.product.backendList.invalidate();
+    },
+    onSettled: () => {
+      setImageDeletePendingKey(null);
+    },
+  });
+
   const stockBookingMutation = api.product.backendBookStock.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -981,9 +1005,20 @@ export function ProductsAdminPanel() {
                                         setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
                                         setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
                                         const uploadedUrl = await uploadProductImage(sku, file);
-                                        setFormsById((current) => ({
+                                        setFormsById((current) => {
+                                          const f = current[product.id] ?? createInitialForm(product);
+                                          return {
+                                            ...current,
+                                            [product.id]: {
+                                              ...f,
+                                              imageUrl: uploadedUrl,
+                                              imageAltText: "",
+                                            },
+                                          };
+                                        });
+                                        setEditSelectedImageIdById((current) => ({
                                           ...current,
-                                          [product.id]: { ...form, imageUrl: uploadedUrl },
+                                          [product.id]: null,
                                         }));
                                       } catch (error) {
                                         setEditUploadErrorById((current) => ({
@@ -1002,7 +1037,8 @@ export function ProductsAdminPanel() {
                                   />
                                 </label>
                                 <p className="text-xs text-muted-foreground">
-                                  Klicken, um ein neues Produktbild auszuwaehlen.
+                                  Klicken, um ein neues Produktbild auszuwaehlen. URL und Alt-Text werden
+                                  ausgefuellt.
                                 </p>
                                 {editUploadPendingById[product.id] ? (
                                   <p className="text-xs text-muted-foreground">Bild wird hochgeladen...</p>
@@ -1011,72 +1047,216 @@ export function ProductsAdminPanel() {
                                   <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
                                 ) : null}
 
-                                <label className="block text-xs text-slate-600">
-                                  Bild-URL (optional)
-                                  <input
-                                    type="url"
-                                    value={form.imageUrl}
-                                    onClick={(event) => event.stopPropagation()}
-                                    onChange={(event) =>
-                                      setFormsById((current) => ({
-                                        ...current,
-                                        [product.id]: { ...form, imageUrl: event.target.value },
-                                      }))
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      const href = resolveImageTabUrl(form.imageUrl);
+                                      if (href) window.open(href, "_blank", "noopener,noreferrer");
+                                    }}
+                                    className={`relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-40 sm:w-40 ${
+                                      form.imageUrl.trim()
+                                        ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+                                        : "cursor-default opacity-90"
+                                    }`}
+                                    aria-label={
+                                      form.imageUrl.trim()
+                                        ? "Bild in neuem Tab oeffnen"
+                                        : "Vorschau (noch keine Bild-URL)"
                                     }
-                                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                  />
-                                </label>
-
-                                <label className="block text-xs text-slate-600">
-                                  Bild-Alt-Text
-                                  <input
-                                    value={form.imageAltText}
-                                    onClick={(event) => event.stopPropagation()}
-                                    onChange={(event) =>
-                                      setFormsById((current) => ({
-                                        ...current,
-                                        [product.id]: { ...form, imageAltText: event.target.value },
-                                      }))
-                                    }
-                                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                  />
-                                </label>
+                                  >
+                                    <img
+                                      src={form.imageUrl.trim() || "/pictures/placeholder.jpg"}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                      onError={(event) => {
+                                        event.currentTarget.onerror = null;
+                                        event.currentTarget.src = "/pictures/placeholder.jpg";
+                                      }}
+                                    />
+                                  </button>
+                                  <div className="min-w-0 flex-1 space-y-3">
+                                    <label className="block text-xs text-slate-600">
+                                      Bild-URL (optional)
+                                      <input
+                                        type="text"
+                                        inputMode="url"
+                                        autoComplete="off"
+                                        value={form.imageUrl}
+                                        onClick={(event) => event.stopPropagation()}
+                                        onChange={(event) =>
+                                          setFormsById((current) => ({
+                                            ...current,
+                                            [product.id]: {
+                                              ...(current[product.id] ?? createInitialForm(product)),
+                                              imageUrl: event.target.value,
+                                            },
+                                          }))
+                                        }
+                                        placeholder="Nach Auswahl oder Upload ausgefuellt"
+                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                      />
+                                    </label>
+                                    <label className="block text-xs text-slate-600">
+                                      Bild-Alt-Text
+                                      <input
+                                        value={form.imageAltText}
+                                        onClick={(event) => event.stopPropagation()}
+                                        onChange={(event) =>
+                                          setFormsById((current) => ({
+                                            ...current,
+                                            [product.id]: {
+                                              ...(current[product.id] ?? createInitialForm(product)),
+                                              imageAltText: event.target.value,
+                                            },
+                                          }))
+                                        }
+                                        placeholder="Nach Auswahl oder Upload bearbeiten"
+                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
 
                                 <div className="mt-auto border-t border-slate-200/80 pt-3">
                                   <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
-                                  <div className="max-h-48 space-y-2 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
+                                  <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
                                     {(product.images ?? []).length === 0 ? (
                                       <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
                                     ) : (
-                                      (product.images ?? []).map((image, imageIndex) => (
-                                        <div
-                                          key={`${image.url}-${imageIndex}`}
-                                          className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50/80 p-2"
-                                        >
-                                          <img
-                                            src={image.url}
-                                            alt={image.altText || `${form.name} Produktbild ${imageIndex + 1}`}
-                                            className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
-                                            onClick={(event) => event.stopPropagation()}
-                                            onError={(event) => {
-                                              event.currentTarget.onerror = null;
-                                              event.currentTarget.src = "/pictures/placeholder.jpg";
-                                            }}
-                                          />
-                                          <div className="min-w-0 flex-1">
-                                            <p className="truncate text-[11px] text-slate-600" title={image.url}>
-                                              {image.url}
-                                            </p>
-                                            {image.altText ? (
-                                              <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
-                                                Alt: {image.altText}
-                                              </p>
-                                            ) : (
-                                              <p className="mt-0.5 text-[11px] text-muted-foreground">Kein Alt-Text</p>
-                                            )}
-                                          </div>
-                                        </div>
-                                      ))
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {(product.images ?? []).map((image, imageIndex) => {
+                                          const isSelected = editSelectedImageIdById[product.id] === image.id;
+                                          const deleteKey = `${product.id}:${image.id}`;
+                                          const sizeBytes = image.sizeBytes ?? null;
+
+                                          return (
+                                            <div
+                                              key={image.id ?? `${image.url}-${imageIndex}`}
+                                              className={`flex items-start gap-2 rounded-md border bg-slate-50/80 p-2 transition ${
+                                                isSelected
+                                                  ? "border-violet-600 ring-2 ring-violet-500/35"
+                                                  : "border-slate-200"
+                                              }`}
+                                            >
+                                              <button
+                                                type="button"
+                                                onClick={(clickEvent) => {
+                                                  clickEvent.stopPropagation();
+                                                  if (editSelectedImageIdById[product.id] === image.id) {
+                                                    setEditSelectedImageIdById((current) => ({
+                                                      ...current,
+                                                      [product.id]: null,
+                                                    }));
+                                                    setFormsById((current) => {
+                                                      const f = current[product.id] ?? createInitialForm(product);
+                                                      return {
+                                                        ...current,
+                                                        [product.id]: {
+                                                          ...f,
+                                                          imageUrl: "",
+                                                          imageAltText: "",
+                                                        },
+                                                      };
+                                                    });
+                                                    return;
+                                                  }
+                                                  setEditSelectedImageIdById((current) => ({
+                                                    ...current,
+                                                    [product.id]: image.id,
+                                                  }));
+                                                  setFormsById((current) => {
+                                                    const f = current[product.id] ?? createInitialForm(product);
+                                                    return {
+                                                      ...current,
+                                                      [product.id]: {
+                                                        ...f,
+                                                        imageUrl: image.url,
+                                                        imageAltText: image.altText ?? "",
+                                                      },
+                                                    };
+                                                  });
+                                                }}
+                                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition hover:bg-slate-100/80 focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                              >
+                                                <img
+                                                  src={image.url}
+                                                  alt={
+                                                    image.altText || `${form.name} Produktbild ${imageIndex + 1}`
+                                                  }
+                                                  className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
+                                                  onError={(errEvent) => {
+                                                    errEvent.currentTarget.onerror = null;
+                                                    errEvent.currentTarget.src = "/pictures/placeholder.jpg";
+                                                  }}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                  <p className="break-all text-[11px] leading-snug text-slate-600">
+                                                    {image.url}
+                                                  </p>
+                                                  {image.altText ? (
+                                                    <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
+                                                      Alt: {image.altText}
+                                                    </p>
+                                                  ) : (
+                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                      Kein Alt-Text
+                                                    </p>
+                                                  )}
+                                                </div>
+                                              </button>
+                                              <div className="flex shrink-0 flex-col items-end justify-between gap-1 self-stretch">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                  {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
+                                                </span>
+                                                <Button
+                                                  type="button"
+                                                  size="sm"
+                                                  variant="outline"
+                                                  disabled={imageDeletePendingKey !== null}
+                                                  onClick={(clickEvent) => {
+                                                    clickEvent.stopPropagation();
+                                                    if (!image.id) return;
+                                                    const deletedUrl = image.url;
+                                                    setImageDeletePendingKey(deleteKey);
+                                                    deleteProductImageMutation.mutate(
+                                                      { productId: product.id, imageId: image.id },
+                                                      {
+                                                        onSuccess: () => {
+                                                          setEditSelectedImageIdById((current) =>
+                                                            current[product.id] === image.id
+                                                              ? { ...current, [product.id]: null }
+                                                              : current,
+                                                          );
+                                                          setFormsById((current) => {
+                                                            const f = current[product.id];
+                                                            if (!f) return current;
+                                                            if (f.imageUrl === deletedUrl) {
+                                                              return {
+                                                                ...current,
+                                                                [product.id]: {
+                                                                  ...f,
+                                                                  imageUrl: "",
+                                                                  imageAltText: "",
+                                                                },
+                                                              };
+                                                            }
+                                                            return current;
+                                                          });
+                                                        },
+                                                      },
+                                                    );
+                                                  }}
+                                                  className="text-xs"
+                                                >
+                                                  {imageDeletePendingKey === deleteKey ? "..." : "Entfernen"}
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -1222,6 +1402,10 @@ export function ProductsAdminPanel() {
                               setFormsById((current) => ({
                                 ...current,
                                 [product.id]: createInitialForm(product),
+                              }));
+                              setEditSelectedImageIdById((current) => ({
+                                ...current,
+                                [product.id]: null,
                               }));
                             }}
                             variant="outline"

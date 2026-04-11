@@ -1,3 +1,6 @@
+import { rm, stat } from "node:fs/promises";
+import path from "node:path";
+
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
@@ -17,6 +20,26 @@ function isValidImageUrl(value: string): boolean {
 
 function normalizeProductDocumentUrl(documentId: string) {
   return `/api/backend/products/document/${documentId}`;
+}
+
+/** Local files under `public/` only; used for size display and safe deletion. */
+function safePublicFilePathFromProductImageUrl(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed.startsWith("/data/uploads/pictures/") || trimmed.includes("..")) {
+    return null;
+  }
+  return path.join(process.cwd(), "public", trimmed.replace(/^\//, ""));
+}
+
+async function fileSizeBytesForPublicProductImageUrl(url: string): Promise<number | null> {
+  const filePath = safePublicFilePathFromProductImageUrl(url);
+  if (!filePath) return null;
+  try {
+    const s = await stat(filePath);
+    return s.isFile() ? s.size : null;
+  } catch {
+    return null;
+  }
 }
 
 const listProductsInput = z.object({
@@ -310,7 +333,6 @@ export const productRouter = createTRPCRouter({
           },
           images: {
             orderBy: { sortOrder: "asc" },
-            take: 1,
             select: {
               id: true,
               url: true,
@@ -337,14 +359,24 @@ export const productRouter = createTRPCRouter({
         nextCursor = nextItem?.id;
       }
 
-      return {
-        items: items.map((item) => ({
+      const enrichedItems = await Promise.all(
+        items.map(async (item) => ({
           ...item,
+          images: await Promise.all(
+            item.images.map(async (image) => ({
+              ...image,
+              sizeBytes: await fileSizeBytesForPublicProductImageUrl(image.url),
+            })),
+          ),
           documents: item.documents.map((document) => ({
             ...document,
             url: normalizeProductDocumentUrl(document.id),
           })),
         })),
+      );
+
+      return {
+        items: enrichedItems,
         nextCursor,
       };
     }),
@@ -518,6 +550,46 @@ export const productRouter = createTRPCRouter({
 
         return created;
       });
+    }),
+
+  backendDeleteProductImage: adminProcedure
+    .input(
+      z.object({
+        productId: z.string().min(1),
+        imageId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.productId]);
+
+      const image = await ctx.db.productImage.findFirst({
+        where: { id: input.imageId, productId: input.productId },
+        select: { id: true, url: true },
+      });
+      if (!image) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Bild wurde nicht gefunden.",
+        });
+      }
+
+      const filePath = safePublicFilePathFromProductImageUrl(image.url);
+
+      await ctx.db.productImage.delete({
+        where: { id: image.id },
+        select: { id: true },
+      });
+
+      if (filePath) {
+        try {
+          await rm(filePath, { force: true });
+        } catch {
+          // File may already be missing; DB row is already removed.
+        }
+      }
+
+      return { ok: true as const };
     }),
 
   backendBookStock: adminProcedure
