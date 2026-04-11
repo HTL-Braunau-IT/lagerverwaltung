@@ -145,7 +145,7 @@ function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-card p-3">
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Letzte Buchungen
       </p>
@@ -582,44 +582,12 @@ export function ProductsAdminPanel() {
                     </TableCell>
                   </TableRow>
                   {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={6} className="align-top bg-white px-3 py-4">
-                        <div className="mb-3 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFormsById((current) => ({
-                                ...current,
-                                [product.id]: { ...form, isVisible: !form.isVisible },
-                              }));
-                            }}
-                            className={`inline-flex items-center gap-3 rounded-lg border-2 bg-white px-3 py-2 text-left transition ${
-                              form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
-                            }`}
-                            aria-label="Produktsichtbarkeit umschalten"
-                            aria-pressed={form.isVisible}
-                          >
-                            <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
-                            <span
-                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-                                form.isVisible ? "bg-primary" : "bg-slate-300"
-                              }`}
-                              aria-hidden="true"
-                            >
-                              <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                                  form.isVisible ? "translate-x-5" : "translate-x-1"
-                                }`}
-                              />
-                            </span>
-                          </button>
-                        </div>
-
-                        <div className="mx-4 flex flex-col gap-8">
-                          <div className="grid min-h-0 grid-cols-1 gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-8">
-                            <div className="flex min-h-0 min-w-0 flex-col gap-8">
-                              <div className="space-y-3 rounded-lg border p-3">
+                    <tr className="border-t border-border">
+                      <td colSpan={6} className="align-top bg-muted/50 px-3 py-5">
+                        <div className="mx-4 flex flex-col gap-4">
+                          <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
+                            <div className="flex min-h-0 min-w-0 flex-col gap-4">
+                              <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                 <div>
                                   <p className="text-lg font-semibold text-slate-900">Stammdaten</p>
                                   <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
@@ -671,8 +639,8 @@ export function ProductsAdminPanel() {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-8">
-                                <div className="space-y-3 rounded-lg border p-3">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4">
+                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
                                     <p className="text-lg font-semibold text-slate-900">Lager</p>
                                     <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
@@ -735,7 +703,7 @@ export function ProductsAdminPanel() {
                                   </label>
                                 </div>
 
-                                <div className="space-y-3 rounded-lg border p-3">
+                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
                                     <p className="text-lg font-semibold text-slate-900">Produkt Details</p>
                                     <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
@@ -834,7 +802,7 @@ export function ProductsAdminPanel() {
                                   </div>
                                 </div>
 
-                                <div className="space-y-3 rounded-lg border p-3">
+                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
                                     <p className="text-lg font-semibold text-slate-900">Preis</p>
                                     <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
@@ -860,298 +828,376 @@ export function ProductsAdminPanel() {
                               </div>
                             </div>
 
-                            <div className="flex min-h-0 min-w-0 flex-col gap-3 rounded-lg border p-3 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
-                              <div className="shrink-0 space-y-3">
-                                <p className="text-lg font-semibold text-slate-900">Kategorien</p>
-                                <div className="h-px w-full bg-slate-200/70" aria-hidden="true" />
-                                {form.categoryIds.length > 0 ? (
-                                  <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
-                                    {form.categoryIds.map((categoryId) => {
-                                      const assigned = categoriesById.get(categoryId);
-                                      if (!assigned) return null;
-                                      return (
-                                        <button
-                                          key={categoryId}
-                                          type="button"
-                                          onClick={(event) => {
-                                            event.stopPropagation();
-                                            setFormsById((current) => {
-                                              const prev = current[product.id] ?? form;
-                                              return {
+                            <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
+                              <div className="flex w-full shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, isVisible: !form.isVisible },
+                                    }));
+                                  }}
+                                  className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 bg-white px-3 py-2 text-left transition ${
+                                    form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
+                                  }`}
+                                  aria-label="Produktsichtbarkeit umschalten"
+                                  aria-pressed={form.isVisible}
+                                >
+                                  <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
+                                  <span
+                                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                      form.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
+                                      }`}
+                                    aria-hidden="true"
+                                  >
+                                    <span
+                                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                        form.isVisible ? "translate-x-5" : "translate-x-1"
+                                      }`}
+                                    />
+                                  </span>
+                                </button>
+                              </div>
+                              <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 md:min-h-0 md:overflow-hidden">
+                                <div className="shrink-0 space-y-3">
+                                  <p className="text-lg font-semibold text-slate-900">Kategorien</p>
+                                  <div className="h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                  {form.categoryIds.length > 0 ? (
+                                    <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+                                      {form.categoryIds.map((categoryId) => {
+                                        const assigned = categoriesById.get(categoryId);
+                                        if (!assigned) return null;
+                                        return (
+                                          <button
+                                            key={categoryId}
+                                            type="button"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              setFormsById((current) => {
+                                                const prev = current[product.id] ?? form;
+                                                return {
+                                                  ...current,
+                                                  [product.id]: {
+                                                    ...prev,
+                                                    categoryIds: prev.categoryIds.filter((id) => id !== categoryId),
+                                                  },
+                                                };
+                                              });
+                                            }}
+                                            className="inline-flex max-w-full min-h-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1"
+                                            aria-label={`Kategorie ${assigned.name} entfernen`}
+                                          >
+                                            <span className="truncate font-medium">{assigned.name}</span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                  <Input
+                                    type="search"
+                                    value={editCategorySearch}
+                                    onChange={(event) => setEditCategorySearch(event.target.value)}
+                                    onClick={(event) => event.stopPropagation()}
+                                    placeholder="Kategorien suchen..."
+                                    className="h-9 rounded-lg border-slate-300 bg-white text-sm"
+                                    aria-label="Kategorien filtern"
+                                  />
+                                </div>
+                                <div
+                                  className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white max-h-80"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <div
+                                    className="min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
+                                    role="group"
+                                    aria-label="Kategorien auswaehlen"
+                                  >
+                                    <div className="flex flex-col gap-2 ">
+                                      {filteredEditCategories.map((category) => (
+                                        <label
+                                          key={category.id}
+                                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-900"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={form.categoryIds.includes(category.id)}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) =>
+                                              setFormsById((current) => ({
                                                 ...current,
                                                 [product.id]: {
-                                                  ...prev,
-                                                  categoryIds: prev.categoryIds.filter((id) => id !== categoryId),
+                                                  ...form,
+                                                  categoryIds: event.target.checked
+                                                    ? [...form.categoryIds, category.id]
+                                                    : form.categoryIds.filter((id) => id !== category.id),
                                                 },
-                                              };
-                                            });
-                                          }}
-                                          className="inline-flex max-w-full min-h-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1"
-                                          aria-label={`Kategorie ${assigned.name} entfernen`}
-                                        >
-                                          <span className="truncate font-medium">{assigned.name}</span>
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                ) : null}
-                                <Input
-                                  type="search"
-                                  value={editCategorySearch}
-                                  onChange={(event) => setEditCategorySearch(event.target.value)}
-                                  onClick={(event) => event.stopPropagation()}
-                                  placeholder="Kategorien suchen..."
-                                  className="h-9 rounded-lg border-slate-300 bg-white text-sm"
-                                  aria-label="Kategorien filtern"
-                                />
-                              </div>
-                              <div
-                                className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white max-h-80"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <div
-                                  className="min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
-                                  role="group"
-                                  aria-label="Kategorien auswaehlen"
-                                >
-                                  <div className="flex flex-col gap-2">
-                                    {filteredEditCategories.map((category) => (
-                                      <label
-                                        key={category.id}
-                                        className="flex cursor-pointer items-center gap-2 text-sm text-slate-900"
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={form.categoryIds.includes(category.id)}
-                                          onClick={(event) => event.stopPropagation()}
-                                          onChange={(event) =>
-                                            setFormsById((current) => ({
-                                              ...current,
-                                              [product.id]: {
-                                                ...form,
-                                                categoryIds: event.target.checked
-                                                  ? [...form.categoryIds, category.id]
-                                                  : form.categoryIds.filter((id) => id !== category.id),
-                                              },
-                                            }))
-                                          }
-                                          className="h-4 w-4 shrink-0 rounded border-slate-300"
-                                        />
-                                        <span>{category.name}</span>
-                                      </label>
-                                    ))}
-                                    {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                                      <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
-                                    ) : filteredEditCategories.length === 0 ? (
-                                      <p className="text-xs text-slate-500">Keine Treffer.</p>
-                                    ) : null}
+                                              }))
+                                            }
+                                            className="h-4 w-4 shrink-0 rounded border-slate-300"
+                                          />
+                                          <span>{category.name}</span>
+                                        </label>
+                                      ))}
+                                      {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                                        <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                                      ) : filteredEditCategories.length === 0 ? (
+                                        <p className="text-xs text-slate-500">Keine Treffer.</p>
+                                      ) : null}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-4 md:gap-8">
-                            <div className="md:col-span-4">
-                              <label className="text-xs text-slate-600">
-                                Bild hochladen
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onClick={(event) => event.stopPropagation()}
-                                  onChange={async (event) => {
-                                    const file = event.target.files?.[0];
-                                    if (!file) return;
-                                    const sku = form.sku.trim();
-                                    if (!sku) {
-                                      setEditUploadErrorById((current) => ({
-                                        ...current,
-                                        [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                      }));
-                                      return;
-                                    }
-                                    try {
-                                      setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
-                                      setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                      const uploadedUrl = await uploadProductImage(sku, file);
-                                      setFormsById((current) => ({
-                                        ...current,
-                                        [product.id]: { ...form, imageUrl: uploadedUrl },
-                                      }));
-                                    } catch (error) {
-                                      setEditUploadErrorById((current) => ({
-                                        ...current,
-                                        [product.id]:
-                                          error instanceof Error
-                                            ? error.message
-                                            : "Bild konnte nicht hochgeladen werden.",
-                                      }));
-                                    } finally {
-                                      setEditUploadPendingById((current) => ({ ...current, [product.id]: false }));
-                                      event.target.value = "";
-                                    }
-                                  }}
-                                  className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
-                                />
-                              </label>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Klicken, um ein neues Produktbild auszuwaehlen.
-                              </p>
-                              {editUploadPendingById[product.id] ? (
-                                <p className="mt-1 text-xs text-muted-foreground">Bild wird hochgeladen...</p>
-                              ) : null}
-                              {editUploadErrorById[product.id] ? (
-                                <p className="mt-1 text-xs text-destructive">{editUploadErrorById[product.id]}</p>
-                              ) : null}
+                          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                            <div>
+                              <p className="text-lg font-semibold text-slate-900">Bilder und Dokumente</p>
+                              <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
                             </div>
 
-                            <label className="text-xs text-slate-600 md:col-span-2">
-                              Bild-URL (optional)
-                              <input
-                                type="url"
-                                value={form.imageUrl}
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={(event) =>
-                                  setFormsById((current) => ({
-                                    ...current,
-                                    [product.id]: { ...form, imageUrl: event.target.value },
-                                  }))
-                                }
-                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                              />
-                            </label>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 md:items-stretch">
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                <label className="text-xs text-slate-600">
+                                  Bild hochladen
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={async (event) => {
+                                      const file = event.target.files?.[0];
+                                      if (!file) return;
+                                      const sku = form.sku.trim();
+                                      if (!sku) {
+                                        setEditUploadErrorById((current) => ({
+                                          ...current,
+                                          [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                        }));
+                                        return;
+                                      }
+                                      try {
+                                        setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
+                                        setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                        const uploadedUrl = await uploadProductImage(sku, file);
+                                        setFormsById((current) => ({
+                                          ...current,
+                                          [product.id]: { ...form, imageUrl: uploadedUrl },
+                                        }));
+                                      } catch (error) {
+                                        setEditUploadErrorById((current) => ({
+                                          ...current,
+                                          [product.id]:
+                                            error instanceof Error
+                                              ? error.message
+                                              : "Bild konnte nicht hochgeladen werden.",
+                                        }));
+                                      } finally {
+                                        setEditUploadPendingById((current) => ({ ...current, [product.id]: false }));
+                                        event.target.value = "";
+                                      }
+                                    }}
+                                    className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm font-medium text-violet-950 file:mr-3 file:rounded-md file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:bg-violet-100/90"
+                                  />
+                                </label>
+                                <p className="text-xs text-muted-foreground">
+                                  Klicken, um ein neues Produktbild auszuwaehlen.
+                                </p>
+                                {editUploadPendingById[product.id] ? (
+                                  <p className="text-xs text-muted-foreground">Bild wird hochgeladen...</p>
+                                ) : null}
+                                {editUploadErrorById[product.id] ? (
+                                  <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
+                                ) : null}
 
-                            <label className="text-xs text-slate-600 md:col-span-2">
-                              Bild-Alt-Text
-                              <input
-                                value={form.imageAltText}
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={(event) =>
-                                  setFormsById((current) => ({
-                                    ...current,
-                                    [product.id]: { ...form, imageAltText: event.target.value },
-                                  }))
-                                }
-                                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                              />
-                            </label>
+                                <label className="block text-xs text-slate-600">
+                                  Bild-URL (optional)
+                                  <input
+                                    type="url"
+                                    value={form.imageUrl}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={(event) =>
+                                      setFormsById((current) => ({
+                                        ...current,
+                                        [product.id]: { ...form, imageUrl: event.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                  />
+                                </label>
 
-                            {form.imageUrl ? (
-                              <div className="md:col-span-2">
-                                <p className="mb-1 text-xs text-slate-600">Bildvorschau</p>
-                                <img
-                                  src={form.imageUrl}
-                                  alt={form.imageAltText || `${form.name} Produktbild`}
-                                  className="h-32 w-32 rounded-lg border border-slate-200 object-cover"
-                                  onClick={(event) => event.stopPropagation()}
-                                  onError={(event) => {
-                                    event.currentTarget.onerror = null;
-                                    event.currentTarget.src = "/pictures/placeholder.jpg";
-                                  }}
-                                />
-                              </div>
-                            ) : null}
+                                <label className="block text-xs text-slate-600">
+                                  Bild-Alt-Text
+                                  <input
+                                    value={form.imageAltText}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={(event) =>
+                                      setFormsById((current) => ({
+                                        ...current,
+                                        [product.id]: { ...form, imageAltText: event.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                  />
+                                </label>
 
-                            <div className="rounded-lg border border-slate-300 bg-white p-3 md:col-span-2">
-                              <p className="text-xs font-medium text-slate-700">Dokumente</p>
-                              <input
-                                type="file"
-                                accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={async (event) => {
-                                  const file = event.target.files?.[0];
-                                  if (!file) return;
-                                  try {
-                                    setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: true }));
-                                    setEditDocumentUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                    await uploadProductDocument(product.id, file);
-                                    await utils.product.backendList.invalidate();
-                                  } catch (error) {
-                                    setEditDocumentUploadErrorById((current) => ({
-                                      ...current,
-                                      [product.id]:
-                                        error instanceof Error
-                                          ? error.message
-                                          : "Dokument konnte nicht hochgeladen werden.",
-                                    }));
-                                  } finally {
-                                    setEditDocumentUploadPendingById((current) => ({
-                                      ...current,
-                                      [product.id]: false,
-                                    }));
-                                    event.target.value = "";
-                                  }
-                                }}
-                                className="mt-2 block w-full text-xs text-slate-700"
-                              />
-                              {editDocumentUploadPendingById[product.id] ? (
-                                <p className="mt-1 text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
-                              ) : null}
-                              {editDocumentUploadErrorById[product.id] ? (
-                                <p className="mt-1 text-xs text-destructive">{editDocumentUploadErrorById[product.id]}</p>
-                              ) : null}
-                              <div className="mt-3 space-y-1.5">
-                                {(product.documents ?? []).length === 0 ? (
-                                  <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                                ) : (
-                                  (product.documents ?? []).map((document) => (
-                                    <div
-                                      key={document.id}
-                                      className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
-                                    >
-                                      <a
-                                        href={document.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        onClick={(event) => event.stopPropagation()}
-                                        className="truncate text-xs text-primary underline-offset-2 hover:underline"
-                                      >
-                                        {document.originalName}
-                                      </a>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[11px] text-muted-foreground">
-                                          {formatBytes(document.sizeBytes)}
-                                        </span>
-                                        <Button
-                                          type="button"
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={async (event) => {
-                                            event.stopPropagation();
-                                            try {
-                                              setEditDocumentUploadPendingById((current) => ({
-                                                ...current,
-                                                [product.id]: true,
-                                              }));
-                                              setEditDocumentUploadErrorById((current) => ({
-                                                ...current,
-                                                [product.id]: null,
-                                              }));
-                                              await deleteProductDocument(document.id);
-                                              await utils.product.backendList.invalidate();
-                                            } catch (error) {
-                                              setEditDocumentUploadErrorById((current) => ({
-                                                ...current,
-                                                [product.id]:
-                                                  error instanceof Error
-                                                    ? error.message
-                                                    : "Dokument konnte nicht geloescht werden.",
-                                              }));
-                                            } finally {
-                                              setEditDocumentUploadPendingById((current) => ({
-                                                ...current,
-                                                [product.id]: false,
-                                              }));
-                                            }
-                                          }}
-                                          disabled={editDocumentUploadPendingById[product.id]}
+                                <div className="mt-auto border-t border-slate-200/80 pt-3">
+                                  <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
+                                  <div className="max-h-48 space-y-2 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
+                                    {(product.images ?? []).length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
+                                    ) : (
+                                      (product.images ?? []).map((image, imageIndex) => (
+                                        <div
+                                          key={`${image.url}-${imageIndex}`}
+                                          className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50/80 p-2"
                                         >
-                                          Entfernen
-                                        </Button>
+                                          <img
+                                            src={image.url}
+                                            alt={image.altText || `${form.name} Produktbild ${imageIndex + 1}`}
+                                            className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
+                                            onClick={(event) => event.stopPropagation()}
+                                            onError={(event) => {
+                                              event.currentTarget.onerror = null;
+                                              event.currentTarget.src = "/pictures/placeholder.jpg";
+                                            }}
+                                          />
+                                          <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] text-slate-600" title={image.url}>
+                                              {image.url}
+                                            </p>
+                                            {image.altText ? (
+                                              <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
+                                                Alt: {image.altText}
+                                              </p>
+                                            ) : (
+                                              <p className="mt-0.5 text-[11px] text-muted-foreground">Kein Alt-Text</p>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                <label className="text-xs text-slate-600">
+                                  Dokument hochladen
+                                  <input
+                                    type="file"
+                                    accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={async (event) => {
+                                      const file = event.target.files?.[0];
+                                      if (!file) return;
+                                      try {
+                                        setEditDocumentUploadPendingById((current) => ({
+                                          ...current,
+                                          [product.id]: true,
+                                        }));
+                                        setEditDocumentUploadErrorById((current) => ({
+                                          ...current,
+                                          [product.id]: null,
+                                        }));
+                                        await uploadProductDocument(product.id, file);
+                                        await utils.product.backendList.invalidate();
+                                      } catch (error) {
+                                        setEditDocumentUploadErrorById((current) => ({
+                                          ...current,
+                                          [product.id]:
+                                            error instanceof Error
+                                              ? error.message
+                                              : "Dokument konnte nicht hochgeladen werden.",
+                                        }));
+                                      } finally {
+                                        setEditDocumentUploadPendingById((current) => ({
+                                          ...current,
+                                          [product.id]: false,
+                                        }));
+                                        event.target.value = "";
+                                      }
+                                    }}
+                                    className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm font-medium text-amber-950 file:mr-3 file:rounded-md file:border-0 file:bg-amber-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-amber-50 hover:bg-amber-100/90"
+                                  />
+                                </label>
+                                <p className="text-xs text-muted-foreground">
+                                  Klicken, um ein Dokument auszuwaehlen.
+                                </p>
+                                {editDocumentUploadPendingById[product.id] ? (
+                                  <p className="text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
+                                ) : null}
+                                {editDocumentUploadErrorById[product.id] ? (
+                                  <p className="text-xs text-destructive">
+                                    {editDocumentUploadErrorById[product.id]}
+                                  </p>
+                                ) : null}
+
+                                <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
+                                  <p className="mb-1 text-xs font-medium text-slate-700">Dokumente</p>
+                                  {(product.documents ?? []).length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                  ) : (
+                                    (product.documents ?? []).map((document) => (
+                                      <div
+                                        key={document.id}
+                                        className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
+                                      >
+                                        <a
+                                          href={document.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                        >
+                                          {document.originalName}
+                                        </a>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] text-muted-foreground">
+                                            {formatBytes(document.sizeBytes)}
+                                          </span>
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={async (event) => {
+                                              event.stopPropagation();
+                                              try {
+                                                setEditDocumentUploadPendingById((current) => ({
+                                                  ...current,
+                                                  [product.id]: true,
+                                                }));
+                                                setEditDocumentUploadErrorById((current) => ({
+                                                  ...current,
+                                                  [product.id]: null,
+                                                }));
+                                                await deleteProductDocument(document.id);
+                                                await utils.product.backendList.invalidate();
+                                              } catch (error) {
+                                                setEditDocumentUploadErrorById((current) => ({
+                                                  ...current,
+                                                  [product.id]:
+                                                    error instanceof Error
+                                                      ? error.message
+                                                      : "Dokument konnte nicht geloescht werden.",
+                                                }));
+                                              } finally {
+                                                setEditDocumentUploadPendingById((current) => ({
+                                                  ...current,
+                                                  [product.id]: false,
+                                                }));
+                                              }
+                                            }}
+                                            disabled={editDocumentUploadPendingById[product.id]}
+                                          >
+                                            Entfernen
+                                          </Button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))
-                                )}
+                                    ))
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
