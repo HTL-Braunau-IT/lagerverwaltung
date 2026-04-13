@@ -172,47 +172,84 @@ function BookingHistory({ productId }: { productId: string }) {
       (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">Noch keine Buchungen oder fertigen Auftraege vorhanden.</p>
       ) : null}
-      <div className="mt-2 space-y-2">
-        {(bookingsQuery.data?.bookings ?? []).map((booking) => (
-          <div
-            key={booking.id}
-            className="rounded-md border border-border bg-muted px-2.5 py-2 text-xs text-foreground"
-          >
-            <p>
-              Menge: <span className="font-medium">{toNumber(booking.quantityDelta)}</span>
-              {" | "}Lieferant: <span className="font-medium">{booking.supplier}</span>
-            </p>
-            <p>
-              Von: {booking.user.name ?? booking.user.email ?? "Unbekannt"} {" | "}
-              {new Date(booking.createdAt).toLocaleString("de-AT")}
-            </p>
-            {booking.note ? <p>Notiz: {booking.note}</p> : null}
-          </div>
-        ))}
+      <div className="mt-2 overflow-x-auto rounded-md border border-border">
+        <Table>
+          <TableHeader className="bg-muted/50">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight">Menge</TableHead>
+              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Lieferant</TableHead>
+              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Von</TableHead>
+              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Datum</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="text-[11px] leading-tight">
+            {!bookingsQuery.isLoading &&
+            !bookingsQuery.error &&
+            (bookingsQuery.data?.bookings?.length ?? 0) === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={4} className="bg-white py-1 px-2 text-xs text-muted-foreground">
+                  Keine Buchungen vorhanden.
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {(bookingsQuery.data?.bookings ?? []).map((booking) => (
+              <Fragment key={booking.id}>
+                <TableRow className="bg-muted/30 hover:bg-muted/40">
+                  <TableCell className="text-[11px] font-medium !py-1 !px-2">{toNumber(booking.quantityDelta)}</TableCell>
+                  <TableCell className="text-[11px] !py-0 !px-0">{booking.supplier}</TableCell>
+                  <TableCell className="text-[11px] !py-0 !px-0">{booking.user.name ?? booking.user.email ?? "Unbekannt"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                    {new Date(booking.createdAt).toLocaleString("de-AT")}
+                  </TableCell>
+                </TableRow>
+                {booking.note ? (
+                  <TableRow className="bg-muted/20 hover:bg-muted/25">
+                    <TableCell colSpan={4} className="py-0.5 px-2 text-xs text-muted-foreground">
+                      Notiz: {booking.note}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </Fragment>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       <div className="mt-4">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Fertige Auftraege (READY_FOR_PICKUP)
+          Abgeschlossene Aufträge
         </p>
-        <div className="mt-2 space-y-2">
-          {(bookingsQuery.data?.completedOrders ?? []).map((entry) => (
-            <div
-              key={entry.id}
-            className="rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-xs text-success"
-            >
-              <p>
-                Auftrag: <span className="font-medium">{entry.order.orderNumber}</span>
-                {" | "}Menge: <span className="font-medium">{toNumber(entry.quantity)}</span>
-              </p>
-              <p>
-                Von: {entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"} {" | "}
-                {new Date(entry.order.createdAt).toLocaleString("de-AT")}
-              </p>
-            </div>
-          ))}
-          {(bookingsQuery.data?.completedOrders.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
-          ) : null}
+        <div className="mt-2 overflow-x-auto rounded-md border border-success/40">
+          <Table>
+            <TableHeader className="bg-success/10">
+              <TableRow className="border-success/40 hover:bg-success/10">
+                <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight text-success">Auftrag</TableHead>
+                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Menge</TableHead>
+                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Von</TableHead>
+                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Datum</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="text-[11px] leading-tight text-success">
+              {!bookingsQuery.isLoading &&
+              !bookingsQuery.error &&
+              (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
+                <TableRow className="border-success/40 hover:bg-success/5">
+                  <TableCell colSpan={4} className="bg-success/5 text-xs text-muted-foreground">
+                    Keine fertigen Auftraege fuer dieses Produkt.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {(bookingsQuery.data?.completedOrders ?? []).map((entry) => (
+                <TableRow key={entry.id} className="border-success/40 bg-success/5 hover:bg-success/10">
+                  <TableCell className="text-[11px] font-medium !py-1 !px-2">{entry.order.orderNumber}</TableCell>
+                  <TableCell className="text-[11px] font-medium !py-0 !px-0">{toNumber(entry.quantity)}</TableCell>
+                  <TableCell className="text-[11px] !py-0 !px-0">{entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"}</TableCell>
+                  <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                    {new Date(entry.order.createdAt).toLocaleString("de-AT")}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
@@ -569,6 +606,10 @@ export function ProductsAdminPanel() {
               const filteredStorageLocationsForForm = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
                 selectedRoomId ? storageLocation.storageRoomId === selectedRoomId : true,
               );
+              const imageUploadBusy = !!editUploadPendingById[product.id];
+              const imageFilePending = !!pendingEditImage;
+              const urlFieldDisabled = imageFilePending || imageUploadBusy;
+              const altFieldDisabled = imageUploadBusy;
 
               return (
                 <Fragment key={product.id}>
@@ -629,7 +670,7 @@ export function ProductsAdminPanel() {
                   </TableRow>
                   {isExpanded ? (
                     <tr className="border-t border-border">
-                      <td colSpan={6} className="align-top bg-muted/50 px-3 py-5">
+                      <td colSpan={6} className="align-top bg-muted/50 px-1 py-5">
                         <div className="mx-4 flex flex-col gap-4">
                           <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
                             <div className="flex min-h-0 min-w-0 flex-col gap-4">
@@ -1006,89 +1047,118 @@ export function ProductsAdminPanel() {
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 md:items-stretch">
                               <div className="flex min-h-0 flex-col gap-3 md:h-full">
-                                <label className="text-xs text-slate-600">
-                                  Bild hochladen
-                                  <input
-                                    type="file"
-                                    accept="image/*"
+                                <div>
+                                  <p className="select-none text-xs text-slate-600">Bild hochladen</p>
+                                  <label
+                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
+                                      editUploadPendingById[product.id]
+                                        ? "cursor-default opacity-90"
+                                        : "cursor-pointer hover:bg-violet-100/90"
+                                    }`}
                                     onClick={(event) => event.stopPropagation()}
-                                    onChange={(event) => {
-                                      const file = event.target.files?.[0];
-                                      if (!file) return;
-                                      const sku = form.sku.trim();
-                                      if (!sku) {
-                                        setEditUploadErrorById((current) => ({
-                                          ...current,
-                                          [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                        }));
-                                        event.target.value = "";
-                                        return;
-                                      }
-                                      if (!file.type.startsWith("image/")) {
-                                        setEditUploadErrorById((current) => ({
-                                          ...current,
-                                          [product.id]: "Bitte eine Bilddatei auswaehlen.",
-                                        }));
-                                        event.target.value = "";
-                                        return;
-                                      }
-                                      if (file.size > MAX_UPLOAD_BYTES) {
-                                        setEditUploadErrorById((current) => ({
-                                          ...current,
-                                          [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
-                                        }));
-                                        event.target.value = "";
-                                        return;
-                                      }
-                                      setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                      setEditPendingImageById((current) => {
-                                        const prev = current[product.id];
-                                        if (prev?.previewUrl) {
-                                          URL.revokeObjectURL(prev.previewUrl);
+                                    aria-busy={editUploadPendingById[product.id] ? true : undefined}
+                                  >
+                                    <input
+                                      id={`edit-product-image-${product.id}`}
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={!!editUploadPendingById[product.id]}
+                                      className="sr-only"
+                                      onChange={(event) => {
+                                        const file = event.target.files?.[0];
+                                        if (!file) return;
+                                        const sku = form.sku.trim();
+                                        if (!sku) {
+                                          setEditUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                          }));
+                                          event.target.value = "";
+                                          return;
                                         }
-                                        return {
+                                        if (!file.type.startsWith("image/")) {
+                                          setEditUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]: "Bitte eine Bilddatei auswaehlen.",
+                                          }));
+                                          event.target.value = "";
+                                          return;
+                                        }
+                                        if (file.size > MAX_UPLOAD_BYTES) {
+                                          setEditUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
+                                          }));
+                                          event.target.value = "";
+                                          return;
+                                        }
+                                        setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                        setEditPendingImageById((current) => {
+                                          const prev = current[product.id];
+                                          if (prev?.previewUrl) {
+                                            URL.revokeObjectURL(prev.previewUrl);
+                                          }
+                                          return {
+                                            ...current,
+                                            [product.id]: { file, previewUrl: URL.createObjectURL(file) },
+                                          };
+                                        });
+                                        setEditSelectedImageIdById((current) => ({
                                           ...current,
-                                          [product.id]: { file, previewUrl: URL.createObjectURL(file) },
-                                        };
-                                      });
-                                      setEditSelectedImageIdById((current) => ({
-                                        ...current,
-                                        [product.id]: null,
-                                      }));
-                                      setFormsById((current) => {
-                                        const f = current[product.id] ?? createInitialForm(product);
-                                        return {
-                                          ...current,
-                                          [product.id]: {
-                                            ...f,
-                                            imageUrl: "",
-                                            imageAltText: f.imageAltText,
-                                          },
-                                        };
-                                      });
-                                      event.target.value = "";
-                                    }}
-                                    className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm font-medium text-violet-950 file:mr-3 file:rounded-md file:border-0 file:bg-violet-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:bg-violet-100/90"
-                                  />
-                                </label>
+                                          [product.id]: null,
+                                        }));
+                                        setFormsById((current) => {
+                                          const f = current[product.id] ?? createInitialForm(product);
+                                          return {
+                                            ...current,
+                                            [product.id]: {
+                                              ...f,
+                                              imageUrl: "",
+                                              imageAltText: f.imageAltText,
+                                            },
+                                          };
+                                        });
+                                        event.target.value = "";
+                                      }}
+                                    />
+                                    <span
+                                      className={`inline-flex shrink-0 rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                        editUploadPendingById[product.id]
+                                          ? "opacity-70"
+                                          : "group-hover:bg-violet-700"
+                                      }`}
+                                    >
+                                      Datei auswählen
+                                    </span>
+                                    <span
+                                      className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                        editUploadPendingById[product.id]
+                                          ? "text-muted-foreground"
+                                          : pendingEditImage
+                                            ? "font-medium text-slate-900"
+                                            : "text-slate-500"
+                                      }`}
+                                      title={
+                                        editUploadPendingById[product.id]
+                                          ? undefined
+                                          : pendingEditImage
+                                            ? pendingEditImage.file.name
+                                            : undefined
+                                      }
+                                      role="status"
+                                    >
+                                      {editUploadPendingById[product.id]
+                                        ? "Bild wird hochgeladen..."
+                                        : (pendingEditImage?.file.name ?? "Keine Datei ausgewählt")}
+                                    </span>
+                                  </label>
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                   Datei waehlen, optional Alt-Text setzen — das Bild wird beim Speichern
                                   hochgeladen.
                                 </p>
-                                {editUploadPendingById[product.id] ? (
-                                  <p className="text-xs text-muted-foreground">Bild wird hochgeladen...</p>
-                                ) : null}
                                 {editUploadErrorById[product.id] ? (
                                   <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
-                                ) : null}
-
-                                {pendingEditImage ? (
-                                  <p className="text-sm text-slate-800" role="status">
-                                    Für Upload ausgewählt:{" "}
-                                    <span className="font-medium break-all text-slate-900">
-                                      {pendingEditImage.file.name}
-                                    </span>
-                                  </p>
                                 ) : null}
 
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
@@ -1127,13 +1197,16 @@ export function ProductsAdminPanel() {
                                     />
                                   </button>
                                   <div className="min-w-0 flex-1 space-y-3">
-                                    <label className="block text-xs text-slate-600">
-                                      Bild-URL (optional)
+                                    <div className="block text-xs text-slate-600">
+                                      <span className="select-none">
+                                        {urlFieldDisabled ? "Bild-URL" : "Bild-URL (optional)"}
+                                      </span>
                                       <input
                                         type="text"
                                         inputMode="url"
                                         autoComplete="off"
                                         value={form.imageUrl}
+                                        disabled={urlFieldDisabled}
                                         onClick={(event) => event.stopPropagation()}
                                         onChange={(event) =>
                                           setFormsById((current) => ({
@@ -1144,14 +1217,23 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        placeholder="Nach Auswahl aus Liste oder nach Speichern"
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                        placeholder={
+                                          urlFieldDisabled
+                                            ? "—"
+                                            : "Nach Auswahl aus Liste oder nach Speichern"
+                                        }
+                                        className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                          urlFieldDisabled
+                                            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
+                                            : "border-slate-300 bg-white text-slate-900"
+                                        }`}
                                       />
-                                    </label>
-                                    <label className="block text-xs text-slate-600">
-                                      Bild-Alt-Text
+                                    </div>
+                                    <div className="block text-xs text-slate-600">
+                                      <span className="select-none">Bild-Alt-Text</span>
                                       <input
                                         value={form.imageAltText}
+                                        disabled={altFieldDisabled}
                                         onClick={(event) => event.stopPropagation()}
                                         onChange={(event) =>
                                           setFormsById((current) => ({
@@ -1162,10 +1244,20 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        placeholder="Bearbeiten, mit Speichern uebernehmen"
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                        placeholder={
+                                          altFieldDisabled
+                                            ? "—"
+                                            : imageFilePending
+                                              ? "Vor Speichern für das neue Bild eintragen"
+                                              : "Bearbeiten, mit Speichern übernehmen"
+                                        }
+                                        className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                          altFieldDisabled
+                                            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
+                                            : "border-slate-300 bg-white text-slate-900"
+                                        }`}
                                       />
-                                    </label>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -1186,7 +1278,7 @@ export function ProductsAdminPanel() {
                                               key={image.id ?? `${image.url}-${imageIndex}`}
                                               className={`flex items-start gap-2 rounded-md border bg-slate-50/80 p-2 transition ${
                                                 isSelected
-                                                  ? "border-violet-600 ring-2 ring-violet-500/35"
+                                                  ? "border-violet-600"
                                                   : "border-slate-200"
                                               }`}
                                             >
@@ -1229,7 +1321,7 @@ export function ProductsAdminPanel() {
                                                     };
                                                   });
                                                 }}
-                                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition hover:bg-slate-100/80 focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
                                               >
                                                 <img
                                                   src={image.url}

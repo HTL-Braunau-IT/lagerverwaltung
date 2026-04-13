@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     const uploadDir = path.join(process.cwd(), "public", "data", "uploads", "pictures", sku);
     await mkdir(uploadDir, { recursive: true });
 
-    const filename = `img.${randomUUID()}.${ext}`;
+    const filename = `img${randomUUID()}.${ext}`;
     const outputPath = path.join(uploadDir, filename);
     const buffer = Buffer.from(await fileValue.arrayBuffer());
     await writeFile(outputPath, buffer);
