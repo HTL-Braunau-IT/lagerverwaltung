@@ -1196,461 +1196,410 @@ export function ProductsAdminPanel() {
                             </div>
                           </div>
 
-                          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                            <div>
-                              <p className="text-lg font-semibold text-slate-900">Bilder und Dokumente</p>
-                              <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 md:items-stretch">
-                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
-                                <div>
-                                  <p className="select-none text-xs text-slate-600">Bild hochladen</p>
-                                  <label
-                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
-                                      editUploadPendingById[product.id]
-                                        ? "cursor-default opacity-90"
-                                        : "cursor-pointer hover:bg-violet-100/90"
-                                    }`}
-                                    onClick={(event) => event.stopPropagation()}
-                                    aria-busy={editUploadPendingById[product.id] ? true : undefined}
-                                  >
-                                    <input
-                                      id={`edit-product-image-${product.id}`}
-                                      type="file"
-                                      accept="image/*"
-                                      disabled={!!editUploadPendingById[product.id]}
-                                      className="sr-only"
-                                      onChange={(event) => {
-                                        const file = event.target.files?.[0];
-                                        if (!file) return;
-                                        const sku = form.sku.trim();
-                                        if (!sku) {
-                                          setEditUploadErrorById((current) => ({
-                                            ...current,
-                                            [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                          }));
-                                          event.target.value = "";
-                                          return;
-                                        }
-                                        if (!file.type.startsWith("image/")) {
-                                          setEditUploadErrorById((current) => ({
-                                            ...current,
-                                            [product.id]: "Bitte eine Bilddatei auswaehlen.",
-                                          }));
-                                          event.target.value = "";
-                                          return;
-                                        }
-                                        if (file.size > MAX_UPLOAD_BYTES) {
-                                          setEditUploadErrorById((current) => ({
-                                            ...current,
-                                            [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
-                                          }));
-                                          event.target.value = "";
-                                          return;
-                                        }
-                                        setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                        setEditPendingImageById((current) => {
-                                          const prev = current[product.id];
-                                          if (prev?.previewUrl) {
-                                            URL.revokeObjectURL(prev.previewUrl);
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 min-w-0">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Bilder</p>
+                                <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                              </div>
+                              <div>
+                                <div className="gap-4 md:items-stretch">
+                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                    <div>
+                                      <p className="select-none text-xs text-slate-600">Bild hochladen</p>
+                                      <label
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
+                                          editUploadPendingById[product.id]
+                                            ? "cursor-default opacity-90"
+                                            : "cursor-pointer hover:bg-violet-100/90"
+                                        }`}
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-busy={editUploadPendingById[product.id] ? true : undefined}
+                                      >
+                                        <input
+                                          id={`edit-product-image-${product.id}`}
+                                          type="file"
+                                          accept="image/*"
+                                          disabled={!!editUploadPendingById[product.id]}
+                                          className="sr-only"
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            if (!file) return;
+                                            const sku = form.sku.trim();
+                                            if (!sku) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            if (!file.type.startsWith("image/")) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Bitte eine Bilddatei auswaehlen.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            if (file.size > MAX_UPLOAD_BYTES) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                            setEditPendingImageById((current) => {
+                                              const prev = current[product.id];
+                                              if (prev?.previewUrl) {
+                                                URL.revokeObjectURL(prev.previewUrl);
+                                              }
+                                              return {
+                                                ...current,
+                                                [product.id]: { file, previewUrl: URL.createObjectURL(file) },
+                                              };
+                                            });
+                                            setEditSelectedImageIdById((current) => ({
+                                              ...current,
+                                              [product.id]: null,
+                                            }));
+                                            setFormsById((current) => {
+                                              const f = current[product.id] ?? createInitialForm(product);
+                                              return {
+                                                ...current,
+                                                [product.id]: {
+                                                  ...f,
+                                                  imageUrl: "",
+                                                  imageAltText: f.imageAltText,
+                                                },
+                                              };
+                                            });
+                                            event.target.value = "";
+                                          }}
+                                        />
+                                        <span
+                                          className={`inline-flex shrink-0 rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                            editUploadPendingById[product.id]
+                                              ? "opacity-70"
+                                              : "group-hover:bg-violet-700"
+                                          }`}
+                                        >
+                                          Datei auswählen
+                                        </span>
+                                        <span
+                                          className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                            editUploadPendingById[product.id]
+                                              ? "text-muted-foreground"
+                                              : pendingEditImage
+                                                ? "font-medium text-slate-900"
+                                                : "text-slate-500"
+                                          }`}
+                                          title={
+                                            editUploadPendingById[product.id]
+                                              ? undefined
+                                              : pendingEditImage
+                                                ? pendingEditImage.file.name
+                                                : undefined
                                           }
-                                          return {
-                                            ...current,
-                                            [product.id]: { file, previewUrl: URL.createObjectURL(file) },
-                                          };
-                                        });
-                                        setEditSelectedImageIdById((current) => ({
-                                          ...current,
-                                          [product.id]: null,
-                                        }));
-                                        setFormsById((current) => {
-                                          const f = current[product.id] ?? createInitialForm(product);
-                                          return {
-                                            ...current,
-                                            [product.id]: {
-                                              ...f,
-                                              imageUrl: "",
-                                              imageAltText: f.imageAltText,
-                                            },
-                                          };
-                                        });
-                                        event.target.value = "";
-                                      }}
-                                    />
-                                    <span
-                                      className={`inline-flex shrink-0 rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
-                                        editUploadPendingById[product.id]
-                                          ? "opacity-70"
-                                          : "group-hover:bg-violet-700"
-                                      }`}
-                                    >
-                                      Datei auswählen
-                                    </span>
-                                    <span
-                                      className={`min-w-0 flex-1 break-all text-left text-sm ${
-                                        editUploadPendingById[product.id]
-                                          ? "text-muted-foreground"
-                                          : pendingEditImage
-                                            ? "font-medium text-slate-900"
-                                            : "text-slate-500"
-                                      }`}
-                                      title={
-                                        editUploadPendingById[product.id]
-                                          ? undefined
-                                          : pendingEditImage
-                                            ? pendingEditImage.file.name
-                                            : undefined
-                                      }
-                                      role="status"
-                                    >
-                                      {editUploadPendingById[product.id]
-                                        ? "Bild wird hochgeladen..."
-                                        : (pendingEditImage?.file.name ?? "Keine Datei ausgewählt")}
-                                    </span>
-                                  </label>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                  Datei waehlen, optional Alt-Text setzen — das Bild wird beim Speichern
-                                  hochgeladen.
-                                </p>
-                                {editUploadErrorById[product.id] ? (
-                                  <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
-                                ) : null}
-
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                                  <button
-                                    type="button"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      const openSource =
-                                        form.imageUrl.trim() || pendingEditImage?.previewUrl || "";
-                                      const href = resolveImageTabUrl(openSource);
-                                      if (href) window.open(href, "_blank", "noopener,noreferrer");
-                                    }}
-                                    className={`relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-40 sm:w-40 ${
-                                      form.imageUrl.trim() || pendingEditImage?.previewUrl
-                                        ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
-                                        : "cursor-default opacity-90"
-                                    }`}
-                                    aria-label={
-                                      form.imageUrl.trim() || pendingEditImage?.previewUrl
-                                        ? "Bild in neuem Tab oeffnen"
-                                        : "Vorschau (noch keine Bild-URL)"
-                                    }
-                                  >
-                                    <img
-                                      src={
-                                        form.imageUrl.trim() ||
-                                        pendingEditImage?.previewUrl ||
-                                        "/pictures/placeholder.jpg"
-                                      }
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                      onError={(event) => {
-                                        event.currentTarget.onerror = null;
-                                        event.currentTarget.src = "/pictures/placeholder.jpg";
-                                      }}
-                                    />
-                                  </button>
-                                  <div className="min-w-0 flex-1 space-y-3">
-                                    <div className="block text-xs text-slate-600">
-                                      <span className="select-none">
-                                        {urlFieldDisabled ? "Bild-URL" : "Bild-URL (optional)"}
-                                      </span>
-                                      <input
-                                        type="text"
-                                        inputMode="url"
-                                        autoComplete="off"
-                                        value={form.imageUrl}
-                                        disabled={urlFieldDisabled}
-                                        onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) => {
-                                          setImageFieldsTouchedById((current) => ({
-                                            ...current,
-                                            [product.id]: true,
-                                          }));
-                                          setFormsById((current) => ({
-                                            ...current,
-                                            [product.id]: {
-                                              ...(current[product.id] ?? createInitialForm(product)),
-                                              imageUrl: event.target.value,
-                                            },
-                                          }));
-                                        }}
-                                        placeholder={
-                                          urlFieldDisabled
-                                            ? "—"
-                                            : "Nach Auswahl aus Liste oder nach Speichern"
-                                        }
-                                        className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
-                                          urlFieldDisabled
-                                            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
-                                            : "border-slate-300 bg-white text-slate-900"
-                                        }`}
-                                      />
+                                          role="status"
+                                        >
+                                          {editUploadPendingById[product.id]
+                                            ? "Bild wird hochgeladen..."
+                                            : (pendingEditImage?.file.name ?? "Keine Datei ausgewählt")}
+                                        </span>
+                                      </label>
                                     </div>
-                                    <div className="block text-xs text-slate-600">
-                                      <span className="select-none">Bild-Alt-Text</span>
-                                      <input
-                                        value={form.imageAltText}
-                                        disabled={altFieldDisabled}
-                                        onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) => {
-                                          setImageFieldsTouchedById((current) => ({
-                                            ...current,
-                                            [product.id]: true,
-                                          }));
-                                          setFormsById((current) => ({
-                                            ...current,
-                                            [product.id]: {
-                                              ...(current[product.id] ?? createInitialForm(product)),
-                                              imageAltText: event.target.value,
-                                            },
-                                          }));
+                                    <p className="text-xs text-muted-foreground">
+                                      Datei waehlen, optional Alt-Text setzen — das Bild wird beim Speichern
+                                      hochgeladen.
+                                    </p>
+                                    {editUploadErrorById[product.id] ? (
+                                      <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
+                                    ) : null}
+
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          const openSource =
+                                            form.imageUrl.trim() || pendingEditImage?.previewUrl || "";
+                                          const href = resolveImageTabUrl(openSource);
+                                          if (href) window.open(href, "_blank", "noopener,noreferrer");
                                         }}
-                                        placeholder={
-                                          altFieldDisabled
-                                            ? "—"
-                                            : imageFilePending
-                                              ? "Vor Speichern für das neue Bild eintragen"
-                                              : "Bearbeiten, mit Speichern übernehmen"
-                                        }
-                                        className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
-                                          altFieldDisabled
-                                            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
-                                            : "border-slate-300 bg-white text-slate-900"
+                                        className={`relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-40 sm:w-40 ${
+                                          form.imageUrl.trim() || pendingEditImage?.previewUrl
+                                            ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+                                            : "cursor-default opacity-90"
                                         }`}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="mt-auto border-t border-slate-200/80 pt-3">
-                                  <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
-                                  <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
-                                    {(product.images ?? []).length === 0 ? (
-                                      <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
-                                    ) : (
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {(product.images ?? []).map((image, imageIndex) => {
-                                          const isSelected = editSelectedImageIdById[product.id] === image.id;
-                                          const deleteKey = `${product.id}:${image.id}`;
-                                          const sizeBytes = image.sizeBytes ?? null;
-
-                                          return (
-                                            <div
-                                              key={image.id ?? `${image.url}-${imageIndex}`}
-                                              className={`flex items-start gap-2 rounded-md border bg-slate-50/80 p-2 transition ${
-                                                isSelected
-                                                  ? "border-violet-600"
-                                                  : "border-slate-200"
-                                              }`}
-                                            >
-                                              <button
-                                                type="button"
-                                                onClick={(clickEvent) => {
-                                                  clickEvent.stopPropagation();
-                                                  if (editSelectedImageIdById[product.id] === image.id) {
-                                                    setEditSelectedImageIdById((current) => ({
-                                                      ...current,
-                                                      [product.id]: null,
-                                                    }));
-                                                    setFormsById((current) => {
-                                                      const f = current[product.id] ?? createInitialForm(product);
-                                                      return {
-                                                        ...current,
-                                                        [product.id]: {
-                                                          ...f,
-                                                          imageUrl: "",
-                                                          imageAltText: "",
-                                                        },
-                                                      };
-                                                    });
-                                                    return;
-                                                  }
-                                                  clearEditPendingImage(product.id);
-                                                  setEditSelectedImageIdById((current) => ({
-                                                    ...current,
-                                                    [product.id]: image.id,
-                                                  }));
-                                                  setFormsById((current) => {
-                                                    const f = current[product.id] ?? createInitialForm(product);
-                                                    return {
-                                                      ...current,
-                                                      [product.id]: {
-                                                        ...f,
-                                                        imageUrl: image.url,
-                                                        imageAltText: image.altText ?? "",
-                                                      },
-                                                    };
-                                                  });
-                                                }}
-                                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
-                                              >
-                                                <img
-                                                  src={image.url}
-                                                  alt={
-                                                    image.altText || `${form.name} Produktbild ${imageIndex + 1}`
-                                                  }
-                                                  className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
-                                                  onError={(errEvent) => {
-                                                    errEvent.currentTarget.onerror = null;
-                                                    errEvent.currentTarget.src = "/pictures/placeholder.jpg";
-                                                  }}
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                  <p className="break-all text-[11px] leading-snug text-slate-600">
-                                                    {image.url}
-                                                  </p>
-                                                  {image.altText ? (
-                                                    <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
-                                                      Alt: {image.altText}
-                                                    </p>
-                                                  ) : (
-                                                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                      Kein Alt-Text
-                                                    </p>
-                                                  )}
-                                                </div>
-                                              </button>
-                                              <div className="flex shrink-0 flex-col items-end justify-between gap-1 self-stretch">
-                                                <span className="text-[11px] text-muted-foreground">
-                                                  {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
-                                                </span>
-                                                <Button
-                                                  type="button"
-                                                  size="sm"
-                                                  variant="outline"
-                                                  disabled={imageDeletePendingKey !== null}
-                                                  onClick={(clickEvent) => {
-                                                    clickEvent.stopPropagation();
-                                                    if (!image.id) return;
-                                                    const deletedUrl = image.url;
-                                                    setImageDeletePendingKey(deleteKey);
-                                                    deleteProductImageMutation.mutate(
-                                                      { productId: product.id, imageId: image.id },
-                                                      {
-                                                        onSuccess: () => {
-                                                          setEditSelectedImageIdById((current) =>
-                                                            current[product.id] === image.id
-                                                              ? { ...current, [product.id]: null }
-                                                              : current,
-                                                          );
-                                                          setFormsById((current) => {
-                                                            const f = current[product.id];
-                                                            if (!f) return current;
-                                                            if (f.imageUrl === deletedUrl) {
-                                                              return {
-                                                                ...current,
-                                                                [product.id]: {
-                                                                  ...f,
-                                                                  imageUrl: "",
-                                                                  imageAltText: "",
-                                                                },
-                                                              };
-                                                            }
-                                                            return current;
-                                                          });
-                                                        },
-                                                      },
-                                                    );
-                                                  }}
-                                                  className="text-xs"
-                                                >
-                                                  {imageDeletePendingKey === deleteKey ? "..." : "Entfernen"}
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
+                                        aria-label={
+                                          form.imageUrl.trim() || pendingEditImage?.previewUrl
+                                            ? "Bild in neuem Tab oeffnen"
+                                            : "Vorschau (noch keine Bild-URL)"
+                                        }
+                                      >
+                                        <img
+                                          src={
+                                            form.imageUrl.trim() ||
+                                            pendingEditImage?.previewUrl ||
+                                            "/pictures/placeholder.jpg"
+                                          }
+                                          alt=""
+                                          className="h-full w-full object-cover"
+                                          onError={(event) => {
+                                            event.currentTarget.onerror = null;
+                                            event.currentTarget.src = "/pictures/placeholder.jpg";
+                                          }}
+                                        />
+                                      </button>
+                                      <div className="min-w-0 flex-1 space-y-3">
+                                        <div className="block text-xs text-slate-600">
+                                          <span className="select-none">
+                                            {urlFieldDisabled ? "Bild-URL" : "Bild-URL (optional)"}
+                                          </span>
+                                          <input
+                                            type="text"
+                                            inputMode="url"
+                                            autoComplete="off"
+                                            value={form.imageUrl}
+                                            disabled={urlFieldDisabled}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) => {
+                                              setImageFieldsTouchedById((current) => ({
+                                                ...current,
+                                                [product.id]: true,
+                                              }));
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [product.id]: {
+                                                  ...(current[product.id] ?? createInitialForm(product)),
+                                                  imageUrl: event.target.value,
+                                                },
+                                              }));
+                                            }}
+                                            placeholder={
+                                              urlFieldDisabled
+                                                ? "—"
+                                                : "Nach Auswahl aus Liste oder nach Speichern"
+                                            }
+                                            className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                              urlFieldDisabled
+                                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
+                                                : "border-slate-300 bg-white text-slate-900"
+                                            }`}
+                                          />
+                                        </div>
+                                        <div className="block text-xs text-slate-600">
+                                          <span className="select-none">Bild-Alt-Text</span>
+                                          <input
+                                            value={form.imageAltText}
+                                            disabled={altFieldDisabled}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) => {
+                                              setImageFieldsTouchedById((current) => ({
+                                                ...current,
+                                                [product.id]: true,
+                                              }));
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [product.id]: {
+                                                  ...(current[product.id] ?? createInitialForm(product)),
+                                                  imageAltText: event.target.value,
+                                                },
+                                              }));
+                                            }}
+                                            placeholder={
+                                              altFieldDisabled
+                                                ? "—"
+                                                : imageFilePending
+                                                  ? "Vor Speichern für das neue Bild eintragen"
+                                                  : "Bearbeiten, mit Speichern übernehmen"
+                                            }
+                                            className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                              altFieldDisabled
+                                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
+                                                : "border-slate-300 bg-white text-slate-900"
+                                            }`}
+                                          />
+                                        </div>
                                       </div>
-                                    )}
+                                    </div>
+
+                                    <div className="mt-auto border-t border-slate-200/80 pt-3">
+                                      <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
+                                      <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
+                                        {(product.images ?? []).length === 0 ? (
+                                          <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
+                                        ) : (
+                                          <div className="grid grid-cols-2 gap-2">
+                                            {(product.images ?? []).map((image, imageIndex) => {
+                                              const isSelected = editSelectedImageIdById[product.id] === image.id;
+                                              const deleteKey = `${product.id}:${image.id}`;
+                                              const sizeBytes = image.sizeBytes ?? null;
+
+                                              return (
+                                                <div
+                                                  key={image.id ?? `${image.url}-${imageIndex}`}
+                                                  className={`flex items-start gap-2 rounded-md border bg-slate-50/80 p-2 transition ${
+                                                    isSelected
+                                                      ? "border-violet-600"
+                                                      : "border-slate-200"
+                                                  }`}
+                                                >
+                                                  <button
+                                                    type="button"
+                                                    onClick={(clickEvent) => {
+                                                      clickEvent.stopPropagation();
+                                                      if (editSelectedImageIdById[product.id] === image.id) {
+                                                        setEditSelectedImageIdById((current) => ({
+                                                          ...current,
+                                                          [product.id]: null,
+                                                        }));
+                                                        setFormsById((current) => {
+                                                          const f = current[product.id] ?? createInitialForm(product);
+                                                          return {
+                                                            ...current,
+                                                            [product.id]: {
+                                                              ...f,
+                                                              imageUrl: "",
+                                                              imageAltText: "",
+                                                            },
+                                                          };
+                                                        });
+                                                        return;
+                                                      }
+                                                      clearEditPendingImage(product.id);
+                                                      setEditSelectedImageIdById((current) => ({
+                                                        ...current,
+                                                        [product.id]: image.id,
+                                                      }));
+                                                      setFormsById((current) => {
+                                                        const f = current[product.id] ?? createInitialForm(product);
+                                                        return {
+                                                          ...current,
+                                                          [product.id]: {
+                                                            ...f,
+                                                            imageUrl: image.url,
+                                                            imageAltText: image.altText ?? "",
+                                                          },
+                                                        };
+                                                      });
+                                                    }}
+                                                    className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                                  >
+                                                    <img
+                                                      src={image.url}
+                                                      alt={
+                                                        image.altText || `${form.name} Produktbild ${imageIndex + 1}`
+                                                      }
+                                                      className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
+                                                      onError={(errEvent) => {
+                                                        errEvent.currentTarget.onerror = null;
+                                                        errEvent.currentTarget.src = "/pictures/placeholder.jpg";
+                                                      }}
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                      <p className="break-all text-[11px] leading-snug text-slate-600">
+                                                        {image.url}
+                                                      </p>
+                                                      {image.altText ? (
+                                                        <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
+                                                          Alt: {image.altText}
+                                                        </p>
+                                                      ) : (
+                                                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                          Kein Alt-Text
+                                                        </p>
+                                                      )}
+                                                    </div>
+                                                  </button>
+                                                  <div className="flex shrink-0 flex-col items-end justify-between gap-1 self-stretch">
+                                                    <span className="text-[11px] text-muted-foreground">
+                                                      {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
+                                                    </span>
+                                                    <Button
+                                                      type="button"
+                                                      size="sm"
+                                                      variant="outline"
+                                                      disabled={imageDeletePendingKey !== null}
+                                                      onClick={(clickEvent) => {
+                                                        clickEvent.stopPropagation();
+                                                        if (!image.id) return;
+                                                        const deletedUrl = image.url;
+                                                        setImageDeletePendingKey(deleteKey);
+                                                        deleteProductImageMutation.mutate(
+                                                          { productId: product.id, imageId: image.id },
+                                                          {
+                                                            onSuccess: () => {
+                                                              setEditSelectedImageIdById((current) =>
+                                                                current[product.id] === image.id
+                                                                  ? { ...current, [product.id]: null }
+                                                                  : current,
+                                                              );
+                                                              setFormsById((current) => {
+                                                                const f = current[product.id];
+                                                                if (!f) return current;
+                                                                if (f.imageUrl === deletedUrl) {
+                                                                  return {
+                                                                    ...current,
+                                                                    [product.id]: {
+                                                                      ...f,
+                                                                      imageUrl: "",
+                                                                      imageAltText: "",
+                                                                    },
+                                                                  };
+                                                                }
+                                                                return current;
+                                                              });
+                                                            },
+                                                          },
+                                                        );
+                                                      }}
+                                                      className="text-xs"
+                                                    >
+                                                      {imageDeletePendingKey === deleteKey ? "..." : "Entfernen"}
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-
-                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
-                                <label className="text-xs text-slate-600">
-                                  Dokument hochladen
-                                  <input
-                                    type="file"
-                                    accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                    onClick={(event) => event.stopPropagation()}
-                                    onChange={async (event) => {
-                                      const file = event.target.files?.[0];
-                                      if (!file) return;
-                                      try {
-                                        setEditDocumentUploadPendingById((current) => ({
-                                          ...current,
-                                          [product.id]: true,
-                                        }));
-                                        setEditDocumentUploadErrorById((current) => ({
-                                          ...current,
-                                          [product.id]: null,
-                                        }));
-                                        await uploadProductDocument(product.id, file);
-                                        await utils.product.backendList.invalidate();
-                                      } catch (error) {
-                                        setEditDocumentUploadErrorById((current) => ({
-                                          ...current,
-                                          [product.id]:
-                                            error instanceof Error
-                                              ? error.message
-                                              : "Dokument konnte nicht hochgeladen werden.",
-                                        }));
-                                      } finally {
-                                        setEditDocumentUploadPendingById((current) => ({
-                                          ...current,
-                                          [product.id]: false,
-                                        }));
-                                        event.target.value = "";
-                                      }
-                                    }}
-                                    className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm font-medium text-amber-950 file:mr-3 file:rounded-md file:border-0 file:bg-amber-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-amber-50 hover:bg-amber-100/90"
-                                  />
-                                </label>
-                                <p className="text-xs text-muted-foreground">
-                                  Klicken, um ein Dokument auszuwaehlen.
-                                </p>
-                                {editDocumentUploadPendingById[product.id] ? (
-                                  <p className="text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
-                                ) : null}
-                                {editDocumentUploadErrorById[product.id] ? (
-                                  <p className="text-xs text-destructive">
-                                    {editDocumentUploadErrorById[product.id]}
-                                  </p>
-                                ) : null}
-
-                                <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
-                                  <p className="mb-1 text-xs font-medium text-slate-700">Dokumente</p>
-                                  {(product.documents ?? []).length === 0 ? (
-                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                                  ) : (
-                                    (product.documents ?? []).map((document) => (
-                                      <div
-                                        key={document.id}
-                                        className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
-                                      >
-                                        <a
-                                          href={document.url}
-                                          target="_blank"
-                                          rel="noreferrer"
+                            </div>
+                            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 min-w-0">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Dokumente</p>
+                                <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                              </div>
+                              <div>
+                                <div className="gap-4 md:items-stretch">
+                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                      <div>
+                                        <p className="select-none text-xs text-slate-600">Dokument hochladen</p>
+                                        <label
+                                          className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm ${
+                                            editDocumentUploadPendingById[product.id]
+                                              ? "cursor-default opacity-90"
+                                              : "cursor-pointer hover:bg-amber-100/90"
+                                          }`}
                                           onClick={(event) => event.stopPropagation()}
-                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                          aria-busy={editDocumentUploadPendingById[product.id] ? true : undefined}
                                         >
-                                          {document.originalName}
-                                        </a>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[11px] text-muted-foreground">
-                                            {formatBytes(document.sizeBytes)}
-                                          </span>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={async (event) => {
-                                              event.stopPropagation();
+                                          <input
+                                            type="file"
+                                            accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                            disabled={!!editDocumentUploadPendingById[product.id]}
+                                            className="sr-only"
+                                            onChange={async (event) => {
+                                              const file = event.target.files?.[0];
+                                              if (!file) return;
                                               try {
                                                 setEditDocumentUploadPendingById((current) => ({
                                                   ...current,
@@ -1660,7 +1609,7 @@ export function ProductsAdminPanel() {
                                                   ...current,
                                                   [product.id]: null,
                                                 }));
-                                                await deleteProductDocument(document.id);
+                                                await uploadProductDocument(product.id, file);
                                                 await utils.product.backendList.invalidate();
                                               } catch (error) {
                                                 setEditDocumentUploadErrorById((current) => ({
@@ -1668,27 +1617,120 @@ export function ProductsAdminPanel() {
                                                   [product.id]:
                                                     error instanceof Error
                                                       ? error.message
-                                                      : "Dokument konnte nicht geloescht werden.",
+                                                      : "Dokument konnte nicht hochgeladen werden.",
                                                 }));
                                               } finally {
                                                 setEditDocumentUploadPendingById((current) => ({
                                                   ...current,
                                                   [product.id]: false,
                                                 }));
+                                                event.target.value = "";
                                               }
                                             }}
-                                            disabled={editDocumentUploadPendingById[product.id]}
+                                          />
+                                          <span
+                                            className={`inline-flex shrink-0 rounded-md bg-amber-700 px-3 py-2 text-sm font-semibold text-amber-50 ${
+                                              editDocumentUploadPendingById[product.id]
+                                                ? "opacity-70"
+                                                : "group-hover:bg-amber-800"
+                                            }`}
                                           >
-                                            Entfernen
-                                          </Button>
-                                        </div>
+                                            Datei auswählen
+                                          </span>
+                                          <span
+                                            className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                              editDocumentUploadPendingById[product.id]
+                                                ? "text-muted-foreground"
+                                                : "text-slate-500"
+                                            }`}
+                                            role="status"
+                                          >
+                                            {editDocumentUploadPendingById[product.id]
+                                              ? "Dokument wird hochgeladen..."
+                                              : "Keine Datei ausgewählt"}
+                                          </span>
+                                        </label>
                                       </div>
-                                    ))
-                                  )}
+                                      <p className="text-xs text-muted-foreground">
+                                        Klicken, um ein Dokument auszuwaehlen.
+                                      </p>
+                                      {editDocumentUploadErrorById[product.id] ? (
+                                        <p className="text-xs text-destructive">
+                                          {editDocumentUploadErrorById[product.id]}
+                                        </p>
+                                      ) : null}
+
+                                      <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
+                                        <p className="mb-1 text-xs font-medium text-slate-700">Dokumente</p>
+                                        {(product.documents ?? []).length === 0 ? (
+                                          <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                        ) : (
+                                          (product.documents ?? []).map((document) => (
+                                            <div
+                                              key={document.id}
+                                              className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
+                                            >
+                                              <a
+                                                href={document.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                              >
+                                                {document.originalName}
+                                              </a>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                  {formatBytes(document.sizeBytes)}
+                                                </span>
+                                                <Button
+                                                  type="button"
+                                                  size="sm"
+                                                  variant="outline"
+                                                  onClick={async (event) => {
+                                                    event.stopPropagation();
+                                                    try {
+                                                      setEditDocumentUploadPendingById((current) => ({
+                                                        ...current,
+                                                        [product.id]: true,
+                                                      }));
+                                                      setEditDocumentUploadErrorById((current) => ({
+                                                        ...current,
+                                                        [product.id]: null,
+                                                      }));
+                                                      await deleteProductDocument(document.id);
+                                                      await utils.product.backendList.invalidate();
+                                                    } catch (error) {
+                                                      setEditDocumentUploadErrorById((current) => ({
+                                                        ...current,
+                                                        [product.id]:
+                                                          error instanceof Error
+                                                            ? error.message
+                                                            : "Dokument konnte nicht geloescht werden.",
+                                                      }));
+                                                    } finally {
+                                                      setEditDocumentUploadPendingById((current) => ({
+                                                        ...current,
+                                                        [product.id]: false,
+                                                      }));
+                                                    }
+                                                  }}
+                                                  disabled={editDocumentUploadPendingById[product.id]}
+                                                >
+                                                  Entfernen
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ))
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            
                           </div>
+
                         </div>
 
                         <div className="mt-4 flex items-center gap-2">
@@ -1763,14 +1805,14 @@ export function ProductsAdminPanel() {
                     }}
                     disabled={
                       updateMutation.isPending ||
-                      (expandedRowId ? editUploadPendingById[expandedRowId] : false) ||
+                      (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
                       addProductImageMutation.isPending ||
-                      (expandedRowId ? editDocumentUploadPendingById[expandedRowId] : false)
+                      (expandedRowId !== null ? !!editDocumentUploadPendingById[expandedRowId] : false)
                     }
                     className="shrink-0 disabled:opacity-60"
                   >
                     {updateMutation.isPending ||
-                    (expandedRowId ? editUploadPendingById[expandedRowId] : false) ||
+                    (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
                     addProductImageMutation.isPending ? (
                       "Speichert..."
                     ) : (
@@ -1983,7 +2025,7 @@ export function ProductsAdminPanel() {
               className="mt-2 block w-full cursor-pointer rounded-xl border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
             />
             <span className="mt-1 block text-xs text-muted-foreground">
-              {createImageFile ? `Ausgewaehlt: ${createImageFile.name}` : "Noch keine Datei ausgewaehlt."}
+              {createImageFile ? `Ausgewaehlt: ${createImageFile!.name}` : "Noch keine Datei ausgewaehlt."}
             </span>
           </label>
           <label className="text-xs text-muted-foreground md:col-span-2">
@@ -2045,7 +2087,7 @@ export function ProductsAdminPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
             <h3 className="text-lg font-semibold text-foreground">Einbuchen</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{bookingProduct.name}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{bookingProduct!.name}</p>
 
             <div className="mt-4 space-y-3">
               <label className="block text-xs text-slate-600">
@@ -2108,6 +2150,7 @@ export function ProductsAdminPanel() {
                   }
 
                   setBookingError(null);
+                  if (!bookingProduct) return;
                   stockBookingMutation.mutate({
                     productId: bookingProduct.id,
                     quantityDelta: quantity,
