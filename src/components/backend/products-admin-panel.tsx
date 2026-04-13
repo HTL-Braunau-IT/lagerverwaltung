@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -265,6 +265,8 @@ export function ProductsAdminPanel() {
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [hasUnsavedChangesById, setHasUnsavedChangesById] = useState<Record<string, boolean>>({});
+  const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ProductCreateFormState>(createEmptyCreateForm);
@@ -477,6 +479,161 @@ export function ProductsAdminPanel() {
       return { ...current, [productId]: null };
     });
   };
+
+  const handleResetProduct = useCallback((product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+    clearEditPendingImage(product.id);
+    setFormsById((current) => ({
+      ...current,
+      [product.id]: createInitialForm(product),
+    }));
+    setEditSelectedImageIdById((current) => ({
+      ...current,
+      [product.id]: null,
+    }));
+    setImageFieldsTouchedById((current) => ({
+      ...current,
+      [product.id]: false,
+    }));
+    setHasUnsavedChangesById((current) => ({
+      ...current,
+      [product.id]: false,
+    }));
+  }, [clearEditPendingImage]);
+
+  const computeHasUnsavedChanges = useCallback(
+    (product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+      const initial = createInitialForm(product);
+      const current = formsById[product.id] ?? initial;
+      const pendingImage = !!editPendingImageById[product.id];
+      const imageTouched = !!imageFieldsTouchedById[product.id];
+
+      const normalize = (f: ProductFormState) => ({
+        ...f,
+        name: f.name.trim(),
+        sku: f.sku.trim(),
+        description: f.description.trim(),
+        imageUrl: imageTouched ? f.imageUrl.trim() : "",
+        imageAltText: imageTouched ? f.imageAltText.trim() : "",
+        categoryIds: [...f.categoryIds].sort(),
+      });
+
+      const changed = JSON.stringify(normalize(current)) !== JSON.stringify(normalize(initial));
+      return changed || pendingImage;
+    },
+    [editPendingImageById, formsById, imageFieldsTouchedById],
+  );
+
+  const hasUnsavedChanges = expandedRowId ? !!hasUnsavedChangesById[expandedRowId] : false;
+
+  useEffect(() => {
+    if (!expandedRowId) return;
+    const product = visibleProducts.find((p) => p.id === expandedRowId);
+    if (!product) return;
+    const dirty = computeHasUnsavedChanges(product);
+    setHasUnsavedChangesById((current) => (current[expandedRowId] === dirty ? current : { ...current, [expandedRowId]: dirty }));
+  }, [computeHasUnsavedChanges, expandedRowId, visibleProducts]);
+
+  const handleSaveProduct = useCallback(
+    async (product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+      const form = formsById[product.id] ?? createInitialForm(product);
+
+      let editingImageId: string | undefined = editSelectedImageIdById[product.id] ?? undefined;
+      let imageUrl: string | null = form.imageUrl.trim() || null;
+      let imageAltText: string | null = form.imageAltText.trim() ? form.imageAltText.trim() : null;
+
+      const pending = editPendingImageById[product.id];
+      if (pending) {
+        const sku = form.sku.trim();
+        if (!sku) {
+          setEditUploadErrorById((current) => ({
+            ...current,
+            [product.id]: "Bitte zuerst eine SKU eingeben.",
+          }));
+          return;
+        }
+        try {
+          setEditUploadPendingById((current) => ({
+            ...current,
+            [product.id]: true,
+          }));
+          setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+          const uploadedUrl = await uploadProductImage(sku, pending.file);
+          const created = await addProductImageMutation.mutateAsync({
+            productId: product.id,
+            url: uploadedUrl,
+            altText: imageAltText,
+          });
+          URL.revokeObjectURL(pending.previewUrl);
+          setEditPendingImageById((current) => ({
+            ...current,
+            [product.id]: null,
+          }));
+          editingImageId = created.id;
+          imageUrl = uploadedUrl.trim() || null;
+          setFormsById((current) => {
+            const f = current[product.id] ?? createInitialForm(product);
+            return {
+              ...current,
+              [product.id]: {
+                ...f,
+                imageUrl: uploadedUrl,
+                imageAltText: imageAltText ?? "",
+              },
+            };
+          });
+          setEditSelectedImageIdById((current) => ({
+            ...current,
+            [product.id]: created.id,
+          }));
+        } catch (error) {
+          setEditUploadErrorById((current) => ({
+            ...current,
+            [product.id]: error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
+          }));
+          return;
+        } finally {
+          setEditUploadPendingById((current) => ({
+            ...current,
+            [product.id]: false,
+          }));
+        }
+      }
+
+      try {
+        await updateMutation.mutateAsync({
+          id: product.id,
+          name: form.name.trim(),
+          sku: form.sku.trim(),
+          description: form.description.trim() ? form.description.trim() : null,
+          price: Number(form.price),
+          minimumQuantity: Number(form.minimumQuantity),
+          unitKind: form.unitKind,
+          baseUnit: form.baseUnit,
+          unitStep: Number(form.unitStep),
+          isVisible: form.isVisible,
+          categoryIds: form.categoryIds,
+          storageLocationId: form.storageLocationId || null,
+          editingImageId,
+          imageUrl,
+          imageAltText,
+        });
+        setHasUnsavedChangesById((current) => ({ ...current, [product.id]: false }));
+        setImageFieldsTouchedById((current) => ({ ...current, [product.id]: false }));
+      } catch {
+        // tRPC surfaces toast or error boundary elsewhere
+      }
+    },
+    [
+      addProductImageMutation,
+      editPendingImageById,
+      editSelectedImageIdById,
+      formsById,
+      setHasUnsavedChangesById,
+      setImageFieldsTouchedById,
+      updateMutation,
+      uploadProductImage,
+    ],
+  );
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -1208,15 +1365,19 @@ export function ProductsAdminPanel() {
                                         value={form.imageUrl}
                                         disabled={urlFieldDisabled}
                                         onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) =>
+                                        onChange={(event) => {
+                                          setImageFieldsTouchedById((current) => ({
+                                            ...current,
+                                            [product.id]: true,
+                                          }));
                                           setFormsById((current) => ({
                                             ...current,
                                             [product.id]: {
                                               ...(current[product.id] ?? createInitialForm(product)),
                                               imageUrl: event.target.value,
                                             },
-                                          }))
-                                        }
+                                          }));
+                                        }}
                                         placeholder={
                                           urlFieldDisabled
                                             ? "—"
@@ -1235,15 +1396,19 @@ export function ProductsAdminPanel() {
                                         value={form.imageAltText}
                                         disabled={altFieldDisabled}
                                         onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) =>
+                                        onChange={(event) => {
+                                          setImageFieldsTouchedById((current) => ({
+                                            ...current,
+                                            [product.id]: true,
+                                          }));
                                           setFormsById((current) => ({
                                             ...current,
                                             [product.id]: {
                                               ...(current[product.id] ?? createInitialForm(product)),
                                               imageAltText: event.target.value,
                                             },
-                                          }))
-                                        }
+                                          }));
+                                        }}
                                         placeholder={
                                           altFieldDisabled
                                             ? "—"
@@ -1538,134 +1703,6 @@ export function ProductsAdminPanel() {
                           >
                             Einbuchen
                           </Button>
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              clearEditPendingImage(product.id);
-                              setFormsById((current) => ({
-                                ...current,
-                                [product.id]: createInitialForm(product),
-                              }));
-                              setEditSelectedImageIdById((current) => ({
-                                ...current,
-                                [product.id]: null,
-                              }));
-                            }}
-                            variant="outline"
-                          >
-                            Zuruecksetzen
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void (async () => {
-                                let editingImageId: string | undefined =
-                                  editSelectedImageIdById[product.id] ?? undefined;
-                                let imageUrl: string | null = form.imageUrl.trim() || null;
-                                let imageAltText: string | null = form.imageAltText.trim()
-                                  ? form.imageAltText.trim()
-                                  : null;
-
-                                const pending = editPendingImageById[product.id];
-                                if (pending) {
-                                  const sku = form.sku.trim();
-                                  if (!sku) {
-                                    setEditUploadErrorById((current) => ({
-                                      ...current,
-                                      [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                    }));
-                                    return;
-                                  }
-                                  try {
-                                    setEditUploadPendingById((current) => ({
-                                      ...current,
-                                      [product.id]: true,
-                                    }));
-                                    setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                    const uploadedUrl = await uploadProductImage(sku, pending.file);
-                                    const created = await addProductImageMutation.mutateAsync({
-                                      productId: product.id,
-                                      url: uploadedUrl,
-                                      altText: imageAltText,
-                                    });
-                                    URL.revokeObjectURL(pending.previewUrl);
-                                    setEditPendingImageById((current) => ({
-                                      ...current,
-                                      [product.id]: null,
-                                    }));
-                                    editingImageId = created.id;
-                                    imageUrl = uploadedUrl.trim() || null;
-                                    setFormsById((current) => {
-                                      const f = current[product.id] ?? createInitialForm(product);
-                                      return {
-                                        ...current,
-                                        [product.id]: {
-                                          ...f,
-                                          imageUrl: uploadedUrl,
-                                          imageAltText: imageAltText ?? "",
-                                        },
-                                      };
-                                    });
-                                    setEditSelectedImageIdById((current) => ({
-                                      ...current,
-                                      [product.id]: created.id,
-                                    }));
-                                  } catch (error) {
-                                    setEditUploadErrorById((current) => ({
-                                      ...current,
-                                      [product.id]:
-                                        error instanceof Error
-                                          ? error.message
-                                          : "Bild konnte nicht hochgeladen werden.",
-                                    }));
-                                    return;
-                                  } finally {
-                                    setEditUploadPendingById((current) => ({
-                                      ...current,
-                                      [product.id]: false,
-                                    }));
-                                  }
-                                }
-
-                                try {
-                                  await updateMutation.mutateAsync({
-                                    id: product.id,
-                                    name: form.name.trim(),
-                                    sku: form.sku.trim(),
-                                    description: form.description.trim() ? form.description.trim() : null,
-                                    price: Number(form.price),
-                                    minimumQuantity: Number(form.minimumQuantity),
-                                    unitKind: form.unitKind,
-                                    baseUnit: form.baseUnit,
-                                    unitStep: Number(form.unitStep),
-                                    isVisible: form.isVisible,
-                                    categoryIds: form.categoryIds,
-                                    storageLocationId: form.storageLocationId || null,
-                                    editingImageId,
-                                    imageUrl,
-                                    imageAltText,
-                                  });
-                                } catch {
-                                  // tRPC surfaces toast or error boundary elsewhere
-                                }
-                              })();
-                            }}
-                            disabled={
-                              updateMutation.isPending ||
-                              editUploadPendingById[product.id] ||
-                              addProductImageMutation.isPending ||
-                              editDocumentUploadPendingById[product.id]
-                            }
-                            className="disabled:opacity-60"
-                          >
-                            {updateMutation.isPending ||
-                            editUploadPendingById[product.id] ||
-                            addProductImageMutation.isPending
-                              ? "Speichert..."
-                              : "Speichern"}
-                          </Button>
                         </div>
 
                         <BookingHistory productId={product.id} />
@@ -1689,6 +1726,62 @@ export function ProductsAdminPanel() {
             {productsQuery.isFetchingNextPage ? "Lade mehr..." : "Mehr laden"}
           </Button>
         </div>
+      ) : null}
+
+      {expandedRowId && hasUnsavedChanges ? (
+        <>
+          <div className="h-24" aria-hidden="true" />
+          <div className="fixed inset-x-0 bottom-4 z-50 px-4">
+            <div className="mx-auto w-full max-w-6xl">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive bg-background/70 shadow-lg backdrop-blur p-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {visibleProducts.find((p) => p.id === expandedRowId)?.name ?? "Produkt"}
+                  </p>
+                  <p className="text-xs text-destructive">Ausstehende Änderungen</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const product = visibleProducts.find((p) => p.id === expandedRowId);
+                      if (!product) return;
+                      handleResetProduct(product);
+                    }}
+                    variant="outline"
+                  >
+                    Zurücksetzen
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const product = visibleProducts.find((p) => p.id === expandedRowId);
+                      if (!product) return;
+                      void handleSaveProduct(product);
+                    }}
+                    disabled={
+                      updateMutation.isPending ||
+                      (expandedRowId ? editUploadPendingById[expandedRowId] : false) ||
+                      addProductImageMutation.isPending ||
+                      (expandedRowId ? editDocumentUploadPendingById[expandedRowId] : false)
+                    }
+                    className="shrink-0 disabled:opacity-60"
+                  >
+                    {updateMutation.isPending ||
+                    (expandedRowId ? editUploadPendingById[expandedRowId] : false) ||
+                    addProductImageMutation.isPending ? (
+                      "Speichert..."
+                    ) : (
+                      "Speichern"
+                    )}
+                  </Button>
+                </div>                
+              </div>
+            </div>
+          </div>
+        </>
       ) : null}
 
       <Dialog
