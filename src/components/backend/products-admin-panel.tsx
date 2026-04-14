@@ -61,6 +61,29 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
+const moneyFormatDeAt = new Intl.NumberFormat("de-AT", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatMoneyDeAt(value: number): string {
+  if (!Number.isFinite(value)) return moneyFormatDeAt.format(0);
+  return moneyFormatDeAt.format(value);
+}
+
+/** Parses de-AT style input (comma decimal, optional dot thousands) or plain dot decimals. */
+function parseMoneyInput(raw: string): number {
+  const s = raw.trim().replace(/\s/g, "");
+  if (!s) return NaN;
+  if (s.includes(",") && s.includes(".")) {
+    return Number(s.replace(/\./g, "").replace(",", "."));
+  }
+  if (s.includes(",")) {
+    return Number(s.replace(",", "."));
+  }
+  return Number(s);
+}
+
 function isNearMinimumStock(quantityOnHand: unknown, minimumQuantity: unknown): boolean {
   const minimum = toNumber(minimumQuantity);
   if (minimum <= 0) return false;
@@ -86,6 +109,93 @@ function resolveImageTabUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function NumberStepper({
+  value,
+  onChange,
+  min,
+  step,
+  max,
+  decreaseAriaLabel,
+  increaseAriaLabel,
+  inputAriaLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  min: number;
+  step: number;
+  max?: number;
+  decreaseAriaLabel: string;
+  increaseAriaLabel: string;
+  inputAriaLabel: string;
+}) {
+  const decimals = useMemo(() => {
+    const text = String(step);
+    const fractional = text.split(".")[1];
+    return fractional ? fractional.length : 0;
+  }, [step]);
+
+  const normalize = useCallback(
+    (num: number) => {
+      if (!Number.isFinite(num)) return min;
+      const rounded = decimals > 0 ? Number(num.toFixed(decimals)) : Math.round(num);
+      return Math.max(min, rounded);
+    },
+    [decimals, min],
+  );
+
+  const inputMax = max !== undefined && max > 0 ? max : undefined;
+  const incrementCap = inputMax ?? Number.POSITIVE_INFINITY;
+
+  return (
+    <div
+      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <Button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          const current = Math.max(Number(value) || min, min);
+          const next = normalize(current - step);
+          onChange(next.toString());
+        }}
+        size="sm"
+        variant="ghost"
+        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+        aria-label={decreaseAriaLabel}
+      >
+        <span className="block leading-none">-</span>
+      </Button>
+      <input
+        type="number"
+        min={min}
+        max={inputMax}
+        step={step}
+        value={value}
+        onClick={(event) => event.stopPropagation()}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-14 min-w-0 shrink border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        aria-label={inputAriaLabel}
+      />
+      <Button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          const current = Math.max(Number(value) || min, min);
+          const next = Math.min(incrementCap, normalize(current + step));
+          onChange(next.toString());
+        }}
+        size="sm"
+        variant="ghost"
+        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+        aria-label={increaseAriaLabel}
+      >
+        <span className="block leading-none">+</span>
+      </Button>
+    </div>
+  );
 }
 
 function createInitialForm(product: {
@@ -115,7 +225,7 @@ function createInitialForm(product: {
     name: product.name,
     sku: product.sku,
     description: product.description ?? "",
-    price: String(toNumber(product.price)),
+    price: formatMoneyDeAt(toNumber(product.price)),
     minimumQuantity: String(toNumber(product.minimumQuantity)),
     unitKind: product.unitKind,
     baseUnit: product.baseUnit,
@@ -139,7 +249,7 @@ function createEmptyCreateForm(): ProductCreateFormState {
     name: "",
     sku: "",
     description: "",
-    price: "0",
+    price: formatMoneyDeAt(0),
     minimumQuantity: "0",
     startingQuantity: "0",
     unitKind: "PIECE",
@@ -157,100 +267,104 @@ function createEmptyCreateForm(): ProductCreateFormState {
 function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
 
+  const bookings = bookingsQuery.data?.bookings ?? [];
+  const completedOrders = bookingsQuery.data?.completedOrders ?? [];
+  const showBookingsTable = !bookingsQuery.isLoading && !bookingsQuery.error && bookings.length > 0;
+  const showCompletedOrdersTable =
+    !bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length > 0;
+
   return (
-    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Letzte Buchungen
-      </p>
-      {bookingsQuery.isLoading ? <p className="mt-2 text-sm text-muted-foreground">Verlauf wird geladen...</p> : null}
-      {bookingsQuery.error ? (
-        <p className="mt-2 text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p>
-      ) : null}
-      {!bookingsQuery.isLoading &&
-      !bookingsQuery.error &&
-      (bookingsQuery.data?.bookings?.length ?? 0) === 0 &&
-      (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">Noch keine Buchungen oder fertigen Auftraege vorhanden.</p>
-      ) : null}
-      <div className="mt-2 overflow-x-auto rounded-md border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight">Menge</TableHead>
-              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Lieferant</TableHead>
-              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Von</TableHead>
-              <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Datum</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="text-[11px] leading-tight">
-            {!bookingsQuery.isLoading &&
-            !bookingsQuery.error &&
-            (bookingsQuery.data?.bookings?.length ?? 0) === 0 ? (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={4} className="bg-white py-1 px-2 text-xs text-muted-foreground">
-                  Keine Buchungen vorhanden.
-                </TableCell>
-              </TableRow>
-            ) : null}
-            {(bookingsQuery.data?.bookings ?? []).map((booking) => (
-              <Fragment key={booking.id}>
-                <TableRow className="bg-muted/30 hover:bg-muted/40">
-                  <TableCell className="text-[11px] font-medium !py-1 !px-2">{toNumber(booking.quantityDelta)}</TableCell>
-                  <TableCell className="text-[11px] !py-0 !px-0">{booking.supplier}</TableCell>
-                  <TableCell className="text-[11px] !py-0 !px-0">{booking.user.name ?? booking.user.email ?? "Unbekannt"}</TableCell>
-                  <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
-                    {new Date(booking.createdAt).toLocaleString("de-AT")}
-                  </TableCell>
-                </TableRow>
-                {booking.note ? (
-                  <TableRow className="bg-muted/20 hover:bg-muted/25">
-                    <TableCell colSpan={4} className="py-0.5 px-2 text-xs text-muted-foreground">
-                      Notiz: {booking.note}
-                    </TableCell>
+    <div className="mx-4 mt-4 rounded-lg border border-slate-200 bg-white p-3">
+      {bookingsQuery.isLoading ? <p className="text-sm text-muted-foreground">Verlauf wird geladen...</p> : null}
+      {bookingsQuery.error ? <p className="text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p> : null}
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section>
+          <p className="text-lg font-semibold text-slate-900">Letzte Buchungen</p>
+          <div className="mt-2 mb-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+
+          {!bookingsQuery.isLoading && !bookingsQuery.error && bookings.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Keine Buchungen vorhanden.</p>
+          ) : null}
+
+          {showBookingsTable ? (
+            <div className="mt-2 overflow-x-auto rounded-md border border-border">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight">Menge</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Lieferant</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Von</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Datum</TableHead>
                   </TableRow>
-                ) : null}
-              </Fragment>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Abgeschlossene Aufträge
-        </p>
-        <div className="mt-2 overflow-x-auto rounded-md border border-success/40">
-          <Table>
-            <TableHeader className="bg-success/10">
-              <TableRow className="border-success/40 hover:bg-success/10">
-                <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight text-success">Auftrag</TableHead>
-                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Menge</TableHead>
-                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Von</TableHead>
-                <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Datum</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="text-[11px] leading-tight text-success">
-              {!bookingsQuery.isLoading &&
-              !bookingsQuery.error &&
-              (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
-                <TableRow className="border-success/40 hover:bg-success/5">
-                  <TableCell colSpan={4} className="bg-success/5 text-xs text-muted-foreground">
-                    Keine fertigen Auftraege fuer dieses Produkt.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-              {(bookingsQuery.data?.completedOrders ?? []).map((entry) => (
-                <TableRow key={entry.id} className="border-success/40 bg-success/5 hover:bg-success/10">
-                  <TableCell className="text-[11px] font-medium !py-1 !px-2">{entry.order.orderNumber}</TableCell>
-                  <TableCell className="text-[11px] font-medium !py-0 !px-0">{toNumber(entry.quantity)}</TableCell>
-                  <TableCell className="text-[11px] !py-0 !px-0">{entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"}</TableCell>
-                  <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
-                    {new Date(entry.order.createdAt).toLocaleString("de-AT")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody className="text-[11px] leading-tight">
+                  {bookings.map((booking) => (
+                    <Fragment key={booking.id}>
+                      <TableRow className="bg-muted/30 hover:bg-muted/40">
+                        <TableCell className="text-[11px] font-medium !py-1 !px-2">
+                          {toNumber(booking.quantityDelta)}
+                        </TableCell>
+                        <TableCell className="text-[11px] !py-0 !px-0">{booking.supplier}</TableCell>
+                        <TableCell className="text-[11px] !py-0 !px-0">
+                          {booking.user.name ?? booking.user.email ?? "Unbekannt"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                          {new Date(booking.createdAt).toLocaleString("de-AT")}
+                        </TableCell>
+                      </TableRow>
+                      {booking.note ? (
+                        <TableRow className="bg-muted/20 hover:bg-muted/25">
+                          <TableCell colSpan={4} className="py-0.5 px-2 text-xs text-muted-foreground">
+                            Notiz: {booking.note}
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </section>
+
+        <section>
+          <p className="text-lg font-semibold text-slate-900">Abgeschlossene Aufträge</p>
+          <div className="mt-2 mb-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+
+          {!bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
+          ) : null}
+
+          {showCompletedOrdersTable ? (
+            <div className="mt-2 overflow-x-auto rounded-md border border-success/40">
+              <Table>
+                <TableHeader className="bg-success/10">
+                  <TableRow className="border-success/40">
+                    <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight text-success">Auftrag</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Menge</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Von</TableHead>
+                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Datum</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="text-[11px] leading-tight text-success">
+                  {completedOrders.map((entry) => (
+                    <TableRow key={entry.id} className="border-success/40 bg-success/5">
+                      <TableCell className="text-[11px] font-medium !py-1 !px-2">{entry.order.orderNumber}</TableCell>
+                      <TableCell className="text-[11px] font-medium !py-0 !px-0">{toNumber(entry.quantity)}</TableCell>
+                      <TableCell className="text-[11px] !py-0 !px-0">
+                        {entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                        {new Date(entry.order.createdAt).toLocaleString("de-AT")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+        </section>
       </div>
     </div>
   );
@@ -283,6 +397,7 @@ export function ProductsAdminPanel() {
   const [imageDeletePendingKey, setImageDeletePendingKey] = useState<string | null>(null);
   const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
   const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
+  const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
   const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
@@ -395,11 +510,12 @@ export function ProductsAdminPanel() {
       setStorageLocationFilter("");
     }
   }, [storageRoomFilter, storageLocationFilter, storageLocationsById]);
+  const createFormPrice = parseMoneyInput(createForm.price);
   const canCreateProduct =
     createForm.name.trim().length > 0 &&
     createForm.sku.trim().length > 0 &&
-    Number.isFinite(Number(createForm.price)) &&
-    Number(createForm.price) >= 0 &&
+    Number.isFinite(createFormPrice) &&
+    createFormPrice >= 0 &&
     Number.isFinite(Number(createForm.minimumQuantity)) &&
     Number(createForm.minimumQuantity) >= 0 &&
     Number.isFinite(Number(createForm.startingQuantity)) &&
@@ -539,7 +655,7 @@ export function ProductsAdminPanel() {
 
       let editingImageId: string | undefined = editSelectedImageIdById[product.id] ?? undefined;
       let imageUrl: string | null = form.imageUrl.trim() || null;
-      let imageAltText: string | null = form.imageAltText.trim() ? form.imageAltText.trim() : null;
+      const imageAltText: string | null = form.imageAltText.trim() ? form.imageAltText.trim() : null;
 
       const pending = editPendingImageById[product.id];
       if (pending) {
@@ -605,7 +721,10 @@ export function ProductsAdminPanel() {
           name: form.name.trim(),
           sku: form.sku.trim(),
           description: form.description.trim() ? form.description.trim() : null,
-          price: Number(form.price),
+          price: (() => {
+            const p = parseMoneyInput(form.price);
+            return Number.isFinite(p) ? p : 0;
+          })(),
           minimumQuantity: Number(form.minimumQuantity),
           unitKind: form.unitKind,
           baseUnit: form.baseUnit,
@@ -831,11 +950,7 @@ export function ProductsAdminPanel() {
                         <div className="mx-4 flex flex-col gap-4">
                           <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
                             <div className="flex min-h-0 min-w-0 flex-col gap-4">
-                              <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                                <div>
-                                  <p className="text-lg font-semibold text-slate-900">Stammdaten</p>
-                                  <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                                </div>
+                              <div className="space-y-3 rounded-lg">
                                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-x-4">
                                   <label className="block text-xs text-slate-600 md:col-span-2">
                                     Name
@@ -848,7 +963,7 @@ export function ProductsAdminPanel() {
                                           [product.id]: { ...form, name: event.target.value },
                                         }))
                                       }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-slate-900 text-lg font-semibold text-foreground"
                                     />
                                   </label>
                                   <label className="block text-xs text-slate-600">
@@ -862,7 +977,7 @@ export function ProductsAdminPanel() {
                                           [product.id]: { ...form, sku: event.target.value },
                                         }))
                                       }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-lg text-slate-900"
                                     />
                                   </label>
                                   <label className="block text-xs text-slate-600 md:col-span-3">
@@ -887,7 +1002,7 @@ export function ProductsAdminPanel() {
                                 <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
                                     <p className="text-lg font-semibold text-slate-900">Lager</p>
-                                    <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
                                   </div>
                                   <label className="block text-xs text-slate-600">
                                     Raum
@@ -949,55 +1064,80 @@ export function ProductsAdminPanel() {
 
                                 <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
-                                    <p className="text-lg font-semibold text-slate-900">Produkt Details</p>
-                                    <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                    <p className="text-lg font-semibold text-slate-900">Mengen & Einheiten</p>
+                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
                                   </div>
-                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                    <label className="block text-xs text-slate-600">
+
+                                  <div className="relative grid grid-cols-1 gap-3 px-3 sm:grid-cols-3">
+                                    <div
+                                      className="pointer-events-none absolute inset-y-0 left-1/3 hidden w-px bg-slate-200/40 sm:block"
+                                      aria-hidden="true"
+                                    />
+
+                                    <label className="block text-xs text-slate-600 text-center sm:pr-3">
                                       Bestand
                                       <input
                                         disabled
                                         value={String(toNumber(product.quantityOnHand))}
-                                        className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-2 text-sm text-slate-600"
+                                        className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-600 text-center font-semibold"
                                       />
                                     </label>
-                                    <label className="block text-xs text-slate-600">
+                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
                                       Minimum
-                                      <input
-                                        type="number"
-                                        step="0.001"
-                                        min="0"
-                                        value={form.minimumQuantity}
-                                        onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) =>
-                                          setFormsById((current) => ({
-                                            ...current,
-                                            [product.id]: { ...form, minimumQuantity: event.target.value },
-                                          }))
-                                        }
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                      />
+                                      <div className="mt-1 flex justify-center">
+                                        <NumberStepper
+                                          value={form.minimumQuantity}
+                                          min={0}
+                                          step={0.001}
+                                          onChange={(value) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, minimumQuantity: value },
+                                            }))
+                                          }
+                                          decreaseAriaLabel="Minimum verringern"
+                                          increaseAriaLabel="Minimum erhoehen"
+                                          inputAriaLabel="Minimum"
+                                        />
+                                      </div>
                                     </label>
-                                    <label className="block text-xs text-slate-600">
+                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
                                       Schritte
-                                      <input
-                                        type="number"
-                                        step="0.001"
-                                        min="0.001"
-                                        value={form.unitStep}
-                                        onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) =>
-                                          setFormsById((current) => ({
-                                            ...current,
-                                            [product.id]: { ...form, unitStep: event.target.value },
-                                          }))
-                                        }
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                      />
+                                      <div className="mt-1 flex justify-center">
+                                        <NumberStepper
+                                          value={form.unitStep}
+                                          min={0.001}
+                                          step={0.001}
+                                          onChange={(value) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, unitStep: value },
+                                            }))
+                                          }
+                                          decreaseAriaLabel="Schritte verringern"
+                                          increaseAriaLabel="Schritte erhoehen"
+                                          inputAriaLabel="Schritte"
+                                        />
+                                      </div>
                                     </label>
-                                  </div>
-                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                    <label className="block text-xs text-slate-600">
+
+                                    <label className="block text-xs text-slate-600 text-center sm:pr-3">
+                                      Neu einbuchen
+                                      <Button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          setBookingProduct({ id: product.id, name: product.name });
+                                          setBookingError(null);
+                                        }}
+                                        variant="secondary"
+                                        className="mt-1 h-[38px] shrink-0 w-full text-center"
+                                      >
+                                        Dialog öffnen
+                                      </Button>
+                                    </label>
+
+                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
                                       Einheitstyp
                                       <select
                                         value={form.unitKind}
@@ -1011,7 +1151,7 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
+                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white py-2 text-sm text-slate-900 text-center"
                                       >
                                         {unitKinds.map((unitKind) => (
                                           <option key={unitKind.value} value={unitKind.value}>
@@ -1020,90 +1160,119 @@ export function ProductsAdminPanel() {
                                         ))}
                                       </select>
                                     </label>
-                                    <label className="block text-xs text-slate-600">
-                                      Basiseinheit
-                                      <select
-                                        value={form.baseUnit}
-                                        onClick={(event) => event.stopPropagation()}
-                                        onChange={(event) =>
-                                          setFormsById((current) => ({
-                                            ...current,
-                                            [product.id]: {
-                                              ...form,
-                                              baseUnit: event.target.value as ProductFormState["baseUnit"],
-                                            },
-                                          }))
-                                        }
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                      >
-                                        {baseUnits.map((baseUnit) => (
-                                          <option key={baseUnit.value} value={baseUnit.value}>
-                                            {baseUnit.label}
-                                          </option>
-                                        ))}
-                                      </select>
-                                    </label>
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:pl-3">
+                                      <label className="block text-xs text-slate-600 sm:flex-1 text-center">
+                                        Basiseinheit
+                                        <select
+                                          value={form.baseUnit}
+                                          onClick={(event) => event.stopPropagation()}
+                                          onChange={(event) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: {
+                                                ...form,
+                                                baseUnit: event.target.value as ProductFormState["baseUnit"],
+                                              },
+                                            }))
+                                          }
+                                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white py-2 text-sm text-slate-900 text-center"
+                                        >
+                                          {baseUnits.map((baseUnit) => (
+                                            <option key={baseUnit.value} value={baseUnit.value}>
+                                              {baseUnit.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                    </div>
+                                    
                                   </div>
                                 </div>
 
                                 <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
                                   <div>
-                                    <p className="text-lg font-semibold text-slate-900">Preis</p>
-                                    <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                    <p className="text-lg font-semibold text-slate-900">Preis und Sichtbarkeit</p>
+                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
                                   </div>
-                                  <label className="block text-xs text-slate-600">
-                                    Verkaufspreis
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      min="0"
-                                      value={form.price}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
                                         setFormsById((current) => ({
                                           ...current,
-                                          [product.id]: { ...form, price: event.target.value },
-                                        }))
-                                      }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                    />
-                                  </label>
+                                          [product.id]: { ...form, isVisible: !form.isVisible },
+                                        }));
+                                      }}
+                                      className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 bg-white mt-1 px-3 py-2 text-left transition sm:col-span-2 ${
+                                        form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
+                                      }`}
+                                      aria-label="Produktsichtbarkeit umschalten"
+                                      aria-pressed={form.isVisible}
+                                    >
+                                      <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
+                                      <span
+                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                          form.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
+                                        }`}
+                                        aria-hidden="true"
+                                      >
+                                        <span
+                                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                            form.isVisible ? "translate-x-5" : "translate-x-1"
+                                          }`}
+                                        />
+                                      </span>
+                                    </button>
+
+                                    <label className="block text-xs text-slate-600 text-center mt-2">
+                                      Verkaufspreis
+                                      <div className="mt-1 flex w-full">
+                                        <input
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={form.price}
+                                          onClick={(event) => event.stopPropagation()}
+                                          onChange={(event) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, price: event.target.value },
+                                            }))
+                                          }
+                                          className="w-full rounded-l-lg border border-slate-300 bg-white pl-4 py-2 text-sm text-slate-900 text-center"
+                                        />
+                                        <span className="inline-flex items-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 px-2.5 text-sm text-slate-700">
+                                          €
+                                        </span>
+                                      </div>
+                                    </label>
+
+                                    <label className="block text-xs text-slate-600 text-center mt-2">
+                                      Gesamtvermögen
+                                      <div className="mt-1 flex w-full">
+                                        <input
+                                          disabled
+                                          value={(() => {
+                                            const price = parseMoneyInput(form.price);
+                                            const stock = toNumber(product.quantityOnHand);
+                                            const total =
+                                              Number.isFinite(price) && Number.isFinite(stock) ? price * stock : NaN;
+                                            return formatMoneyDeAt(total);
+                                          })()}
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="w-full rounded-l-lg border border-slate-200 bg-white pl-2.5 py-2 text-sm text-slate-600 font-semibold text-center"
+                                        />
+                                        <span className="inline-flex items-center rounded-r-lg border border-l-0 border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-700">
+                                          €
+                                        </span>
+                                      </div>
+                                    </label>
+                                  </div>
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
-                              <div className="flex w-full shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setFormsById((current) => ({
-                                      ...current,
-                                      [product.id]: { ...form, isVisible: !form.isVisible },
-                                    }));
-                                  }}
-                                  className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 bg-white px-3 py-2 text-left transition ${
-                                    form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
-                                  }`}
-                                  aria-label="Produktsichtbarkeit umschalten"
-                                  aria-pressed={form.isVisible}
-                                >
-                                  <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
-                                  <span
-                                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-                                      form.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
-                                      }`}
-                                    aria-hidden="true"
-                                  >
-                                    <span
-                                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                                        form.isVisible ? "translate-x-5" : "translate-x-1"
-                                      }`}
-                                    />
-                                  </span>
-                                </button>
-                              </div>
                               <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 md:min-h-0 md:overflow-hidden">
                                 <div className="shrink-0 space-y-3">
                                   <p className="text-lg font-semibold text-slate-900">Kategorien</p>
@@ -1133,7 +1302,10 @@ export function ProductsAdminPanel() {
                                             className="inline-flex max-w-full min-h-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1"
                                             aria-label={`Kategorie ${assigned.name} entfernen`}
                                           >
-                                            <span className="truncate font-medium">{assigned.name}</span>
+                                            <span className="truncate font-medium">{assigned.name}
+                                              <span className="text-destructive"> X
+                                              </span>
+                                            </span>
                                           </button>
                                         );
                                       })}
@@ -1196,15 +1368,62 @@ export function ProductsAdminPanel() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 min-w-0">
-                              <div>
-                                <p className="text-lg font-semibold text-slate-900">Bilder</p>
-                                <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                              </div>
-                              <div>
-                                <div className="gap-4 md:items-stretch">
-                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                          <div className="rounded-lg border border-slate-200 bg-white p-3 min-w-0">
+                            {editMediaSectionCollapsedById[product.id] ? (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setEditMediaSectionCollapsedById((current) => ({
+                                    ...current,
+                                    [product.id]: false,
+                                  }));
+                                }}
+                                className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
+                                aria-expanded={false}
+                                aria-controls={`edit-media-section-${product.id}`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+                                  <span
+                                    aria-hidden="true"
+                                    className="shrink-0 text-slate-500"
+                                    title="Ausklappen"
+                                  >
+                                    ▾
+                                  </span>
+                                </div>
+                              </button>
+                            ) : (
+                              <div id={`edit-media-section-${product.id}`} className="space-y-3">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setEditMediaSectionCollapsedById((current) => ({
+                                      ...current,
+                                      [product.id]: true,
+                                    }));
+                                  }}
+                                  className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
+                                  aria-expanded={true}
+                                  aria-controls={`edit-media-section-${product.id}`}
+                                >
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+                                    <span
+                                      aria-hidden="true"
+                                      className="shrink-0 text-slate-500"
+                                      title="Einklappen"
+                                    >
+                                      ▴
+                                    </span>
+                                  </div>
+                                  <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                </button>
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-stretch">
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
                                     <div>
                                       <p className="select-none text-xs text-slate-600">Bild hochladen</p>
                                       <label
@@ -1311,15 +1530,11 @@ export function ProductsAdminPanel() {
                                         </span>
                                       </label>
                                     </div>
-                                    <p className="text-xs text-muted-foreground">
-                                      Datei waehlen, optional Alt-Text setzen — das Bild wird beim Speichern
-                                      hochgeladen.
-                                    </p>
                                     {editUploadErrorById[product.id] ? (
                                       <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
                                     ) : null}
 
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                                       <button
                                         type="button"
                                         onClick={(event) => {
@@ -1329,7 +1544,7 @@ export function ProductsAdminPanel() {
                                           const href = resolveImageTabUrl(openSource);
                                           if (href) window.open(href, "_blank", "noopener,noreferrer");
                                         }}
-                                        className={`relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-40 sm:w-40 ${
+                                        className={`relative h-48 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-56 sm:w-56 md:h-64 md:w-64 ${
                                           form.imageUrl.trim() || pendingEditImage?.previewUrl
                                             ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
                                             : "cursor-default opacity-90"
@@ -1570,36 +1785,112 @@ export function ProductsAdminPanel() {
                                       </div>
                                     </div>
                                   </div>
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                <div>
+                                  <p className="select-none text-xs text-slate-600">Dokument hochladen</p>
+                                  <label
+                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm ${
+                                      editDocumentUploadPendingById[product.id]
+                                        ? "cursor-default opacity-90"
+                                        : "cursor-pointer hover:bg-amber-100/90"
+                                    }`}
+                                    onClick={(event) => event.stopPropagation()}
+                                    aria-busy={editDocumentUploadPendingById[product.id] ? true : undefined}
+                                  >
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                      disabled={!!editDocumentUploadPendingById[product.id]}
+                                      className="sr-only"
+                                      onChange={async (event) => {
+                                        const file = event.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                          setEditDocumentUploadPendingById((current) => ({
+                                            ...current,
+                                            [product.id]: true,
+                                          }));
+                                          setEditDocumentUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]: null,
+                                          }));
+                                          await uploadProductDocument(product.id, file);
+                                          await utils.product.backendList.invalidate();
+                                        } catch (error) {
+                                          setEditDocumentUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]:
+                                              error instanceof Error
+                                                ? error.message
+                                                : "Dokument konnte nicht hochgeladen werden.",
+                                          }));
+                                        } finally {
+                                          setEditDocumentUploadPendingById((current) => ({
+                                            ...current,
+                                            [product.id]: false,
+                                          }));
+                                          event.target.value = "";
+                                        }
+                                      }}
+                                    />
+                                    <span
+                                      className={`inline-flex shrink-0 rounded-md bg-amber-700 px-3 py-2 text-sm font-semibold text-amber-50 ${
+                                        editDocumentUploadPendingById[product.id]
+                                          ? "opacity-70"
+                                          : "group-hover:bg-amber-800"
+                                      }`}
+                                    >
+                                      Datei auswählen
+                                    </span>
+                                    <span
+                                      className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                        editDocumentUploadPendingById[product.id]
+                                          ? "text-muted-foreground"
+                                          : "text-slate-500"
+                                      }`}
+                                      role="status"
+                                    >
+                                      {editDocumentUploadPendingById[product.id]
+                                        ? "Dokument wird hochgeladen..."
+                                        : "Keine Datei ausgewählt"}
+                                    </span>
+                                  </label>
                                 </div>
-                              </div>
-                            </div>
-                            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3 min-w-0">
-                              <div>
-                                <p className="text-lg font-semibold text-slate-900">Dokumente</p>
-                                <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                              </div>
-                              <div>
-                                <div className="gap-4 md:items-stretch">
-                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
-                                      <div>
-                                        <p className="select-none text-xs text-slate-600">Dokument hochladen</p>
-                                        <label
-                                          className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm ${
-                                            editDocumentUploadPendingById[product.id]
-                                              ? "cursor-default opacity-90"
-                                              : "cursor-pointer hover:bg-amber-100/90"
-                                          }`}
+                                {editDocumentUploadErrorById[product.id] ? (
+                                  <p className="text-xs text-destructive">
+                                    {editDocumentUploadErrorById[product.id]}
+                                  </p>
+                                ) : null}
+
+                                <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
+                                  <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
+                                  {(product.documents ?? []).length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                  ) : (
+                                    (product.documents ?? []).map((document) => (
+                                      <div
+                                        key={document.id}
+                                        className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
+                                      >
+                                        <a
+                                          href={document.url}
+                                          target="_blank"
+                                          rel="noreferrer"
                                           onClick={(event) => event.stopPropagation()}
-                                          aria-busy={editDocumentUploadPendingById[product.id] ? true : undefined}
+                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
                                         >
-                                          <input
-                                            type="file"
-                                            accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                            disabled={!!editDocumentUploadPendingById[product.id]}
-                                            className="sr-only"
-                                            onChange={async (event) => {
-                                              const file = event.target.files?.[0];
-                                              if (!file) return;
+                                          {document.originalName}
+                                        </a>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] text-muted-foreground">
+                                            {formatBytes(document.sizeBytes)}
+                                          </span>
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={async (event) => {
+                                              event.stopPropagation();
                                               try {
                                                 setEditDocumentUploadPendingById((current) => ({
                                                   ...current,
@@ -1609,7 +1900,7 @@ export function ProductsAdminPanel() {
                                                   ...current,
                                                   [product.id]: null,
                                                 }));
-                                                await uploadProductDocument(product.id, file);
+                                                await deleteProductDocument(document.id);
                                                 await utils.product.backendList.invalidate();
                                               } catch (error) {
                                                 setEditDocumentUploadErrorById((current) => ({
@@ -1617,134 +1908,30 @@ export function ProductsAdminPanel() {
                                                   [product.id]:
                                                     error instanceof Error
                                                       ? error.message
-                                                      : "Dokument konnte nicht hochgeladen werden.",
+                                                      : "Dokument konnte nicht geloescht werden.",
                                                 }));
                                               } finally {
                                                 setEditDocumentUploadPendingById((current) => ({
                                                   ...current,
                                                   [product.id]: false,
                                                 }));
-                                                event.target.value = "";
                                               }
                                             }}
-                                          />
-                                          <span
-                                            className={`inline-flex shrink-0 rounded-md bg-amber-700 px-3 py-2 text-sm font-semibold text-amber-50 ${
-                                              editDocumentUploadPendingById[product.id]
-                                                ? "opacity-70"
-                                                : "group-hover:bg-amber-800"
-                                            }`}
+                                            disabled={editDocumentUploadPendingById[product.id]}
                                           >
-                                            Datei auswählen
-                                          </span>
-                                          <span
-                                            className={`min-w-0 flex-1 break-all text-left text-sm ${
-                                              editDocumentUploadPendingById[product.id]
-                                                ? "text-muted-foreground"
-                                                : "text-slate-500"
-                                            }`}
-                                            role="status"
-                                          >
-                                            {editDocumentUploadPendingById[product.id]
-                                              ? "Dokument wird hochgeladen..."
-                                              : "Keine Datei ausgewählt"}
-                                          </span>
-                                        </label>
+                                            Entfernen
+                                          </Button>
+                                        </div>
                                       </div>
-                                      <p className="text-xs text-muted-foreground">
-                                        Klicken, um ein Dokument auszuwaehlen.
-                                      </p>
-                                      {editDocumentUploadErrorById[product.id] ? (
-                                        <p className="text-xs text-destructive">
-                                          {editDocumentUploadErrorById[product.id]}
-                                        </p>
-                                      ) : null}
-
-                                      <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
-                                        <p className="mb-1 text-xs font-medium text-slate-700">Dokumente</p>
-                                        {(product.documents ?? []).length === 0 ? (
-                                          <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                                        ) : (
-                                          (product.documents ?? []).map((document) => (
-                                            <div
-                                              key={document.id}
-                                              className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
-                                            >
-                                              <a
-                                                href={document.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                onClick={(event) => event.stopPropagation()}
-                                                className="truncate text-xs text-primary underline-offset-2 hover:underline"
-                                              >
-                                                {document.originalName}
-                                              </a>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-[11px] text-muted-foreground">
-                                                  {formatBytes(document.sizeBytes)}
-                                                </span>
-                                                <Button
-                                                  type="button"
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={async (event) => {
-                                                    event.stopPropagation();
-                                                    try {
-                                                      setEditDocumentUploadPendingById((current) => ({
-                                                        ...current,
-                                                        [product.id]: true,
-                                                      }));
-                                                      setEditDocumentUploadErrorById((current) => ({
-                                                        ...current,
-                                                        [product.id]: null,
-                                                      }));
-                                                      await deleteProductDocument(document.id);
-                                                      await utils.product.backendList.invalidate();
-                                                    } catch (error) {
-                                                      setEditDocumentUploadErrorById((current) => ({
-                                                        ...current,
-                                                        [product.id]:
-                                                          error instanceof Error
-                                                            ? error.message
-                                                            : "Dokument konnte nicht geloescht werden.",
-                                                      }));
-                                                    } finally {
-                                                      setEditDocumentUploadPendingById((current) => ({
-                                                        ...current,
-                                                        [product.id]: false,
-                                                      }));
-                                                    }
-                                                  }}
-                                                  disabled={editDocumentUploadPendingById[product.id]}
-                                                >
-                                                  Entfernen
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          ))
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
+                                    ))
+                                  )}
                                 </div>
                               </div>
-                            
+                                </div>
+                              </div>
+                            )}
                           </div>
 
-                        </div>
-
-                        <div className="mt-4 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setBookingProduct({ id: product.id, name: product.name });
-                              setBookingError(null);
-                            }}
-                            variant="secondary"
-                          >
-                            Einbuchen
-                          </Button>
                         </div>
 
                         <BookingHistory productId={product.id} />
@@ -1858,12 +2045,11 @@ export function ProductsAdminPanel() {
               className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
             />
           </label>
-          <label className="text-xs text-muted-foreground">
+                   <label className="text-xs text-muted-foreground">
             Preis
             <Input
-              type="number"
-              min={0}
-              step={0.01}
+              type="text"
+              inputMode="decimal"
               value={createForm.price}
               onChange={(event) => setCreateForm((current) => ({ ...current, price: event.target.value }))}
               className="mt-1 h-10 rounded-xl"
@@ -1925,7 +2111,7 @@ export function ProductsAdminPanel() {
               ))}
             </select>
           </label>
-          <label className="text-xs text-muted-foreground">
+          <label className="text-xs text-muted-foreground text-center">
             Basiseinheit
             <select
               value={createForm.baseUnit}
@@ -1935,7 +2121,7 @@ export function ProductsAdminPanel() {
                   baseUnit: event.target.value as ProductFormState["baseUnit"],
                 }))
               }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none text-center"
             >
               {baseUnits.map((baseUnit) => (
                 <option key={baseUnit.value} value={baseUnit.value}>
@@ -2054,7 +2240,7 @@ export function ProductsAdminPanel() {
                   name: createForm.name.trim(),
                   sku: createForm.sku.trim(),
                   description: createForm.description.trim() ? createForm.description.trim() : null,
-                  price: Number(createForm.price),
+                  price: parseMoneyInput(createForm.price),
                   minimumQuantity: Number(createForm.minimumQuantity),
                   startingQuantity: Number(createForm.startingQuantity),
                   unitKind: createForm.unitKind,
