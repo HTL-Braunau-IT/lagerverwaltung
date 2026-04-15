@@ -96,23 +96,37 @@ export function LoansAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
         </div>
-        <div>
-          <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as "ALL" | LoanStatus)}
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="ALL">Alle Status</option>
-              <option value="PENDING">Wartet</option>
-              <option value="APPROVED">Freigegeben</option>
-              <option value="REJECTED">Abgelehnt</option>
-              <option value="CLOSED">Erledigt</option>
-            </select>
-        </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
-          
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Status:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "ALL" as const, label: "Alle" },
+              { value: "PENDING" as const, label: "Wartet" },
+              { value: "APPROVED" as const, label: "Freigegeben" },
+              { value: "REJECTED" as const, label: "Abgelehnt" },
+              { value: "CLOSED" as const, label: "Erledigt" },
+            ] as const
+          ).map((opt) => {
+            const active = statusFilter === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatusFilter(opt.value)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

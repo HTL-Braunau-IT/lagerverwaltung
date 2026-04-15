@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 type CategoryForm = {
   name: string;
@@ -79,6 +80,16 @@ export function CategoriesAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Kategorien</h2>
         </div>
+        <button
+          type="button"
+          onClick={() => router.push("/backend/categories/new")}
+          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+        >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
+          Neue Kategorie
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

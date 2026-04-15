@@ -101,18 +101,36 @@ export function OrdersAdminPanel() {
         <div className="">
           <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
         </div>
-        <label className="block text-xs text-muted-foreground">
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as "ALL" | OrderStatus)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="ALL">Alle Status</option>
-            <option value="OPEN">Offen</option>
-            <option value="PREPARING">In Vorbereitung</option>
-            <option value="READY_FOR_PICKUP">Abholbereit</option>
-          </select>
-        </label>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Status:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "ALL" as const, label: "Alle" },
+              { value: "OPEN" as const, label: "Offen" },
+              { value: "PREPARING" as const, label: "In Vorbereitung" },
+              { value: "READY_FOR_PICKUP" as const, label: "Abholbereit" },
+            ] as const
+          ).map((opt) => {
+            const active = statusFilter === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setStatusFilter(opt.value)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

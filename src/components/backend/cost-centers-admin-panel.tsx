@@ -1,13 +1,14 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 type CostCenterForm = {
   name: string;
@@ -30,6 +31,7 @@ function toCostCenterCode(name: string): string {
 
 export function CostCentersAdminPanel() {
   const utils = api.useUtils();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
@@ -85,6 +87,16 @@ export function CostCentersAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Kostenstellen</h2>
         </div>
+        <button
+          type="button"
+          onClick={() => router.push("/backend/cost-centers/new")}
+          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+        >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
+          Neue Kostenstelle
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

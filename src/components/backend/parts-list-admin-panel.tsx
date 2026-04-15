@@ -2,13 +2,14 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 type PartListItemForm = {
   productId: string;
@@ -60,6 +61,7 @@ function formatBaseUnitLabel(baseUnit: string) {
 
 export function PartsListAdminPanel() {
   const utils = api.useUtils();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -424,6 +426,16 @@ export function PartsListAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Teilelisten</h2>
         </div>
+        <button
+          type="button"
+          onClick={() => router.push("/backend/parts-list/new")}
+          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+        >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
+          Neue Teileliste
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">

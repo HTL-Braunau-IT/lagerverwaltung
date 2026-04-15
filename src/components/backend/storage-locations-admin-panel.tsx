@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 type StorageLocationForm = {
   name: string;
@@ -65,6 +66,17 @@ export function StorageLocationsAdminPanel() {
       ),
     [roomsQuery.data],
   );
+
+  useEffect(() => {
+    if (locationRoomFilter) return;
+    const first = roomItems[0]?.id;
+    if (first) setLocationRoomFilter(first);
+  }, [locationRoomFilter, roomItems]);
+
+  const effectiveRoomId = useMemo(() => {
+    if (locationRoomFilter) return locationRoomFilter;
+    return roomItems[0]?.id ?? "";
+  }, [locationRoomFilter, roomItems]);
   const locationItems = useMemo(
     () =>
       [...(locationsQuery.data?.pages.flatMap((page) => page.items) ?? [])].sort((a, b) =>
@@ -100,20 +112,39 @@ export function StorageLocationsAdminPanel() {
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Lagerplätze</h2>
         </div>
-        <div>
-          <select
-            value={locationRoomFilter}
-            onChange={(event) => setLocationRoomFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-          >
-            <option value="">Alle Lagerräume</option>
-            {roomItems.map((room) => (
-              <option key={room.id} value={room.id}>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Filtern nach Raum:</p>
+        <div className="flex flex-wrap gap-2">
+          {roomItems.map((room) => {
+            const active = effectiveRoomId === room.id;
+            return (
+              <button
+                key={room.id}
+                type="button"
+                onClick={() => setLocationRoomFilter(room.id)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
                 {room.name}
-              </option>
-            ))}
-          </select>
+              </button>
+            );
+          })}
         </div>
+        <button
+          type="button"
+          onClick={() => router.push("/backend/storage/locations/new")}
+          className="ml-auto inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+        >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
+          Neuer Lagerplatz
+        </button>
       </div>
 
       

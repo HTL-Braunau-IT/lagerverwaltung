@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 
 type StorageLocationForm = {
   name: string;
@@ -122,7 +123,10 @@ export function NewStorageLocationPage() {
           {createLocationMutation.isPending ? "Erstellt..." : "Lagerplatz erstellen"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.push("/backend/storage/locations")}>
-          Abbrechen
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <ArrowLeftIcon />
+          </span>
+          Zurück
         </Button>
       </div>
     </Card>

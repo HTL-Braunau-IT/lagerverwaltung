@@ -1,14 +1,14 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -48,9 +48,6 @@ type ProductFormState = {
   imageAltText: string;
 };
 
-type ProductCreateFormState = ProductFormState & {
-  startingQuantity: string;
-};
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
@@ -244,26 +241,6 @@ function createInitialForm(product: {
   };
 }
 
-function createEmptyCreateForm(): ProductCreateFormState {
-  return {
-    name: "",
-    sku: "",
-    description: "",
-    price: formatMoneyDeAt(0),
-    minimumQuantity: "0",
-    startingQuantity: "0",
-    unitKind: "PIECE",
-    baseUnit: "PCS",
-    unitStep: "1",
-    isVisible: true,
-    categoryIds: [],
-    storageRoomId: "",
-    storageLocationId: "",
-    imageUrl: "",
-    imageAltText: "",
-  };
-}
-
 function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
 
@@ -372,6 +349,7 @@ function BookingHistory({ productId }: { productId: string }) {
 
 export function ProductsAdminPanel() {
   const utils = api.useUtils();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [categoryFilter, setCategoryFilter] = useState("");
@@ -382,10 +360,6 @@ export function ProductsAdminPanel() {
   const [hasUnsavedChangesById, setHasUnsavedChangesById] = useState<Record<string, boolean>>({});
   const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<ProductCreateFormState>(createEmptyCreateForm);
-  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
-  const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
   /** File chosen in the edit form; uploaded only when saving. */
@@ -398,7 +372,6 @@ export function ProductsAdminPanel() {
   const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
   const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
   const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
-  const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
   const [bookingSupplierInput, setBookingSupplierInput] = useState("");
@@ -428,15 +401,7 @@ export function ProductsAdminPanel() {
       await utils.product.backendList.invalidate();
     },
   });
-  const createMutation = api.product.backendCreate.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.product.backendList.invalidate(), utils.product.list.invalidate()]);
-      setCreateForm(createEmptyCreateForm());
-      setCreateImageFile(null);
-      setCreateImageUploadError(null);
-      setCreateOpen(false);
-    },
-  });
+  // Product creation moved to /backend/products/new.
   const deleteProductImageMutation = api.product.backendDeleteProductImage.useMutation({
     onSuccess: async () => {
       await utils.product.backendList.invalidate();
@@ -510,23 +475,7 @@ export function ProductsAdminPanel() {
       setStorageLocationFilter("");
     }
   }, [storageRoomFilter, storageLocationFilter, storageLocationsById]);
-  const createFormPrice = parseMoneyInput(createForm.price);
-  const canCreateProduct =
-    createForm.name.trim().length > 0 &&
-    createForm.sku.trim().length > 0 &&
-    Number.isFinite(createFormPrice) &&
-    createFormPrice >= 0 &&
-    Number.isFinite(Number(createForm.minimumQuantity)) &&
-    Number(createForm.minimumQuantity) >= 0 &&
-    Number.isFinite(Number(createForm.startingQuantity)) &&
-    Number(createForm.startingQuantity) >= 0 &&
-    Number.isFinite(Number(createForm.unitStep)) &&
-    Number(createForm.unitStep) > 0;
-  const selectedCreateRoomId =
-    createForm.storageRoomId || storageLocationsById.get(createForm.storageLocationId)?.storageRoomId || "";
-  const filteredStorageLocationsForCreate = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
-    selectedCreateRoomId ? storageLocation.storageRoomId === selectedCreateRoomId : true,
-  );
+  // (creation-only state removed)
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
     if (!file.type.startsWith("image/")) {
@@ -760,17 +709,16 @@ export function ProductsAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Produkte</h2>
         </div>
-        <Button
+        <button
           type="button"
-          onClick={() => {
-            setCreateForm(createEmptyCreateForm());
-            setCreateImageFile(null);
-            setCreateImageUploadError(null);
-            setCreateOpen(true);
-          }}
+          onClick={() => router.push("/backend/products/new")}
+          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
         >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
           Neues Produkt
-        </Button>
+        </button>
       </div>
 
       <div className="mb-4 grid gap-3 md:grid-cols-4">
@@ -2012,262 +1960,6 @@ export function ProductsAdminPanel() {
           </div>
         </>
       ) : null}
-
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Neues Produkt"
-        description="Alle Produktdaten eingeben, Startbestand setzen und optional ein Bild hochladen."
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={createForm.name}
-              onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            SKU
-            <Input
-              value={createForm.sku}
-              onChange={(event) => setCreateForm((current) => ({ ...current, sku: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Beschreibung
-            <textarea
-              value={createForm.description}
-              onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))}
-              rows={3}
-              className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            />
-          </label>
-                   <label className="text-xs text-muted-foreground">
-            Preis
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={createForm.price}
-              onChange={(event) => setCreateForm((current) => ({ ...current, price: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Mindestbestand
-            <Input
-              type="number"
-              min={0}
-              step={0.001}
-              value={createForm.minimumQuantity}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, minimumQuantity: event.target.value }))
-              }
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Startbestand
-            <Input
-              type="number"
-              min={0}
-              step={0.001}
-              value={createForm.startingQuantity}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, startingQuantity: event.target.value }))
-              }
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Schrittweite
-            <Input
-              type="number"
-              min={0.001}
-              step={0.001}
-              value={createForm.unitStep}
-              onChange={(event) => setCreateForm((current) => ({ ...current, unitStep: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Einheitstyp
-            <select
-              value={createForm.unitKind}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  unitKind: event.target.value as ProductFormState["unitKind"],
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              {unitKinds.map((unitKind) => (
-                <option key={unitKind.value} value={unitKind.value}>
-                  {unitKind.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground text-center">
-            Basiseinheit
-            <select
-              value={createForm.baseUnit}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  baseUnit: event.target.value as ProductFormState["baseUnit"],
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none text-center"
-            >
-              {baseUnits.map((baseUnit) => (
-                <option key={baseUnit.value} value={baseUnit.value}>
-                  {baseUnit.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground md:row-span-2">
-            Kategorien
-            <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-xl border border-input bg-background px-3 py-2">
-              {(categoriesQuery.data ?? []).map((category) => (
-                <label key={category.id} className="flex items-center gap-2 text-sm text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={createForm.categoryIds.includes(category.id)}
-                    onChange={(event) =>
-                      setCreateForm((current) => ({
-                        ...current,
-                        categoryIds: event.target.checked
-                          ? [...current.categoryIds, category.id]
-                          : current.categoryIds.filter((id) => id !== category.id),
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <span>{category.name}</span>
-                </label>
-              ))}
-              {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                <p className="text-xs text-muted-foreground">Keine Kategorien vorhanden.</p>
-              ) : null}
-            </div>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Raum
-            <select
-              value={selectedCreateRoomId}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  storageRoomId: event.target.value,
-                  storageLocationId: "",
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              <option value="">Kein Lagerraum</option>
-              {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-                <option key={storageRoom.id} value={storageRoom.id}>
-                  {storageRoom.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Platz
-            <select
-              value={createForm.storageLocationId}
-              onChange={(event) =>
-                setCreateForm((current) => {
-                  const selectedLocation = storageLocationsById.get(event.target.value);
-                  return {
-                    ...current,
-                    storageRoomId: selectedLocation?.storageRoomId ?? current.storageRoomId,
-                    storageLocationId: event.target.value,
-                  };
-                })
-              }
-              disabled={!selectedCreateRoomId}
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              <option value="">{selectedCreateRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}</option>
-              {filteredStorageLocationsForCreate.map((storageLocation) => (
-                <option key={storageLocation.id} value={storageLocation.id}>
-                  {storageLocation.code} - {storageLocation.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Bild hochladen (optional)
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setCreateImageFile(event.target.files?.[0] ?? null)}
-              className="mt-2 block w-full cursor-pointer rounded-xl border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
-            />
-            <span className="mt-1 block text-xs text-muted-foreground">
-              {createImageFile ? `Ausgewaehlt: ${createImageFile!.name}` : "Noch keine Datei ausgewaehlt."}
-            </span>
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Bild-Alt-Text (optional)
-            <Input
-              value={createForm.imageAltText}
-              onChange={(event) => setCreateForm((current) => ({ ...current, imageAltText: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-        </div>
-        {createImageUploadError ? <p className="mt-2 text-sm text-destructive">{createImageUploadError}</p> : null}
-        <div className="mt-4 flex items-center gap-2">
-          <Button
-            type="button"
-            disabled={!canCreateProduct || createMutation.isPending || createImageUploadPending}
-            onClick={async () => {
-              try {
-                setCreateImageUploadError(null);
-                let imageUrl = createForm.imageUrl.trim() || null;
-                if (createImageFile) {
-                  setCreateImageUploadPending(true);
-                  imageUrl = await uploadProductImage(createForm.sku.trim(), createImageFile);
-                }
-                createMutation.mutate({
-                  name: createForm.name.trim(),
-                  sku: createForm.sku.trim(),
-                  description: createForm.description.trim() ? createForm.description.trim() : null,
-                  price: parseMoneyInput(createForm.price),
-                  minimumQuantity: Number(createForm.minimumQuantity),
-                  startingQuantity: Number(createForm.startingQuantity),
-                  unitKind: createForm.unitKind,
-                  baseUnit: createForm.baseUnit,
-                  unitStep: Number(createForm.unitStep),
-                  isVisible: createForm.isVisible,
-                  categoryIds: createForm.categoryIds,
-                  storageLocationId: createForm.storageLocationId || null,
-                  imageUrl,
-                  imageAltText: createForm.imageAltText.trim() ? createForm.imageAltText.trim() : null,
-                });
-              } catch (error) {
-                setCreateImageUploadError(
-                  error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
-                );
-              } finally {
-                setCreateImageUploadPending(false);
-              }
-            }}
-          >
-            {createMutation.isPending || createImageUploadPending ? "Erstellt..." : "Produkt erstellen"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-            Abbrechen
-          </Button>
-        </div>
-      </Dialog>
 
       {bookingProduct ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
