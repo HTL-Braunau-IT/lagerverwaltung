@@ -91,28 +91,28 @@ export function LoansAdminPanel() {
   );
 
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
         </div>
+        <div>
+          <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as "ALL" | LoanStatus)}
+              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="ALL">Alle Status</option>
+              <option value="PENDING">Wartet</option>
+              <option value="APPROVED">Freigegeben</option>
+              <option value="REJECTED">Abgelehnt</option>
+              <option value="CLOSED">Erledigt</option>
+            </select>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
-        <label className="block text-xs text-muted-foreground">
-          Status
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as "ALL" | LoanStatus)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="ALL">Alle Status</option>
-            <option value="PENDING">Wartet</option>
-            <option value="APPROVED">Freigegeben</option>
-            <option value="REJECTED">Abgelehnt</option>
-            <option value="CLOSED">Erledigt</option>
-          </select>
-        </label>
+          
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -161,7 +161,7 @@ export function LoansAdminPanel() {
                       if (handoverMutation.isPending || returnMutation.isPending || remindMutation.isPending) return;
                       setExpandedLoanId((current) => (current === loan.id ? null : loan.id));
                     }}
-                    className="cursor-pointer"
+                    className="cursor-pointer bg-white"
                   >
                     <TableCell className="px-4 py-3">
                       <div className="font-medium">{loan.id.slice(0, 8)}</div>

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
@@ -34,7 +33,6 @@ type PartListDocument = {
   createdAt: Date;
 };
 
-type ProductSearchMode = "create" | "edit";
 const BASE_UNIT_LABELS: Record<string, string> = {
   PCS: "Stk",
   MM: "mm",
@@ -64,14 +62,10 @@ export function PartsListAdminPanel() {
   const utils = api.useUtils();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
-  const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<PartListForm>(createEmptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
-  const [createDocumentFile, setCreateDocumentFile] = useState<File | null>(null);
-  const [createUploadError, setCreateUploadError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [activeProductRowKey, setActiveProductRowKey] = useState<string | null>(null);
@@ -121,7 +115,6 @@ export function PartsListAdminPanel() {
     });
   };
 
-  const createMutation = api.partsList.backendCreate.useMutation();
   const updateMutation = api.partsList.backendUpdate.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -181,12 +174,7 @@ export function PartsListAdminPanel() {
     .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
     .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
 
-  const getProductRowKey = (mode: ProductSearchMode, index: number) => `${mode}-${index}`;
-  const activeProductMode: ProductSearchMode | null = activeProductRowKey?.startsWith("edit-")
-    ? "edit"
-    : activeProductRowKey?.startsWith("create-")
-      ? "create"
-      : null;
+  const getProductRowKey = (index: number) => `edit-${index}`;
 
   const updateDropdownPosition = (rowKey: string | null) => {
     if (!rowKey) {
@@ -198,10 +186,9 @@ export function PartsListAdminPanel() {
       setDropdownPosition(null);
       return;
     }
-    const modeFromKey: ProductSearchMode = rowKey.startsWith("edit-") ? "edit" : "create";
     const rect = input.getBoundingClientRect();
     setDropdownPosition({
-      top: modeFromKey === "edit" ? rect.top - 4 : rect.bottom + 4,
+      top: rect.top - 4,
       left: rect.left,
       width: rect.width,
     });
@@ -214,8 +201,8 @@ export function PartsListAdminPanel() {
     }));
   };
 
-  const handleProductInputFocus = (mode: ProductSearchMode, index: number, currentLabel: string) => {
-    const rowKey = getProductRowKey(mode, index);
+  const handleProductInputFocus = (index: number, currentLabel: string) => {
+    const rowKey = getProductRowKey(index);
     setActiveProductRowKey(rowKey);
     setProductSearchInput(currentLabel);
     setProductSearchTerm(currentLabel.trim());
@@ -223,8 +210,8 @@ export function PartsListAdminPanel() {
     updateDropdownPosition(rowKey);
   };
 
-  const handleProductInputChange = (mode: ProductSearchMode, index: number, value: string) => {
-    const rowKey = getProductRowKey(mode, index);
+  const handleProductInputChange = (index: number, value: string) => {
+    const rowKey = getProductRowKey(index);
     updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "" }));
     setActiveProductRowKey(rowKey);
     setProductSearchInput(value);
@@ -232,18 +219,14 @@ export function PartsListAdminPanel() {
     updateDropdownPosition(rowKey);
   };
 
-  const closeProductSuggestions = (mode: ProductSearchMode, index: number) => {
-    const rowKey = getProductRowKey(mode, index);
+  const closeProductSuggestions = (index: number) => {
+    const rowKey = getProductRowKey(index);
     window.setTimeout(() => {
       setActiveProductRowKey((currentKey) => (currentKey === rowKey ? null : currentKey));
     }, 120);
   };
 
-  const selectProductSuggestion = (
-    mode: ProductSearchMode,
-    index: number,
-    selected: { id: string; label: string; baseUnit: string },
-  ) => {
+  const selectProductSuggestion = (index: number, selected: { id: string; label: string; baseUnit: string }) => {
     const alreadySelectedInAnotherRow = form.items.some(
       (item, itemIndex) => itemIndex !== index && item.productId === selected.id,
     );
@@ -272,11 +255,10 @@ export function PartsListAdminPanel() {
       window.removeEventListener("resize", syncPosition);
       window.removeEventListener("scroll", syncPosition, true);
     };
-  }, [activeProductRowKey, activeProductMode]);
+  }, [activeProductRowKey]);
 
-  const renderProductCell = (mode: ProductSearchMode, item: PartListItemForm, index: number) => {
-    const rowKey = getProductRowKey(mode, index);
-    const isActive = activeProductRowKey === rowKey;
+  const renderProductCell = (item: PartListItemForm, index: number) => {
+    const rowKey = getProductRowKey(index);
 
     return (
       <div>
@@ -289,9 +271,9 @@ export function PartsListAdminPanel() {
             }
           }}
           value={item.productLabel}
-          onFocus={() => handleProductInputFocus(mode, index, item.productLabel)}
-          onBlur={() => closeProductSuggestions(mode, index)}
-          onChange={(event) => handleProductInputChange(mode, index, event.target.value)}
+          onFocus={() => handleProductInputFocus(index, item.productLabel)}
+          onBlur={() => closeProductSuggestions(index)}
+          onChange={(event) => handleProductInputChange(index, event.target.value)}
           onKeyDown={(event) => {
             if (!showSuggestions || filteredProductSuggestions.length === 0) {
               if (event.key === "Escape") {
@@ -318,7 +300,7 @@ export function PartsListAdminPanel() {
               event.preventDefault();
               const selected = filteredProductSuggestions[highlightedSuggestionIndex];
               if (selected) {
-                selectProductSuggestion(mode, index, selected);
+                selectProductSuggestion(index, selected);
               }
               return;
             }
@@ -437,23 +419,11 @@ export function PartsListAdminPanel() {
   };
 
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Teilelisten</h2>
         </div>
-        <Button
-          type="button"
-          onClick={() => {
-            setForm(createEmptyForm());
-            setCreateImageFile(null);
-            setCreateDocumentFile(null);
-            setCreateUploadError(null);
-            setCreateOpen(true);
-          }}
-        >
-          Neue Teileliste
-        </Button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -463,247 +433,309 @@ export function PartsListAdminPanel() {
               <TableHead>Name</TableHead>
               <TableHead>Beschreibung</TableHead>
               <TableHead>Produkte</TableHead>
-              <TableHead>Aktion</TableHead>
             </tr>
           </TableHeader>
           <TableBody>
             {listsQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={3} className="text-muted-foreground">
                   Teilelisten werden geladen...
                 </TableCell>
               </tr>
             ) : null}
             {listsQuery.error ? (
               <tr>
-                <TableCell colSpan={4} className="text-destructive">
+                <TableCell colSpan={3} className="text-destructive">
                   Teilelisten konnten nicht geladen werden.
                 </TableCell>
               </tr>
             ) : null}
             {!listsQuery.isLoading && !listsQuery.error && (listsQuery.data?.length ?? 0) === 0 ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={3} className="text-muted-foreground">
                   Keine Teilelisten gefunden.
                 </TableCell>
               </tr>
             ) : null}
-            {(listsQuery.data ?? []).map((list) => (
-              <TableRow
-                key={list.id}
-                onClick={() => void loadPartListForEdit(list.id)}
-                className="cursor-pointer"
-              >
-                <TableCell className="font-medium text-foreground">{list.name}</TableCell>
-                <TableCell className="text-muted-foreground">{list.description ?? "-"}</TableCell>
-                <TableCell className="text-muted-foreground">{list.items.length}</TableCell>
-                <TableCell>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
+            {(listsQuery.data ?? []).map((list) => {
+              const isExpanded = selectedId === list.id;
+
+              return (
+                <Fragment key={list.id}>
+                  <TableRow
+                    onClick={() => {
+                      if (selectedId === list.id) {
+                        setSelectedId(null);
+                        setForm(createEmptyForm());
+                        return;
+                      }
                       void loadPartListForEdit(list.id);
                     }}
+                    className={`cursor-pointer select-none bg-white hover:bg-muted/30 ${
+                      isExpanded ? "bg-muted/15" : ""
+                    }`}
                   >
-                    Bearbeiten
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <TableCell className="font-medium text-foreground">{list.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{list.description ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{list.items.length}</TableCell>
+                  </TableRow>
+
+                  {isExpanded ? (
+                    <tr className="bg-muted/30">
+                      <td colSpan={3} className="p-3">
+                        <div className="w-full p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <h3 className="text-base font-semibold text-foreground">Teileliste bearbeiten</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <label className="text-xs text-muted-foreground">
+                              Name
+                              <Input
+                                value={form.name}
+                                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                                className="mt-1 h-10 rounded-xl"
+                              />
+                            </label>
+                            <label className="text-xs text-muted-foreground">
+                              Beschreibung
+                              <Input
+                                value={form.description}
+                                onChange={(event) =>
+                                  setForm((prev) => ({ ...prev, description: event.target.value }))
+                                }
+                                className="mt-1 h-10 rounded-xl"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
+                            <table className="min-w-full table-fixed border-collapse text-left text-sm">
+                              <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
+                                <tr>
+                                  <th className="w-[50%] px-3 py-2">Produkt</th>
+                                  <th className="w-[16%] px-3 py-2">Menge</th>
+                                  <th className="w-[14%] px-3 py-2">Einheit</th>
+                                  <th className="w-[20%] px-3 py-2">Aktion</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {form.items.map((item, index) => (
+                                  <tr key={`${index}-${item.productId}`} className="border-t border-border">
+                                    <td className="px-3 py-2 align-top">{renderProductCell(item, index)}</td>
+                                    <td className="px-3 py-2 align-top">
+                                      <input
+                                        type="number"
+                                        min={0.001}
+                                        step={0.001}
+                                        value={item.quantity}
+                                        onChange={(event) =>
+                                          setForm((prev) => ({
+                                            ...prev,
+                                            items: prev.items.map((entry, entryIndex) =>
+                                              entryIndex === index
+                                                ? {
+                                                    ...entry,
+                                                    quantity: event.target.value,
+                                                  }
+                                                : entry,
+                                            ),
+                                          }))
+                                        }
+                                        className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+                                      />
+                                    </td>
+                                    <td className="px-3 py-2 align-top">
+                                      <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
+                                        {item.displayUnit || "-"}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2 align-top">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                          setForm((prev) => ({
+                                            ...prev,
+                                            items: prev.items.filter((_, entryIndex) => entryIndex !== index),
+                                          }))
+                                        }
+                                        disabled={form.items.length <= 1}
+                                      >
+                                        Zeile entfernen
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="mt-3">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  items: [
+                                    ...prev.items,
+                                    { productId: "", productLabel: "", quantity: "1", displayUnit: "-" },
+                                  ],
+                                }))
+                              }
+                            >
+                              Produktzeile hinzufuegen
+                            </Button>
+                          </div>
+
+                          <div className="mt-4">
+                            {hasDuplicateProducts ? (
+                              <p className="mb-2 text-xs text-destructive">
+                                Jedes Produkt darf nur einmal in der Teileliste vorkommen.
+                              </p>
+                            ) : null}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                onClick={() => {
+                                  if (!selectedId) return;
+                                  updateMutation.mutate({
+                                    id: selectedId,
+                                    name: form.name.trim(),
+                                    description: form.description.trim() ? form.description.trim() : null,
+                                    items: normalizedFormItems,
+                                  });
+                                }}
+                                disabled={!canSave || updateMutation.isPending}
+                              >
+                                {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
+                              </Button>
+
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
+                                disabled={deleteMutation.isPending}
+                              >
+                                {deleteMutation.isPending ? "Loescht..." : "Teileliste loeschen"}
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 rounded-xl border border-border bg-card p-4">
+                            <h4 className="text-sm font-semibold text-foreground">Dateien</h4>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Optionales Bild und Dokumente fuer diese Teileliste hochladen.
+                            </p>
+
+                            {uploadError ? <p className="mt-2 text-xs text-destructive">{uploadError}</p> : null}
+
+                            <div className="mt-3 grid gap-3 md:grid-cols-2">
+                              <div className="rounded-lg border border-border p-3">
+                                <p className="text-xs font-medium text-foreground">Bild</p>
+                                {currentImageUrl ? (
+                                  <img
+                                    src={currentImageUrl}
+                                    alt={`Vorschaubild ${form.name}`}
+                                    className="mt-2 h-24 w-24 rounded-md border border-border object-cover"
+                                  />
+                                ) : (
+                                  <p className="mt-2 text-xs text-muted-foreground">Noch kein Bild vorhanden.</p>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/webp,image/gif"
+                                  onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                                  className="mt-3 block w-full text-xs text-muted-foreground"
+                                />
+                                <div className="mt-2 flex gap-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => void uploadImageForSelected()}
+                                    disabled={!imageFile || uploadBusy}
+                                  >
+                                    Bild hochladen
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => selectedId && clearImageMutation.mutate({ id: selectedId })}
+                                    disabled={!currentImageUrl || clearImageMutation.isPending || uploadBusy}
+                                  >
+                                    Bild entfernen
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-border p-3">
+                                <p className="text-xs font-medium text-foreground">Dokumente</p>
+                                <input
+                                  type="file"
+                                  accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                  onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)}
+                                  className="mt-2 block w-full text-xs text-muted-foreground"
+                                />
+                                <div className="mt-2">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => void uploadDocumentForSelected()}
+                                    disabled={!documentFile || uploadBusy}
+                                  >
+                                    Dokument hochladen
+                                  </Button>
+                                </div>
+                                <div className="mt-3 space-y-1.5">
+                                  {currentDocuments.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                  ) : (
+                                    currentDocuments.map((document) => (
+                                      <div
+                                        key={document.id}
+                                        className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5"
+                                      >
+                                        <a
+                                          href={document.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                        >
+                                          {document.originalName}
+                                        </a>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] text-muted-foreground">
+                                            {formatBytes(document.sizeBytes)}
+                                          </span>
+                                          <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => void deleteDocumentForSelected(document.id)}
+                                            disabled={uploadBusy}
+                                          >
+                                            Entfernen
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
-
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Neue Teileliste"
-        description="Name, Beschreibung und Produkte eingeben, um eine neue Teileliste anzulegen."
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Beschreibung
-            <Input
-              value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-        </div>
-
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="min-w-full table-fixed border-collapse text-left text-sm">
-            <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="w-[50%] px-3 py-2">Produkt</th>
-                <th className="w-[16%] px-3 py-2">Menge</th>
-                <th className="w-[14%] px-3 py-2">Einheit</th>
-                <th className="w-[20%] px-3 py-2">Aktion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {form.items.map((item, index) => (
-                <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                  <td className="px-3 py-2 align-top">
-                    {renderProductCell("create", item, index)}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      type="number"
-                      min={0.001}
-                      step={0.001}
-                      value={item.quantity}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  quantity: event.target.value,
-                                }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                    />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
-                      {item.displayUnit || "-"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.filter((_, entryIndex) => entryIndex !== index),
-                        }))
-                      }
-                      disabled={form.items.length <= 1}
-                    >
-                      Zeile entfernen
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              setForm((prev) => ({
-                ...prev,
-                items: [...prev.items, { productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
-              }))
-            }
-          >
-            Produktzeile hinzufuegen
-          </Button>
-        </div>
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <h4 className="text-sm font-semibold text-foreground">Dateien (optional)</h4>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Bild und Dokument werden direkt nach dem Erstellen hochgeladen.
-          </p>
-          {createUploadError ? <p className="mt-2 text-xs text-destructive">{createUploadError}</p> : null}
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <label className="text-xs text-muted-foreground">
-              Bild
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(event) => setCreateImageFile(event.target.files?.[0] ?? null)}
-                className="mt-1 block w-full text-xs text-muted-foreground"
-              />
-            </label>
-            <label className="text-xs text-muted-foreground">
-              Dokument
-              <input
-                type="file"
-                accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                onChange={(event) => setCreateDocumentFile(event.target.files?.[0] ?? null)}
-                className="mt-1 block w-full text-xs text-muted-foreground"
-              />
-            </label>
-          </div>
-        </div>
-        <div className="mt-4">
-          {hasDuplicateProducts ? (
-            <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
-          ) : null}
-          <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={async () => {
-              setCreateUploadError(null);
-              let created: { id: string };
-              try {
-                created = await createMutation.mutateAsync({
-                  name: form.name.trim(),
-                  description: form.description.trim() ? form.description.trim() : null,
-                  items: normalizedFormItems,
-                });
-              } catch (error) {
-                setCreateUploadError(
-                  error instanceof Error ? error.message : "Teileliste konnte nicht erstellt werden.",
-                );
-                return;
-              }
-
-              let attachmentError: string | null = null;
-              setUploadBusy(true);
-              try {
-                if (createImageFile) {
-                  await uploadImageForPartList(created.id, createImageFile);
-                }
-                if (createDocumentFile) {
-                  await uploadDocumentForPartList(created.id, createDocumentFile);
-                }
-              } catch (error) {
-                attachmentError =
-                  error instanceof Error ? error.message : "Dateien konnten nicht vollstaendig hochgeladen werden.";
-              } finally {
-                setUploadBusy(false);
-              }
-
-              await utils.partsList.backendList.invalidate();
-              await loadPartListForEdit(created.id);
-              setCreateOpen(false);
-              setCreateImageFile(null);
-              setCreateDocumentFile(null);
-              if (attachmentError) {
-                setUploadError(attachmentError);
-                setCreateUploadError(attachmentError);
-              }
-            }}
-            disabled={!canSave || createMutation.isPending}
-          >
-            {createMutation.isPending ? "Erstellt..." : "Teileliste erstellen"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-            Abbrechen
-          </Button>
-          </div>
-        </div>
-      </Dialog>
 
       {showSuggestions
         ? createPortal(
@@ -712,9 +744,7 @@ export function PartsListAdminPanel() {
               style={{
                 left: dropdownPosition.left,
                 width: dropdownPosition.width,
-                top: activeProductMode === "edit" ? undefined : dropdownPosition.top,
-                bottom:
-                  activeProductMode === "edit" ? Math.max(window.innerHeight - dropdownPosition.top, 0) : undefined,
+                bottom: Math.max(window.innerHeight - dropdownPosition.top, 0),
               }}
             >
               {productsQuery.isLoading ? (
@@ -736,8 +766,8 @@ export function PartsListAdminPanel() {
                       if (!activeProductRowKey) return;
                       const [mode, indexText] = activeProductRowKey.split("-");
                       const index = Number(indexText);
-                      if ((mode === "create" || mode === "edit") && Number.isInteger(index)) {
-                        selectProductSuggestion(mode, index, suggestion);
+                      if (mode === "edit" && Number.isInteger(index)) {
+                        selectProductSuggestion(index, suggestion);
                       }
                     }}
                   >
@@ -750,247 +780,6 @@ export function PartsListAdminPanel() {
           )
         : null}
 
-      {isEditing ? (
-        <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="text-base font-semibold text-foreground">Teileliste bearbeiten</h3>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setSelectedId(null);
-                setForm(createEmptyForm());
-              }}
-            >
-              Auswahl aufheben
-            </Button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Beschreibung
-            <Input
-              value={form.description}
-              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-        </div>
-
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
-          <table className="min-w-full table-fixed border-collapse text-left text-sm">
-            <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="w-[50%] px-3 py-2">Produkt</th>
-                <th className="w-[16%] px-3 py-2">Menge</th>
-                <th className="w-[14%] px-3 py-2">Einheit</th>
-                <th className="w-[20%] px-3 py-2">Aktion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {form.items.map((item, index) => (
-                <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                  <td className="px-3 py-2 align-top">
-                    {renderProductCell("edit", item, index)}
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      type="number"
-                      min={0.001}
-                      step={0.001}
-                      value={item.quantity}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  quantity: event.target.value,
-                                }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                    />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
-                      {item.displayUnit || "-"}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.filter((_, entryIndex) => entryIndex !== index),
-                        }))
-                      }
-                      disabled={form.items.length <= 1}
-                    >
-                      Zeile entfernen
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              setForm((prev) => ({
-                ...prev,
-                items: [...prev.items, { productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
-              }))
-            }
-          >
-            Produktzeile hinzufuegen
-          </Button>
-        </div>
-
-        <div className="mt-4">
-          {hasDuplicateProducts ? (
-            <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            onClick={() => {
-              if (!selectedId) return;
-              updateMutation.mutate({
-                id: selectedId,
-                name: form.name.trim(),
-                description: form.description.trim() ? form.description.trim() : null,
-                items: normalizedFormItems,
-              });
-            }}
-            disabled={!canSave || updateMutation.isPending}
-          >
-            {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? "Loescht..." : "Teileliste loeschen"}
-          </Button>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <h4 className="text-sm font-semibold text-foreground">Dateien</h4>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Optionales Bild und Dokumente fuer diese Teileliste hochladen.
-          </p>
-
-          {uploadError ? <p className="mt-2 text-xs text-destructive">{uploadError}</p> : null}
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-xs font-medium text-foreground">Bild</p>
-              {currentImageUrl ? (
-                <img
-                  src={currentImageUrl}
-                  alt={`Vorschaubild ${form.name}`}
-                  className="mt-2 h-24 w-24 rounded-md border border-border object-cover"
-                />
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">Noch kein Bild vorhanden.</p>
-              )}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-                className="mt-3 block w-full text-xs text-muted-foreground"
-              />
-              <div className="mt-2 flex gap-2">
-                <Button type="button" size="sm" onClick={() => void uploadImageForSelected()} disabled={!imageFile || uploadBusy}>
-                  Bild hochladen
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => selectedId && clearImageMutation.mutate({ id: selectedId })}
-                  disabled={!currentImageUrl || clearImageMutation.isPending || uploadBusy}
-                >
-                  Bild entfernen
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-xs font-medium text-foreground">Dokumente</p>
-              <input
-                type="file"
-                accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)}
-                className="mt-2 block w-full text-xs text-muted-foreground"
-              />
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => void uploadDocumentForSelected()}
-                  disabled={!documentFile || uploadBusy}
-                >
-                  Dokument hochladen
-                </Button>
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {currentDocuments.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                ) : (
-                  currentDocuments.map((document) => (
-                    <div key={document.id} className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
-                      <a
-                        href={document.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="truncate text-xs text-primary underline-offset-2 hover:underline"
-                      >
-                        {document.originalName}
-                      </a>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-muted-foreground">{formatBytes(document.sizeBytes)}</span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void deleteDocumentForSelected(document.id)}
-                          disabled={uploadBusy}
-                        >
-                          Entfernen
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      ) : null}
     </Card>
   );
 }

@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 
@@ -63,25 +62,10 @@ export function LendableItemsAdminPanel() {
   const utils = api.useUtils();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm());
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-  const [imageUploadPending, setImageUploadPending] = useState(false);
-  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, FormState>>({});
   const [inlineImageUploadError, setInlineImageUploadError] = useState<string | null>(null);
   const [inlineImageUploadPendingItemId, setInlineImageUploadPendingItemId] = useState<string | null>(null);
-
-  const closeDialog = () => {
-    setOpen(false);
-    setForm(emptyForm());
-    setCreateImageFile(null);
-    setImageUploadError(null);
-    setImageUploadPending(false);
-    setInlineImageUploadError(null);
-    setInlineImageUploadPendingItemId(null);
-  };
 
   const roomsQuery = api.storageRoom.list.useQuery();
   const itemsQuery = api.lendableItem.backendList.useQuery({
@@ -107,64 +91,6 @@ export function LendableItemsAdminPanel() {
     [itemsQuery.data],
   );
 
-  const onSubmit = async () => {
-    const payload = {
-      name: form.name.trim(),
-      description: form.description.trim() || null,
-      quantityOnHand: Math.max(0, Math.floor(Number(form.quantityOnHand) || 0)),
-      storageRoomId: form.storageRoomId,
-      isVisible: form.isVisible,
-      imageUrl: form.imageUrl.trim() || null,
-      imageAltText: form.imageAltText.trim() || null,
-    };
-
-    if (!payload.name || !payload.storageRoomId) return;
-
-    try {
-      setImageUploadError(null);
-      setImageUploadPending(Boolean(createImageFile));
-
-      if (form.id) {
-        // Update: Bild-Upload passiert im UI (onChange). Hier nur speichern.
-        await updateMutation.mutateAsync({ id: form.id, ...payload });
-        await utils.lendableItem.backendList.invalidate();
-        setOpen(false);
-        setForm(emptyForm());
-        setCreateImageFile(null);
-        setImageUploadError(null);
-        return;
-      }
-
-      // Create: Item-ID ist erst nach dem Erstellen bekannt.
-      const createPayload = {
-        ...payload,
-        imageUrl: createImageFile ? null : payload.imageUrl,
-        imageAltText: createImageFile ? payload.imageAltText : payload.imageAltText,
-      };
-
-      const created = await createMutation.mutateAsync(createPayload);
-
-      if (createImageFile) {
-        const uploadedUrl = await uploadImage(created.id, createImageFile);
-        await updateMutation.mutateAsync({
-          id: created.id,
-          ...payload,
-          imageUrl: uploadedUrl,
-        });
-      }
-
-      await utils.lendableItem.backendList.invalidate();
-      setOpen(false);
-      setForm(emptyForm());
-      setCreateImageFile(null);
-      setImageUploadError(null);
-    } catch (error) {
-      setImageUploadError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
-    } finally {
-      setImageUploadPending(false);
-    }
-  };
-
   const uploadImage = async (itemId: string, file: File) => {
     if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
     if (file.size > MAX_UPLOAD_BYTES) throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
@@ -178,22 +104,11 @@ export function LendableItemsAdminPanel() {
   };
 
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">Ausleihartikel</h2>
+          <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
         </div>
-        <Button
-          onClick={() => {
-            setForm(emptyForm());
-            setCreateImageFile(null);
-            setImageUploadError(null);
-            setImageUploadPending(false);
-            setOpen(true);
-          }}
-        >
-          Neuer Ausleihartikel
-        </Button>
       </div>
 
       <div className="overflow-x-auto overflow-y-visible rounded-xl border border-border">
@@ -222,7 +137,7 @@ export function LendableItemsAdminPanel() {
                         [item.id]: current[item.id] ?? createFormFromItem(item),
                       }));
                     }}
-                    className="cursor-pointer"
+                    className="cursor-pointer bg-white"
                   >
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell>{item.storageRoom.name}</TableCell>
@@ -437,137 +352,6 @@ export function LendableItemsAdminPanel() {
           </TableBody>
         </Table>
       </div>
-
-      <Dialog
-        open={open}
-        onClose={closeDialog}
-        title={form.id ? "Ausleihartikel bearbeiten" : "Ausleihartikel erstellen"}
-        description="Name, Lagerraum, Bestand und Bild verwalten."
-      >
-        <div className="grid gap-3">
-          <Input
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Name"
-          />
-          <Input
-            value={form.description}
-            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-            placeholder="Beschreibung"
-          />
-          <Input
-            type="number"
-            min="0"
-            step="1"
-            value={form.quantityOnHand}
-            onChange={(e) => setForm((prev) => ({ ...prev, quantityOnHand: e.target.value }))}
-            placeholder="Bestand"
-          />
-          <select
-            value={form.storageRoomId}
-            onChange={(e) => setForm((prev) => ({ ...prev, storageRoomId: e.target.value }))}
-            className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
-          >
-            <option value="">Lagerraum waehlen</option>
-            {(roomsQuery.data ?? []).map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.name}
-              </option>
-            ))}
-          </select>
-          <label className="flex items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={form.isVisible}
-              onChange={(e) => setForm((prev) => ({ ...prev, isVisible: e.target.checked }))}
-            />
-            Ausleihbar
-          </label>
-
-          {form.id ? (
-            <div>
-              <p className="mb-1 text-xs text-muted-foreground">Bild hochladen (optional)</p>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={async (event) => {
-                  const inputEl = event.currentTarget;
-                  const file = inputEl.files?.[0];
-                  if (!file || !form.id) return;
-
-                  try {
-                    setImageUploadError(null);
-                    setImageUploadPending(true);
-                    const url = await uploadImage(form.id, file);
-                    setForm((prev) => ({ ...prev, imageUrl: url }));
-                  } catch (error) {
-                    setImageUploadError(error instanceof Error ? error.message : "Upload fehlgeschlagen.");
-                  } finally {
-                    setImageUploadPending(false);
-                    inputEl.value = "";
-                  }
-                }}
-              />
-              {imageUploadPending ? <p className="mt-1 text-xs text-muted-foreground">Bild wird hochgeladen...</p> : null}
-            </div>
-          ) : (
-            <div>
-              <p className="mb-1 text-xs text-muted-foreground">Bild hochladen (optional)</p>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  setCreateImageFile(event.currentTarget.files?.[0] ?? null);
-                  setImageUploadError(null);
-                }}
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {createImageFile ? `Ausgewaehlt: ${createImageFile.name}` : "Noch keine Datei ausgewaehlt."}
-              </span>
-            </div>
-          )}
-
-          <Input
-            value={form.imageUrl}
-            onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-            placeholder="Bild-URL"
-          />
-          <Input
-            value={form.imageAltText}
-            onChange={(e) => setForm((prev) => ({ ...prev, imageAltText: e.target.value }))}
-            placeholder="Bild-Alt-Text"
-          />
-
-          {imageUploadError ? <p className="text-sm text-destructive">{imageUploadError}</p> : null}
-
-          {form.imageUrl ? (
-            <div className="md:col-span-2">
-              <p className="mb-1 text-xs text-muted-foreground">Bildvorschau</p>
-              <img
-                src={form.imageUrl}
-                alt={form.imageAltText || `${form.name} Bild`}
-                className="h-32 w-32 rounded-lg border border-border object-cover"
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src = "/pictures/placeholder.jpg";
-                }}
-              />
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={closeDialog}>
-              Abbrechen
-            </Button>
-            <Button
-              onClick={onSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending || imageUploadPending}
-            >
-              {form.id ? "Speichern" : "Erstellen"}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </Card>
   );
 }
