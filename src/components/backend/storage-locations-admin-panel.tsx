@@ -115,7 +115,7 @@ export function StorageLocationsAdminPanel() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <p className="text-sm text-muted-foreground">Filtern nach Raum:</p>
+        <p className="text-sm text-muted-foreground">Raum:</p>
         <div className="flex flex-wrap gap-2">
           {roomItems.map((room) => {
             const active = effectiveRoomId === room.id;

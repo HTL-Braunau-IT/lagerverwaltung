@@ -12,27 +12,9 @@ import {
   UsersIcon,
   WarehouseIcon,
   ListIcon,
+  AdministrationIcon,
 } from "~/components/layout/icon-renders";
 import { api } from "~/trpc/react";
-
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-        open ? "rotate-180" : ""
-      }`}
-      fill="currentColor"
-    >
-      <path
-        fillRule="evenodd"
-        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
 
 export function BackendSidebarNav() {
   const pathname = usePathname();
@@ -66,7 +48,10 @@ export function BackendSidebarNav() {
       },
       {
         heading: "System",
-        items: [{ href: "/backend/users", label: "Benutzer", icon: <UsersIcon className="h-4 w-4" /> }],
+        items: [          
+          { href: "/backend/users", label: "Benutzer", icon: <UsersIcon className="h-4 w-4" /> },
+          { href: "/backend/info", label: "Info", icon: <AdministrationIcon /> },
+        ],
       },
     ] as const;
   }, []);
@@ -77,7 +62,7 @@ export function BackendSidebarNav() {
   };
 
   return (
-    <aside className="rounded-md border border-border bg-card p-3 shadow-sm">
+    <aside className="rounded-md bg-card p-3 ">
       <p className="px-3 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground text-center">Administration</p>
       <nav className="mt-1 space-y-5">
         {navSections.map((section) => (
@@ -123,7 +108,7 @@ export function BackendSidebarNav() {
               })}
             </div>
           </div>
-        ))}
+        ))}        
       </nav>
     </aside>
   );
