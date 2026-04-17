@@ -6,8 +6,18 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Card } from "~/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableExpandableRow,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
@@ -116,26 +126,21 @@ export function OrdersAdminPanel() {
           ).map((opt) => {
             const active = statusFilter === opt.value;
             return (
-              <button
+              <FilterPillButton
                 key={opt.value}
-                type="button"
                 onClick={() => setStatusFilter(opt.value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                active={active}
               >
                 {opt.label}
-              </button>
+              </FilterPillButton>
             );
           })}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <tr>
               <TableHead>Bestellnummer</TableHead>
               <TableHead>Lehrer</TableHead>
@@ -179,9 +184,8 @@ export function OrdersAdminPanel() {
                 <Fragment key={order.id}>
                   <TableRow
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
-                    className={`cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : "bg-white"} select-none`}
                   >
-                    <TableCell className="font-medium text-foreground">
+                    <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <span>{order.orderNumber}</span>
                         {order.workerNote ? (
@@ -191,18 +195,18 @@ export function OrdersAdminPanel() {
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell >
                       <p>{userLabel(order.user)}</p>
                       {order.sourceRequest?.student ? (
                         <p className="text-[9px] text-slate-500 italic">
-                          Schueler: {userLabel(order.sourceRequest.student)}
+                          Schüler: {userLabel(order.sourceRequest.student)}
                         </p>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell>
                       {order.costCenter.code} - {order.costCenter.name}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(order.createdAt)}</TableCell>
+                    <TableCell>{formatDate(order.createdAt)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -238,122 +242,115 @@ export function OrdersAdminPanel() {
                     </TableCell>
                   </TableRow>
 
-                  {isExpanded ? (
-                    <tr className="bg-muted/30">
-                      <td colSpan={6} className="p-3">
-                        <div className={`w-full rounded-lg border-2 bg-muted/30 p-4 ${status.borderClassName}`.trim()}>
-                        {expandedOrderQuery.isLoading ? (
-                          <p className="text-sm text-muted-foreground">Details werden geladen...</p>
-                        ) : null}
-                        {expandedOrderQuery.error ? (
-                          <p className="text-sm text-rose-700">Details konnten nicht geladen werden.</p>
-                        ) : null}
-                        {!expandedOrderQuery.isLoading &&
-                        !expandedOrderQuery.error &&
-                        expandedOrderQuery.data &&
-                        expandedOrderQuery.data.id === order.id ? (
-                          <div className="space-y-4">
-                            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Bestellnummer</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {expandedOrderQuery.data.orderNumber}
-                                </p>
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Lehrer</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {userLabel(expandedOrderQuery.data.user)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
-                                </p>
-                                {expandedOrderQuery.data.sourceRequest?.student ? (
-                                  <p className="mt-2 text-[9px] text-muted-foreground italic">
-                                    Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Kostenstelle</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                {order.costCenter.code} - {order.costCenter.name}
-                                </p>
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Erstellt</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {formatDate(expandedOrderQuery.data.createdAt)}
-                                </p>
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Zuletzt aktualisiert</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {formatDate(expandedOrderQuery.data.updatedAt)}
-                                </p>
-                              </div>
-                            </div>
-
-                            {expandedOrderQuery.data.workerNote ? (
-                              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
-                                  Hinweis fuer Lager
-                                </p>
-                                <p className="mt-1 whitespace-pre-wrap text-sm text-orange-900">
-                                  {expandedOrderQuery.data.workerNote}
-                                </p>
-                              </div>
+                  <TableExpandableRow
+                    open={isExpanded}
+                    colSpan={6}
+                    rowClassName="bg-muted/30"
+                    cellClassName="p-3"
+                    containerClassName=""
+                    contentClassName={`${status.borderClassName}`.trim()}
+                  >
+                    {expandedOrderQuery.isLoading ? (
+                      <p className="text-sm text-muted-foreground">Details werden geladen...</p>
+                    ) : null}
+                    {expandedOrderQuery.error ? (
+                      <p className="text-sm text-rose-700">Details konnten nicht geladen werden.</p>
+                    ) : null}
+                    {!expandedOrderQuery.isLoading &&
+                    !expandedOrderQuery.error &&
+                    expandedOrderQuery.data &&
+                    expandedOrderQuery.data.id === order.id ? (
+                      <div className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+                          <DetailCard>
+                            <DetailText variant="kicker">Bestellnummer</DetailText>
+                            <DetailText variant="value">{expandedOrderQuery.data.orderNumber}</DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Lehrer</DetailText>
+                            <DetailText variant="value">{userLabel(expandedOrderQuery.data.user)}</DetailText>
+                            <DetailText variant="subvalue">
+                              {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
+                            </DetailText>
+                            {expandedOrderQuery.data.sourceRequest?.student ? (
+                              <p className="mt-2 text-[9px] text-muted-foreground italic">
+                                Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
+                              </p>
                             ) : null}
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Kostenstelle</DetailText>
+                            <DetailText variant="value">
+                              {order.costCenter.code} - {order.costCenter.name}
+                            </DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Erstellt</DetailText>
+                            <DetailText variant="value">{formatDate(expandedOrderQuery.data.createdAt)}</DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Zuletzt aktualisiert</DetailText>
+                            <DetailText variant="value">{formatDate(expandedOrderQuery.data.updatedAt)}</DetailText>
+                          </DetailCard>
+                        </div>
 
-                            <div className="rounded-xl border border-border bg-card p-3">
-                              <p className="text-sm font-semibold text-foreground">Positionen</p>
-                              <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-                                <table className="min-w-full border-collapse text-left text-xs">
-                                  <thead className="bg-muted uppercase tracking-wide text-muted-foreground">
-                                    <tr>
-                                      <th className="px-2.5 py-2">Bild</th>
-                                      <th className="px-2.5 py-2">Produkt</th>
-                                      <th className="px-2.5 py-2">SKU</th>
-                                      <th className="px-2.5 py-2">Lagerplatz</th>
-                                      <th className="px-2.5 py-2">Menge</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="bg-white">
-                                    {expandedOrderQuery.data.items.map((item) => (
-                                      <tr key={item.id} className="border-t border-border bg-white">
-                                        <td className="px-2.5 py-2">
-                                          <img
-                                            src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
-                                            alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
-                                            className="h-10 w-10 rounded border border-border object-cover"
-                                            onError={(event) => {
-                                              event.currentTarget.onerror = null;
-                                              event.currentTarget.src = "/pictures/placeholder.jpg";
-                                            }}
-                                          />
-                                        </td>
-                                        <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">
-                                          {item.product.storageLocation
-                                            ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
-                                            : "-"}
-                                        </td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">
-                                          {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
+                        {expandedOrderQuery.data.workerNote ? (
+                          <div className="rounded-xl border border-orange-300 bg-orange-50 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
+                              Hinweis fuer Lager
+                            </p>
+                            <p className="mt-1 whitespace-pre-wrap text-sm text-orange-900">
+                              {expandedOrderQuery.data.workerNote}
+                            </p>
                           </div>
                         ) : null}
+
+                        <div className="rounded-md border border-border bg-card/40 p-3">
+                          <p className="text-sm font-semibold text-foreground">Positionen</p>
+                          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+                            <table className="min-w-full border-collapse text-left text-xs">
+                              <thead className="bg-muted uppercase tracking-wide text-muted-foreground">
+                                <tr>
+                                  <th className="px-2.5 py-2">Bild</th>
+                                  <th className="px-2.5 py-2">Produkt</th>
+                                  <th className="px-2.5 py-2">SKU</th>
+                                  <th className="px-2.5 py-2">Lagerplatz</th>
+                                  <th className="px-2.5 py-2">Menge</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white">
+                                {expandedOrderQuery.data.items.map((item) => (
+                                  <tr key={item.id} className="border-t border-border bg-white">
+                                    <td className="px-2.5 py-2">
+                                      <img
+                                        src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
+                                        alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
+                                        className="h-10 w-10 rounded border border-border object-cover"
+                                        onError={(event) => {
+                                          event.currentTarget.onerror = null;
+                                          event.currentTarget.src = "/pictures/placeholder.jpg";
+                                        }}
+                                      />
+                                    </td>
+                                    <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
+                                    <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
+                                    <td className="px-2.5 py-2 text-muted-foreground">
+                                      {item.product.storageLocation
+                                        ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                        : "-"}
+                                    </td>
+                                    <td className="px-2.5 py-2 text-muted-foreground">
+                                      {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                      </div>
+                    ) : null}
+                  </TableExpandableRow>
                 </Fragment>
               );
             })}

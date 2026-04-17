@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   LendingIcon,
   LoansIcon,
@@ -43,14 +43,14 @@ export function BackendSidebarNav() {
           { href: "/backend/parts-list", label: "Teilelisten", icon: <ListIcon className="h-4 w-4" /> },
           { href: "/backend/cost-centers", label: "Kostenstellen", icon: <TagIcon className="h-4 w-4" /> },
           { href: "/backend/storage/locations", label: "Lager", icon: <WarehouseIcon className="h-4 w-4" /> },
-          { href: "/backend/lendable-items", label: "Leihgeräte", icon: <LendingIcon /> },
+          { href: "/backend/lendable-items", label: "Leihgeräte", icon: <LendingIcon className="h-4 w-4" /> },
         ],
       },
       {
         heading: "System",
         items: [          
           { href: "/backend/users", label: "Benutzer", icon: <UsersIcon className="h-4 w-4" /> },
-          { href: "/backend/info", label: "Info", icon: <AdministrationIcon /> },
+          { href: "/backend/info", label: "Info", icon: <AdministrationIcon className="h-4 w-4" /> },
         ],
       },
     ] as const;
@@ -61,9 +61,50 @@ export function BackendSidebarNav() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
+  const hoverIntentTimerRef = useRef<number | null>(null);
+  const hoverClearTimerRef = useRef<number | null>(null);
+
+  const onItemPointerEnter = (href: string, pointerType: string) => {
+    if (pointerType !== "mouse") return;
+
+    if (hoverClearTimerRef.current) {
+      window.clearTimeout(hoverClearTimerRef.current);
+      hoverClearTimerRef.current = null;
+    }
+    if (hoverIntentTimerRef.current) {
+      window.clearTimeout(hoverIntentTimerRef.current);
+      hoverIntentTimerRef.current = null;
+    }
+
+    // Hover intent: avoid flicker on drive-by passes.
+    hoverIntentTimerRef.current = window.setTimeout(() => {
+      setHoveredHref(href);
+      hoverIntentTimerRef.current = null;
+    }, 0);
+  };
+
+  const onItemPointerLeave = (_href: string, pointerType: string) => {
+    if (pointerType !== "mouse") return;
+
+    if (hoverIntentTimerRef.current) {
+      window.clearTimeout(hoverIntentTimerRef.current);
+      hoverIntentTimerRef.current = null;
+    }
+    if (hoverClearTimerRef.current) {
+      window.clearTimeout(hoverClearTimerRef.current);
+      hoverClearTimerRef.current = null;
+    }
+
+    // Lazy hover: keep highlight a touch longer.
+    hoverClearTimerRef.current = window.setTimeout(() => {
+      setHoveredHref(null);
+      hoverClearTimerRef.current = null;
+    }, 60);
+  };
+
   return (
-    <aside className="rounded-md bg-card p-3 ">
-      <p className="px-3 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground text-center">Administration</p>
+    <aside className="glass p-3 mt-5">
       <nav className="mt-1 space-y-5">
         {navSections.map((section) => (
           <div key={section.heading} className="space-y-2">
@@ -73,12 +114,20 @@ export function BackendSidebarNav() {
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive = isActiveHref(item.href);
+                const isHovered = hoveredHref === item.href;
+
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`block w-full rounded-sm px-3 py-2 text-left text-sm font-medium transition ${
-                      isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"
+                    onPointerEnter={(e) => onItemPointerEnter(item.href, e.pointerType)}
+                    onPointerLeave={(e) => onItemPointerLeave(item.href, e.pointerType)}
+                    className={`block w-full rounded-sm px-3 py-2 text-left text-sm font-medium transition-[background-color,color,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : isHovered
+                          ? "bg-card/40 text-foreground"
+                          : "text-foreground/80 hover:bg-primary/10 hover:text-foreground"
                     }`}
                   >
                     <span className="flex items-center justify-between gap-2">

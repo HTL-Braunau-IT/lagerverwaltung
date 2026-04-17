@@ -6,5 +6,5 @@ export type SearchFieldProps = React.ComponentProps<typeof Input>;
 
 /** Shared header search styling for shop, Ausleihe, and other searchable areas. */
 export function SearchField({ className = "", ...props }: SearchFieldProps) {
-  return <Input className={`h-10 rounded-xl ${className}`.trim()} {...props} />;
+  return <Input className={`h-10 ${className}`.trim()} {...props} />;
 }

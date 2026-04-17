@@ -96,9 +96,9 @@ export default async function RootLayout({
           <TRPCReactProvider session={session}>
             <header
               data-app-shell-header="true"
-              className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur"
+              className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-hidden glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
             >
-              <div className="mx-auto grid w-full max-w-[112rem] grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 px-3 py-4 sm:px-4 lg:px-5">
+              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-2 px-6">
                 <Link
                   href="/"
                   prefetch={false}

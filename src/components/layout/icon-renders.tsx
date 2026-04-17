@@ -1,4 +1,4 @@
-export function OrdersIcon({ className = "h-8 w-8" }: { className?: string } = {}) {
+export function OrdersIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
@@ -13,9 +13,9 @@ export function OrdersIcon({ className = "h-8 w-8" }: { className?: string } = {
   );
 }
 
-export function LendingIcon() {
+export function LendingIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
         d="M 4 4 h 8 v 16 H 4 z M 12 12 h 7 M 16 9 l 5 3 l -5 3"
         fill="none"
@@ -28,9 +28,9 @@ export function LendingIcon() {
   );
 }
 
-export function ApprovalsIcon() {
+export function ApprovalsIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
         d="M9 11.5 11 14l4-5M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6l7-3Z"
         fill="none"
@@ -43,9 +43,9 @@ export function ApprovalsIcon() {
   );
 }
 
-export function AdministrationIcon() {
+export function AdministrationIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
         d="M4 6h16M4 12h16M4 18h16"
         fill="none"
@@ -60,9 +60,9 @@ export function AdministrationIcon() {
   );
 }
 
-export function LogoutIcon() {
+export function LogoutIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
         d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 8l4 4-4 4M18 12H9"
         fill="none"
@@ -75,9 +75,9 @@ export function LogoutIcon() {
   );
 }
 
-export function CartIcon() {
+export function CartIcon({ className = "h-7 w-7" }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <path
         d="M6.5 6h14l-1.4 7.2a2 2 0 0 1-2 1.6H9.1a2 2 0 0 1-2-1.6L5.7 3.8A1.5 1.5 0 0 0 4.2 2.6H3.5"
         fill="none"
