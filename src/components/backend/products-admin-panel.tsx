@@ -147,7 +147,7 @@ function NumberStepper({
 
   return (
     <div
-      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-lg border border-slate-300 bg-white"
+      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-md border border-slate-300 bg-white"
       onClick={(event) => event.stopPropagation()}
     >
       <Button

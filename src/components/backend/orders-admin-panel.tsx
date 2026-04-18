@@ -9,39 +9,40 @@ import { Button } from "~/components/ui/button";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Card } from "~/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableExpandableRow,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
 const statusConfig: Record<
   OrderStatus,
-  { label: string; pillClassName: string; borderClassName: string; nextStatus: OrderStatus | null }
+  {
+    label: string;
+    pillClassName: string;
+    borderClassName: string;
+    nextStatus: OrderStatus | null;
+    advanceActionLabel: string | null;
+  }
 > = {
   OPEN: {
     label: "Offen",
     pillClassName: "",
-    borderClassName: "border-destructive/60",
+    borderClassName: "",
     nextStatus: "PREPARING",
+    advanceActionLabel: "Kommissionierung starten",
   },
   PREPARING: {
     label: "In Vorbereitung",
     pillClassName: "",
-    borderClassName: "border-secondary-foreground/25",
+    borderClassName: "",
     nextStatus: "READY_FOR_PICKUP",
+    advanceActionLabel: "Abholbereit melden",
   },
   READY_FOR_PICKUP: {
     label: "Abholbereit",
     pillClassName: "",
-    borderClassName: "border-success/60",
+    borderClassName: "",
     nextStatus: null,
+    advanceActionLabel: null,
   },
 };
 
@@ -139,39 +140,41 @@ export function OrdersAdminPanel() {
       </div>
 
       <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
+        <TableUI.Table className="table-fixed">
+          <TableUI.TableHeader>
             <tr>
-              <TableHead>Bestellnummer</TableHead>
-              <TableHead>Lehrer</TableHead>
-              <TableHead>Kostenstelle</TableHead>
-              <TableHead>Datum</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Aktion</TableHead>
+              <TableUI.TableHead>Bestellnummer</TableUI.TableHead>
+              <TableUI.TableHead>Lehrer</TableUI.TableHead>
+              <TableUI.TableHead>Kostenstelle</TableUI.TableHead>
+              <TableUI.TableHead>Datum</TableUI.TableHead>
+              <TableUI.TableHead>Status</TableUI.TableHead>
+              <TableUI.TableHead className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
+                Aktion
+              </TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {ordersQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
                   Bestellungen werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {ordersQuery.error ? (
               <tr>
-                <TableCell colSpan={6} className="text-destructive">
+                <TableUI.TableCell colSpan={6} className="text-destructive">
                   Bestellungen konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {!ordersQuery.isLoading && !ordersQuery.error && sortedOrders.length === 0 ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
                   Keine Bestellungen gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
@@ -182,67 +185,80 @@ export function OrdersAdminPanel() {
 
               return (
                 <Fragment key={order.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
                   >
-                    <TableCell className="font-medium">
+                    <TableUI.TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <span>{order.orderNumber}</span>
                         {order.workerNote ? (
-                          <span className="inline-flex items-center rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-orange-800">
+                          <Badge variant="note">
                             Hinweis
-                          </span>
+                          </Badge>
                         ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell >
+                    </TableUI.TableCell>
+                    <TableUI.TableCell >
                       <p>{userLabel(order.user)}</p>
                       {order.sourceRequest?.student ? (
                         <p className="text-[9px] text-slate-500 italic">
                           Schüler: {userLabel(order.sourceRequest.student)}
                         </p>
                       ) : null}
-                    </TableCell>
-                    <TableCell>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell>
                       {order.costCenter.code} - {order.costCenter.name}
-                    </TableCell>
-                    <TableCell>{formatDate(order.createdAt)}</TableCell>
-                    <TableCell>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell>{formatDate(order.createdAt)}</TableUI.TableCell>
+                    <TableUI.TableCell>
                       <Badge
                         variant={
                           order.status === "READY_FOR_PICKUP"
-                            ? "success"
+                            ? "orderThird"
                             : order.status === "OPEN"
-                              ? "destructive"
-                              : "secondary"
+                              ? "orderFirst"
+                              : "orderSecond"
                         }
                         className={status.pillClassName}
                       >
                         {status.label}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (!nextStatus) return;
-                          updateStatusMutation.mutate({
-                            orderId: order.id,
-                            nextStatus,
-                          });
-                        }}
-                        disabled={!nextStatus || updateStatusMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className="disabled:cursor-not-allowed disabled:opacity-55"
-                      >
-                        {nextStatus ? `Zu ${statusConfig[nextStatus].label}` : "Final"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
+                      {nextStatus && status.advanceActionLabel ? (
+                        <Button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            updateStatusMutation.mutate({
+                              orderId: order.id,
+                              nextStatus,
+                            });
+                          }}
+                          disabled={updateStatusMutation.isPending}
+                          variant={nextStatus === "READY_FOR_PICKUP" ? "default" : "outline"}
+                          size="sm"
+                          className={
+                            nextStatus === "READY_FOR_PICKUP"
+                              ? "w-full max-w-full justify-center rounded-full border-0 bg-primary/80 font-semibold text-primary-foreground transition-[opacity] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55"
+                              : "w-full max-w-full justify-center rounded-full border-0 bg-card/60 font-semibold text-primary backdrop-blur-sm transition-[background-color,color] duration-200 hover:bg-card/90 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
+                          }
+                          aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
+                        >
+                          {status.advanceActionLabel}
+                        </Button>
+                      ) : (
+                        <span
+                          className="inline-flex w-full max-w-full justify-center rounded-full py-1.5 text-center text-xs text-muted-foreground"
+                          aria-label="Keine weitere Aktion"
+                        >
+                          —
+                        </span>
+                      )}
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  <TableExpandableRow
+                  <TableUI.TableExpandableRow
                     open={isExpanded}
                     colSpan={6}
                     rowClassName="bg-muted/30"
@@ -295,67 +311,66 @@ export function OrdersAdminPanel() {
                         </div>
 
                         {expandedOrderQuery.data.workerNote ? (
-                          <div className="rounded-xl border border-orange-300 bg-orange-50 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
-                              Hinweis fuer Lager
-                            </p>
-                            <p className="mt-1 whitespace-pre-wrap text-sm text-orange-900">
+                          <DetailCard>
+                            <DetailText variant="noteTitle">
+                              Hinweis für Lager
+                            </DetailText>
+                            <DetailText variant="note">
                               {expandedOrderQuery.data.workerNote}
-                            </p>
-                          </div>
+                            </DetailText>
+                          </DetailCard>
                         ) : null}
 
-                        <div className="rounded-md border border-border bg-card/40 p-3">
-                          <p className="text-sm font-semibold text-foreground">Positionen</p>
-                          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-                            <table className="min-w-full border-collapse text-left text-xs">
-                              <thead className="bg-muted uppercase tracking-wide text-muted-foreground">
-                                <tr>
-                                  <th className="px-2.5 py-2">Bild</th>
-                                  <th className="px-2.5 py-2">Produkt</th>
-                                  <th className="px-2.5 py-2">SKU</th>
-                                  <th className="px-2.5 py-2">Lagerplatz</th>
-                                  <th className="px-2.5 py-2">Menge</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white">
-                                {expandedOrderQuery.data.items.map((item) => (
-                                  <tr key={item.id} className="border-t border-border bg-white">
-                                    <td className="px-2.5 py-2">
-                                      <img
-                                        src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
-                                        alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
-                                        className="h-10 w-10 rounded border border-border object-cover"
-                                        onError={(event) => {
-                                          event.currentTarget.onerror = null;
-                                          event.currentTarget.src = "/pictures/placeholder.jpg";
-                                        }}
-                                      />
-                                    </td>
-                                    <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
-                                    <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
-                                    <td className="px-2.5 py-2 text-muted-foreground">
-                                      {item.product.storageLocation
-                                        ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
-                                        : "-"}
-                                    </td>
-                                    <td className="px-2.5 py-2 text-muted-foreground">
-                                      {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
+                        <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                          <TableUI.Subtable className="mt-3">
+                            <TableUI.SubtableHeader>
+                              <tr>
+                                <TableUI.SubtableHead className="w-14">Bild</TableUI.SubtableHead>
+                                <TableUI.SubtableHead>Produkt</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-[7rem]">SKU</TableUI.SubtableHead>
+                                <TableUI.SubtableHead>Lagerplatz</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-24 whitespace-nowrap">Menge</TableUI.SubtableHead>
+                              </tr>
+                            </TableUI.SubtableHeader>
+                            <TableUI.SubtableBody>
+                              {expandedOrderQuery.data.items.map((item) => (
+                                <TableUI.SubtableRow key={item.id}>
+                                  <TableUI.SubtableCell>
+                                    <img
+                                      src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
+                                      alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
+                                      className="h-12 w-12 rounded object-cover"
+                                      onError={(event) => {
+                                        event.currentTarget.onerror = null;
+                                        event.currentTarget.src = "/pictures/placeholder.jpg";
+                                      }}
+                                    />
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="font-medium text-foreground">
+                                    {item.product.name}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground">{item.product.sku}</TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground">
+                                    {item.product.storageLocation
+                                      ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                      : "-"}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                    {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                                  </TableUI.SubtableCell>
+                                </TableUI.SubtableRow>
+                              ))}
+                            </TableUI.SubtableBody>
+                          </TableUI.Subtable>
+                        </DetailCard>
                       </div>
                     ) : null}
-                  </TableExpandableRow>
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {ordersQuery.hasNextPage ? (
         <div className="mt-4">

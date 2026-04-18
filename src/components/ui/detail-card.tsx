@@ -1,6 +1,15 @@
 import * as React from "react";
 
-type DetailTextVariant = "title" | "kicker" | "value" | "subvalue";
+type DetailTextVariant = "title" | "kicker" | "value" | "subvalue" | "noteTitle" | "note";
+
+const textVariantClasses: Record<DetailTextVariant, string> = {
+  title: "text-lg font-semibold text-slate-900",
+  kicker: "text-xs uppercase tracking-wide text-muted-foreground",
+  subvalue: "mt-1 text-xs normal-case text-muted-foreground",
+  value: "mt-1 text-sm font-semibold text-foreground",
+  noteTitle:"uppercase tracking-wide font-semibold text-accent-orange",
+  note:"",
+};
 
 export function DetailCard({
   className = "",
@@ -19,14 +28,7 @@ export function DetailText({
   variant,
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement> & { variant: DetailTextVariant }) {
-  const variantClass =
-    variant === "title"
-      ? "text-lg font-semibold text-slate-900"
-      : variant === "kicker"
-        ? "text-xs uppercase tracking-wide text-muted-foreground"
-        : variant === "subvalue"
-          ? "mt-1 text-xs normal-case text-muted-foreground"
-          : "mt-1 text-sm font-semibold text-foreground";
+  const variantClass = textVariantClasses[variant];
 
   return <p className={`${variantClass} ${className}`.trim()} {...props} />;
 }

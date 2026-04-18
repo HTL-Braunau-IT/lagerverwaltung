@@ -150,7 +150,7 @@ export function CostCentersAdminPanel() {
                   {isExpanded ? (
                     <tr className="bg-muted/30">
                       <td colSpan={3} className="p-3">
-                        <div className="w-full rounded-lg bg-muted/30 p-3">
+                        <div className="w-full rounded-md bg-muted/30 p-3">
                           <div className="mb-3 flex items-center justify-between gap-2">
                             <h3 className="text-base font-semibold text-foreground">Kostenstelle bearbeiten</h3>
                           </div>

@@ -33,6 +33,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-accent-orange: var(--accent-orange);
 }
 
 :root {

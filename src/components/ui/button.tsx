@@ -11,7 +11,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-primary text-primary-foreground hover:opacity-90",
+  default: "bg-primary/90 text-primary-foreground hover:opacity-90",
   outline: "border border-input bg-background text-foreground hover:bg-accent",
   secondary: "bg-secondary text-secondary-foreground hover:opacity-90",
   destructive: "bg-destructive text-destructive-foreground hover:opacity-90",

@@ -30,7 +30,7 @@ export function TableBody({ className = "", ...props }: SectionProps) {
 export function TableRow({ className = "", ...props }: RowProps) {
   return (
     <tr
-      className={`border-b border-border bg-card/40 backdrop-blur-sm cursor-pointer select-none transition-colors duration-60 delay-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
+      className={`bg-card/40 backdrop-blur-sm cursor-pointer select-none transition-colors duration-60 delay-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
       {...props}
     />
   );
@@ -86,7 +86,7 @@ export function TableExpandableRow({
   containerClassName = "",
   contentClassName = "",
 }: TableExpandableRowProps) {
-  const baseContentClassName = "w-full rounded-md border-0 p-2";
+  const baseContentClassName = "w-full overflow-hidden rounded-md border-0 pt-2 pb-1.5 px-2";
   const contentRef = React.useRef<HTMLDivElement | null>(null);
   const [maxHeight, setMaxHeight] = React.useState<string>("0px");
 
@@ -138,5 +138,72 @@ export function TableExpandableRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+/** `<thead>` for nested tables: muted strip, distinct from the main `Table` primary header. */
+export function SubtableHeader({ className = "", ...props }: SectionProps) {
+  return (
+    <thead
+      className={`bg-primary text-primary-foreground [&_th]:text-primary-foreground ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+/** `<tbody>` for nested `Subtable`s (matches `TableBody` row border behavior). */
+export function SubtableBody({ className = "", ...props }: SectionProps) {
+  return <tbody className={`[&_tr:last-child]:border-0 ${className}`.trim()} {...props} />;
+}
+
+/** Compact `<th>` for use inside `<SubtableHeader>`. */
+export function SubtableHead({ className = "", ...props }: CellProps) {
+  return (
+    <th
+      className={`h-6 min-w-0 px-2 py-1.5 text-left align-middle text-[10px] font-semibold uppercase tracking-wide ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+/** Compact `<td>` for use inside `<SubtableBody>`. */
+export function SubtableCell({ className = "", ...props }: DataCellProps) {
+  return (
+    <td className={`px-2 py-1.5 align-middle text-xs leading-snug text-foreground ${className}`.trim()} {...props} />
+  );
+}
+
+/** Row for nested tables: same border rhythm as `TableRow` without pointer / selection blocking. */
+export function SubtableRow({ className = "", ...props }: RowProps) {
+  return (
+    <tr
+      className={`cursor-default select-text transition-colors duration-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+type SubtableProps = {
+  className?: string;
+  tableClassName?: string;
+  children: React.ReactNode;
+};
+
+/**
+ * Nested compact table: renders `<table>` directly (not `Table`) so you do not stack two
+ * transparent `rounded-md` wrappers. Solid `bg-card` + no `backdrop-blur` on `SubtableRow`
+ * keeps expandable `bg-muted` from showing through at the corners.
+ */
+export function Subtable({ className = "", tableClassName = "", children }: SubtableProps) {
+  return (
+    <div className={`w-full overflow-hidden rounded-md bg-card/60 ${className}`.trim()}>
+      <div className="overflow-x-auto">
+        <table
+          className={`w-full border-separate border-spacing-0 caption-bottom text-xs [&_td]:py-1.5 [&_th]:py-1.5 ${tableClassName}`.trim()}
+        >
+          {children}
+        </table>
+      </div>
+    </div>
   );
 }
