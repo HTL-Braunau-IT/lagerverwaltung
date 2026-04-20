@@ -65,7 +65,7 @@
   --success-foreground: oklch(1 0 0);
   --border: oklch(0.9 0.02 264.531);
   --input: oklch(0.9 0.02 264.531);
-  --ring: oklch(0.55 0.25 240 / 30%);
+  --ring: rgba(0, 50, 100, 0.4);
 
   /* reserved accents (for later UI elements) */
   --accent-blue: #003264;

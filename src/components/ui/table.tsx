@@ -196,7 +196,7 @@ type SubtableProps = {
  */
 export function Subtable({ className = "", tableClassName = "", children }: SubtableProps) {
   return (
-    <div className={`w-full overflow-hidden rounded-md bg-card/60 ${className}`.trim()}>
+    <div className={`w-full overflow-hidden rounded-sm bg-card/60 ${className}`.trim()}>
       <div className="overflow-x-auto">
         <table
           className={`w-full border-separate border-spacing-0 caption-bottom text-xs [&_td]:py-1.5 [&_th]:py-1.5 ${tableClassName}`.trim()}

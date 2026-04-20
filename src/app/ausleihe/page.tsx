@@ -120,7 +120,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-slate-500">
-            Referenzcode
+            Referenznummer
           </p>
           <p className="text-sm font-semibold text-slate-900">
             {loan.id.slice(0, 8)}

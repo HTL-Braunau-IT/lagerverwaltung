@@ -8,7 +8,9 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
+import { FilterPillButton } from "../ui/filter-pill-button";
+import { DetailCard, DetailText } from "../ui/detail-card";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -24,7 +26,6 @@ function formatDate(value: Date | string) {
 function dateToInputValue(value: Date | string | null | undefined) {
   if (!value) return "";
   const d = value instanceof Date ? value : new Date(value);
-  // Keep it stable by using UTC midnight formatting.
   return d.toISOString().slice(0, 10);
 }
 
@@ -36,17 +37,21 @@ function addDaysToInputValue(days: number) {
 
 function parseDateInputValue(value: string | undefined) {
   if (!value) return undefined;
-  // z.coerce.date() expects something that can become a Date.
   return new Date(value + "T00:00:00");
 }
 
 type LoanStatus = "PENDING" | "APPROVED" | "REJECTED" | "CLOSED";
 
-const statusBadgeClass: Record<LoanStatus, string> = {
-  PENDING: "bg-amber-100 text-amber-900",
-  APPROVED: "bg-emerald-100 text-emerald-900",
-  REJECTED: "bg-rose-100 text-rose-900",
-  CLOSED: "bg-slate-100 text-slate-900",
+type LoanStatusBadge = {
+  variant: "default" | "secondary" | "destructive" | "success" | "orderFirst" | "orderSecond" | "orderThird" | "note";
+  text: string;
+};
+
+const loanStatusBadge: Record<LoanStatus, LoanStatusBadge> = {
+  PENDING: { variant: "note", text: "Wartet" },
+  APPROVED: { variant: "orderFirst", text: "Freigegeben" },
+  REJECTED: { variant: "orderSecond", text: "Abgelehnt" },
+  CLOSED: { variant: "orderThird", text: "Erledigt" },
 };
 
 export function LoansAdminPanel() {
@@ -112,140 +117,171 @@ export function LoansAdminPanel() {
           ).map((opt) => {
             const active = statusFilter === opt.value;
             return (
-              <button
+              <FilterPillButton
                 key={opt.value}
-                type="button"
                 onClick={() => setStatusFilter(opt.value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                active={active}
               >
                 {opt.label}
-              </button>
+              </FilterPillButton>
             );
           })}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead>Ausleihen</TableHead>
-              <TableHead>Person</TableHead>
-              <TableHead>Datum</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Aktion</TableHead>
-            </TableRow>
-          </TableHeader>
+      <div className="overflow-x-auto">
+        <TableUI.Table className="table-fixed">
+          <TableUI.TableHeader>
+            <tr>
+              <TableUI.TableHead>Ausleihen</TableUI.TableHead>
+              <TableUI.TableHead>Person</TableUI.TableHead>
+              <TableUI.TableHead>Datum</TableUI.TableHead>
+              <TableUI.TableHead>Status</TableUI.TableHead>
+            </tr>
+          </TableUI.TableHeader>
 
-          <TableBody>
+          <TableUI.TableBody>
             {loansQuery.isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
+              <TableUI.TableRow>
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Werkzeuge werden geladen...
-                </TableCell>
-              </TableRow>
+                </TableUI.TableCell>
+              </TableUI.TableRow>
             ) : null}
 
             {loansQuery.error ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-destructive">
+              <TableUI.TableRow>
+                <TableUI.TableCell colSpan={4} className="text-destructive">
                   Werkzeuge konnten nicht geladen werden.
-                </TableCell>
-              </TableRow>
+                </TableUI.TableCell>
+              </TableUI.TableRow>
             ) : null}
 
             {!loansQuery.isLoading && !loansQuery.error && sortedLoans.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground">
+              <TableUI.TableRow>
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Keine Werkzeuge gefunden.
-                </TableCell>
-              </TableRow>
+                </TableUI.TableCell>
+              </TableUI.TableRow>
             ) : null}
 
             {sortedLoans.map((loan) => {
               const isExpanded = expandedLoanId === loan.id;
+              const loanHasHandover = loan.items.some((it) => {
+                const approved = decimalToNumber(it.quantityApproved);
+                const handedOver = decimalToNumber(it.quantityHandedOver);
+                return approved - handedOver > 0;
+              });
+              const loanHasReturn = loan.items.some((it) => {
+                const handedOver = decimalToNumber(it.quantityHandedOver);
+                const returned = decimalToNumber(it.quantityReturned);
+                return handedOver - returned > 0;
+              });
+              const statusBadge = loanStatusBadge[loan.status as LoanStatus];
               return (
                 <Fragment key={loan.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
                       if (handoverMutation.isPending || returnMutation.isPending || remindMutation.isPending) return;
-                      setExpandedLoanId((current) => (current === loan.id ? null : loan.id));
+                      setExpandedLoanId((current: string | null) => (current === loan.id ? null : loan.id));
                     }}
-                    className="cursor-pointer bg-white"
+                    className="cursor-pointer"
                   >
-                    <TableCell className="px-4 py-3">
+                    <TableUI.TableCell className="px-4 py-3">
                       <div className="font-medium">{loan.id.slice(0, 8)}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{loan.storageRoom?.name ?? "-"}</div>
-                    </TableCell>
-                    <TableCell className="px-4 py-3">
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="px-4 py-3">
                       <div className="text-sm font-medium">{loan.borrower.name ?? loan.borrower.email ?? "-"}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{loan.borrower.email ?? "-"}</div>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-sm text-muted-foreground">{formatDate(loan.createdAt)}</TableCell>
-                    <TableCell className="px-4 py-3">
-                      <Badge variant="secondary" className={statusBadgeClass[loan.status as LoanStatus]}>
-                        {loan.status === "PENDING"
-                          ? "Wartet"
-                          : loan.status === "APPROVED"
-                            ? "Freigegeben"
-                            : loan.status === "REJECTED"
-                              ? "Abgelehnt"
-                              : "Erledigt"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                      {isExpanded ? "Offen" : "Anzeigen"}
-                    </TableCell>
-                  </TableRow>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="px-4 py-3 text-sm text-muted-foreground">{formatDate(loan.createdAt)}</TableUI.TableCell>
+                    <TableUI.TableCell className="px-4 py-3">
+                      <Badge variant={statusBadge.variant}>{statusBadge.text}</Badge>
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
 
                   {isExpanded ? (
                     <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={5} className="px-3 py-4">
+                      <td colSpan={4} className="px-3 py-4">
                         <div className="space-y-4">
-                          <div className="rounded-2xl border border-border bg-card p-4">
-                            <h3 className="text-lg font-semibold text-foreground">Details: {loan.id.slice(0, 8)}</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {loan.borrower.name ?? loan.borrower.email ?? "-"} · {loan.storageRoom?.name ?? "-"}
-                            </p>
+                          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-3">
+                            <DetailCard>
+                              <DetailText variant="kicker">Referenznummer</DetailText>
+                              <DetailText variant="value">{loan.id.slice(0, 8)}</DetailText>
+                            </DetailCard>
+                            <DetailCard>
+                              <DetailText variant="kicker">Person</DetailText>
+                              <DetailText variant="value">{loan.borrower.name ?? loan.borrower.email ?? "-"}</DetailText>
+                            </DetailCard>
+                            <DetailCard>
+                              <DetailText variant="kicker">Erstellt</DetailText>
+                              <DetailText variant="value">{formatDate(loan.createdAt)}</DetailText>
+                            </DetailCard>
                           </div>
 
-                          <div className="overflow-x-auto rounded-xl border border-border">
-                            <Table>
-                              <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                  <TableHead>Material</TableHead>
-                                  <TableHead>Freigegeben</TableHead>
-                                  <TableHead>Uebergeben</TableHead>
-                                  <TableHead>Rueckgabe</TableHead>
-                                  <TableHead>Faellig</TableHead>
-                                  <TableHead>Aktion</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
+                          <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                            <TableUI.Subtable tableClassName="table-fixed">
+                              <TableUI.SubtableHeader>
+                                <tr>
+                                  <TableUI.SubtableHead className="min-w-[13rem] w-[42%] shrink-0">
+                                    Material
+                                  </TableUI.SubtableHead>
+                                  <TableUI.SubtableHead
+                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                    title="Vom Lehrer:in freigegebene Stückzahl"
+                                  >
+                                    Freigegeben
+                                  </TableUI.SubtableHead>
+                                  <TableUI.SubtableHead
+                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                    title="Bereits an die ausleihende Person übergeben"
+                                  >
+                                    Ausgegeben
+                                  </TableUI.SubtableHead>
+                                  <TableUI.SubtableHead
+                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                    title="Noch nicht zurückgegebene Stückzahl"
+                                  >
+                                    Offen
+                                  </TableUI.SubtableHead>
+                                  <TableUI.SubtableHead className="w-36 shrink-0 whitespace-nowrap">
+                                    Fällig am
+                                  </TableUI.SubtableHead>
+                                  <TableUI.SubtableHead className="min-w-[10rem] shrink-0">Aktion</TableUI.SubtableHead>
+                                </tr>
+                              </TableUI.SubtableHeader>
+                              <TableUI.SubtableBody>
                                 {loan.items.map((item) => {
                                   const approved = decimalToNumber(item.quantityApproved);
                                   const handedOver = decimalToNumber(item.quantityHandedOver);
                                   const returned = decimalToNumber(item.quantityReturned);
                                   const remainingToHandOver = approved - handedOver;
                                   const remainingToReturn = handedOver - returned;
-                                  const activeDue = remainingToReturn > 0 && item.dueAt;
 
                                   return (
-                                    <TableRow key={item.id}>
-                                      <TableCell>
-                                        <div className="text-sm font-medium text-foreground">{item.lendableItem?.name ?? "-"}</div>
-                                      </TableCell>
-                                      <TableCell className="text-sm">{Math.floor(approved)}</TableCell>
-                                      <TableCell className="text-sm">{Math.floor(handedOver)}</TableCell>
-                                      <TableCell className="text-sm">{Math.floor(remainingToReturn)}</TableCell>
-                                      <TableCell className="text-sm text-muted-foreground">
+                                    <TableUI.SubtableRow key={item.id}>
+                                      <TableUI.SubtableCell className="w-[32%] min-w-[13rem] shrink-0 font-medium text-foreground">
+                                        <div
+                                          className="min-w-0 truncate"
+                                          title={item.lendableItem?.name ?? undefined}
+                                        >
+                                          {item.lendableItem?.name ?? "-"}
+                                        </div>
+                                      </TableUI.SubtableCell>
+                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                        {Math.floor(approved)}
+                                      </TableUI.SubtableCell>
+                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                        {Math.floor(handedOver)}
+                                      </TableUI.SubtableCell>
+                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                        {Math.floor(remainingToReturn)}
+                                      </TableUI.SubtableCell>
+                                      <TableUI.SubtableCell className="text-muted-foreground">
                                         {item.dueAt ? formatDate(item.dueAt) : "-"}
-                                      </TableCell>
-                                      <TableCell className="w-[360px]">
+                                      </TableUI.SubtableCell>
+                                      <TableUI.SubtableCell className="min-w-[10rem] shrink-0 align-top">
                                         <LoanItemActions
                                           item={item}
                                           loanId={loan.id}
@@ -255,14 +291,13 @@ export function LoansAdminPanel() {
                                           returnMutation={returnMutation}
                                           remindMutation={remindMutation}
                                         />
-                                        {activeDue ? null : null}
-                                      </TableCell>
-                                    </TableRow>
+                                      </TableUI.SubtableCell>
+                                    </TableUI.SubtableRow>
                                   );
                                 })}
-                              </TableBody>
-                            </Table>
-                          </div>
+                              </TableUI.SubtableBody>
+                            </TableUI.Subtable>
+                          </DetailCard>
                         </div>
                       </td>
                     </tr>
@@ -270,8 +305,8 @@ export function LoansAdminPanel() {
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
     </Card>
   );
@@ -310,50 +345,37 @@ function LoanItemActions(props: {
 }) {
   const { item, loanId, remainingToHandOver, remainingToReturn } = props;
 
-  const [handoverQty, setHandoverQty] = useState<string>(() => String(Math.max(1, Math.floor(remainingToHandOver))));
-  const [dueAtInput, setDueAtInput] = useState<string>(() => dateToInputValue(item.dueAt) || addDaysToInputValue(5));
-  const [returnQty, setReturnQty] = useState<string>(() => String(Math.max(1, Math.floor(remainingToReturn))));
+  const [dueAtInput, setDueAtInput] = useState(() => dateToInputValue(item.dueAt) || addDaysToInputValue(5));
 
   const isHandoverPossible = remainingToHandOver > 0 && decimalToNumber(item.quantityApproved) > 0;
   const isReturnPossible = remainingToReturn > 0;
 
-  const baseUnit = "Stk";
-
   return (
     <div className="flex flex-col gap-2">
       {isHandoverPossible ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="w-[120px]">
-            <div className="text-xs text-muted-foreground">Uebergabe</div>
-            <Input
-              type="number"
-              min="1"
-              step="1"
-              value={handoverQty}
-              onChange={(e) => setHandoverQty(e.target.value)}
-              className="mt-1 h-9 rounded-xl"
-            />
-            <div className="mt-1 text-[11px] text-muted-foreground">{baseUnit}</div>
-          </label>
-          <label className="flex-1">
-            <div className="text-xs text-muted-foreground">Faellig am</div>
+        <div className="flex flex-wrap items-center gap-2 grid grid-cols-2">
+          <label className="inline-flex min-w-0 w-full max-w-full items-center gap-1.5">
+            <span className="shrink-0 text-xs text-muted-foreground">
+              Fällig
+            </span>
             <Input
               type="date"
               value={dueAtInput}
               onChange={(e) => setDueAtInput(e.target.value)}
-              className="mt-1 h-9 rounded-xl"
+              className="relative flex h-6 w-full min-w-0 max-w-full items-center justify-center !px-0 !py-0 text-center leading-6 [&::-webkit-datetime-edit]:flex [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:min-w-0 [&::-webkit-datetime-edit]:w-full [&::-webkit-datetime-edit]:flex-1 [&::-webkit-datetime-edit]:items-center [&::-webkit-datetime-edit]:justify-center [&::-webkit-datetime-edit-fields-wrapper]:flex [&::-webkit-datetime-edit-fields-wrapper]:h-full [&::-webkit-datetime-edit-fields-wrapper]:w-full [&::-webkit-datetime-edit-fields-wrapper]:items-center [&::-webkit-datetime-edit-fields-wrapper]:justify-center [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0"
             />
           </label>
           <Button
             type="button"
             size="sm"
+            className="shrink-0"
             onClick={() =>
               props.handoverMutation.mutate({
                 loanId,
                 items: [
                   {
                     loanItemId: item.id,
-                    handoverQuantity: Number(handoverQty),
+                    handoverQuantity: remainingToHandOver,
                     dueAt: parseDateInputValue(dueAtInput),
                   },
                 ],
@@ -361,53 +383,50 @@ function LoanItemActions(props: {
             }
             disabled={props.handoverMutation.isPending}
           >
-            Uebergeben
+            Übergeben
           </Button>
         </div>
       ) : null}
 
       {isReturnPossible ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="w-[140px]">
-            <div className="text-xs text-muted-foreground">Rueckgabe</div>
-            <Input
-              type="number"
-              min="1"
-              step="1"
-              value={returnQty}
-              onChange={(e) => setReturnQty(e.target.value)}
-              className="mt-1 h-9 rounded-xl"
-            />
-          </label>
+        <div className="flex flex-wrap items-center gap-2 grid grid-cols-2">
           <Button
             type="button"
             size="sm"
-            variant="outline"
+            variant="solid"
             onClick={() =>
               props.returnMutation.mutate({
                 loanId,
                 items: [
                   {
                     loanItemId: item.id,
-                    returnQuantity: Number(returnQty),
+                    returnQuantity: remainingToReturn,
                   },
                 ],
               })
             }
             disabled={props.returnMutation.isPending}
           >
-            Zurueck
+            Rückgabe
           </Button>
           <Button
             type="button"
             size="sm"
-            variant="secondary"
+            variant="notify"
             onClick={() => props.remindMutation.mutate({ loanItemId: item.id })}
             disabled={props.remindMutation.isPending}
           >
             Erinnern
           </Button>
         </div>
+      ) : null}
+
+      {!isHandoverPossible && !isReturnPossible ? (
+        <span
+          aria-label="Keine Aktion"
+        >
+          -
+        </span>
       ) : null}
     </div>
   );

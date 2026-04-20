@@ -1,14 +1,17 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { PlusIcon } from "~/components/layout/icon-renders";
+import { Select } from "~/components/ui/select";
+import { Switch } from "~/components/ui/switch";
+import * as TableUI from "~/components/ui/table";
+import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -147,7 +150,7 @@ function NumberStepper({
 
   return (
     <div
-      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-md border border-slate-300 bg-white"
+      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm"
       onClick={(event) => event.stopPropagation()}
     >
       <Button
@@ -159,13 +162,13 @@ function NumberStepper({
           onChange(next.toString());
         }}
         size="sm"
-        variant="ghost"
-        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+        variant="quant"
+        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
         aria-label={decreaseAriaLabel}
       >
         <span className="block leading-none">-</span>
       </Button>
-      <input
+      <Input
         type="number"
         min={min}
         max={inputMax}
@@ -173,7 +176,7 @@ function NumberStepper({
         value={value}
         onClick={(event) => event.stopPropagation()}
         onChange={(event) => onChange(event.target.value)}
-        className="w-14 min-w-0 shrink border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="!w-14 !h-full min-w-0 shrink !rounded-none !bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         aria-label={inputAriaLabel}
       />
       <Button
@@ -185,8 +188,8 @@ function NumberStepper({
           onChange(next.toString());
         }}
         size="sm"
-        variant="ghost"
-        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
+        variant="quant"
+        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
         aria-label={increaseAriaLabel}
       >
         <span className="block leading-none">+</span>
@@ -243,6 +246,7 @@ function createInitialForm(product: {
 
 function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
+  const [collapsed, setCollapsed] = useState(true);
 
   const bookings = bookingsQuery.data?.bookings ?? [];
   const completedOrders = bookingsQuery.data?.completedOrders ?? [];
@@ -251,98 +255,128 @@ function BookingHistory({ productId }: { productId: string }) {
     !bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length > 0;
 
   return (
-    <div className="mx-4 mt-4 rounded-lg border border-slate-200 bg-white p-3">
-      {bookingsQuery.isLoading ? <p className="text-sm text-muted-foreground">Verlauf wird geladen...</p> : null}
-      {bookingsQuery.error ? <p className="text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p> : null}
+    <div className="mx-4 mt-4 rounded-md bg-card/40 p-3">
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+        aria-expanded={!collapsed}
+        aria-controls={`booking-history-section-${productId}`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-lg font-semibold text-slate-900">Buchungsverlauf</p>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-slate-500"
+            title={collapsed ? "Ausklappen" : "Einklappen"}
+          >
+            <ChevronDownIcon open={!collapsed} className="h-4 w-4" />
+          </span>
+        </div>
+        {!collapsed ? <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" /> : null}
+      </button>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      {!collapsed ? (
+        <div id={`booking-history-section-${productId}`} className="pt-3">
+          {bookingsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Verlauf wird geladen...</p>
+          ) : null}
+          {bookingsQuery.error ? (
+            <p className="text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p>
+          ) : null}
+
+          <div className="grid gap-8 lg:grid-cols-2">
         <section>
-          <p className="text-lg font-semibold text-slate-900">Letzte Buchungen</p>
-          <div className="mt-2 mb-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+          <p className="select-none text-sm text-slate-600">Letzte Buchungen</p>
 
           {!bookingsQuery.isLoading && !bookingsQuery.error && bookings.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">Keine Buchungen vorhanden.</p>
           ) : null}
 
           {showBookingsTable ? (
-            <div className="mt-2 overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight">Menge</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Lieferant</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Von</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight">Datum</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="text-[11px] leading-tight">
+            <div className="mt-2">
+              <TableUI.Subtable tableClassName="table-fixed">
+                <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                  <TableUI.SubtableRow className="hover:bg-transparent">
+                    <TableUI.SubtableHead className="w-[72px]">Menge</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[34%]">Lieferant</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[32%]">Von</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[160px] whitespace-nowrap">Datum</TableUI.SubtableHead>
+                  </TableUI.SubtableRow>
+                </TableUI.SubtableHeader>
+                <TableUI.SubtableBody>
                   {bookings.map((booking) => (
                     <Fragment key={booking.id}>
-                      <TableRow className="bg-muted/30 hover:bg-muted/40">
-                        <TableCell className="text-[11px] font-medium !py-1 !px-2">
+                      <TableUI.SubtableRow>
+                        <TableUI.SubtableCell className="font-semibold tabular-nums">
                           {toNumber(booking.quantityDelta)}
-                        </TableCell>
-                        <TableCell className="text-[11px] !py-0 !px-0">{booking.supplier}</TableCell>
-                        <TableCell className="text-[11px] !py-0 !px-0">
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="min-w-0 break-words">{booking.supplier}</TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="min-w-0 break-words">
                           {booking.user.name ?? booking.user.email ?? "Unbekannt"}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                           {new Date(booking.createdAt).toLocaleString("de-AT")}
-                        </TableCell>
-                      </TableRow>
+                        </TableUI.SubtableCell>
+                      </TableUI.SubtableRow>
                       {booking.note ? (
-                        <TableRow className="bg-muted/20 hover:bg-muted/25">
-                          <TableCell colSpan={4} className="py-0.5 px-2 text-xs text-muted-foreground">
+                        <TableUI.SubtableRow className="bg-muted/10 hover:bg-muted/20">
+                          <TableUI.SubtableCell colSpan={4} className="text-muted-foreground">
                             Notiz: {booking.note}
-                          </TableCell>
-                        </TableRow>
+                          </TableUI.SubtableCell>
+                        </TableUI.SubtableRow>
                       ) : null}
                     </Fragment>
                   ))}
-                </TableBody>
-              </Table>
+                </TableUI.SubtableBody>
+              </TableUI.Subtable>
             </div>
           ) : null}
         </section>
 
         <section>
-          <p className="text-lg font-semibold text-slate-900">Abgeschlossene Aufträge</p>
-          <div className="mt-2 mb-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+          <p className="select-none text-sm text-slate-600">Abgeschlossene Aufträge</p>
 
           {!bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
           ) : null}
 
           {showCompletedOrdersTable ? (
-            <div className="mt-2 overflow-x-auto rounded-md border border-success/40">
-              <Table>
-                <TableHeader className="bg-success/10">
-                  <TableRow className="border-success/40">
-                    <TableHead className="h-auto py-1 !px-2 text-[11px] leading-tight text-success">Auftrag</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Menge</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Von</TableHead>
-                    <TableHead className="h-auto py-1 !px-0 text-[11px] leading-tight text-success">Datum</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="text-[11px] leading-tight text-success">
+            <div className="mt-2">
+              <TableUI.Subtable tableClassName="table-fixed">
+                <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                  <TableUI.SubtableRow className="hover:bg-transparent">
+                    <TableUI.SubtableHead className="w-[92px]">Auftrag</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[72px]">Menge</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[32%]">Von</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[160px] whitespace-nowrap">Datum</TableUI.SubtableHead>
+                  </TableUI.SubtableRow>
+                </TableUI.SubtableHeader>
+                <TableUI.SubtableBody>
                   {completedOrders.map((entry) => (
-                    <TableRow key={entry.id} className="border-success/40 bg-success/5">
-                      <TableCell className="text-[11px] font-medium !py-1 !px-2">{entry.order.orderNumber}</TableCell>
-                      <TableCell className="text-[11px] font-medium !py-0 !px-0">{toNumber(entry.quantity)}</TableCell>
-                      <TableCell className="text-[11px] !py-0 !px-0">
+                    <TableUI.SubtableRow key={entry.id}>
+                      <TableUI.SubtableCell className="font-semibold tabular-nums">
+                        {entry.order.orderNumber}
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="font-semibold tabular-nums">
+                        {toNumber(entry.quantity)}
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="min-w-0 break-words">
                         {entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-[11px] !py-0 !px-0">
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                         {new Date(entry.order.createdAt).toLocaleString("de-AT")}
-                      </TableCell>
-                    </TableRow>
+                      </TableUI.SubtableCell>
+                    </TableUI.SubtableRow>
                   ))}
-                </TableBody>
-              </Table>
+                </TableUI.SubtableBody>
+              </TableUI.Subtable>
             </div>
           ) : null}
         </section>
-      </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -379,6 +413,17 @@ export function ProductsAdminPanel() {
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
   const [editCategorySearch, setEditCategorySearch] = useState("");
+  const [listCategorySearch, setListCategorySearch] = useState("");
+  const [listLocationSearch, setListLocationSearch] = useState("");
+  const [categoryListOpen, setCategoryListOpen] = useState(false);
+  const [locationListOpen, setLocationListOpen] = useState(false);
+  const categoryFilterRootRef = useRef<HTMLDivElement>(null);
+  const locationFilterRootRef = useRef<HTMLDivElement>(null);
+  const categoryInputId = useId();
+  const locationInputId = useId();
+  const categoryListboxId = useId();
+  const locationListboxId = useId();
+  const nearMinimumSwitchId = useId();
 
   const productsQuery = api.product.backendList.useInfiniteQuery(
     {
@@ -463,6 +508,44 @@ export function ProductsAdminPanel() {
     const needle = editCategorySearch.trim().toLowerCase();
     return (categoriesQuery.data ?? []).filter((category) => category.name.toLowerCase().includes(needle));
   }, [categoriesQuery.data, editCategorySearch]);
+  const filteredListCategories = useMemo(() => {
+    const needle = listCategorySearch.trim().toLowerCase();
+    return (categoriesQuery.data ?? []).filter((category) => category.name.toLowerCase().includes(needle));
+  }, [categoriesQuery.data, listCategorySearch]);
+  const filteredListLocations = useMemo(() => {
+    const needle = listLocationSearch.trim().toLowerCase();
+    if (!needle) return filteredStorageLocationsForList;
+    return filteredStorageLocationsForList.filter((storageLocation) => {
+      const hay = `${storageLocation.code} ${storageLocation.name} ${storageLocation.storageRoom.name}`.toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [filteredStorageLocationsForList, listLocationSearch]);
+  const categoryFilterInputValue = useMemo(() => {
+    if (categoryListOpen) return listCategorySearch;
+    if (categoryFilter) return categoriesById.get(categoryFilter)?.name ?? "";
+    return "";
+  }, [categoryListOpen, listCategorySearch, categoryFilter, categoriesById]);
+  const locationFilterInputValue = useMemo(() => {
+    if (locationListOpen) return listLocationSearch;
+    if (storageLocationFilter) {
+      const loc = storageLocationsById.get(storageLocationFilter);
+      return loc ? `${loc.code} - ${loc.name}` : "";
+    }
+    return "";
+  }, [locationListOpen, listLocationSearch, storageLocationFilter, storageLocationsById]);
+
+  useEffect(() => {
+    if (!categoryListOpen && !locationListOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (categoryFilterRootRef.current?.contains(target)) return;
+      if (locationFilterRootRef.current?.contains(target)) return;
+      setCategoryListOpen(false);
+      setLocationListOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [categoryListOpen, locationListOpen]);
 
   useEffect(() => {
     setEditCategorySearch("");
@@ -709,110 +792,319 @@ export function ProductsAdminPanel() {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Produkte</h2>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => router.push("/backend/products/new")}
-          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
-        >
+          variant="new">
           <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
             <PlusIcon />
           </span>
           Neues Produkt
-        </button>
+        </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-4">
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Kategorie
-          <select
-            value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Alle Kategorien</option>
-            {(categoriesQuery.data ?? []).map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Lagerraum
-          <select
-            value={storageRoomFilter}
-            onChange={(event) => setStorageRoomFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Alle Lagerraeume</option>
+      <div className="mb-4 grid grid-cols-1 gap-8 md:grid-cols-[max-content_minmax(0,1fr)_auto] md:items-center">
+        <div className="flex min-w-0 max-w-full flex-row flex-nowrap items-center gap-x-2 overflow-x-auto [scrollbar-width:none] md:max-w-none md:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-sm text-muted-foreground">Raum:</span>
+          <div className="flex shrink-0 flex-nowrap items-center gap-1.5">
+            <FilterPillButton
+              className="px-2 py-1 text-xs"
+              onClick={() => setStorageRoomFilter("")}
+              active={storageRoomFilter === ""}
+            >
+              Alle
+            </FilterPillButton>
             {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-              <option key={storageRoom.id} value={storageRoom.id}>
+              <FilterPillButton
+                key={storageRoom.id}
+                className="px-2 py-1 text-xs"
+                onClick={() => setStorageRoomFilter(storageRoom.id)}
+                active={storageRoomFilter === storageRoom.id}
+              >
                 {storageRoom.name}
-              </option>
+              </FilterPillButton>
             ))}
-          </select>
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Platz
-          <select
-            value={storageLocationFilter}
-            onChange={(event) => setStorageLocationFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-row flex-wrap items-start justify-center gap-3">
+          <div ref={categoryFilterRootRef} className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            <label htmlFor={categoryInputId} className="shrink-0 text-sm text-muted-foreground text-right">
+              Kategorie
+            </label>
+            <div className="relative min-w-0 flex-1">
+              <Input
+                id={categoryInputId}
+                type="text"
+                inputMode="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={categoryListOpen}
+                aria-controls={categoryListOpen ? categoryListboxId : undefined}
+                autoComplete="off"
+                value={categoryFilterInputValue}
+                onChange={(event) => {
+                  setListCategorySearch(event.target.value);
+                  setCategoryListOpen(true);
+                  setLocationListOpen(false);
+                }}
+                onFocus={() => {
+                  setLocationListOpen(false);
+                  setCategoryListOpen(true);
+                  const seed = categoryFilter ? categoriesById.get(categoryFilter)?.name ?? "" : "";
+                  setListCategorySearch(seed);
+                }}
+                placeholder="Suchen…"
+                className="h-9 rounded-lg pr-8 text-sm"
+              />
+              {categoryFilter !== "" || (categoryListOpen && listCategorySearch.trim() !== "") ? (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                  aria-label="Kategoriefilter zurücksetzen"
+                  title="Filter zurücksetzen"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setCategoryFilter("");
+                    setListCategorySearch("");
+                    setCategoryListOpen(false);
+                  }}
+                >
+                  <span aria-hidden className="relative -top-px text-lg leading-none">
+                    ×
+                  </span>
+                </button>
+              ) : null}
+              {categoryListOpen ? (
+                  <div
+                    id={categoryListboxId}
+                    role="listbox"
+                    aria-label="Kategorie waehlen"
+                    className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={categoryFilter === ""}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setCategoryFilter("");
+                        setListCategorySearch("");
+                        setCategoryListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        categoryFilter === "" ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      Alle Kategorien
+                    </button>
+                {filteredListCategories.map((category) => {
+                  const active = categoryFilter === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        const picked = categoriesById.get(category.id);
+                        setCategoryFilter(category.id);
+                        setListCategorySearch(picked?.name ?? "");
+                        setCategoryListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        active ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  );
+                })}
+                    {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Kategorien.</p>
+                    ) : filteredListCategories.length === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Treffer.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+            </div>
+          </div>
+
+          <div ref={locationFilterRootRef} className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            <label htmlFor={locationInputId} className="shrink-0 text-sm text-muted-foreground text-right">
+              Platz
+            </label>
+            <div className="relative min-w-0 flex-1">
+              <Input
+                id={locationInputId}
+                type="text"
+                inputMode="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={locationListOpen}
+                aria-controls={locationListOpen ? locationListboxId : undefined}
+                autoComplete="off"
+                value={locationFilterInputValue}
+                onChange={(event) => {
+                  setListLocationSearch(event.target.value);
+                  setLocationListOpen(true);
+                  setCategoryListOpen(false);
+                }}
+                onFocus={() => {
+                  setCategoryListOpen(false);
+                  setLocationListOpen(true);
+                  const loc = storageLocationFilter
+                    ? storageLocationsById.get(storageLocationFilter)
+                    : undefined;
+                  const seed = loc ? `${loc.code} - ${loc.name}` : "";
+                  setListLocationSearch(seed);
+                }}
+                placeholder="Suchen…"
+                className="h-9 rounded-lg pr-8 text-sm"
+              />
+              {storageLocationFilter !== "" || (locationListOpen && listLocationSearch.trim() !== "") ? (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                  aria-label="Lagerplatzfilter zurücksetzen"
+                  title="Filter zurücksetzen"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setStorageLocationFilter("");
+                    setListLocationSearch("");
+                    setLocationListOpen(false);
+                  }}
+                >
+                  <span aria-hidden className="relative -top-px text-lg leading-none">
+                    ×
+                  </span>
+                </button>
+              ) : null}
+              {locationListOpen ? (
+                  <div
+                    id={locationListboxId}
+                    role="listbox"
+                    aria-label="Lagerplatz waehlen"
+                    className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={storageLocationFilter === ""}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setStorageLocationFilter("");
+                        setListLocationSearch("");
+                        setLocationListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        storageLocationFilter === "" ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      Alle Lagerplaetze
+                    </button>
+                {filteredListLocations.map((storageLocation) => {
+                  const active = storageLocationFilter === storageLocation.id;
+                  const label = `${storageLocation.code} - ${storageLocation.name} (${storageLocation.storageRoom.name})`;
+                  return (
+                    <button
+                      key={storageLocation.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setStorageLocationFilter(storageLocation.id);
+                        setListLocationSearch(
+                          `${storageLocation.code} - ${storageLocation.name}`,
+                        );
+                        setLocationListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        active ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                    {(storageLocationsQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Lagerplaetze.</p>
+                    ) : filteredListLocations.length === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Treffer.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-row items-center justify-end gap-2">
+          <label
+            htmlFor={nearMinimumSwitchId}
+            className="whitespace-nowrap text-sm text-muted-foreground"
+            title="Nur Produkte mit Bestand nahe oder unter dem Mindestbestand (bis 110 Prozent des Mindestwerts)"
           >
-            <option value="">Alle Lagerplaetze</option>
-            {filteredStorageLocationsForList.map((storageLocation) => (
-              <option key={storageLocation.id} value={storageLocation.id}>
-                {storageLocation.code} - {storageLocation.name} ({storageLocation.storageRoom.name})
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mb-1 flex items-end">
-          <Button
-            type="button"
-            variant={showNearMinimumOnly ? "default" : "outline"}
-            className="h-10 w-full rounded-xl"
-            onClick={() => setShowNearMinimumOnly((current) => !current)}
-          >
-            {showNearMinimumOnly ? "Filter aktiv: nahe Mindestbestand" : "Nahe Mindestbestand (<= 110%)"}
-          </Button>
+            Nahe Mindestbestand
+          </label>
+          <Switch
+            id={nearMinimumSwitchId}
+            checked={showNearMinimumOnly}
+            onCheckedChange={setShowNearMinimumOnly}
+            title={
+              showNearMinimumOnly
+                ? "Filter aus: alle Produkte anzeigen"
+                : "Filter ein: nur Produkte nahe oder unter Mindestbestand"
+            }
+          />
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+        <TableUI.Table className="table-fixed">
+          <colgroup>
+            <col className="w-[43%]" />
+            <col className="w-[14%]" />
+            <col className="w-[8%]" />
+            <col className="w-[17%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
+          </colgroup>
+          <TableUI.TableHeader>
             <tr>
-              <TableHead>Name</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Kategorie</TableHead>
-              <TableHead>Lagerplatz</TableHead>
-              <TableHead>Bestand</TableHead>
-              <TableHead>Mindestbestand</TableHead>
+              <TableUI.TableHead className="min-w-0">Name</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">SKU</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">Kategorie</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">Lagerplatz</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">Bestand</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">
+                {"Mindest\u00ADbestand"}
+              </TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {productsQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={6} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
                   Produkte werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {productsQuery.error ? (
               <tr>
-                <TableCell colSpan={6} className="bg-white text-destructive">
+                <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
                   Produkte konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {!productsQuery.isLoading && !productsQuery.error && visibleProducts.length === 0 ? (
               <tr>
-                <TableCell colSpan={6} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
                   Keine Produkte gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
@@ -837,7 +1129,7 @@ export function ProductsAdminPanel() {
 
               return (
                 <Fragment key={product.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
                       setExpandedRowId((current) => (current === product.id ? null : product.id));
                       setFormsById((current) => ({
@@ -852,15 +1144,11 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className={`cursor-pointer ${isNearMinimum ? "outline outline-2 -outline-offset-2 outline-yellow-400" : ""}`}
+                    className={`cursor-pointer ${isNearMinimum ? "rounded-md outline outline-2 -outline-offset-2 outline-accent-orange/60" : ""}`}
                   >
-                    <TableCell
-                      className={`font-medium ${
-                        isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-foreground"
-                      }`}
-                    >
-                      <div className="relative inline-block">
-                        <span>{product.name}</span>
+                    <TableUI.TableCell className="min-w-0 max-w-0">
+                      <div className="relative inline-block max-w-full">
+                        <span className="break-words">{product.name}</span>
                         {previewImage?.url && hoveredProductId === product.id && !isExpanded ? (
                           <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md border border-border bg-card p-1 shadow-lg">
                             <img
@@ -875,162 +1163,177 @@ export function ProductsAdminPanel() {
                           </div>
                         ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell className={isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-muted-foreground"}>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {product.sku}
-                    </TableCell>
-                    <TableCell className={isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-muted-foreground"}>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {product.category?.name ?? "-"}
-                    </TableCell>
-                    <TableCell className={isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-muted-foreground"}>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {locationText}
-                    </TableCell>
-                    <TableCell className={isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-muted-foreground"}>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="whitespace-nowrap tabular-nums">
                       {toNumber(product.quantityOnHand)}
-                    </TableCell>
-                    <TableCell className={isExpanded ? "bg-muted/60 text-black/20" : "bg-white text-muted-foreground"}>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="whitespace-nowrap tabular-nums">
                       {toNumber(product.minimumQuantity)}
-                    </TableCell>
-                  </TableRow>
-                  {isExpanded ? (
-                    <tr className="border-t border-border">
-                      <td colSpan={6} className="align-top bg-muted/50 px-1 py-5">
-                        <div className="mx-4 flex flex-col gap-4">
-                          <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
-                            <div className="flex min-h-0 min-w-0 flex-col gap-4">
-                              <div className="space-y-3 rounded-lg">
-                                <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-x-4">
-                                  <label className="block text-xs text-slate-600 md:col-span-2">
-                                    Name
-                                    <input
-                                      value={form.name}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
-                                        setFormsById((current) => ({
-                                          ...current,
-                                          [product.id]: { ...form, name: event.target.value },
-                                        }))
-                                      }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-slate-900 text-lg font-semibold text-foreground"
-                                    />
-                                  </label>
-                                  <label className="block text-xs text-slate-600">
-                                    SKU
-                                    <input
-                                      value={form.sku}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
-                                        setFormsById((current) => ({
-                                          ...current,
-                                          [product.id]: { ...form, sku: event.target.value },
-                                        }))
-                                      }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-lg text-slate-900"
-                                    />
-                                  </label>
-                                  <label className="block text-xs text-slate-600 md:col-span-3">
-                                    Beschreibung
-                                    <textarea
-                                      value={form.description}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
-                                        setFormsById((current) => ({
-                                          ...current,
-                                          [product.id]: { ...form, description: event.target.value },
-                                        }))
-                                      }
-                                      rows={3}
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                    />
-                                  </label>
-                                </div>
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={6}
+                    rowClassName="border-t border-border bg-muted/30"
+                    cellClassName="min-w-0 align-top bg-muted/30 px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    <div className="mx-4 flex min-w-0 flex-col gap-4">
+                      <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
+                        <div className="flex min-h-0 min-w-0 flex-col gap-4">
+                          <div className="space-y-3 rounded-lg">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-x-4">
+                              <label className="block text-sm text-slate-600 md:col-span-2">
+                                Name
+                                <Input
+                                  value={form.name}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, name: event.target.value },
+                                    }))
+                                  }
+                                  className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                SKU
+                                <Input
+                                  value={form.sku}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, sku: event.target.value },
+                                    }))
+                                  }
+                                  className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600 md:col-span-3">
+                                Beschreibung
+                                <textarea
+                                  value={form.description}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, description: event.target.value },
+                                    }))
+                                  }
+                                  rows={3}
+                                  className="mt-1 w-full rounded-md bg-card/40 px-2.5 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4">
+                            <div className="space-y-3 rounded-sm bg-card/40 p-3">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Lager</p>
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
                               </div>
+                              <label className="block text-sm text-slate-600">
+                                Raum
+                                <Select
+                                  value={selectedRoomId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(nextRoomId) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: {
+                                        ...form,
+                                        storageRoomId: nextRoomId,
+                                        storageLocationId: "",
+                                      },
+                                    }))
+                                  }
+                                  options={[
+                                    { value: "", label: "Kein Lagerraum" },
+                                    ...(storageRoomsQuery.data ?? []).map((storageRoom) => ({
+                                      value: storageRoom.id,
+                                      label: storageRoom.name,
+                                    })),
+                                  ]}
+                                  className="mt-1 w-full px-2.5 py-2 text-sm text-slate-900"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                Platz
+                                <Select
+                                  value={form.storageLocationId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(nextLocationId) =>
+                                    setFormsById((current) => {
+                                      const selectedLocation = storageLocationsById.get(nextLocationId);
+                                      return {
+                                        ...current,
+                                        [product.id]: {
+                                          ...form,
+                                          storageRoomId: selectedLocation?.storageRoomId ?? form.storageRoomId,
+                                          storageLocationId: nextLocationId,
+                                        },
+                                      };
+                                    })
+                                  }
+                                  disabled={!selectedRoomId}
+                                  options={[
+                                    {
+                                      value: "",
+                                      label: selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum wählen",
+                                    },
+                                    ...filteredStorageLocationsForForm.map((storageLocation) => ({
+                                      value: storageLocation.id,
+                                      label: `${storageLocation.code} - ${storageLocation.name}`,
+                                    })),
+                                  ]}
+                                  className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                />
+                              </label>
+                            </div>
 
-                              <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4">
-                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                                  <div>
-                                    <p className="text-lg font-semibold text-slate-900">Lager</p>
-                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                                  </div>
-                                  <label className="block text-xs text-slate-600">
-                                    Raum
-                                    <select
-                                      value={selectedRoomId}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
-                                        setFormsById((current) => ({
-                                          ...current,
-                                          [product.id]: {
-                                            ...form,
-                                            storageRoomId: event.target.value,
-                                            storageLocationId: "",
-                                          },
-                                        }))
-                                      }
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                                    >
-                                      <option value="">Kein Lagerraum</option>
-                                      {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-                                        <option key={storageRoom.id} value={storageRoom.id}>
-                                          {storageRoom.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                  <label className="block text-xs text-slate-600">
-                                    Platz
-                                    <select
-                                      value={form.storageLocationId}
-                                      onClick={(event) => event.stopPropagation()}
-                                      onChange={(event) =>
-                                        setFormsById((current) => {
-                                          const selectedLocation = storageLocationsById.get(event.target.value);
-                                          return {
-                                            ...current,
-                                            [product.id]: {
-                                              ...form,
-                                              storageRoomId: selectedLocation?.storageRoomId ?? form.storageRoomId,
-                                              storageLocationId: event.target.value,
-                                            },
-                                          };
-                                        })
-                                      }
-                                      disabled={!selectedRoomId}
-                                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
-                                    >
-                                      <option value="">
-                                        {selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}
-                                      </option>
-                                      {filteredStorageLocationsForForm.map((storageLocation) => (
-                                        <option key={storageLocation.id} value={storageLocation.id}>
-                                          {storageLocation.code} - {storageLocation.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
-                                </div>
-
-                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
-                                  <div>
-                                    <p className="text-lg font-semibold text-slate-900">Mengen & Einheiten</p>
-                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                                  </div>
+                            <div className="space-y-3 rounded-md bg-card/40 p-3">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Mengen & Einheiten</p>
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              </div>
 
                                   <div className="relative grid grid-cols-1 gap-3 px-3 sm:grid-cols-3">
                                     <div
-                                      className="pointer-events-none absolute inset-y-0 left-1/3 hidden w-px bg-slate-200/40 sm:block"
+                                      className="pointer-events-none absolute inset-y-0 left-1/3 hidden w-px bg-slate-300/40 sm:block"
                                       aria-hidden="true"
                                     />
 
-                                    <label className="block text-xs text-slate-600 text-center sm:pr-3">
+                                    <label className="block text-sm text-slate-600 text-center sm:pr-3">
                                       Bestand
+                                      {(() => {
+                                        const quantityOnHand = toNumber(product.quantityOnHand);
+                                        const minimumQuantity = toNumber(form.minimumQuantity);
+                                        const ratio = minimumQuantity > 0 ? quantityOnHand / minimumQuantity : Number.POSITIVE_INFINITY;
+                                        const stockColorClass =
+                                          ratio > 1.1 ? "text-primary" : ratio >= 1 ? "text-accent-orange" : "text-destructive";
+
+                                        return (
                                       <input
                                         disabled
                                         value={String(toNumber(product.quantityOnHand))}
-                                        className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-600 text-center font-semibold"
+                                        className={`mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm ${stockColorClass} text-center font-semibold`}
                                       />
+                                        );
+                                      })()}
                                     </label>
-                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
                                       Minimum
                                       <div className="mt-1 flex justify-center">
                                         <NumberStepper
@@ -1049,7 +1352,7 @@ export function ProductsAdminPanel() {
                                         />
                                       </div>
                                     </label>
-                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
                                       Schritte
                                       <div className="mt-1 flex justify-center">
                                         <NumberStepper
@@ -1069,7 +1372,7 @@ export function ProductsAdminPanel() {
                                       </div>
                                     </label>
 
-                                    <label className="block text-xs text-slate-600 text-center sm:pr-3">
+                                    <label className="block text-sm text-slate-600 text-center sm:pr-3">
                                       Neu einbuchen
                                       <Button
                                         type="button"
@@ -1078,14 +1381,14 @@ export function ProductsAdminPanel() {
                                           setBookingProduct({ id: product.id, name: product.name });
                                           setBookingError(null);
                                         }}
-                                        variant="secondary"
+                                        variant="new"
                                         className="mt-1 h-[38px] shrink-0 w-full text-center"
                                       >
                                         Dialog öffnen
                                       </Button>
                                     </label>
 
-                                    <label className="block text-xs text-slate-600 text-center sm:pl-3">
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
                                       Einheitstyp
                                       <select
                                         value={form.unitKind}
@@ -1099,7 +1402,7 @@ export function ProductsAdminPanel() {
                                             },
                                           }))
                                         }
-                                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white py-2 text-sm text-slate-900 text-center"
+                                        className="mt-1 w-full rounded-sm bg-card/40 py-2 text-sm text-slate-900 text-center"
                                       >
                                         {unitKinds.map((unitKind) => (
                                           <option key={unitKind.value} value={unitKind.value}>
@@ -1108,8 +1411,8 @@ export function ProductsAdminPanel() {
                                         ))}
                                       </select>
                                     </label>
-                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:pl-3">
-                                      <label className="block text-xs text-slate-600 sm:flex-1 text-center">
+                                    <div className="block text-sm text-slate-600 text-center sm:pl-3">
+                                      <label className="block text-sm text-slate-600 sm:flex-1 text-center">
                                         Basiseinheit
                                         <select
                                           value={form.baseUnit}
@@ -1123,7 +1426,7 @@ export function ProductsAdminPanel() {
                                               },
                                             }))
                                           }
-                                          className="mt-1 w-full rounded-lg border border-slate-300 bg-white py-2 text-sm text-slate-900 text-center"
+                                          className="mt-1 w-full rounded-sm bg-card/40 py-2 text-sm text-slate-900 text-center"
                                         >
                                           {baseUnits.map((baseUnit) => (
                                             <option key={baseUnit.value} value={baseUnit.value}>
@@ -1137,10 +1440,10 @@ export function ProductsAdminPanel() {
                                   </div>
                                 </div>
 
-                                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                                <div className="space-y-3 rounded-md bg-card/40 p-3">
                                   <div>
-                                    <p className="text-lg font-semibold text-slate-900">Preis und Sichtbarkeit</p>
-                                    <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                    <p className="text-lg font-semibold text-slate-900">Sichtbarkeit & Preis</p>
+                                    <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
                                   </div>
                                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     <button
@@ -1152,7 +1455,7 @@ export function ProductsAdminPanel() {
                                           [product.id]: { ...form, isVisible: !form.isVisible },
                                         }));
                                       }}
-                                      className={`flex w-full items-center justify-between gap-3 rounded-lg border-2 bg-white mt-1 px-3 py-2 text-left transition sm:col-span-2 ${
+                                      className={`flex w-full items-center justify-between gap-3 rounded-sm border-2 bg-card/40 mt-1 px-3 py-2 text-left transition sm:col-span-2 ${
                                         form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
                                       }`}
                                       aria-label="Produktsichtbarkeit umschalten"
@@ -1173,10 +1476,10 @@ export function ProductsAdminPanel() {
                                       </span>
                                     </button>
 
-                                    <label className="block text-xs text-slate-600 text-center mt-2">
+                                    <label className="block text-sm text-slate-600 text-center mt-2">
                                       Verkaufspreis
                                       <div className="mt-1 flex w-full">
-                                        <input
+                                        <Input
                                           type="text"
                                           inputMode="decimal"
                                           value={form.price}
@@ -1187,15 +1490,15 @@ export function ProductsAdminPanel() {
                                               [product.id]: { ...form, price: event.target.value },
                                             }))
                                           }
-                                          className="w-full rounded-l-lg border border-slate-300 bg-white pl-4 py-2 text-sm text-slate-900 text-center"
+                                          className="!h-9 !rounded-l-sm !rounded-r-none !bg-transparent pl-4 py-2 text-sm text-slate-900 text-center"
                                         />
-                                        <span className="inline-flex items-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 px-2.5 text-sm text-slate-700">
+                                        <span className="inline-flex items-center rounded-r-sm bg-card/80 px-2.5 text-sm text-slate-700">
                                           €
                                         </span>
                                       </div>
                                     </label>
 
-                                    <label className="block text-xs text-slate-600 text-center mt-2">
+                                    <label className="block text-sm text-slate-600 text-center mt-2">
                                       Gesamtvermögen
                                       <div className="mt-1 flex w-full">
                                         <input
@@ -1208,9 +1511,9 @@ export function ProductsAdminPanel() {
                                             return formatMoneyDeAt(total);
                                           })()}
                                           onClick={(event) => event.stopPropagation()}
-                                          className="w-full rounded-l-lg border border-slate-200 bg-white pl-2.5 py-2 text-sm text-slate-600 font-semibold text-center"
+                                          className="w-full !rounded-l-sm bg-card/40 pl-2.5 py-2 text-sm text-slate-600 font-semibold text-center"
                                         />
-                                        <span className="inline-flex items-center rounded-r-lg border border-l-0 border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-700">
+                                        <span className="inline-flex items-center rounded-r-sm bg-card/80 px-2.5 text-sm text-slate-700">
                                           €
                                         </span>
                                       </div>
@@ -1221,19 +1524,20 @@ export function ProductsAdminPanel() {
                             </div>
 
                             <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
-                              <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 md:min-h-0 md:overflow-hidden">
+                              <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-md bg-card/40 p-3 md:min-h-0 md:overflow-hidden">
                                 <div className="shrink-0 space-y-3">
                                   <p className="text-lg font-semibold text-slate-900">Kategorien</p>
-                                  <div className="h-px w-full bg-slate-200/70" aria-hidden="true" />
+                                  <div className="h-px w-full bg-slate-300/70" aria-hidden="true" />
                                   {form.categoryIds.length > 0 ? (
                                     <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
                                       {form.categoryIds.map((categoryId) => {
                                         const assigned = categoriesById.get(categoryId);
                                         if (!assigned) return null;
                                         return (
-                                          <button
+                                          <Button
                                             key={categoryId}
-                                            type="button"
+                                            variant="category-pill"
+                                            size="sm"
                                             onClick={(event) => {
                                               event.stopPropagation();
                                               setFormsById((current) => {
@@ -1247,14 +1551,14 @@ export function ProductsAdminPanel() {
                                                 };
                                               });
                                             }}
-                                            className="inline-flex max-w-full min-h-0 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1"
+                                            className="max-w-full cursor-pointer gap-1.5"
                                             aria-label={`Kategorie ${assigned.name} entfernen`}
                                           >
                                             <span className="truncate font-medium">{assigned.name}
                                               <span className="text-destructive"> X
                                               </span>
                                             </span>
-                                          </button>
+                                          </Button>
                                         );
                                       })}
                                     </div>
@@ -1265,12 +1569,12 @@ export function ProductsAdminPanel() {
                                     onChange={(event) => setEditCategorySearch(event.target.value)}
                                     onClick={(event) => event.stopPropagation()}
                                     placeholder="Kategorien suchen..."
-                                    className="h-9 rounded-lg border-slate-300 bg-white text-sm"
+                                    className="h-9 rounded-md text-sm"
                                     aria-label="Kategorien filtern"
                                   />
                                 </div>
                                 <div
-                                  className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white max-h-80"
+                                  className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-sm bg-card/40 max-h-80"
                                   onClick={(event) => event.stopPropagation()}
                                 >
                                   <div
@@ -1282,7 +1586,7 @@ export function ProductsAdminPanel() {
                                       {filteredEditCategories.map((category) => (
                                         <label
                                           key={category.id}
-                                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-900"
+                                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-900 hover:bg-card/80"
                                         >
                                           <input
                                             type="checkbox"
@@ -1299,7 +1603,7 @@ export function ProductsAdminPanel() {
                                                 },
                                               }))
                                             }
-                                            className="h-4 w-4 shrink-0 rounded border-slate-300"
+                                            className="h-4 w-4 shrink-0"
                                           />
                                           <span>{category.name}</span>
                                         </label>
@@ -1316,69 +1620,50 @@ export function ProductsAdminPanel() {
                             </div>
                           </div>
 
-                          <div className="rounded-lg border border-slate-200 bg-white p-3 min-w-0">
-                            {editMediaSectionCollapsedById[product.id] ? (
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setEditMediaSectionCollapsedById((current) => ({
-                                    ...current,
-                                    [product.id]: false,
-                                  }));
-                                }}
-                                className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
-                                aria-expanded={false}
-                                aria-controls={`edit-media-section-${product.id}`}
-                              >
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
-                                  <span
-                                    aria-hidden="true"
-                                    className="shrink-0 text-slate-500"
-                                    title="Ausklappen"
-                                  >
-                                    ▾
-                                  </span>
-                                </div>
-                              </button>
-                            ) : (
-                              <div id={`edit-media-section-${product.id}`} className="space-y-3">
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setEditMediaSectionCollapsedById((current) => ({
-                                      ...current,
-                                      [product.id]: true,
-                                    }));
-                                  }}
-                                  className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
-                                  aria-expanded={true}
-                                  aria-controls={`edit-media-section-${product.id}`}
+                          <div className="rounded-md bg-card/40 p-3 min-w-0">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setEditMediaSectionCollapsedById((current) => ({
+                                  ...current,
+                                  [product.id]: !(current[product.id] ?? true),
+                                }));
+                              }}
+                              className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
+                              aria-expanded={!(editMediaSectionCollapsedById[product.id] ?? true)}
+                              aria-controls={`edit-media-section-${product.id}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+                                <span
+                                  aria-hidden="true"
+                                  className="shrink-0 text-slate-500"
+                                  title={(editMediaSectionCollapsedById[product.id] ?? true) ? "Ausklappen" : "Einklappen"}
                                 >
-                                  <div className="flex items-center justify-between gap-3">
-                                    <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
-                                    <span
-                                      aria-hidden="true"
-                                      className="shrink-0 text-slate-500"
-                                      title="Einklappen"
-                                    >
-                                      ▴
-                                    </span>
-                                  </div>
-                                  <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
-                                </button>
+                                  <ChevronDownIcon
+                                    open={!(editMediaSectionCollapsedById[product.id] ?? true)}
+                                    className="h-4 w-4"
+                                  />
+                                </span>
+                              </div>
+                              {!(editMediaSectionCollapsedById[product.id] ?? true) ? (
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              ) : null}
+                            </button>
+
+                            {!(editMediaSectionCollapsedById[product.id] ?? true) ? (
+                              <div id={`edit-media-section-${product.id}`} className="space-y-3 pt-3">
 
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-stretch">
                               <div className="flex min-h-0 flex-col gap-3 md:h-full">
                                     <div>
-                                      <p className="select-none text-xs text-slate-600">Bild hochladen</p>
+                                      <p className="select-none text-sm text-slate-600">Bild hochladen</p>
                                       <label
-                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
                                           editUploadPendingById[product.id]
                                             ? "cursor-default opacity-90"
-                                            : "cursor-pointer hover:bg-violet-100/90"
+                                            : "cursor-pointer hover:bg-violet-100"
                                         }`}
                                         onClick={(event) => event.stopPropagation()}
                                         aria-busy={editUploadPendingById[product.id] ? true : undefined}
@@ -1447,7 +1732,7 @@ export function ProductsAdminPanel() {
                                           }}
                                         />
                                         <span
-                                          className={`inline-flex shrink-0 rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                          className={`inline-flex shrink-0 rounded-sm bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
                                             editUploadPendingById[product.id]
                                               ? "opacity-70"
                                               : "group-hover:bg-violet-700"
@@ -1492,9 +1777,9 @@ export function ProductsAdminPanel() {
                                           const href = resolveImageTabUrl(openSource);
                                           if (href) window.open(href, "_blank", "noopener,noreferrer");
                                         }}
-                                        className={`relative h-48 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-56 sm:w-56 md:h-64 md:w-64 ${
+                                        className={`relative h-48 w-full shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100 sm:h-56 sm:w-56 md:h-64 md:w-64 ${
                                           form.imageUrl.trim() || pendingEditImage?.previewUrl
-                                            ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+                                            ? "cursor-pointer transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
                                             : "cursor-default opacity-90"
                                         }`}
                                         aria-label={
@@ -1522,7 +1807,7 @@ export function ProductsAdminPanel() {
                                           <span className="select-none">
                                             {urlFieldDisabled ? "Bild-URL" : "Bild-URL (optional)"}
                                           </span>
-                                          <input
+                                          <Input
                                             type="text"
                                             inputMode="url"
                                             autoComplete="off"
@@ -1547,16 +1832,16 @@ export function ProductsAdminPanel() {
                                                 ? "—"
                                                 : "Nach Auswahl aus Liste oder nach Speichern"
                                             }
-                                            className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                            className={`h-9 mt-1 w-full px-2.5 py-2 text-sm ${
                                               urlFieldDisabled
-                                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
-                                                : "border-slate-300 bg-white text-slate-900"
+                                                ? "cursor-not-allowed bg-slate-50 text-slate-500"
+                                                : "text-slate-900"
                                             }`}
                                           />
                                         </div>
                                         <div className="block text-xs text-slate-600">
                                           <span className="select-none">Bild-Alt-Text</span>
-                                          <input
+                                          <Input
                                             value={form.imageAltText}
                                             disabled={altFieldDisabled}
                                             onClick={(event) => event.stopPropagation()}
@@ -1580,35 +1865,44 @@ export function ProductsAdminPanel() {
                                                   ? "Vor Speichern für das neue Bild eintragen"
                                                   : "Bearbeiten, mit Speichern übernehmen"
                                             }
-                                            className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-sm ${
+                                            className={`h-9 mt-1 w-full px-2.5 py-2 text-sm ${
                                               altFieldDisabled
-                                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-500"
-                                                : "border-slate-300 bg-white text-slate-900"
+                                                ? "cursor-not-allowed text-slate-500"
+                                                : "text-slate-900"
                                             }`}
                                           />
                                         </div>
                                       </div>
                                     </div>
 
-                                    <div className="mt-auto border-t border-slate-200/80 pt-3">
+                                    <div className="mt-auto border-t border-slate-300/80 pt-3">
                                       <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
                                       <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
                                         {(product.images ?? []).length === 0 ? (
                                           <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
                                         ) : (
-                                          <div className="grid grid-cols-2 gap-2">
+                                          <div className="grid grid-cols-3 gap-2">
                                             {(product.images ?? []).map((image, imageIndex) => {
                                               const isSelected = editSelectedImageIdById[product.id] === image.id;
                                               const deleteKey = `${product.id}:${image.id}`;
                                               const sizeBytes = image.sizeBytes ?? null;
+                                              const displayImagePath = (() => {
+                                                try {
+                                                  const pathname = new URL(image.url, "http://dummy").pathname;
+                                                  const file = pathname.split("/").pop() ?? "";
+                                                  return file ? `${file}` : pathname || image.url;
+                                                } catch {
+                                                  return image.url;
+                                                }
+                                              })();
 
                                               return (
                                                 <div
                                                   key={image.id ?? `${image.url}-${imageIndex}`}
-                                                  className={`flex items-start gap-2 rounded-md border bg-slate-50/80 p-2 transition ${
+                                                  className={`relative rounded-sm border-b-2 bg-card/80 p-1.5 transition ${
                                                     isSelected
-                                                      ? "border-violet-600"
-                                                      : "border-slate-200"
+                                                      ? "border-violet-400/80 border-b-2"
+                                                      : "border-transparent"
                                                   }`}
                                                 >
                                                   <button
@@ -1650,81 +1944,97 @@ export function ProductsAdminPanel() {
                                                         };
                                                       });
                                                     }}
-                                                    className="flex min-w-0 flex-1 items-start gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                                    className="flex w-full min-w-0 items-center gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
                                                   >
                                                     <img
                                                       src={image.url}
                                                       alt={
                                                         image.altText || `${form.name} Produktbild ${imageIndex + 1}`
                                                       }
-                                                      className="h-14 w-14 shrink-0 rounded-md border border-slate-200 object-cover"
+                                                      className="h-14 w-14 shrink-0 rounded-xs object-cover"
                                                       onError={(errEvent) => {
                                                         errEvent.currentTarget.onerror = null;
                                                         errEvent.currentTarget.src = "/pictures/placeholder.jpg";
                                                       }}
                                                     />
                                                     <div className="min-w-0 flex-1">
-                                                      <p className="break-all text-[11px] leading-snug text-slate-600">
-                                                        {image.url}
-                                                      </p>
-                                                      {image.altText ? (
-                                                        <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">
-                                                          Alt: {image.altText}
-                                                        </p>
-                                                      ) : (
-                                                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                                          Kein Alt-Text
-                                                        </p>
-                                                      )}
+                                                      <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-[10px] leading-snug" >
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Name:
+                                                        </span>
+                                                        <span className="break-all text-slate-700">
+                                                          {displayImagePath}
+                                                        </span>
+
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Alt-Text:
+                                                        </span>
+                                                        <span
+                                                          className={`min-w-0 ${
+                                                            image.altText
+                                                              ? "line-clamp-2 text-slate-600"
+                                                              : "text-muted-foreground"
+                                                          }`}
+                                                        >
+                                                          {image.altText ? image.altText : "—"}
+                                                        </span>
+
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Größe:
+                                                        </span>
+                                                        <span className="tabular-nums text-muted-foreground">
+                                                          {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
+                                                        </span>
+                                                      </div>
                                                     </div>
                                                   </button>
-                                                  <div className="flex shrink-0 flex-col items-end justify-between gap-1 self-stretch">
-                                                    <span className="text-[11px] text-muted-foreground">
-                                                      {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
-                                                    </span>
-                                                    <Button
-                                                      type="button"
-                                                      size="sm"
-                                                      variant="outline"
-                                                      disabled={imageDeletePendingKey !== null}
-                                                      onClick={(clickEvent) => {
-                                                        clickEvent.stopPropagation();
-                                                        if (!image.id) return;
-                                                        const deletedUrl = image.url;
-                                                        setImageDeletePendingKey(deleteKey);
-                                                        deleteProductImageMutation.mutate(
-                                                          { productId: product.id, imageId: image.id },
-                                                          {
-                                                            onSuccess: () => {
-                                                              setEditSelectedImageIdById((current) =>
-                                                                current[product.id] === image.id
-                                                                  ? { ...current, [product.id]: null }
-                                                                  : current,
-                                                              );
-                                                              setFormsById((current) => {
-                                                                const f = current[product.id];
-                                                                if (!f) return current;
-                                                                if (f.imageUrl === deletedUrl) {
-                                                                  return {
-                                                                    ...current,
-                                                                    [product.id]: {
-                                                                      ...f,
-                                                                      imageUrl: "",
-                                                                      imageAltText: "",
-                                                                    },
-                                                                  };
-                                                                }
-                                                                return current;
-                                                              });
-                                                            },
+                                                  <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    disabled={imageDeletePendingKey !== null}
+                                                    onClick={(clickEvent) => {
+                                                      clickEvent.stopPropagation();
+                                                      if (!image.id) return;
+                                                      const deletedUrl = image.url;
+                                                      setImageDeletePendingKey(deleteKey);
+                                                      deleteProductImageMutation.mutate(
+                                                        { productId: product.id, imageId: image.id },
+                                                        {
+                                                          onSuccess: () => {
+                                                            setEditSelectedImageIdById((current) =>
+                                                              current[product.id] === image.id
+                                                                ? { ...current, [product.id]: null }
+                                                                : current,
+                                                            );
+                                                            setFormsById((current) => {
+                                                              const f = current[product.id];
+                                                              if (!f) return current;
+                                                              if (f.imageUrl === deletedUrl) {
+                                                                return {
+                                                                  ...current,
+                                                                  [product.id]: {
+                                                                    ...f,
+                                                                    imageUrl: "",
+                                                                    imageAltText: "",
+                                                                  },
+                                                                };
+                                                              }
+                                                              return current;
+                                                            });
                                                           },
-                                                        );
-                                                      }}
-                                                      className="text-xs"
-                                                    >
-                                                      {imageDeletePendingKey === deleteKey ? "..." : "Entfernen"}
-                                                    </Button>
-                                                  </div>
+                                                        },
+                                                      );
+                                                    }}
+                                                    className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-slate-600 hover:bg-red-600/80 hover:text-slate-900"
+                                                    aria-label="Bild entfernen"
+                                                  >
+                                                    {imageDeletePendingKey === deleteKey ? (
+                                                      <span className="text-xs">...</span>
+                                                    ) : (
+                                                      <WastebinIcon size={16} className="opacity-90" />
+                                                    )}
+                                                  </Button>
                                                 </div>
                                               );
                                             })}
@@ -1735,12 +2045,12 @@ export function ProductsAdminPanel() {
                                   </div>
                               <div className="flex min-h-0 flex-col gap-3 md:h-full">
                                 <div>
-                                  <p className="select-none text-xs text-slate-600">Dokument hochladen</p>
+                                  <p className="select-none text-sm text-slate-600">Dokument hochladen</p>
                                   <label
-                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm ${
+                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-amber-500/65 bg-card/40 p-3 text-sm ${
                                       editDocumentUploadPendingById[product.id]
                                         ? "cursor-default opacity-90"
-                                        : "cursor-pointer hover:bg-amber-100/90"
+                                        : "cursor-pointer hover:bg-amber-100"
                                     }`}
                                     onClick={(event) => event.stopPropagation()}
                                     aria-busy={editDocumentUploadPendingById[product.id] ? true : undefined}
@@ -1782,7 +2092,7 @@ export function ProductsAdminPanel() {
                                       }}
                                     />
                                     <span
-                                      className={`inline-flex shrink-0 rounded-md bg-amber-700 px-3 py-2 text-sm font-semibold text-amber-50 ${
+                                      className={`inline-flex shrink-0 rounded-sm bg-amber-700 px-3 py-2 text-sm font-semibold text-white ${
                                         editDocumentUploadPendingById[product.id]
                                           ? "opacity-70"
                                           : "group-hover:bg-amber-800"
@@ -1810,87 +2120,93 @@ export function ProductsAdminPanel() {
                                   </p>
                                 ) : null}
 
-                                <div className="mt-auto space-y-1.5 border-t border-slate-200/80 pt-3">
+                                <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
                                   <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
                                   {(product.documents ?? []).length === 0 ? (
                                     <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
                                   ) : (
-                                    (product.documents ?? []).map((document) => (
-                                      <div
-                                        key={document.id}
-                                        className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
-                                      >
-                                        <a
-                                          href={document.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          onClick={(event) => event.stopPropagation()}
-                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {(product.documents ?? []).map((document) => (
+                                        <div
+                                          key={document.id}
+                                          className="flex items-center justify-between gap-2 rounded-sm bg-card/80 px-2 py-1.5"
                                         >
-                                          {document.originalName}
-                                        </a>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[11px] text-muted-foreground">
-                                            {formatBytes(document.sizeBytes)}
-                                          </span>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={async (event) => {
-                                              event.stopPropagation();
-                                              try {
-                                                setEditDocumentUploadPendingById((current) => ({
-                                                  ...current,
-                                                  [product.id]: true,
-                                                }));
-                                                setEditDocumentUploadErrorById((current) => ({
-                                                  ...current,
-                                                  [product.id]: null,
-                                                }));
-                                                await deleteProductDocument(document.id);
-                                                await utils.product.backendList.invalidate();
-                                              } catch (error) {
-                                                setEditDocumentUploadErrorById((current) => ({
-                                                  ...current,
-                                                  [product.id]:
-                                                    error instanceof Error
-                                                      ? error.message
-                                                      : "Dokument konnte nicht geloescht werden.",
-                                                }));
-                                              } finally {
-                                                setEditDocumentUploadPendingById((current) => ({
-                                                  ...current,
-                                                  [product.id]: false,
-                                                }));
-                                              }
-                                            }}
-                                            disabled={editDocumentUploadPendingById[product.id]}
+                                          <a
+                                            href={document.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            onClick={(event) => event.stopPropagation()}
+                                            className="truncate text-xs text-primary underline-offset-2 hover:underline"
                                           >
-                                            Entfernen
-                                          </Button>
+                                            {document.originalName}
+                                          </a>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[11px] text-muted-foreground">
+                                              {formatBytes(document.sizeBytes)}
+                                            </span>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={async (event) => {
+                                                event.stopPropagation();
+                                                try {
+                                                  setEditDocumentUploadPendingById((current) => ({
+                                                    ...current,
+                                                    [product.id]: true,
+                                                  }));
+                                                  setEditDocumentUploadErrorById((current) => ({
+                                                    ...current,
+                                                    [product.id]: null,
+                                                  }));
+                                                  await deleteProductDocument(document.id);
+                                                  await utils.product.backendList.invalidate();
+                                                } catch (error) {
+                                                  setEditDocumentUploadErrorById((current) => ({
+                                                    ...current,
+                                                    [product.id]:
+                                                      error instanceof Error
+                                                        ? error.message
+                                                        : "Dokument konnte nicht geloescht werden.",
+                                                  }));
+                                                } finally {
+                                                  setEditDocumentUploadPendingById((current) => ({
+                                                    ...current,
+                                                    [product.id]: false,
+                                                  }));
+                                                }
+                                              }}
+                                              disabled={editDocumentUploadPendingById[product.id]}
+                                              className="h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                              aria-label="Dokument entfernen"
+                                            >
+                                              {editDocumentUploadPendingById[product.id] ? (
+                                                <span className="text-xs">...</span>
+                                              ) : (
+                                                <WastebinIcon size={16} className="opacity-90" />
+                                              )}
+                                            </Button>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))
+                                      ))}
+                                    </div>
                                   )}
                                 </div>
                               </div>
                                 </div>
                               </div>
-                            )}
+                            ) : null}
                           </div>
 
                         </div>
 
-                        <BookingHistory productId={product.id} />
-                      </td>
-                    </tr>
-                  ) : null}
+                    <BookingHistory productId={product.id} />
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {productsQuery.hasNextPage ? (
         <div className="mt-4">

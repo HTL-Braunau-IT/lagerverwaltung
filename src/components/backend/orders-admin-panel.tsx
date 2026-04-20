@@ -236,13 +236,8 @@ export function OrdersAdminPanel() {
                             });
                           }}
                           disabled={updateStatusMutation.isPending}
-                          variant={nextStatus === "READY_FOR_PICKUP" ? "default" : "outline"}
+                          variant={nextStatus === "READY_FOR_PICKUP" ? "solid" : "glass"}
                           size="sm"
-                          className={
-                            nextStatus === "READY_FOR_PICKUP"
-                              ? "w-full max-w-full justify-center rounded-full border-0 bg-primary/80 font-semibold text-primary-foreground transition-[opacity] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-55"
-                              : "w-full max-w-full justify-center rounded-full border-0 bg-card/60 font-semibold text-primary backdrop-blur-sm transition-[background-color,color] duration-200 hover:bg-card/90 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55"
-                          }
                           aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
                         >
                           {status.advanceActionLabel}

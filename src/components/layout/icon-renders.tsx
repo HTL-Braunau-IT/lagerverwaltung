@@ -106,6 +106,24 @@ export function PlusIcon({ className = "h-4 w-4" }: { className?: string } = {})
   );
 }
 
+export function ChevronDownIcon({
+  className = "h-4 w-4",
+  open = false,
+}: { className?: string; open?: boolean } = {}) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      className={`${className} shrink-0 opacity-70 transition-transform ${open ? "rotate-180" : ""}`.trim()}
+    >
+      <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z" />
+    </svg>
+  );
+}
+
 export function ArrowLeftIcon({ className = "h-4 w-4" }: { className?: string } = {}) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
