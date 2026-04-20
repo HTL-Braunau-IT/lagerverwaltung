@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { PlusIcon } from "~/components/layout/icon-renders";
 
 type CategoryForm = {
   name: string;
@@ -30,17 +31,11 @@ function toCategorySlug(name: string): string {
 
 export function CategoriesAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [usageFilter, setUsageFilter] = useState<"ALL" | "USED" | "UNUSED">("ALL");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [form, setForm] = useState<CategoryForm>(createEmptyForm);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => setSearchTerm(searchInput.trim()), 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const categoriesQuery = api.category.backendList.useInfiniteQuery(
     {
@@ -52,26 +47,19 @@ export function CategoriesAdminPanel() {
     },
   );
 
-  const createMutation = api.category.backendCreate.useMutation({
-    onSuccess: async () => {
-      await Promise.all([utils.category.backendList.invalidate(), utils.category.list.invalidate()]);
-      setForm(createEmptyForm());
-      setCreateOpen(false);
-    },
-  });
   const updateMutation = api.category.backendUpdate.useMutation({
     onSuccess: async () => {
       await Promise.all([
         utils.category.backendList.invalidate(),
         utils.category.list.invalidate(),
-        selectedId ? utils.category.byId.invalidate({ id: selectedId }) : Promise.resolve(),
+        expandedCategoryId ? utils.category.byId.invalidate({ id: expandedCategoryId }) : Promise.resolve(),
       ]);
     },
   });
   const deleteMutation = api.category.backendDelete.useMutation({
     onSuccess: async () => {
       await Promise.all([utils.category.backendList.invalidate(), utils.category.list.invalidate()]);
-      setSelectedId(null);
+      setExpandedCategoryId(null);
       setForm(createEmptyForm());
     },
   });
@@ -79,60 +67,29 @@ export function CategoriesAdminPanel() {
   const items = useMemo(
     () =>
       [...(categoriesQuery.data?.pages.flatMap((page) => page.items) ?? [])]
-        .filter((category) => {
-          if (usageFilter === "USED") return category._count.products > 0;
-          if (usageFilter === "UNUSED") return category._count.products === 0;
-          return true;
-        })
         .sort((a, b) => a.name.localeCompare(b.name)),
-    [categoriesQuery.data, usageFilter],
+    [categoriesQuery.data],
   );
 
-  const isEditing = Boolean(selectedId);
   const generatedSlug = toCategorySlug(form.name.trim());
   const canSave = form.name.trim().length > 0 && generatedSlug.length > 0;
 
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Kategorien</h2>
-          <p className="text-sm text-muted-foreground">Kategorien erstellen, bearbeiten und loeschen.</p>
         </div>
-        <Button
+        <button
           type="button"
-          onClick={() => {
-            setForm(createEmptyForm());
-            setCreateOpen(true);
-          }}
+          onClick={() => router.push("/backend/categories/new")}
+          className="inline-flex items-center rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
         >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
           Neue Kategorie
-        </Button>
-      </div>
-
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-category-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name oder Slug
-          <Input
-            id="backend-category-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. Elektronik"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Nutzung
-          <select
-            value={usageFilter}
-            onChange={(event) => setUsageFilter(event.target.value as "ALL" | "USED" | "UNUSED")}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="ALL">Alle</option>
-            <option value="USED">Nur verwendet</option>
-            <option value="UNUSED">Nur ungenutzt</option>
-          </select>
-        </label>
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -142,53 +99,106 @@ export function CategoriesAdminPanel() {
               <TableHead>Name</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Produkte</TableHead>
-              <TableHead>Aktion</TableHead>
             </tr>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-white">
             {categoriesQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={3} className="text-muted-foreground">
                   Kategorien werden geladen...
                 </TableCell>
               </tr>
             ) : null}
             {categoriesQuery.error ? (
               <tr>
-                <TableCell colSpan={4} className="text-destructive">
+                <TableCell colSpan={3} className="text-destructive">
                   Kategorien konnten nicht geladen werden.
                 </TableCell>
               </tr>
             ) : null}
             {!categoriesQuery.isLoading && !categoriesQuery.error && items.length === 0 ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={3} className="text-muted-foreground">
                   Keine Kategorien gefunden.
                 </TableCell>
               </tr>
             ) : null}
-            {items.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell className="font-medium text-foreground">{category.name}</TableCell>
-                <TableCell className="text-muted-foreground">{category.slug ?? "-"}</TableCell>
-                <TableCell className="text-muted-foreground">{category._count.products}</TableCell>
-                <TableCell>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
+            {items.map((category) => {
+              const isExpanded = expandedCategoryId === category.id;
+
+              return (
+                <Fragment key={category.id}>
+                  <TableRow
                     onClick={() => {
-                      setSelectedId(category.id);
-                      setForm({
-                        name: category.name,
-                      });
+                      setExpandedCategoryId((current) => (current === category.id ? null : category.id));
+                      setForm((current) => (expandedCategoryId === category.id ? current : { name: category.name }));
                     }}
+                    className={`cursor-pointer bg-white hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : ""} select-none`}
                   >
-                    Bearbeiten
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <TableCell className="font-medium text-foreground">{category.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{category.slug ?? "-"}</TableCell>
+                    <TableCell className="text-muted-foreground">{category._count.products}</TableCell>
+                  </TableRow>
+
+                  {isExpanded ? (
+                    <tr className="bg-muted/30">
+                      <td colSpan={3} className="p-3">
+                        <div className="w-full p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <h3 className="text-base font-semibold text-foreground">Kategorie bearbeiten</h3>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground">
+                            Produkte:{" "}
+                            <span className="font-medium text-foreground">{category._count.products}</span>
+                          </p>
+
+                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <label className="text-xs text-muted-foreground">
+                              Name
+                              <Input
+                                value={form.name}
+                                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                                className="mt-1 h-10 rounded-xl"
+                              />
+                            </label>
+                            <label className="text-xs text-muted-foreground">
+                              Slug (automatisch)
+                              <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
+                            </label>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                updateMutation.mutate({
+                                  id: category.id,
+                                  name: form.name.trim(),
+                                  slug: generatedSlug,
+                                })
+                              }
+                              disabled={!canSave || updateMutation.isPending}
+                            >
+                              {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              onClick={() => deleteMutation.mutate({ id: category.id })}
+                              disabled={deleteMutation.isPending}
+                            >
+                              {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
+                            </Button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -205,103 +215,6 @@ export function CategoriesAdminPanel() {
         </div>
       ) : null}
 
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Neue Kategorie"
-        description="Name eingeben. Der Slug wird automatisch aus dem Namen erzeugt."
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Slug (automatisch)
-            <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
-          </label>
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={() =>
-              createMutation.mutate({
-                name: form.name.trim(),
-                slug: generatedSlug,
-              })
-            }
-            disabled={!canSave || createMutation.isPending}
-          >
-            {createMutation.isPending ? "Erstellt..." : "Kategorie erstellen"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-            Abbrechen
-          </Button>
-        </div>
-      </Dialog>
-
-      {isEditing ? (
-        <div className="mt-5 rounded-xl border border-border bg-muted/30 p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold text-foreground">Kategorie bearbeiten</h3>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setSelectedId(null);
-              setForm(createEmptyForm());
-            }}
-          >
-            Auswahl aufheben
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={form.name}
-              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Slug (automatisch)
-            <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            onClick={() =>
-              selectedId &&
-              updateMutation.mutate({
-                id: selectedId,
-                name: form.name.trim(),
-                slug: generatedSlug,
-              })
-            }
-            disabled={!canSave || updateMutation.isPending}
-          >
-            {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
-          </Button>
-        </div>
-      </div>
-      ) : null}
     </Card>
   );
 }

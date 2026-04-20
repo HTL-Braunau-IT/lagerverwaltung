@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
-import { Input } from "~/components/ui/input";
 import { PackageIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
@@ -30,25 +30,30 @@ function formatDateTime(value: Date | string | null | undefined) {
   return new Intl.DateTimeFormat("de-AT", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function formatDaysSince(borrowedAt: Date) {
+function formatDaysSince(borrowedAt: Date | string) {
   const now = new Date();
-  const ms = now.getTime() - borrowedAt.getTime();
+  const borrowedDate = borrowedAt instanceof Date ? borrowedAt : new Date(borrowedAt);
+  const ms = now.getTime() - borrowedDate.getTime();
   const days = Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
   return `${days} Tag${days === 1 ? "" : "e"}`;
 }
 
-function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED") {
+function requestStatusLabel(
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED",
+  { isActive }: { isActive: boolean },
+) {
   if (status === "PENDING") return "Wartet auf Freigabe";
-  if (status === "APPROVED") return "Freigegeben";
+  if (status === "APPROVED") return isActive ? "Ausgeliehen" : "Abholbereit";
   if (status === "REJECTED") return "Abgelehnt";
   return "Erledigt";
 }
 
 function loanStatusBadgeVariant(
   status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED",
+  { isActive }: { isActive: boolean },
 ): Parameters<typeof Badge>[0]["variant"] {
   if (status === "PENDING") return "secondary";
-  if (status === "APPROVED") return "success";
+  if (status === "APPROVED") return isActive ? "default" : "success";
   if (status === "REJECTED") return "destructive";
   return "secondary";
 }
@@ -73,88 +78,105 @@ function outstandingForLine(item: any) {
 }
 
 function LoanRequestCard({ loan }: { loan: any }) {
-  const approvedTotal = sumApprovedAcrossLoan(loan.items);
   const outstandingTotal = sumOutstandingAcrossLoan(loan.items);
+  const isActive = outstandingTotal > 0;
+
+  const { activeBorrowedAt, activeDueAt, dueBorderClass, dueTextClass } = useMemo(() => {
+    const items = Array.isArray(loan.items) ? loan.items : [];
+    const outstandingItems = items.filter((item: any) => outstandingForLine(item) > 0);
+    const relevant = outstandingItems.length > 0 ? outstandingItems : items;
+
+    const borrowedAts = relevant
+      .map((item: any) => item.borrowedAt)
+      .filter(Boolean)
+      .map((value: any) => (value instanceof Date ? value : new Date(value)))
+      .filter((d: Date) => !Number.isNaN(d.getTime()));
+
+    const dueAts = relevant
+      .map((item: any) => item.dueAt)
+      .filter(Boolean)
+      .map((value: any) => (value instanceof Date ? value : new Date(value)))
+      .filter((d: Date) => !Number.isNaN(d.getTime()));
+
+    const activeBorrowedAt =
+      borrowedAts.length > 0 ? new Date(Math.min(...borrowedAts.map((d: Date) => d.getTime()))) : null;
+    const activeDueAt =
+      dueAts.length > 0 ? new Date(Math.min(...dueAts.map((d: Date) => d.getTime()))) : null;
+
+    const dueDaysLeft = activeDueAt ? Math.ceil((activeDueAt.getTime() - Date.now()) / 86_400_000) : null;
+   
+    const dueTone = dueDaysLeft === null ? "" : dueDaysLeft <= 0 ? "red" : dueDaysLeft <= 3 ? "amber" : "default";
+
+    const dueTextClass = dueTone === "red" ? "text-red-600" : dueTone === "amber" ? "text-amber-600" : "text-slate-900";
+    const dueBorderClass = dueTone === "red" ? "border-red-600" : dueTone === "amber" ? "border-amber-600" : "border-border";
+
+    return { activeBorrowedAt, activeDueAt, dueBorderClass, dueTextClass };
+  }, [loan.items]);
 
   return (
-    <Card className="rounded-xl border border-border bg-card/60 p-4 shadow-sm transition hover:border-primary/40">
+
+
+    <Card className={`rounded-xl border ${dueBorderClass} bg-card/60 p-4 shadow-sm transition hover:border-primary/40`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs tracking-wide text-muted-foreground">
-            Lagerraum: {loan.storageRoom?.name ?? "Lagerraum"}
+          <p className="text-sm text-slate-500">
+            Referenznummer
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Erstellt: {formatDateTime(loan.createdAt)}</p>
-        </div>
-        <Badge variant={loanStatusBadgeVariant(loan.status)} className="shrink-0">
-          {requestStatusLabel(loan.status)}
-        </Badge>
-      </div>
-
-      <div className="mt-3 grid gap-2 border-t border-border/60 pt-3 sm:grid-cols-2">
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Freigegeben (alle Positionen)
-          </p>
-          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-            {formatInventoryQuantity(approvedTotal)} Stk
+          <p className="text-sm font-semibold text-slate-900">
+            {loan.id.slice(0, 8)}
           </p>
         </div>
-        <div className="rounded-lg bg-muted/40 px-3 py-2">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Noch bei dir (Summe)
-          </p>
-          <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-            {formatInventoryQuantity(outstandingTotal)} Stk
-          </p>
+        <div className="shrink-0">
+          <Badge variant={loanStatusBadgeVariant(loan.status, { isActive })}>
+            {requestStatusLabel(loan.status, { isActive })}
+          </Badge>
         </div>
       </div>
-
-      <div className="mt-3 space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Positionen</p>
+      <div className="mt-2 space-y-2"> 
         {loan.items.map((item: any) => {
-          const outstanding = outstandingForLine(item);
-          const isActive = outstanding > 0;
           return (
             <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
                   {item.lendableItem?.name ?? "Unbekannt"}
                 </p>
-                <div className="shrink-0 text-right">
-                  {outstanding > 0 ? (
-                    <p className="text-xs text-foreground">
-                      <span className="text-muted-foreground">Noch bei dir: </span>
-                      <span className="font-semibold tabular-nums">
-                        {formatInventoryQuantity(outstanding)} Stk
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Nicht bei dir</p>
-                  )}
+                <div className="pt-0.5 text-[11px] font-medium text-muted-foreground">
+                 {item.quantityRequested} Stk
                 </div>
               </div>
-
-              {item.borrowedAt && item.dueAt ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Ausgeliehen: {formatDaysSince(item.borrowedAt)} | Faellig: {formatDateTime(item.dueAt)}
-                </p>
-              ) : (
-                <p className="mt-2 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
-              )}
-
-              {isActive ? (
-                <div className="mt-2">
-                  <Badge
-                    variant="secondary"
-                    className="border border-border bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                  >
-                    Rueckgabe geplant
-                  </Badge>
-                </div>
-              ) : null}
-            </div>
+            </div>            
           );
         })}
+      </div>
+      <div className="grid grid-cols-2">
+        <p className="mt-2 text-xs tracking-wide text-muted-foreground">
+          Lagerraum: {" "}
+          <span className="text-xs font-semibold text-slate-900">
+           {loan.storageRoom?.name ?? "Lagerraum"}
+          </span>
+        </p>  
+        <p className="mt-2 text-xs text-muted-foreground justify-self-end text-right">
+          Erstellt: {" "}
+          <span className="text-xs font-semibold text-slate-900">
+            {formatDateTime(loan.createdAt).split(",")[0]}
+          </span>
+        </p>
+        {activeBorrowedAt && activeDueAt ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Aktive Leihdauer: {" "}
+            <span className="text-xs font-semibold text-slate-900">
+              {formatDaysSince(activeBorrowedAt)}
+            </span>
+          </p>
+        ) : null}
+        {activeDueAt ? (
+          <p className="mt-2 text-xs text-muted-foreground justify-self-end text-right">
+            Fällig: {" "}
+            <span className={`text-xs font-semibold ${dueTextClass}`}>
+            {formatDateTime(activeDueAt).split(",")[0]}
+            </span>
+          </p>
+        ) : (" ")}
       </div>
     </Card>
   );
@@ -163,9 +185,8 @@ function LoanRequestCard({ loan }: { loan: any }) {
 export default function AusleihePage() {
   const { data: session } = useSession();
   const userRole = session?.user.role;
-
-  const [searchInput, setSearchInput] = useState("");
-  const searchTerm = searchInput.trim();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantityDraft, setQuantityDraft] = useState<string>("1");
@@ -215,26 +236,15 @@ export default function AusleihePage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(340px,420px)_minmax(0,1fr)] lg:items-start">
         <section className="order-2 space-y-4 lg:order-2">
           <Card className="rounded-2xl p-5">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-              <label className="w-full max-w-[340px] text-sm text-slate-600">
-                Suche
-                <Input
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="z. B. Bohrer, Leiter, Material..."
-                  className="mt-1 h-10 rounded-xl"
-                />
-              </label>
-            </div>
+            <div className="space-y-4">
+              {lendableItemsQuery.isLoading ? (
+                <p className="text-sm text-slate-600">Artikel werden geladen...</p>
+              ) : null}
+              {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
+                <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
+              ) : null}
 
-            {lendableItemsQuery.isLoading ? (
-              <p className="text-sm text-slate-600">Artikel werden geladen...</p>
-            ) : null}
-            {!lendableItemsQuery.isLoading && lendableItemsQuery.data && lendableItemsQuery.data.length === 0 ? (
-              <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
-            ) : null}
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {(lendableItemsQuery.data ?? []).map((item: any) => (
                 <div key={item.id}>
                   <Card className="rounded-xl p-4 shadow-sm">
@@ -348,6 +358,7 @@ export default function AusleihePage() {
                   </Card>
                 </div>
               ))}
+              </div>
             </div>
           </Card>
 
@@ -410,26 +421,6 @@ export default function AusleihePage() {
 
             <div className="mt-4 space-y-4">
               {openLoans.map((loan: any) => (
-                <LoanRequestCard key={loan.id} loan={loan} />
-              ))}
-
-              {closedLoansNotHandedOver.length > 0 ? (
-                <div className="pt-2">
-                  <h3 className="text-sm font-semibold text-foreground">Erledigt (neu)</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Noch nicht uebergeben.</p>
-                </div>
-              ) : null}
-              {closedLoansNotHandedOver.map((loan) => (
-                <LoanRequestCard key={loan.id} loan={loan} />
-              ))}
-
-              {closedLoansHandedOver.length > 0 ? (
-                <div className="pt-2">
-                  <h3 className="text-sm font-semibold text-foreground">Erledigt (uebergeben)</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">Bereits uebergeben.</p>
-                </div>
-              ) : null}
-              {closedLoansHandedOver.map((loan: any) => (
                 <LoanRequestCard key={loan.id} loan={loan} />
               ))}
             </div>

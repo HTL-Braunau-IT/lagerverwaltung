@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant hover (&:hover);
+
 @theme {
   --font-sans: var(--font-sans-custom), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -31,6 +33,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-accent-orange: var(--accent-orange);
 }
 
 :root {
@@ -41,8 +44,15 @@
   --card-foreground: oklch(0.2 0.034 264.665);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.034 264.665);
-  --primary: oklch(0.55 0.25 240);
+  --primary: #003264;
   --primary-foreground: oklch(1 0 0);
+  /* Used by `bg-primary` — subtle depth while keeping text/borders on solid `--primary` */
+  --primary-gradient: linear-gradient(
+    152deg,
+    color-mix(in srgb, var(--primary) 92%, black) 0%,
+    var(--primary) 50%,
+    color-mix(in srgb, var(--primary) 93%, white) 100%
+  );
   --secondary: oklch(0.96 0.02 264.542);
   --secondary-foreground: oklch(0.2 0.034 264.665);
   --muted: oklch(0.96 0.02 264.542);
@@ -55,7 +65,11 @@
   --success-foreground: oklch(1 0 0);
   --border: oklch(0.9 0.02 264.531);
   --input: oklch(0.9 0.02 264.531);
-  --ring: oklch(0.55 0.25 240 / 30%);
+  --ring: rgba(0, 50, 100, 0.4);
+
+  /* reserved accents (for later UI elements) */
+  --accent-blue: #003264;
+  --accent-orange: #ff8000;
 }
 
 @layer base {
@@ -66,5 +80,61 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans-custom), ui-sans-serif, system-ui, sans-serif;
+    position: relative;
+    z-index: 0;
+    background-image:
+      /* glass-friendly "aurora" (blue-led, high radius, low contrast) */
+      radial-gradient(1800px 1200px at 16% 14%, color-mix(in srgb, var(--accent-blue) 32%, white), transparent 78%),
+      radial-gradient(1700px 1200px at 82% 22%, color-mix(in srgb, var(--accent-blue) 18%, white), transparent 80%),
+      radial-gradient(1900px 1400px at 48% 110%, color-mix(in srgb, var(--accent-blue) 14%, white), transparent 82%),
+      /* soft vignette / depth */
+      radial-gradient(2200px 1500px at 50% 0%, rgba(0, 0, 0, 0.06), transparent 80%),
+      radial-gradient(2000px 1500px at 50% 100%, rgba(0, 0, 0, 0.07), transparent 84%),
+      /* gentle shading */
+      radial-gradient(1600px 1300px at 20% 10%, rgba(0, 0, 0, 0.03), transparent 82%),
+      radial-gradient(1600px 1300px at 80% 30%, rgba(0, 0, 0, 0.03), transparent 82%);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.09;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  }
+
+  /* second, finer grain pass for a more natural texture */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n2)' opacity='.28'/%3E%3C/svg%3E");
+  }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-md bg-card/40 bg-clip-padding backdrop-blur-sm shadow-[inset_0_0_20px_rgba(241,245,249,0.2)];
+  }
+}
+
+@utility bg-primary {
+  background-color: transparent;
+  background-image: var(--primary-gradient);
+}
+
+/* `file:bg-primary` sets background on ::file-selector-button — mirror filled primary surfaces */
+@layer utilities {
+  .file\:bg-primary::file-selector-button {
+    background-color: transparent;
+    background-image: var(--primary-gradient);
   }
 }

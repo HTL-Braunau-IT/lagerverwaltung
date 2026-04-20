@@ -10,6 +10,7 @@ import { Search } from "~/components/layout/search";
 import {
   AdministrationIcon,
   ApprovalsIcon,
+  CartIcon,
   LendingIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
@@ -95,9 +96,9 @@ export default async function RootLayout({
           <TRPCReactProvider session={session}>
             <header
               data-app-shell-header="true"
-              className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur"
+              className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-hidden glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
             >
-              <div className="mx-auto grid w-full max-w-[112rem] grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 px-3 py-4 sm:px-4 lg:px-5">
+              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-2 px-6">
                 <Link
                   href="/"
                   prefetch={false}
@@ -110,24 +111,28 @@ export default async function RootLayout({
                   <Search />
                 </div>
                 <div className="flex items-center gap-3">
-                  <HeaderCartLink />
+                  <HeaderCartLink
+                    label="Warenkorb"
+                    hoverClassName="hover:text-black"
+                    icon={<CartIcon />}
+                  />
                   <HeaderNavLink
                     href="/orders"
                     label="Bestellhistorie"
-                    hoverClassName="hover:text-sky-600"
+                    hoverClassName="hover:text-black"
                     icon={<OrdersIcon />}
                   />
                   <HeaderNavLink
                     href="/ausleihe"
                     label="Ausleihen"
-                    hoverClassName="hover:text-amber-600"
+                    hoverClassName="hover:text-black"
                     icon={<LendingIcon />}
                   />
                   {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
                     <HeaderNavLink
                       href="/teacher/orders"
                       label="Freigaben"
-                      hoverClassName="hover:text-emerald-600"
+                      hoverClassName="hover:text-black"
                       icon={<ApprovalsIcon />}
                       badgeLabel={openApprovalsCount > 0 ? openApprovalsLabel : undefined}
                     />
@@ -136,7 +141,7 @@ export default async function RootLayout({
                     <HeaderNavLink
                       href="/backend"
                       label="Administration"
-                      hoverClassName="hover:text-violet-600"
+                      hoverClassName="hover:text-black"
                       icon={<AdministrationIcon />}
                     />
                   ) : null}

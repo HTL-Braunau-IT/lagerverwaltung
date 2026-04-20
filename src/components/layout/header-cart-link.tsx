@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { CartIcon } from "~/components/layout/icon-renders";
 import { api } from "~/trpc/react";
+
+export type HeaderCartLinkProps = {
+  label: string;
+  hoverClassName: string;
+  icon: ReactNode;
+};
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -33,7 +38,7 @@ function getOrCreateSessionId() {
   return created;
 }
 
-export function HeaderCartLink() {
+export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkProps) {
   const [sessionId, setSessionId] = useState("");
 
   useEffect(() => {
@@ -58,10 +63,10 @@ export function HeaderCartLink() {
   return (
     <Link
       href="/carts"
-      className="group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors hover:text-amber-600"
+      className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
     >
       <span className="relative flex h-10 w-10 items-center justify-center">
-        <CartIcon />
+        {icon}
         <span
           className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
           aria-label={`${badgeLabel} Produkte im Warenkorb`}
@@ -69,7 +74,7 @@ export function HeaderCartLink() {
           {badgeLabel}
         </span>
       </span>
-      <span className="text-sm font-medium">Warenkorb</span>
+      <span className="text-sm font-medium">{label}</span>
     </Link>
   );
 }

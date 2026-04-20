@@ -2,7 +2,19 @@
 
 import * as React from "react";
 
-type ButtonVariant = "default" | "outline" | "secondary" | "destructive" | "ghost";
+export type ButtonVariant =
+  | "default"
+  | "outline"
+  | "secondary"
+  | "destructive"
+  | "ghost"
+  | "solid"
+  | "glass"
+  | "notify"
+  | "category-pill"
+  | "new"
+  | "quant";
+
 type ButtonSize = "default" | "sm" | "lg";
 
 type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -10,12 +22,22 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: ButtonSize;
 };
 
+const pillTableActionLayout =
+  "w-full max-w-full border-0 font-semibold disabled:cursor-not-allowed disabled:!opacity-55";
+
 const variantClasses: Record<ButtonVariant, string> = {
-  default: "bg-primary text-primary-foreground hover:opacity-90",
+  default: "bg-primary/90 text-primary-foreground hover:opacity-90",
   outline: "border border-input bg-background text-foreground hover:bg-accent",
   secondary: "bg-secondary text-secondary-foreground hover:opacity-90",
   destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
   ghost: "text-foreground hover:bg-accent",
+  solid: `${pillTableActionLayout} bg-primary/90 text-primary-foreground transition-[opacity] hover:opacity-95`,
+  glass: `${pillTableActionLayout} bg-card/60 text-primary backdrop-blur-sm transition-[background-color,color] duration-200 hover:bg-card/90 hover:text-primary`,
+  notify: `${pillTableActionLayout} bg-accent-orange/80 text-white backdrop-blur-sm transition-[background-color,color] duration-200 hover:opacity-95`,
+  "category-pill":
+    "!h-auto !min-h-0 !rounded-full bg-card/40 px-3 py-1 text-sm font-medium text-slate-900 transition hover:bg-card/90 focus-visible:ring-slate-400 focus-visible:ring-offset-1",
+  new: `!h-9 inline-flex items-center !rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90`,
+  quant: `hover:bg-card/20`
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -30,7 +52,7 @@ export function Button({
   size = "default",
   type = "button",
   ...props
-}: ButtonProps) {
+}: ButtonProps) { 
   return (
     <button
       type={type}

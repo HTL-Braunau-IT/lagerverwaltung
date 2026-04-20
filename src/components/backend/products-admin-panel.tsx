@@ -1,18 +1,22 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { Dialog } from "~/components/ui/dialog";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { Select } from "~/components/ui/select";
+import { Switch } from "~/components/ui/switch";
+import * as TableUI from "~/components/ui/table";
+import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
 const unitKinds = [
-  { value: "PIECE", label: "Stueck" },
-  { value: "LENGTH", label: "Laenge" },
-  { value: "AREA", label: "Flaeche" },
+  { value: "PIECE", label: "Stück" },
+  { value: "LENGTH", label: "Länge" },
+  { value: "AREA", label: "Fläche" },
   { value: "WEIGHT", label: "Gewicht" },
   { value: "VOLUME", label: "Volumen" },
 ] as const;
@@ -47,9 +51,6 @@ type ProductFormState = {
   imageAltText: string;
 };
 
-type ProductCreateFormState = ProductFormState & {
-  startingQuantity: string;
-};
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
@@ -58,6 +59,29 @@ function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
+}
+
+const moneyFormatDeAt = new Intl.NumberFormat("de-AT", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatMoneyDeAt(value: number): string {
+  if (!Number.isFinite(value)) return moneyFormatDeAt.format(0);
+  return moneyFormatDeAt.format(value);
+}
+
+/** Parses de-AT style input (comma decimal, optional dot thousands) or plain dot decimals. */
+function parseMoneyInput(raw: string): number {
+  const s = raw.trim().replace(/\s/g, "");
+  if (!s) return NaN;
+  if (s.includes(",") && s.includes(".")) {
+    return Number(s.replace(/\./g, "").replace(",", "."));
+  }
+  if (s.includes(",")) {
+    return Number(s.replace(",", "."));
+  }
+  return Number(s);
 }
 
 function isNearMinimumStock(quantityOnHand: unknown, minimumQuantity: unknown): boolean {
@@ -71,6 +95,107 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Resolves a stored image path or absolute URL for opening in a new browser tab. */
+function resolveImageTabUrl(url: string): string | null {
+  const t = url.trim();
+  if (!t) return null;
+  if (t.startsWith("blob:")) return t;
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  if (typeof window === "undefined") return t;
+  try {
+    return new URL(t, window.location.origin).href;
+  } catch {
+    return null;
+  }
+}
+
+function NumberStepper({
+  value,
+  onChange,
+  min,
+  step,
+  max,
+  decreaseAriaLabel,
+  increaseAriaLabel,
+  inputAriaLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  min: number;
+  step: number;
+  max?: number;
+  decreaseAriaLabel: string;
+  increaseAriaLabel: string;
+  inputAriaLabel: string;
+}) {
+  const decimals = useMemo(() => {
+    const text = String(step);
+    const fractional = text.split(".")[1];
+    return fractional ? fractional.length : 0;
+  }, [step]);
+
+  const normalize = useCallback(
+    (num: number) => {
+      if (!Number.isFinite(num)) return min;
+      const rounded = decimals > 0 ? Number(num.toFixed(decimals)) : Math.round(num);
+      return Math.max(min, rounded);
+    },
+    [decimals, min],
+  );
+
+  const inputMax = max !== undefined && max > 0 ? max : undefined;
+  const incrementCap = inputMax ?? Number.POSITIVE_INFINITY;
+
+  return (
+    <div
+      className="flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <Button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          const current = Math.max(Number(value) || min, min);
+          const next = normalize(current - step);
+          onChange(next.toString());
+        }}
+        size="sm"
+        variant="quant"
+        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
+        aria-label={decreaseAriaLabel}
+      >
+        <span className="block leading-none">-</span>
+      </Button>
+      <Input
+        type="number"
+        min={min}
+        max={inputMax}
+        step={step}
+        value={value}
+        onClick={(event) => event.stopPropagation()}
+        onChange={(event) => onChange(event.target.value)}
+        className="!w-14 !h-full min-w-0 shrink !rounded-none !bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        aria-label={inputAriaLabel}
+      />
+      <Button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          const current = Math.max(Number(value) || min, min);
+          const next = Math.min(incrementCap, normalize(current + step));
+          onChange(next.toString());
+        }}
+        size="sm"
+        variant="quant"
+        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
+        aria-label={increaseAriaLabel}
+      >
+        <span className="block leading-none">+</span>
+      </Button>
+    </div>
+  );
 }
 
 function createInitialForm(product: {
@@ -96,12 +221,11 @@ function createInitialForm(product: {
     altText: string | null;
   }>;
 }): ProductFormState {
-  const firstImage = product.images[0];
   return {
     name: product.name,
     sku: product.sku,
     description: product.description ?? "",
-    price: String(toNumber(product.price)),
+    price: formatMoneyDeAt(toNumber(product.price)),
     minimumQuantity: String(toNumber(product.minimumQuantity)),
     unitKind: product.unitKind,
     baseUnit: product.baseUnit,
@@ -115,26 +239,6 @@ function createInitialForm(product: {
     ),
     storageRoomId: product.storageLocation?.storageRoomId ?? "",
     storageLocationId: product.storageLocationId ?? "",
-    imageUrl: firstImage?.url ?? "",
-    imageAltText: firstImage?.altText ?? "",
-  };
-}
-
-function createEmptyCreateForm(): ProductCreateFormState {
-  return {
-    name: "",
-    sku: "",
-    description: "",
-    price: "0",
-    minimumQuantity: "0",
-    startingQuantity: "0",
-    unitKind: "PIECE",
-    baseUnit: "PCS",
-    unitStep: "1",
-    isVisible: true,
-    categoryIds: [],
-    storageRoomId: "",
-    storageLocationId: "",
     imageUrl: "",
     imageAltText: "",
   };
@@ -142,101 +246,184 @@ function createEmptyCreateForm(): ProductCreateFormState {
 
 function BookingHistory({ productId }: { productId: string }) {
   const bookingsQuery = api.product.backendStockBookings.useQuery({ productId, limit: 10 });
+  const [collapsed, setCollapsed] = useState(true);
+
+  const bookings = bookingsQuery.data?.bookings ?? [];
+  const completedOrders = bookingsQuery.data?.completedOrders ?? [];
+  const showBookingsTable = !bookingsQuery.isLoading && !bookingsQuery.error && bookings.length > 0;
+  const showCompletedOrdersTable =
+    !bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length > 0;
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-card p-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-        Letzte Buchungen
-      </p>
-      {bookingsQuery.isLoading ? <p className="mt-2 text-sm text-muted-foreground">Verlauf wird geladen...</p> : null}
-      {bookingsQuery.error ? (
-        <p className="mt-2 text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p>
-      ) : null}
-      {!bookingsQuery.isLoading &&
-      !bookingsQuery.error &&
-      (bookingsQuery.data?.bookings?.length ?? 0) === 0 &&
-      (bookingsQuery.data?.completedOrders?.length ?? 0) === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">Noch keine Buchungen oder fertigen Auftraege vorhanden.</p>
-      ) : null}
-      <div className="mt-2 space-y-2">
-        {(bookingsQuery.data?.bookings ?? []).map((booking) => (
-          <div
-            key={booking.id}
-            className="rounded-md border border-border bg-muted px-2.5 py-2 text-xs text-foreground"
+    <div className="mx-4 mt-4 rounded-md bg-card/40 p-3">
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+        aria-expanded={!collapsed}
+        aria-controls={`booking-history-section-${productId}`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-lg font-semibold text-slate-900">Buchungsverlauf</p>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-slate-500"
+            title={collapsed ? "Ausklappen" : "Einklappen"}
           >
-            <p>
-              Menge: <span className="font-medium">{toNumber(booking.quantityDelta)}</span>
-              {" | "}Lieferant: <span className="font-medium">{booking.supplier}</span>
-            </p>
-            <p>
-              Von: {booking.user.name ?? booking.user.email ?? "Unbekannt"} {" | "}
-              {new Date(booking.createdAt).toLocaleString("de-AT")}
-            </p>
-            {booking.note ? <p>Notiz: {booking.note}</p> : null}
-          </div>
-        ))}
-      </div>
-      <div className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-          Fertige Auftraege (READY_FOR_PICKUP)
-        </p>
-        <div className="mt-2 space-y-2">
-          {(bookingsQuery.data?.completedOrders ?? []).map((entry) => (
-            <div
-              key={entry.id}
-            className="rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-xs text-success"
-            >
-              <p>
-                Auftrag: <span className="font-medium">{entry.order.orderNumber}</span>
-                {" | "}Menge: <span className="font-medium">{toNumber(entry.quantity)}</span>
-              </p>
-              <p>
-                Von: {entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"} {" | "}
-                {new Date(entry.order.createdAt).toLocaleString("de-AT")}
-              </p>
-            </div>
-          ))}
-          {(bookingsQuery.data?.completedOrders.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
-          ) : null}
+            <ChevronDownIcon open={!collapsed} className="h-4 w-4" />
+          </span>
         </div>
-      </div>
+        {!collapsed ? <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" /> : null}
+      </button>
+
+      {!collapsed ? (
+        <div id={`booking-history-section-${productId}`} className="pt-3">
+          {bookingsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Verlauf wird geladen...</p>
+          ) : null}
+          {bookingsQuery.error ? (
+            <p className="text-sm text-rose-700">Verlauf konnte nicht geladen werden.</p>
+          ) : null}
+
+          <div className="grid gap-8 lg:grid-cols-2">
+        <section>
+          <p className="select-none text-sm text-slate-600">Letzte Buchungen</p>
+
+          {!bookingsQuery.isLoading && !bookingsQuery.error && bookings.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Keine Buchungen vorhanden.</p>
+          ) : null}
+
+          {showBookingsTable ? (
+            <div className="mt-2">
+              <TableUI.Subtable tableClassName="table-fixed">
+                <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                  <TableUI.SubtableRow className="hover:bg-transparent">
+                    <TableUI.SubtableHead className="w-[72px]">Menge</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[34%]">Lieferant</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[32%]">Von</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[160px] whitespace-nowrap">Datum</TableUI.SubtableHead>
+                  </TableUI.SubtableRow>
+                </TableUI.SubtableHeader>
+                <TableUI.SubtableBody>
+                  {bookings.map((booking) => (
+                    <Fragment key={booking.id}>
+                      <TableUI.SubtableRow>
+                        <TableUI.SubtableCell className="font-semibold tabular-nums">
+                          {toNumber(booking.quantityDelta)}
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="min-w-0 break-words">{booking.supplier}</TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="min-w-0 break-words">
+                          {booking.user.name ?? booking.user.email ?? "Unbekannt"}
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                          {new Date(booking.createdAt).toLocaleString("de-AT")}
+                        </TableUI.SubtableCell>
+                      </TableUI.SubtableRow>
+                      {booking.note ? (
+                        <TableUI.SubtableRow className="bg-muted/10 hover:bg-muted/20">
+                          <TableUI.SubtableCell colSpan={4} className="text-muted-foreground">
+                            Notiz: {booking.note}
+                          </TableUI.SubtableCell>
+                        </TableUI.SubtableRow>
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </TableUI.SubtableBody>
+              </TableUI.Subtable>
+            </div>
+          ) : null}
+        </section>
+
+        <section>
+          <p className="select-none text-sm text-slate-600">Abgeschlossene Aufträge</p>
+
+          {!bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
+          ) : null}
+
+          {showCompletedOrdersTable ? (
+            <div className="mt-2">
+              <TableUI.Subtable tableClassName="table-fixed">
+                <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                  <TableUI.SubtableRow className="hover:bg-transparent">
+                    <TableUI.SubtableHead className="w-[92px]">Auftrag</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[72px]">Menge</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[32%]">Von</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[160px] whitespace-nowrap">Datum</TableUI.SubtableHead>
+                  </TableUI.SubtableRow>
+                </TableUI.SubtableHeader>
+                <TableUI.SubtableBody>
+                  {completedOrders.map((entry) => (
+                    <TableUI.SubtableRow key={entry.id}>
+                      <TableUI.SubtableCell className="font-semibold tabular-nums">
+                        {entry.order.orderNumber}
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="font-semibold tabular-nums">
+                        {toNumber(entry.quantity)}
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="min-w-0 break-words">
+                        {entry.order.user.name ?? entry.order.user.email ?? "Unbekannt"}
+                      </TableUI.SubtableCell>
+                      <TableUI.SubtableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
+                        {new Date(entry.order.createdAt).toLocaleString("de-AT")}
+                      </TableUI.SubtableCell>
+                    </TableUI.SubtableRow>
+                  ))}
+                </TableUI.SubtableBody>
+              </TableUI.Subtable>
+            </div>
+          ) : null}
+        </section>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export function ProductsAdminPanel() {
   const utils = api.useUtils();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
   const [categoryFilter, setCategoryFilter] = useState("");
   const [storageRoomFilter, setStorageRoomFilter] = useState("");
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [hasUnsavedChangesById, setHasUnsavedChangesById] = useState<Record<string, boolean>>({});
+  const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<ProductCreateFormState>(createEmptyCreateForm);
-  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
-  const [createImageUploadError, setCreateImageUploadError] = useState<string | null>(null);
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
   const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
+  /** File chosen in the edit form; uploaded only when saving. */
+  const [editPendingImageById, setEditPendingImageById] = useState<
+    Record<string, { file: File; previewUrl: string } | null>
+  >({});
+  /** Selected product image row in the admin grid (`null` = none, fields empty unless edited). */
+  const [editSelectedImageIdById, setEditSelectedImageIdById] = useState<Record<string, string | null>>({});
+  const [imageDeletePendingKey, setImageDeletePendingKey] = useState<string | null>(null);
   const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
   const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
-  const [createImageUploadPending, setCreateImageUploadPending] = useState(false);
+  const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
   const [bookingSupplierInput, setBookingSupplierInput] = useState("");
   const [bookingNoteInput, setBookingNoteInput] = useState("");
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
+  const [editCategorySearch, setEditCategorySearch] = useState("");
+  const [listCategorySearch, setListCategorySearch] = useState("");
+  const [listLocationSearch, setListLocationSearch] = useState("");
+  const [categoryListOpen, setCategoryListOpen] = useState(false);
+  const [locationListOpen, setLocationListOpen] = useState(false);
+  const categoryFilterRootRef = useRef<HTMLDivElement>(null);
+  const locationFilterRootRef = useRef<HTMLDivElement>(null);
+  const categoryInputId = useId();
+  const locationInputId = useId();
+  const categoryListboxId = useId();
+  const locationListboxId = useId();
+  const nearMinimumSwitchId = useId();
 
   const productsQuery = api.product.backendList.useInfiniteQuery(
     {
@@ -259,15 +446,22 @@ export function ProductsAdminPanel() {
       await utils.product.backendList.invalidate();
     },
   });
-  const createMutation = api.product.backendCreate.useMutation({
+  // Product creation moved to /backend/products/new.
+  const deleteProductImageMutation = api.product.backendDeleteProductImage.useMutation({
     onSuccess: async () => {
-      await Promise.all([utils.product.backendList.invalidate(), utils.product.list.invalidate()]);
-      setCreateForm(createEmptyCreateForm());
-      setCreateImageFile(null);
-      setCreateImageUploadError(null);
-      setCreateOpen(false);
+      await utils.product.backendList.invalidate();
+    },
+    onSettled: () => {
+      setImageDeletePendingKey(null);
     },
   });
+
+  const addProductImageMutation = api.product.backendAddProductImage.useMutation({
+    onSuccess: async () => {
+      await utils.product.backendList.invalidate();
+    },
+  });
+
   const stockBookingMutation = api.product.backendBookStock.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -306,6 +500,56 @@ export function ProductsAdminPanel() {
       (storageLocation) => storageLocation.storageRoomId === storageRoomFilter,
     );
   }, [storageLocationsQuery.data, storageRoomFilter]);
+  const categoriesById = useMemo(
+    () => new Map((categoriesQuery.data ?? []).map((category) => [category.id, category])),
+    [categoriesQuery.data],
+  );
+  const filteredEditCategories = useMemo(() => {
+    const needle = editCategorySearch.trim().toLowerCase();
+    return (categoriesQuery.data ?? []).filter((category) => category.name.toLowerCase().includes(needle));
+  }, [categoriesQuery.data, editCategorySearch]);
+  const filteredListCategories = useMemo(() => {
+    const needle = listCategorySearch.trim().toLowerCase();
+    return (categoriesQuery.data ?? []).filter((category) => category.name.toLowerCase().includes(needle));
+  }, [categoriesQuery.data, listCategorySearch]);
+  const filteredListLocations = useMemo(() => {
+    const needle = listLocationSearch.trim().toLowerCase();
+    if (!needle) return filteredStorageLocationsForList;
+    return filteredStorageLocationsForList.filter((storageLocation) => {
+      const hay = `${storageLocation.code} ${storageLocation.name} ${storageLocation.storageRoom.name}`.toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [filteredStorageLocationsForList, listLocationSearch]);
+  const categoryFilterInputValue = useMemo(() => {
+    if (categoryListOpen) return listCategorySearch;
+    if (categoryFilter) return categoriesById.get(categoryFilter)?.name ?? "";
+    return "";
+  }, [categoryListOpen, listCategorySearch, categoryFilter, categoriesById]);
+  const locationFilterInputValue = useMemo(() => {
+    if (locationListOpen) return listLocationSearch;
+    if (storageLocationFilter) {
+      const loc = storageLocationsById.get(storageLocationFilter);
+      return loc ? `${loc.code} - ${loc.name}` : "";
+    }
+    return "";
+  }, [locationListOpen, listLocationSearch, storageLocationFilter, storageLocationsById]);
+
+  useEffect(() => {
+    if (!categoryListOpen && !locationListOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (categoryFilterRootRef.current?.contains(target)) return;
+      if (locationFilterRootRef.current?.contains(target)) return;
+      setCategoryListOpen(false);
+      setLocationListOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [categoryListOpen, locationListOpen]);
+
+  useEffect(() => {
+    setEditCategorySearch("");
+  }, [expandedRowId]);
 
   useEffect(() => {
     if (!storageRoomFilter || !storageLocationFilter) return;
@@ -314,22 +558,7 @@ export function ProductsAdminPanel() {
       setStorageLocationFilter("");
     }
   }, [storageRoomFilter, storageLocationFilter, storageLocationsById]);
-  const canCreateProduct =
-    createForm.name.trim().length > 0 &&
-    createForm.sku.trim().length > 0 &&
-    Number.isFinite(Number(createForm.price)) &&
-    Number(createForm.price) >= 0 &&
-    Number.isFinite(Number(createForm.minimumQuantity)) &&
-    Number(createForm.minimumQuantity) >= 0 &&
-    Number.isFinite(Number(createForm.startingQuantity)) &&
-    Number(createForm.startingQuantity) >= 0 &&
-    Number.isFinite(Number(createForm.unitStep)) &&
-    Number(createForm.unitStep) > 0;
-  const selectedCreateRoomId =
-    createForm.storageRoomId || storageLocationsById.get(createForm.storageLocationId)?.storageRoomId || "";
-  const filteredStorageLocationsForCreate = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
-    selectedCreateRoomId ? storageLocation.storageRoomId === selectedCreateRoomId : true,
-  );
+  // (creation-only state removed)
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
     if (!file.type.startsWith("image/")) {
@@ -389,128 +618,493 @@ export function ProductsAdminPanel() {
     }
   };
 
+  const clearEditPendingImage = (productId: string) => {
+    setEditPendingImageById((current) => {
+      const prev = current[productId];
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return { ...current, [productId]: null };
+    });
+  };
+
+  const handleResetProduct = useCallback((product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+    clearEditPendingImage(product.id);
+    setFormsById((current) => ({
+      ...current,
+      [product.id]: createInitialForm(product),
+    }));
+    setEditSelectedImageIdById((current) => ({
+      ...current,
+      [product.id]: null,
+    }));
+    setImageFieldsTouchedById((current) => ({
+      ...current,
+      [product.id]: false,
+    }));
+    setHasUnsavedChangesById((current) => ({
+      ...current,
+      [product.id]: false,
+    }));
+  }, [clearEditPendingImage]);
+
+  const computeHasUnsavedChanges = useCallback(
+    (product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+      const initial = createInitialForm(product);
+      const current = formsById[product.id] ?? initial;
+      const pendingImage = !!editPendingImageById[product.id];
+      const imageTouched = !!imageFieldsTouchedById[product.id];
+
+      const normalize = (f: ProductFormState) => ({
+        ...f,
+        name: f.name.trim(),
+        sku: f.sku.trim(),
+        description: f.description.trim(),
+        imageUrl: imageTouched ? f.imageUrl.trim() : "",
+        imageAltText: imageTouched ? f.imageAltText.trim() : "",
+        categoryIds: [...f.categoryIds].sort(),
+      });
+
+      const changed = JSON.stringify(normalize(current)) !== JSON.stringify(normalize(initial));
+      return changed || pendingImage;
+    },
+    [editPendingImageById, formsById, imageFieldsTouchedById],
+  );
+
+  const hasUnsavedChanges = expandedRowId ? !!hasUnsavedChangesById[expandedRowId] : false;
+
+  useEffect(() => {
+    if (!expandedRowId) return;
+    const product = visibleProducts.find((p) => p.id === expandedRowId);
+    if (!product) return;
+    const dirty = computeHasUnsavedChanges(product);
+    setHasUnsavedChangesById((current) => (current[expandedRowId] === dirty ? current : { ...current, [expandedRowId]: dirty }));
+  }, [computeHasUnsavedChanges, expandedRowId, visibleProducts]);
+
+  const handleSaveProduct = useCallback(
+    async (product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
+      const form = formsById[product.id] ?? createInitialForm(product);
+
+      let editingImageId: string | undefined = editSelectedImageIdById[product.id] ?? undefined;
+      let imageUrl: string | null = form.imageUrl.trim() || null;
+      const imageAltText: string | null = form.imageAltText.trim() ? form.imageAltText.trim() : null;
+
+      const pending = editPendingImageById[product.id];
+      if (pending) {
+        const sku = form.sku.trim();
+        if (!sku) {
+          setEditUploadErrorById((current) => ({
+            ...current,
+            [product.id]: "Bitte zuerst eine SKU eingeben.",
+          }));
+          return;
+        }
+        try {
+          setEditUploadPendingById((current) => ({
+            ...current,
+            [product.id]: true,
+          }));
+          setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+          const uploadedUrl = await uploadProductImage(sku, pending.file);
+          const created = await addProductImageMutation.mutateAsync({
+            productId: product.id,
+            url: uploadedUrl,
+            altText: imageAltText,
+          });
+          URL.revokeObjectURL(pending.previewUrl);
+          setEditPendingImageById((current) => ({
+            ...current,
+            [product.id]: null,
+          }));
+          editingImageId = created.id;
+          imageUrl = uploadedUrl.trim() || null;
+          setFormsById((current) => {
+            const f = current[product.id] ?? createInitialForm(product);
+            return {
+              ...current,
+              [product.id]: {
+                ...f,
+                imageUrl: uploadedUrl,
+                imageAltText: imageAltText ?? "",
+              },
+            };
+          });
+          setEditSelectedImageIdById((current) => ({
+            ...current,
+            [product.id]: created.id,
+          }));
+        } catch (error) {
+          setEditUploadErrorById((current) => ({
+            ...current,
+            [product.id]: error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
+          }));
+          return;
+        } finally {
+          setEditUploadPendingById((current) => ({
+            ...current,
+            [product.id]: false,
+          }));
+        }
+      }
+
+      try {
+        await updateMutation.mutateAsync({
+          id: product.id,
+          name: form.name.trim(),
+          sku: form.sku.trim(),
+          description: form.description.trim() ? form.description.trim() : null,
+          price: (() => {
+            const p = parseMoneyInput(form.price);
+            return Number.isFinite(p) ? p : 0;
+          })(),
+          minimumQuantity: Number(form.minimumQuantity),
+          unitKind: form.unitKind,
+          baseUnit: form.baseUnit,
+          unitStep: Number(form.unitStep),
+          isVisible: form.isVisible,
+          categoryIds: form.categoryIds,
+          storageLocationId: form.storageLocationId || null,
+          editingImageId,
+          imageUrl,
+          imageAltText,
+        });
+        setHasUnsavedChangesById((current) => ({ ...current, [product.id]: false }));
+        setImageFieldsTouchedById((current) => ({ ...current, [product.id]: false }));
+      } catch {
+        // tRPC surfaces toast or error boundary elsewhere
+      }
+    },
+    [
+      addProductImageMutation,
+      editPendingImageById,
+      editSelectedImageIdById,
+      formsById,
+      setHasUnsavedChangesById,
+      setImageFieldsTouchedById,
+      updateMutation,
+      uploadProductImage,
+    ],
+  );
+
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Produkte</h2>
-          <p className="text-sm text-muted-foreground">Produkte suchen, oeffnen und bearbeiten.</p>
         </div>
         <Button
           type="button"
-          onClick={() => {
-            setCreateForm(createEmptyCreateForm());
-            setCreateImageFile(null);
-            setCreateImageUploadError(null);
-            setCreateOpen(true);
-          }}
-        >
+          onClick={() => router.push("/backend/products/new")}
+          variant="new">
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <PlusIcon />
+          </span>
           Neues Produkt
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-5">
-        <label htmlFor="backend-product-search" className="mb-1 block text-xs text-muted-foreground">
-          Suche nach Name, SKU oder Beschreibung
-          <Input
-            id="backend-product-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. HDMI, Papier, sku-1002"
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Kategorie
-          <select
-            value={categoryFilter}
-            onChange={(event) => setCategoryFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Alle Kategorien</option>
-            {(categoriesQuery.data ?? []).map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Lagerraum
-          <select
-            value={storageRoomFilter}
-            onChange={(event) => setStorageRoomFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="">Alle Lagerraeume</option>
+      <div className="mb-4 grid grid-cols-1 gap-8 md:grid-cols-[max-content_minmax(0,1fr)_auto] md:items-center">
+        <div className="flex min-w-0 max-w-full flex-row flex-nowrap items-center gap-x-2 overflow-x-auto [scrollbar-width:none] md:max-w-none md:overflow-visible [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-sm text-muted-foreground">Raum:</span>
+          <div className="flex shrink-0 flex-nowrap items-center gap-1.5">
+            <FilterPillButton
+              className="px-2 py-1 text-xs"
+              onClick={() => setStorageRoomFilter("")}
+              active={storageRoomFilter === ""}
+            >
+              Alle
+            </FilterPillButton>
             {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-              <option key={storageRoom.id} value={storageRoom.id}>
+              <FilterPillButton
+                key={storageRoom.id}
+                className="px-2 py-1 text-xs"
+                onClick={() => setStorageRoomFilter(storageRoom.id)}
+                active={storageRoomFilter === storageRoom.id}
+              >
                 {storageRoom.name}
-              </option>
+              </FilterPillButton>
             ))}
-          </select>
-        </label>
-        <label className="mb-1 block text-xs text-muted-foreground">
-          Lagerplatz
-          <select
-            value={storageLocationFilter}
-            onChange={(event) => setStorageLocationFilter(event.target.value)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-row flex-wrap items-start justify-center gap-3">
+          <div ref={categoryFilterRootRef} className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            <label htmlFor={categoryInputId} className="shrink-0 text-sm text-muted-foreground text-right">
+              Kategorie
+            </label>
+            <div className="relative min-w-0 flex-1">
+              <Input
+                id={categoryInputId}
+                type="text"
+                inputMode="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={categoryListOpen}
+                aria-controls={categoryListOpen ? categoryListboxId : undefined}
+                autoComplete="off"
+                value={categoryFilterInputValue}
+                onChange={(event) => {
+                  setListCategorySearch(event.target.value);
+                  setCategoryListOpen(true);
+                  setLocationListOpen(false);
+                }}
+                onFocus={() => {
+                  setLocationListOpen(false);
+                  setCategoryListOpen(true);
+                  const seed = categoryFilter ? categoriesById.get(categoryFilter)?.name ?? "" : "";
+                  setListCategorySearch(seed);
+                }}
+                placeholder="Suchen…"
+                className="h-9 rounded-lg pr-8 text-sm"
+              />
+              {categoryFilter !== "" || (categoryListOpen && listCategorySearch.trim() !== "") ? (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                  aria-label="Kategoriefilter zurücksetzen"
+                  title="Filter zurücksetzen"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setCategoryFilter("");
+                    setListCategorySearch("");
+                    setCategoryListOpen(false);
+                  }}
+                >
+                  <span aria-hidden className="relative -top-px text-lg leading-none">
+                    ×
+                  </span>
+                </button>
+              ) : null}
+              {categoryListOpen ? (
+                  <div
+                    id={categoryListboxId}
+                    role="listbox"
+                    aria-label="Kategorie waehlen"
+                    className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={categoryFilter === ""}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setCategoryFilter("");
+                        setListCategorySearch("");
+                        setCategoryListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        categoryFilter === "" ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      Alle Kategorien
+                    </button>
+                {filteredListCategories.map((category) => {
+                  const active = categoryFilter === category.id;
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        const picked = categoriesById.get(category.id);
+                        setCategoryFilter(category.id);
+                        setListCategorySearch(picked?.name ?? "");
+                        setCategoryListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        active ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      {category.name}
+                    </button>
+                  );
+                })}
+                    {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Kategorien.</p>
+                    ) : filteredListCategories.length === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Treffer.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+            </div>
+          </div>
+
+          <div ref={locationFilterRootRef} className="flex min-w-0 flex-1 flex-row items-center gap-2">
+            <label htmlFor={locationInputId} className="shrink-0 text-sm text-muted-foreground text-right">
+              Platz
+            </label>
+            <div className="relative min-w-0 flex-1">
+              <Input
+                id={locationInputId}
+                type="text"
+                inputMode="search"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={locationListOpen}
+                aria-controls={locationListOpen ? locationListboxId : undefined}
+                autoComplete="off"
+                value={locationFilterInputValue}
+                onChange={(event) => {
+                  setListLocationSearch(event.target.value);
+                  setLocationListOpen(true);
+                  setCategoryListOpen(false);
+                }}
+                onFocus={() => {
+                  setCategoryListOpen(false);
+                  setLocationListOpen(true);
+                  const loc = storageLocationFilter
+                    ? storageLocationsById.get(storageLocationFilter)
+                    : undefined;
+                  const seed = loc ? `${loc.code} - ${loc.name}` : "";
+                  setListLocationSearch(seed);
+                }}
+                placeholder="Suchen…"
+                className="h-9 rounded-lg pr-8 text-sm"
+              />
+              {storageLocationFilter !== "" || (locationListOpen && listLocationSearch.trim() !== "") ? (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                  aria-label="Lagerplatzfilter zurücksetzen"
+                  title="Filter zurücksetzen"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setStorageLocationFilter("");
+                    setListLocationSearch("");
+                    setLocationListOpen(false);
+                  }}
+                >
+                  <span aria-hidden className="relative -top-px text-lg leading-none">
+                    ×
+                  </span>
+                </button>
+              ) : null}
+              {locationListOpen ? (
+                  <div
+                    id={locationListboxId}
+                    role="listbox"
+                    aria-label="Lagerplatz waehlen"
+                    className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
+                  >
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={storageLocationFilter === ""}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setStorageLocationFilter("");
+                        setListLocationSearch("");
+                        setLocationListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        storageLocationFilter === "" ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      Alle Lagerplaetze
+                    </button>
+                {filteredListLocations.map((storageLocation) => {
+                  const active = storageLocationFilter === storageLocation.id;
+                  const label = `${storageLocation.code} - ${storageLocation.name} (${storageLocation.storageRoom.name})`;
+                  return (
+                    <button
+                      key={storageLocation.id}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setStorageLocationFilter(storageLocation.id);
+                        setListLocationSearch(
+                          `${storageLocation.code} - ${storageLocation.name}`,
+                        );
+                        setLocationListOpen(false);
+                      }}
+                      className={`flex w-full px-2 py-1.5 text-left text-xs outline-none transition focus-visible:bg-muted ${
+                        active ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+                    {(storageLocationsQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Lagerplaetze.</p>
+                    ) : filteredListLocations.length === 0 ? (
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Treffer.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 flex-row items-center justify-end gap-2">
+          <label
+            htmlFor={nearMinimumSwitchId}
+            className="whitespace-nowrap text-sm text-muted-foreground"
+            title="Nur Produkte mit Bestand nahe oder unter dem Mindestbestand (bis 110 Prozent des Mindestwerts)"
           >
-            <option value="">Alle Lagerplaetze</option>
-            {filteredStorageLocationsForList.map((storageLocation) => (
-              <option key={storageLocation.id} value={storageLocation.id}>
-                {storageLocation.code} - {storageLocation.name} ({storageLocation.storageRoom.name})
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mb-1 flex items-end">
-          <Button
-            type="button"
-            variant={showNearMinimumOnly ? "default" : "outline"}
-            className="h-10 w-full rounded-xl"
-            onClick={() => setShowNearMinimumOnly((current) => !current)}
-          >
-            {showNearMinimumOnly ? "Filter aktiv: nahe Mindestbestand" : "Nahe Mindestbestand (<= 110%)"}
-          </Button>
+            Nahe Mindestbestand
+          </label>
+          <Switch
+            id={nearMinimumSwitchId}
+            checked={showNearMinimumOnly}
+            onCheckedChange={setShowNearMinimumOnly}
+            title={
+              showNearMinimumOnly
+                ? "Filter aus: alle Produkte anzeigen"
+                : "Filter ein: nur Produkte nahe oder unter Mindestbestand"
+            }
+          />
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+        <TableUI.Table className="table-fixed">
+          <colgroup>
+            <col className="w-[43%]" />
+            <col className="w-[14%]" />
+            <col className="w-[8%]" />
+            <col className="w-[17%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
+          </colgroup>
+          <TableUI.TableHeader>
             <tr>
-              <TableHead>Name</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Kategorie</TableHead>
-              <TableHead>Lagerplatz</TableHead>
-              <TableHead>Bestand</TableHead>
-              <TableHead>Mindestbestand</TableHead>
+              <TableUI.TableHead className="min-w-0">Name</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">SKU</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">Kategorie</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0">Lagerplatz</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">Bestand</TableUI.TableHead>
+              <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">
+                {"Mindest\u00ADbestand"}
+              </TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {productsQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
                   Produkte werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {productsQuery.error ? (
               <tr>
-                <TableCell colSpan={6} className="text-destructive">
+                <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
                   Produkte konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {!productsQuery.isLoading && !productsQuery.error && visibleProducts.length === 0 ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
                   Keine Produkte gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
@@ -518,6 +1112,7 @@ export function ProductsAdminPanel() {
               const isExpanded = expandedRowId === product.id;
               const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
               const form = formsById[product.id] ?? createInitialForm(product);
+              const pendingEditImage = editPendingImageById[product.id];
               const previewImage = product.images[0];
               const locationText = product.storageLocation
                 ? `${product.storageLocation.code} - ${product.storageLocation.name}`
@@ -527,10 +1122,14 @@ export function ProductsAdminPanel() {
               const filteredStorageLocationsForForm = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
                 selectedRoomId ? storageLocation.storageRoomId === selectedRoomId : true,
               );
+              const imageUploadBusy = !!editUploadPendingById[product.id];
+              const imageFilePending = !!pendingEditImage;
+              const urlFieldDisabled = imageFilePending || imageUploadBusy;
+              const altFieldDisabled = imageUploadBusy;
 
               return (
                 <Fragment key={product.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
                       setExpandedRowId((current) => (current === product.id ? null : product.id));
                       setFormsById((current) => ({
@@ -545,11 +1144,11 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className={`cursor-pointer ${isNearMinimum ? "outline outline-2 -outline-offset-2 outline-yellow-400" : ""}`}
+                    className={`cursor-pointer ${isNearMinimum ? "rounded-md outline outline-2 -outline-offset-2 outline-accent-orange/60" : ""}`}
                   >
-                    <TableCell className="font-medium text-foreground">
-                      <div className="relative inline-block">
-                        <span>{product.name}</span>
+                    <TableUI.TableCell className="min-w-0 max-w-0">
+                      <div className="relative inline-block max-w-full">
+                        <span className="break-words">{product.name}</span>
                         {previewImage?.url && hoveredProductId === product.id && !isExpanded ? (
                           <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md border border-border bg-card p-1 shadow-lg">
                             <img
@@ -564,559 +1163,1050 @@ export function ProductsAdminPanel() {
                           </div>
                         ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{product.sku}</TableCell>
-                    <TableCell className="text-muted-foreground">{product.category?.name ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{locationText}</TableCell>
-                    <TableCell className="text-muted-foreground">{toNumber(product.quantityOnHand)}</TableCell>
-                    <TableCell className="text-muted-foreground">{toNumber(product.minimumQuantity)}</TableCell>
-                  </TableRow>
-                  {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={6} className="px-3 py-4">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          <label className="text-xs text-slate-600 md:col-span-2">
-                            Sichtbarkeit
-                            <div
-                              className="mt-1 flex items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              <span className="text-sm text-slate-900">
-                                {form.isVisible
-                                  ? "Produkt ist fuer Benutzer sichtbar"
-                                  : "Produkt ist fuer Benutzer ausgeblendet"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setFormsById((current) => ({
-                                    ...current,
-                                    [product.id]: { ...form, isVisible: !form.isVisible },
-                                  }));
-                                }}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                                  form.isVisible ? "bg-primary" : "bg-slate-300"
-                                }`}
-                                aria-label="Produktsichtbarkeit umschalten"
-                                aria-pressed={form.isVisible}
-                              >
-                                <span
-                                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                                    form.isVisible ? "translate-x-5" : "translate-x-1"
-                                  }`}
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
+                      {product.sku}
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
+                      {product.category?.name ?? "-"}
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
+                      {locationText}
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="whitespace-nowrap tabular-nums">
+                      {toNumber(product.quantityOnHand)}
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="whitespace-nowrap tabular-nums">
+                      {toNumber(product.minimumQuantity)}
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={6}
+                    rowClassName="border-t border-border bg-muted/30"
+                    cellClassName="min-w-0 align-top bg-muted/30 px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    <div className="mx-4 flex min-w-0 flex-col gap-4">
+                      <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
+                        <div className="flex min-h-0 min-w-0 flex-col gap-4">
+                          <div className="space-y-3 rounded-lg">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-x-4">
+                              <label className="block text-sm text-slate-600 md:col-span-2">
+                                Name
+                                <Input
+                                  value={form.name}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, name: event.target.value },
+                                    }))
+                                  }
+                                  className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
                                 />
-                              </button>
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                SKU
+                                <Input
+                                  value={form.sku}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, sku: event.target.value },
+                                    }))
+                                  }
+                                  className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600 md:col-span-3">
+                                Beschreibung
+                                <textarea
+                                  value={form.description}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, description: event.target.value },
+                                    }))
+                                  }
+                                  rows={3}
+                                  className="mt-1 w-full rounded-md bg-card/40 px-2.5 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                />
+                              </label>
                             </div>
-                          </label>
+                          </div>
 
-                          <label className="text-xs text-slate-600">
-                            Name
-                            <input
-                              value={form.name}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, name: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            SKU
-                            <input
-                              value={form.sku}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, sku: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600 md:col-span-2">
-                            Beschreibung
-                            <textarea
-                              value={form.description}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, description: event.target.value },
-                                }))
-                              }
-                              rows={3}
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Preis
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={form.price}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, price: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Mindestbestand
-                            <input
-                              type="number"
-                              step="0.001"
-                              min="0"
-                              value={form.minimumQuantity}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, minimumQuantity: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Bestand (nur Anzeige)
-                            <input
-                              disabled
-                              value={String(toNumber(product.quantityOnHand))}
-                              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-2 text-sm text-slate-600"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Einheitstyp
-                            <select
-                              value={form.unitKind}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: {
-                                    ...form,
-                                    unitKind: event.target.value as ProductFormState["unitKind"],
-                                  },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            >
-                              {unitKinds.map((unitKind) => (
-                                <option key={unitKind.value} value={unitKind.value}>
-                                  {unitKind.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Basiseinheit
-                            <select
-                              value={form.baseUnit}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: {
-                                    ...form,
-                                    baseUnit: event.target.value as ProductFormState["baseUnit"],
-                                  },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            >
-                              {baseUnits.map((baseUnit) => (
-                                <option key={baseUnit.value} value={baseUnit.value}>
-                                  {baseUnit.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Schrittweite
-                            <input
-                              type="number"
-                              step="0.001"
-                              min="0.001"
-                              value={form.unitStep}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, unitStep: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600 md:row-span-2">
-                            Kategorien
-                            <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-lg border border-slate-300 bg-white px-2.5 py-2">
-                              {(categoriesQuery.data ?? []).map((category) => (
-                                <label key={category.id} className="flex items-center gap-2 text-sm text-slate-900">
-                                  <input
-                                    type="checkbox"
-                                    checked={form.categoryIds.includes(category.id)}
-                                    onClick={(event) => event.stopPropagation()}
-                                    onChange={(event) =>
-                                      setFormsById((current) => ({
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4">
+                            <div className="space-y-3 rounded-sm bg-card/40 p-3">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Lager</p>
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              </div>
+                              <label className="block text-sm text-slate-600">
+                                Raum
+                                <Select
+                                  value={selectedRoomId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(nextRoomId) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: {
+                                        ...form,
+                                        storageRoomId: nextRoomId,
+                                        storageLocationId: "",
+                                      },
+                                    }))
+                                  }
+                                  options={[
+                                    { value: "", label: "Kein Lagerraum" },
+                                    ...(storageRoomsQuery.data ?? []).map((storageRoom) => ({
+                                      value: storageRoom.id,
+                                      label: storageRoom.name,
+                                    })),
+                                  ]}
+                                  className="mt-1 w-full px-2.5 py-2 text-sm text-slate-900"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                Platz
+                                <Select
+                                  value={form.storageLocationId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(nextLocationId) =>
+                                    setFormsById((current) => {
+                                      const selectedLocation = storageLocationsById.get(nextLocationId);
+                                      return {
                                         ...current,
                                         [product.id]: {
                                           ...form,
-                                          categoryIds: event.target.checked
-                                            ? [...form.categoryIds, category.id]
-                                            : form.categoryIds.filter((id) => id !== category.id),
+                                          storageRoomId: selectedLocation?.storageRoomId ?? form.storageRoomId,
+                                          storageLocationId: nextLocationId,
                                         },
-                                      }))
-                                    }
-                                    className="h-4 w-4 rounded border-slate-300"
-                                  />
-                                  <span>{category.name}</span>
-                                </label>
-                              ))}
-                              {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                                <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
-                              ) : null}
-                            </div>
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Lagerraum
-                            <select
-                              value={selectedRoomId}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: {
-                                    ...form,
-                                    storageRoomId: event.target.value,
-                                    storageLocationId: "",
-                                  },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            >
-                              <option value="">Kein Lagerraum</option>
-                              {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-                                <option key={storageRoom.id} value={storageRoom.id}>
-                                  {storageRoom.name}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <label className="text-xs text-slate-600">
-                            Lagerplatz
-                            <select
-                              value={form.storageLocationId}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => {
-                                  const selectedLocation = storageLocationsById.get(event.target.value);
-                                  return {
-                                    ...current,
-                                    [product.id]: {
-                                      ...form,
-                                      storageRoomId: selectedLocation?.storageRoomId ?? form.storageRoomId,
-                                      storageLocationId: event.target.value,
+                                      };
+                                    })
+                                  }
+                                  disabled={!selectedRoomId}
+                                  options={[
+                                    {
+                                      value: "",
+                                      label: selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum wählen",
                                     },
-                                  };
-                                })
-                              }
-                              disabled={!selectedRoomId}
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
-                            >
-                              <option value="">{selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}</option>
-                              {filteredStorageLocationsForForm.map((storageLocation) => (
-                                <option key={storageLocation.id} value={storageLocation.id}>
-                                  {storageLocation.code} - {storageLocation.name}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-
-                          <div className="md:col-span-2">
-                            <label className="text-xs text-slate-600">
-                              Bild hochladen
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={async (event) => {
-                                  const file = event.target.files?.[0];
-                                  if (!file) return;
-                                  const sku = form.sku.trim();
-                                  if (!sku) {
-                                    setEditUploadErrorById((current) => ({
-                                      ...current,
-                                      [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                    }));
-                                    return;
-                                  }
-                                  try {
-                                    setEditUploadPendingById((current) => ({ ...current, [product.id]: true }));
-                                    setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                    const uploadedUrl = await uploadProductImage(sku, file);
-                                    setFormsById((current) => ({
-                                      ...current,
-                                      [product.id]: { ...form, imageUrl: uploadedUrl },
-                                    }));
-                                  } catch (error) {
-                                    setEditUploadErrorById((current) => ({
-                                      ...current,
-                                      [product.id]:
-                                        error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
-                                    }));
-                                  } finally {
-                                    setEditUploadPendingById((current) => ({ ...current, [product.id]: false }));
-                                    event.target.value = "";
-                                  }
-                                }}
-                                className="mt-2 block w-full cursor-pointer rounded-lg border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
-                              />
-                            </label>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Klicken, um ein neues Produktbild auszuwaehlen.
-                            </p>
-                            {editUploadPendingById[product.id] ? (
-                              <p className="mt-1 text-xs text-muted-foreground">Bild wird hochgeladen...</p>
-                            ) : null}
-                            {editUploadErrorById[product.id] ? (
-                              <p className="mt-1 text-xs text-destructive">{editUploadErrorById[product.id]}</p>
-                            ) : null}
-                          </div>
-
-                          <label className="text-xs text-slate-600 md:col-span-2">
-                            Bild-URL (optional)
-                            <input
-                              type="url"
-                              value={form.imageUrl}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, imageUrl: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          <label className="text-xs text-slate-600 md:col-span-2">
-                            Bild-Alt-Text
-                            <input
-                              value={form.imageAltText}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [product.id]: { ...form, imageAltText: event.target.value },
-                                }))
-                              }
-                              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900"
-                            />
-                          </label>
-
-                          {form.imageUrl ? (
-                            <div className="md:col-span-2">
-                              <p className="mb-1 text-xs text-slate-600">Bildvorschau</p>
-                              <img
-                                src={form.imageUrl}
-                                alt={form.imageAltText || `${form.name} Produktbild`}
-                                className="h-32 w-32 rounded-lg border border-slate-200 object-cover"
-                                onClick={(event) => event.stopPropagation()}
-                                onError={(event) => {
-                                  event.currentTarget.onerror = null;
-                                  event.currentTarget.src = "/pictures/placeholder.jpg";
-                                }}
-                              />
+                                    ...filteredStorageLocationsForForm.map((storageLocation) => ({
+                                      value: storageLocation.id,
+                                      label: `${storageLocation.code} - ${storageLocation.name}`,
+                                    })),
+                                  ]}
+                                  className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                />
+                              </label>
                             </div>
-                          ) : null}
 
-                          <div className="rounded-lg border border-slate-300 bg-white p-3 md:col-span-2">
-                            <p className="text-xs font-medium text-slate-700">Dokumente</p>
-                            <input
-                              type="file"
-                              accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={async (event) => {
-                                const file = event.target.files?.[0];
-                                if (!file) return;
-                                try {
-                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: true }));
-                                  setEditDocumentUploadErrorById((current) => ({ ...current, [product.id]: null }));
-                                  await uploadProductDocument(product.id, file);
-                                  await utils.product.backendList.invalidate();
-                                } catch (error) {
-                                  setEditDocumentUploadErrorById((current) => ({
-                                    ...current,
-                                    [product.id]:
-                                      error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.",
-                                  }));
-                                } finally {
-                                  setEditDocumentUploadPendingById((current) => ({ ...current, [product.id]: false }));
-                                  event.target.value = "";
-                                }
-                              }}
-                              className="mt-2 block w-full text-xs text-slate-700"
-                            />
-                            {editDocumentUploadPendingById[product.id] ? (
-                              <p className="mt-1 text-xs text-muted-foreground">Dokument wird hochgeladen...</p>
-                            ) : null}
-                            {editDocumentUploadErrorById[product.id] ? (
-                              <p className="mt-1 text-xs text-destructive">{editDocumentUploadErrorById[product.id]}</p>
-                            ) : null}
-                            <div className="mt-3 space-y-1.5">
-                              {(product.documents ?? []).length === 0 ? (
-                                <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                              ) : (
-                                (product.documents ?? []).map((document) => (
-                                  <div
-                                    key={document.id}
-                                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 px-2 py-1.5"
-                                  >
-                                    <a
-                                      href={document.url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      onClick={(event) => event.stopPropagation()}
-                                      className="truncate text-xs text-primary underline-offset-2 hover:underline"
-                                    >
-                                      {document.originalName}
-                                    </a>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[11px] text-muted-foreground">
-                                        {formatBytes(document.sizeBytes)}
-                                      </span>
+                            <div className="space-y-3 rounded-md bg-card/40 p-3">
+                              <div>
+                                <p className="text-lg font-semibold text-slate-900">Mengen & Einheiten</p>
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              </div>
+
+                                  <div className="relative grid grid-cols-1 gap-3 px-3 sm:grid-cols-3">
+                                    <div
+                                      className="pointer-events-none absolute inset-y-0 left-1/3 hidden w-px bg-slate-300/40 sm:block"
+                                      aria-hidden="true"
+                                    />
+
+                                    <label className="block text-sm text-slate-600 text-center sm:pr-3">
+                                      Bestand
+                                      {(() => {
+                                        const quantityOnHand = toNumber(product.quantityOnHand);
+                                        const minimumQuantity = toNumber(form.minimumQuantity);
+                                        const ratio = minimumQuantity > 0 ? quantityOnHand / minimumQuantity : Number.POSITIVE_INFINITY;
+                                        const stockColorClass =
+                                          ratio > 1.1 ? "text-primary" : ratio >= 1 ? "text-accent-orange" : "text-destructive";
+
+                                        return (
+                                      <input
+                                        disabled
+                                        value={String(toNumber(product.quantityOnHand))}
+                                        className={`mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm ${stockColorClass} text-center font-semibold`}
+                                      />
+                                        );
+                                      })()}
+                                    </label>
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
+                                      Minimum
+                                      <div className="mt-1 flex justify-center">
+                                        <NumberStepper
+                                          value={form.minimumQuantity}
+                                          min={0}
+                                          step={0.001}
+                                          onChange={(value) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, minimumQuantity: value },
+                                            }))
+                                          }
+                                          decreaseAriaLabel="Minimum verringern"
+                                          increaseAriaLabel="Minimum erhoehen"
+                                          inputAriaLabel="Minimum"
+                                        />
+                                      </div>
+                                    </label>
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
+                                      Schritte
+                                      <div className="mt-1 flex justify-center">
+                                        <NumberStepper
+                                          value={form.unitStep}
+                                          min={0.001}
+                                          step={0.001}
+                                          onChange={(value) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, unitStep: value },
+                                            }))
+                                          }
+                                          decreaseAriaLabel="Schritte verringern"
+                                          increaseAriaLabel="Schritte erhoehen"
+                                          inputAriaLabel="Schritte"
+                                        />
+                                      </div>
+                                    </label>
+
+                                    <label className="block text-sm text-slate-600 text-center sm:pr-3">
+                                      Neu einbuchen
                                       <Button
                                         type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={async (event) => {
+                                        onClick={(event) => {
                                           event.stopPropagation();
-                                          try {
-                                            setEditDocumentUploadPendingById((current) => ({
+                                          setBookingProduct({ id: product.id, name: product.name });
+                                          setBookingError(null);
+                                        }}
+                                        variant="new"
+                                        className="mt-1 h-[38px] shrink-0 w-full text-center"
+                                      >
+                                        Dialog öffnen
+                                      </Button>
+                                    </label>
+
+                                    <label className="block text-sm text-slate-600 text-center sm:pl-3">
+                                      Einheitstyp
+                                      <select
+                                        value={form.unitKind}
+                                        onClick={(event) => event.stopPropagation()}
+                                        onChange={(event) =>
+                                          setFormsById((current) => ({
+                                            ...current,
+                                            [product.id]: {
+                                              ...form,
+                                              unitKind: event.target.value as ProductFormState["unitKind"],
+                                            },
+                                          }))
+                                        }
+                                        className="mt-1 w-full rounded-sm bg-card/40 py-2 text-sm text-slate-900 text-center"
+                                      >
+                                        {unitKinds.map((unitKind) => (
+                                          <option key={unitKind.value} value={unitKind.value}>
+                                            {unitKind.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                    <div className="block text-sm text-slate-600 text-center sm:pl-3">
+                                      <label className="block text-sm text-slate-600 sm:flex-1 text-center">
+                                        Basiseinheit
+                                        <select
+                                          value={form.baseUnit}
+                                          onClick={(event) => event.stopPropagation()}
+                                          onChange={(event) =>
+                                            setFormsById((current) => ({
                                               ...current,
-                                              [product.id]: true,
-                                            }));
-                                            setEditDocumentUploadErrorById((current) => ({
+                                              [product.id]: {
+                                                ...form,
+                                                baseUnit: event.target.value as ProductFormState["baseUnit"],
+                                              },
+                                            }))
+                                          }
+                                          className="mt-1 w-full rounded-sm bg-card/40 py-2 text-sm text-slate-900 text-center"
+                                        >
+                                          {baseUnits.map((baseUnit) => (
+                                            <option key={baseUnit.value} value={baseUnit.value}>
+                                              {baseUnit.label}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                    </div>
+                                    
+                                  </div>
+                                </div>
+
+                                <div className="space-y-3 rounded-md bg-card/40 p-3">
+                                  <div>
+                                    <p className="text-lg font-semibold text-slate-900">Sichtbarkeit & Preis</p>
+                                    <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setFormsById((current) => ({
+                                          ...current,
+                                          [product.id]: { ...form, isVisible: !form.isVisible },
+                                        }));
+                                      }}
+                                      className={`flex w-full items-center justify-between gap-3 rounded-sm border-2 bg-card/40 mt-1 px-3 py-2 text-left transition sm:col-span-2 ${
+                                        form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
+                                      }`}
+                                      aria-label="Produktsichtbarkeit umschalten"
+                                      aria-pressed={form.isVisible}
+                                    >
+                                      <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
+                                      <span
+                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                          form.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
+                                        }`}
+                                        aria-hidden="true"
+                                      >
+                                        <span
+                                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                            form.isVisible ? "translate-x-5" : "translate-x-1"
+                                          }`}
+                                        />
+                                      </span>
+                                    </button>
+
+                                    <label className="block text-sm text-slate-600 text-center mt-2">
+                                      Verkaufspreis
+                                      <div className="mt-1 flex w-full">
+                                        <Input
+                                          type="text"
+                                          inputMode="decimal"
+                                          value={form.price}
+                                          onClick={(event) => event.stopPropagation()}
+                                          onChange={(event) =>
+                                            setFormsById((current) => ({
+                                              ...current,
+                                              [product.id]: { ...form, price: event.target.value },
+                                            }))
+                                          }
+                                          className="!h-9 !rounded-l-sm !rounded-r-none !bg-transparent pl-4 py-2 text-sm text-slate-900 text-center"
+                                        />
+                                        <span className="inline-flex items-center rounded-r-sm bg-card/80 px-2.5 text-sm text-slate-700">
+                                          €
+                                        </span>
+                                      </div>
+                                    </label>
+
+                                    <label className="block text-sm text-slate-600 text-center mt-2">
+                                      Gesamtvermögen
+                                      <div className="mt-1 flex w-full">
+                                        <input
+                                          disabled
+                                          value={(() => {
+                                            const price = parseMoneyInput(form.price);
+                                            const stock = toNumber(product.quantityOnHand);
+                                            const total =
+                                              Number.isFinite(price) && Number.isFinite(stock) ? price * stock : NaN;
+                                            return formatMoneyDeAt(total);
+                                          })()}
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="w-full !rounded-l-sm bg-card/40 pl-2.5 py-2 text-sm text-slate-600 font-semibold text-center"
+                                        />
+                                        <span className="inline-flex items-center rounded-r-sm bg-card/80 px-2.5 text-sm text-slate-700">
+                                          €
+                                        </span>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
+                              <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-md bg-card/40 p-3 md:min-h-0 md:overflow-hidden">
+                                <div className="shrink-0 space-y-3">
+                                  <p className="text-lg font-semibold text-slate-900">Kategorien</p>
+                                  <div className="h-px w-full bg-slate-300/70" aria-hidden="true" />
+                                  {form.categoryIds.length > 0 ? (
+                                    <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+                                      {form.categoryIds.map((categoryId) => {
+                                        const assigned = categoriesById.get(categoryId);
+                                        if (!assigned) return null;
+                                        return (
+                                          <Button
+                                            key={categoryId}
+                                            variant="category-pill"
+                                            size="sm"
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              setFormsById((current) => {
+                                                const prev = current[product.id] ?? form;
+                                                return {
+                                                  ...current,
+                                                  [product.id]: {
+                                                    ...prev,
+                                                    categoryIds: prev.categoryIds.filter((id) => id !== categoryId),
+                                                  },
+                                                };
+                                              });
+                                            }}
+                                            className="max-w-full cursor-pointer gap-1.5"
+                                            aria-label={`Kategorie ${assigned.name} entfernen`}
+                                          >
+                                            <span className="truncate font-medium">{assigned.name}
+                                              <span className="text-destructive"> X
+                                              </span>
+                                            </span>
+                                          </Button>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                  <Input
+                                    type="search"
+                                    value={editCategorySearch}
+                                    onChange={(event) => setEditCategorySearch(event.target.value)}
+                                    onClick={(event) => event.stopPropagation()}
+                                    placeholder="Kategorien suchen..."
+                                    className="h-9 rounded-md text-sm"
+                                    aria-label="Kategorien filtern"
+                                  />
+                                </div>
+                                <div
+                                  className="flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-sm bg-card/40 max-h-80"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
+                                  <div
+                                    className="min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
+                                    role="group"
+                                    aria-label="Kategorien auswaehlen"
+                                  >
+                                    <div className="flex flex-col gap-2 ">
+                                      {filteredEditCategories.map((category) => (
+                                        <label
+                                          key={category.id}
+                                          className="flex cursor-pointer items-center gap-2 text-sm text-slate-900 hover:bg-card/80"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={form.categoryIds.includes(category.id)}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) =>
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [product.id]: {
+                                                  ...form,
+                                                  categoryIds: event.target.checked
+                                                    ? [...form.categoryIds, category.id]
+                                                    : form.categoryIds.filter((id) => id !== category.id),
+                                                },
+                                              }))
+                                            }
+                                            className="h-4 w-4 shrink-0"
+                                          />
+                                          <span>{category.name}</span>
+                                        </label>
+                                      ))}
+                                      {(categoriesQuery.data?.length ?? 0) === 0 ? (
+                                        <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                                      ) : filteredEditCategories.length === 0 ? (
+                                        <p className="text-xs text-slate-500">Keine Treffer.</p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-md bg-card/40 p-3 min-w-0">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setEditMediaSectionCollapsedById((current) => ({
+                                  ...current,
+                                  [product.id]: !(current[product.id] ?? true),
+                                }));
+                              }}
+                              className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
+                              aria-expanded={!(editMediaSectionCollapsedById[product.id] ?? true)}
+                              aria-controls={`edit-media-section-${product.id}`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+                                <span
+                                  aria-hidden="true"
+                                  className="shrink-0 text-slate-500"
+                                  title={(editMediaSectionCollapsedById[product.id] ?? true) ? "Ausklappen" : "Einklappen"}
+                                >
+                                  <ChevronDownIcon
+                                    open={!(editMediaSectionCollapsedById[product.id] ?? true)}
+                                    className="h-4 w-4"
+                                  />
+                                </span>
+                              </div>
+                              {!(editMediaSectionCollapsedById[product.id] ?? true) ? (
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              ) : null}
+                            </button>
+
+                            {!(editMediaSectionCollapsedById[product.id] ?? true) ? (
+                              <div id={`edit-media-section-${product.id}`} className="space-y-3 pt-3">
+
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-stretch">
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                    <div>
+                                      <p className="select-none text-sm text-slate-600">Bild hochladen</p>
+                                      <label
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
+                                          editUploadPendingById[product.id]
+                                            ? "cursor-default opacity-90"
+                                            : "cursor-pointer hover:bg-violet-100"
+                                        }`}
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-busy={editUploadPendingById[product.id] ? true : undefined}
+                                      >
+                                        <input
+                                          id={`edit-product-image-${product.id}`}
+                                          type="file"
+                                          accept="image/*"
+                                          disabled={!!editUploadPendingById[product.id]}
+                                          className="sr-only"
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            if (!file) return;
+                                            const sku = form.sku.trim();
+                                            if (!sku) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Bitte zuerst eine SKU eingeben.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            if (!file.type.startsWith("image/")) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Bitte eine Bilddatei auswaehlen.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            if (file.size > MAX_UPLOAD_BYTES) {
+                                              setEditUploadErrorById((current) => ({
+                                                ...current,
+                                                [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
+                                              }));
+                                              event.target.value = "";
+                                              return;
+                                            }
+                                            setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
+                                            setEditPendingImageById((current) => {
+                                              const prev = current[product.id];
+                                              if (prev?.previewUrl) {
+                                                URL.revokeObjectURL(prev.previewUrl);
+                                              }
+                                              return {
+                                                ...current,
+                                                [product.id]: { file, previewUrl: URL.createObjectURL(file) },
+                                              };
+                                            });
+                                            setEditSelectedImageIdById((current) => ({
                                               ...current,
                                               [product.id]: null,
                                             }));
-                                            await deleteProductDocument(document.id);
-                                            await utils.product.backendList.invalidate();
-                                          } catch (error) {
-                                            setEditDocumentUploadErrorById((current) => ({
-                                              ...current,
-                                              [product.id]:
-                                                error instanceof Error
-                                                  ? error.message
-                                                  : "Dokument konnte nicht geloescht werden.",
-                                            }));
-                                          } finally {
-                                            setEditDocumentUploadPendingById((current) => ({
-                                              ...current,
-                                              [product.id]: false,
-                                            }));
+                                            setFormsById((current) => {
+                                              const f = current[product.id] ?? createInitialForm(product);
+                                              return {
+                                                ...current,
+                                                [product.id]: {
+                                                  ...f,
+                                                  imageUrl: "",
+                                                  imageAltText: f.imageAltText,
+                                                },
+                                              };
+                                            });
+                                            event.target.value = "";
+                                          }}
+                                        />
+                                        <span
+                                          className={`inline-flex shrink-0 rounded-sm bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                            editUploadPendingById[product.id]
+                                              ? "opacity-70"
+                                              : "group-hover:bg-violet-700"
+                                          }`}
+                                        >
+                                          Datei auswählen
+                                        </span>
+                                        <span
+                                          className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                            editUploadPendingById[product.id]
+                                              ? "text-muted-foreground"
+                                              : pendingEditImage
+                                                ? "font-medium text-slate-900"
+                                                : "text-slate-500"
+                                          }`}
+                                          title={
+                                            editUploadPendingById[product.id]
+                                              ? undefined
+                                              : pendingEditImage
+                                                ? pendingEditImage.file.name
+                                                : undefined
                                           }
+                                          role="status"
+                                        >
+                                          {editUploadPendingById[product.id]
+                                            ? "Bild wird hochgeladen..."
+                                            : (pendingEditImage?.file.name ?? "Keine Datei ausgewählt")}
+                                        </span>
+                                      </label>
+                                    </div>
+                                    {editUploadErrorById[product.id] ? (
+                                      <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
+                                    ) : null}
+
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          const openSource =
+                                            form.imageUrl.trim() || pendingEditImage?.previewUrl || "";
+                                          const href = resolveImageTabUrl(openSource);
+                                          if (href) window.open(href, "_blank", "noopener,noreferrer");
                                         }}
-                                        disabled={editDocumentUploadPendingById[product.id]}
+                                        className={`relative h-48 w-full shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100 sm:h-56 sm:w-56 md:h-64 md:w-64 ${
+                                          form.imageUrl.trim() || pendingEditImage?.previewUrl
+                                            ? "cursor-pointer transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
+                                            : "cursor-default opacity-90"
+                                        }`}
+                                        aria-label={
+                                          form.imageUrl.trim() || pendingEditImage?.previewUrl
+                                            ? "Bild in neuem Tab oeffnen"
+                                            : "Vorschau (noch keine Bild-URL)"
+                                        }
                                       >
-                                        Entfernen
-                                      </Button>
+                                        <img
+                                          src={
+                                            form.imageUrl.trim() ||
+                                            pendingEditImage?.previewUrl ||
+                                            "/pictures/placeholder.jpg"
+                                          }
+                                          alt=""
+                                          className="h-full w-full object-cover"
+                                          onError={(event) => {
+                                            event.currentTarget.onerror = null;
+                                            event.currentTarget.src = "/pictures/placeholder.jpg";
+                                          }}
+                                        />
+                                      </button>
+                                      <div className="min-w-0 flex-1 space-y-3">
+                                        <div className="block text-xs text-slate-600">
+                                          <span className="select-none">
+                                            {urlFieldDisabled ? "Bild-URL" : "Bild-URL (optional)"}
+                                          </span>
+                                          <Input
+                                            type="text"
+                                            inputMode="url"
+                                            autoComplete="off"
+                                            value={form.imageUrl}
+                                            disabled={urlFieldDisabled}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) => {
+                                              setImageFieldsTouchedById((current) => ({
+                                                ...current,
+                                                [product.id]: true,
+                                              }));
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [product.id]: {
+                                                  ...(current[product.id] ?? createInitialForm(product)),
+                                                  imageUrl: event.target.value,
+                                                },
+                                              }));
+                                            }}
+                                            placeholder={
+                                              urlFieldDisabled
+                                                ? "—"
+                                                : "Nach Auswahl aus Liste oder nach Speichern"
+                                            }
+                                            className={`h-9 mt-1 w-full px-2.5 py-2 text-sm ${
+                                              urlFieldDisabled
+                                                ? "cursor-not-allowed bg-slate-50 text-slate-500"
+                                                : "text-slate-900"
+                                            }`}
+                                          />
+                                        </div>
+                                        <div className="block text-xs text-slate-600">
+                                          <span className="select-none">Bild-Alt-Text</span>
+                                          <Input
+                                            value={form.imageAltText}
+                                            disabled={altFieldDisabled}
+                                            onClick={(event) => event.stopPropagation()}
+                                            onChange={(event) => {
+                                              setImageFieldsTouchedById((current) => ({
+                                                ...current,
+                                                [product.id]: true,
+                                              }));
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [product.id]: {
+                                                  ...(current[product.id] ?? createInitialForm(product)),
+                                                  imageAltText: event.target.value,
+                                                },
+                                              }));
+                                            }}
+                                            placeholder={
+                                              altFieldDisabled
+                                                ? "—"
+                                                : imageFilePending
+                                                  ? "Vor Speichern für das neue Bild eintragen"
+                                                  : "Bearbeiten, mit Speichern übernehmen"
+                                            }
+                                            className={`h-9 mt-1 w-full px-2.5 py-2 text-sm ${
+                                              altFieldDisabled
+                                                ? "cursor-not-allowed text-slate-500"
+                                                : "text-slate-900"
+                                            }`}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-auto border-t border-slate-300/80 pt-3">
+                                      <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
+                                      <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
+                                        {(product.images ?? []).length === 0 ? (
+                                          <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
+                                        ) : (
+                                          <div className="grid grid-cols-3 gap-2">
+                                            {(product.images ?? []).map((image, imageIndex) => {
+                                              const isSelected = editSelectedImageIdById[product.id] === image.id;
+                                              const deleteKey = `${product.id}:${image.id}`;
+                                              const sizeBytes = image.sizeBytes ?? null;
+                                              const displayImagePath = (() => {
+                                                try {
+                                                  const pathname = new URL(image.url, "http://dummy").pathname;
+                                                  const file = pathname.split("/").pop() ?? "";
+                                                  return file ? `${file}` : pathname || image.url;
+                                                } catch {
+                                                  return image.url;
+                                                }
+                                              })();
+
+                                              return (
+                                                <div
+                                                  key={image.id ?? `${image.url}-${imageIndex}`}
+                                                  className={`relative rounded-sm border-b-2 bg-card/80 p-1.5 transition ${
+                                                    isSelected
+                                                      ? "border-violet-400/80 border-b-2"
+                                                      : "border-transparent"
+                                                  }`}
+                                                >
+                                                  <button
+                                                    type="button"
+                                                    onClick={(clickEvent) => {
+                                                      clickEvent.stopPropagation();
+                                                      if (editSelectedImageIdById[product.id] === image.id) {
+                                                        setEditSelectedImageIdById((current) => ({
+                                                          ...current,
+                                                          [product.id]: null,
+                                                        }));
+                                                        setFormsById((current) => {
+                                                          const f = current[product.id] ?? createInitialForm(product);
+                                                          return {
+                                                            ...current,
+                                                            [product.id]: {
+                                                              ...f,
+                                                              imageUrl: "",
+                                                              imageAltText: "",
+                                                            },
+                                                          };
+                                                        });
+                                                        return;
+                                                      }
+                                                      clearEditPendingImage(product.id);
+                                                      setEditSelectedImageIdById((current) => ({
+                                                        ...current,
+                                                        [product.id]: image.id,
+                                                      }));
+                                                      setFormsById((current) => {
+                                                        const f = current[product.id] ?? createInitialForm(product);
+                                                        return {
+                                                          ...current,
+                                                          [product.id]: {
+                                                            ...f,
+                                                            imageUrl: image.url,
+                                                            imageAltText: image.altText ?? "",
+                                                          },
+                                                        };
+                                                      });
+                                                    }}
+                                                    className="flex w-full min-w-0 items-center gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                                  >
+                                                    <img
+                                                      src={image.url}
+                                                      alt={
+                                                        image.altText || `${form.name} Produktbild ${imageIndex + 1}`
+                                                      }
+                                                      className="h-14 w-14 shrink-0 rounded-xs object-cover"
+                                                      onError={(errEvent) => {
+                                                        errEvent.currentTarget.onerror = null;
+                                                        errEvent.currentTarget.src = "/pictures/placeholder.jpg";
+                                                      }}
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                      <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-[10px] leading-snug" >
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Name:
+                                                        </span>
+                                                        <span className="break-all text-slate-700">
+                                                          {displayImagePath}
+                                                        </span>
+
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Alt-Text:
+                                                        </span>
+                                                        <span
+                                                          className={`min-w-0 ${
+                                                            image.altText
+                                                              ? "line-clamp-2 text-slate-600"
+                                                              : "text-muted-foreground"
+                                                          }`}
+                                                        >
+                                                          {image.altText ? image.altText : "—"}
+                                                        </span>
+
+                                                        <span className="text-slate-600 font-semibold">
+                                                          Größe:
+                                                        </span>
+                                                        <span className="tabular-nums text-muted-foreground">
+                                                          {sizeBytes != null ? formatBytes(sizeBytes) : "—"}
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                  </button>
+                                                  <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    disabled={imageDeletePendingKey !== null}
+                                                    onClick={(clickEvent) => {
+                                                      clickEvent.stopPropagation();
+                                                      if (!image.id) return;
+                                                      const deletedUrl = image.url;
+                                                      setImageDeletePendingKey(deleteKey);
+                                                      deleteProductImageMutation.mutate(
+                                                        { productId: product.id, imageId: image.id },
+                                                        {
+                                                          onSuccess: () => {
+                                                            setEditSelectedImageIdById((current) =>
+                                                              current[product.id] === image.id
+                                                                ? { ...current, [product.id]: null }
+                                                                : current,
+                                                            );
+                                                            setFormsById((current) => {
+                                                              const f = current[product.id];
+                                                              if (!f) return current;
+                                                              if (f.imageUrl === deletedUrl) {
+                                                                return {
+                                                                  ...current,
+                                                                  [product.id]: {
+                                                                    ...f,
+                                                                    imageUrl: "",
+                                                                    imageAltText: "",
+                                                                  },
+                                                                };
+                                                              }
+                                                              return current;
+                                                            });
+                                                          },
+                                                        },
+                                                      );
+                                                    }}
+                                                    className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-slate-600 hover:bg-red-600/80 hover:text-slate-900"
+                                                    aria-label="Bild entfernen"
+                                                  >
+                                                    {imageDeletePendingKey === deleteKey ? (
+                                                      <span className="text-xs">...</span>
+                                                    ) : (
+                                                      <WastebinIcon size={16} className="opacity-90" />
+                                                    )}
+                                                  </Button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                ))
-                              )}
-                            </div>
+                              <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                <div>
+                                  <p className="select-none text-sm text-slate-600">Dokument hochladen</p>
+                                  <label
+                                    className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-amber-500/65 bg-card/40 p-3 text-sm ${
+                                      editDocumentUploadPendingById[product.id]
+                                        ? "cursor-default opacity-90"
+                                        : "cursor-pointer hover:bg-amber-100"
+                                    }`}
+                                    onClick={(event) => event.stopPropagation()}
+                                    aria-busy={editDocumentUploadPendingById[product.id] ? true : undefined}
+                                  >
+                                    <input
+                                      type="file"
+                                      accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                      disabled={!!editDocumentUploadPendingById[product.id]}
+                                      className="sr-only"
+                                      onChange={async (event) => {
+                                        const file = event.target.files?.[0];
+                                        if (!file) return;
+                                        try {
+                                          setEditDocumentUploadPendingById((current) => ({
+                                            ...current,
+                                            [product.id]: true,
+                                          }));
+                                          setEditDocumentUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]: null,
+                                          }));
+                                          await uploadProductDocument(product.id, file);
+                                          await utils.product.backendList.invalidate();
+                                        } catch (error) {
+                                          setEditDocumentUploadErrorById((current) => ({
+                                            ...current,
+                                            [product.id]:
+                                              error instanceof Error
+                                                ? error.message
+                                                : "Dokument konnte nicht hochgeladen werden.",
+                                          }));
+                                        } finally {
+                                          setEditDocumentUploadPendingById((current) => ({
+                                            ...current,
+                                            [product.id]: false,
+                                          }));
+                                          event.target.value = "";
+                                        }
+                                      }}
+                                    />
+                                    <span
+                                      className={`inline-flex shrink-0 rounded-sm bg-amber-700 px-3 py-2 text-sm font-semibold text-white ${
+                                        editDocumentUploadPendingById[product.id]
+                                          ? "opacity-70"
+                                          : "group-hover:bg-amber-800"
+                                      }`}
+                                    >
+                                      Datei auswählen
+                                    </span>
+                                    <span
+                                      className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                        editDocumentUploadPendingById[product.id]
+                                          ? "text-muted-foreground"
+                                          : "text-slate-500"
+                                      }`}
+                                      role="status"
+                                    >
+                                      {editDocumentUploadPendingById[product.id]
+                                        ? "Dokument wird hochgeladen..."
+                                        : "Keine Datei ausgewählt"}
+                                    </span>
+                                  </label>
+                                </div>
+                                {editDocumentUploadErrorById[product.id] ? (
+                                  <p className="text-xs text-destructive">
+                                    {editDocumentUploadErrorById[product.id]}
+                                  </p>
+                                ) : null}
+
+                                <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
+                                  <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
+                                  {(product.documents ?? []).length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {(product.documents ?? []).map((document) => (
+                                        <div
+                                          key={document.id}
+                                          className="flex items-center justify-between gap-2 rounded-sm bg-card/80 px-2 py-1.5"
+                                        >
+                                          <a
+                                            href={document.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            onClick={(event) => event.stopPropagation()}
+                                            className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                          >
+                                            {document.originalName}
+                                          </a>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[11px] text-muted-foreground">
+                                              {formatBytes(document.sizeBytes)}
+                                            </span>
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={async (event) => {
+                                                event.stopPropagation();
+                                                try {
+                                                  setEditDocumentUploadPendingById((current) => ({
+                                                    ...current,
+                                                    [product.id]: true,
+                                                  }));
+                                                  setEditDocumentUploadErrorById((current) => ({
+                                                    ...current,
+                                                    [product.id]: null,
+                                                  }));
+                                                  await deleteProductDocument(document.id);
+                                                  await utils.product.backendList.invalidate();
+                                                } catch (error) {
+                                                  setEditDocumentUploadErrorById((current) => ({
+                                                    ...current,
+                                                    [product.id]:
+                                                      error instanceof Error
+                                                        ? error.message
+                                                        : "Dokument konnte nicht geloescht werden.",
+                                                  }));
+                                                } finally {
+                                                  setEditDocumentUploadPendingById((current) => ({
+                                                    ...current,
+                                                    [product.id]: false,
+                                                  }));
+                                                }
+                                              }}
+                                              disabled={editDocumentUploadPendingById[product.id]}
+                                              className="h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                              aria-label="Dokument entfernen"
+                                            >
+                                              {editDocumentUploadPendingById[product.id] ? (
+                                                <span className="text-xs">...</span>
+                                              ) : (
+                                                <WastebinIcon size={16} className="opacity-90" />
+                                              )}
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
+
                         </div>
 
-                        <div className="mt-4 flex items-center gap-2">
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setBookingProduct({ id: product.id, name: product.name });
-                              setBookingError(null);
-                            }}
-                            variant="secondary"
-                          >
-                            Einbuchen
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFormsById((current) => ({
-                                ...current,
-                                [product.id]: createInitialForm(product),
-                              }));
-                            }}
-                            variant="outline"
-                          >
-                            Zuruecksetzen
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateMutation.mutate({
-                                id: product.id,
-                                name: form.name.trim(),
-                                sku: form.sku.trim(),
-                                description: form.description.trim() ? form.description.trim() : null,
-                                price: Number(form.price),
-                                minimumQuantity: Number(form.minimumQuantity),
-                                unitKind: form.unitKind,
-                                baseUnit: form.baseUnit,
-                                unitStep: Number(form.unitStep),
-                                isVisible: form.isVisible,
-                                categoryIds: form.categoryIds,
-                                storageLocationId: form.storageLocationId || null,
-                                imageUrl: form.imageUrl.trim() || null,
-                                imageAltText: form.imageAltText.trim() || null,
-                              });
-                            }}
-                            disabled={
-                              updateMutation.isPending ||
-                              editUploadPendingById[product.id] ||
-                              editDocumentUploadPendingById[product.id]
-                            }
-                            className="disabled:opacity-60"
-                          >
-                            {updateMutation.isPending ? "Speichert..." : "Speichern"}
-                          </Button>
-                        </div>
-
-                        <BookingHistory productId={product.id} />
-                      </td>
-                    </tr>
-                  ) : null}
+                    <BookingHistory productId={product.id} />
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {productsQuery.hasNextPage ? (
         <div className="mt-4">
@@ -1131,268 +2221,67 @@ export function ProductsAdminPanel() {
         </div>
       ) : null}
 
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Neues Produkt"
-        description="Alle Produktdaten eingeben, Startbestand setzen und optional ein Bild hochladen."
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="text-xs text-muted-foreground">
-            Name
-            <Input
-              value={createForm.name}
-              onChange={(event) => setCreateForm((current) => ({ ...current, name: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            SKU
-            <Input
-              value={createForm.sku}
-              onChange={(event) => setCreateForm((current) => ({ ...current, sku: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Beschreibung
-            <textarea
-              value={createForm.description}
-              onChange={(event) => setCreateForm((current) => ({ ...current, description: event.target.value }))}
-              rows={3}
-              className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Preis
-            <Input
-              type="number"
-              min={0}
-              step={0.01}
-              value={createForm.price}
-              onChange={(event) => setCreateForm((current) => ({ ...current, price: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Mindestbestand
-            <Input
-              type="number"
-              min={0}
-              step={0.001}
-              value={createForm.minimumQuantity}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, minimumQuantity: event.target.value }))
-              }
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Startbestand
-            <Input
-              type="number"
-              min={0}
-              step={0.001}
-              value={createForm.startingQuantity}
-              onChange={(event) =>
-                setCreateForm((current) => ({ ...current, startingQuantity: event.target.value }))
-              }
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Schrittweite
-            <Input
-              type="number"
-              min={0.001}
-              step={0.001}
-              value={createForm.unitStep}
-              onChange={(event) => setCreateForm((current) => ({ ...current, unitStep: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Einheitstyp
-            <select
-              value={createForm.unitKind}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  unitKind: event.target.value as ProductFormState["unitKind"],
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              {unitKinds.map((unitKind) => (
-                <option key={unitKind.value} value={unitKind.value}>
-                  {unitKind.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Basiseinheit
-            <select
-              value={createForm.baseUnit}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  baseUnit: event.target.value as ProductFormState["baseUnit"],
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              {baseUnits.map((baseUnit) => (
-                <option key={baseUnit.value} value={baseUnit.value}>
-                  {baseUnit.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground md:row-span-2">
-            Kategorien
-            <div className="mt-1 max-h-36 space-y-2 overflow-y-auto rounded-xl border border-input bg-background px-3 py-2">
-              {(categoriesQuery.data ?? []).map((category) => (
-                <label key={category.id} className="flex items-center gap-2 text-sm text-foreground">
-                  <input
-                    type="checkbox"
-                    checked={createForm.categoryIds.includes(category.id)}
-                    onChange={(event) =>
-                      setCreateForm((current) => ({
-                        ...current,
-                        categoryIds: event.target.checked
-                          ? [...current.categoryIds, category.id]
-                          : current.categoryIds.filter((id) => id !== category.id),
-                      }))
+      {expandedRowId && hasUnsavedChanges ? (
+        <>
+          <div className="h-24" aria-hidden="true" />
+          <div className="fixed inset-x-0 bottom-4 z-50 px-4">
+            <div className="mx-auto w-full max-w-6xl">
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive bg-background/70 shadow-lg backdrop-blur p-4">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {visibleProducts.find((p) => p.id === expandedRowId)?.name ?? "Produkt"}
+                  </p>
+                  <p className="text-xs text-destructive">Ausstehende Änderungen</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const product = visibleProducts.find((p) => p.id === expandedRowId);
+                      if (!product) return;
+                      handleResetProduct(product);
+                    }}
+                    variant="outline"
+                  >
+                    Zurücksetzen
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      const product = visibleProducts.find((p) => p.id === expandedRowId);
+                      if (!product) return;
+                      void handleSaveProduct(product);
+                    }}
+                    disabled={
+                      updateMutation.isPending ||
+                      (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
+                      addProductImageMutation.isPending ||
+                      (expandedRowId !== null ? !!editDocumentUploadPendingById[expandedRowId] : false)
                     }
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <span>{category.name}</span>
-                </label>
-              ))}
-              {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                <p className="text-xs text-muted-foreground">Keine Kategorien vorhanden.</p>
-              ) : null}
+                    className="shrink-0 disabled:opacity-60"
+                  >
+                    {updateMutation.isPending ||
+                    (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
+                    addProductImageMutation.isPending ? (
+                      "Speichert..."
+                    ) : (
+                      "Speichern"
+                    )}
+                  </Button>
+                </div>                
+              </div>
             </div>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Lagerraum
-            <select
-              value={selectedCreateRoomId}
-              onChange={(event) =>
-                setCreateForm((current) => ({
-                  ...current,
-                  storageRoomId: event.target.value,
-                  storageLocationId: "",
-                }))
-              }
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              <option value="">Kein Lagerraum</option>
-              {(storageRoomsQuery.data ?? []).map((storageRoom) => (
-                <option key={storageRoom.id} value={storageRoom.id}>
-                  {storageRoom.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Lagerplatz
-            <select
-              value={createForm.storageLocationId}
-              onChange={(event) =>
-                setCreateForm((current) => {
-                  const selectedLocation = storageLocationsById.get(event.target.value);
-                  return {
-                    ...current,
-                    storageRoomId: selectedLocation?.storageRoomId ?? current.storageRoomId,
-                    storageLocationId: event.target.value,
-                  };
-                })
-              }
-              disabled={!selectedCreateRoomId}
-              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-            >
-              <option value="">{selectedCreateRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen"}</option>
-              {filteredStorageLocationsForCreate.map((storageLocation) => (
-                <option key={storageLocation.id} value={storageLocation.id}>
-                  {storageLocation.code} - {storageLocation.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Bild hochladen (optional)
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setCreateImageFile(event.target.files?.[0] ?? null)}
-              className="mt-2 block w-full cursor-pointer rounded-xl border-2 border-dashed border-primary/60 bg-primary/5 p-3 text-sm font-medium text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary-foreground hover:bg-primary/10"
-            />
-            <span className="mt-1 block text-xs text-muted-foreground">
-              {createImageFile ? `Ausgewaehlt: ${createImageFile.name}` : "Noch keine Datei ausgewaehlt."}
-            </span>
-          </label>
-          <label className="text-xs text-muted-foreground md:col-span-2">
-            Bild-Alt-Text (optional)
-            <Input
-              value={createForm.imageAltText}
-              onChange={(event) => setCreateForm((current) => ({ ...current, imageAltText: event.target.value }))}
-              className="mt-1 h-10 rounded-xl"
-            />
-          </label>
-        </div>
-        {createImageUploadError ? <p className="mt-2 text-sm text-destructive">{createImageUploadError}</p> : null}
-        <div className="mt-4 flex items-center gap-2">
-          <Button
-            type="button"
-            disabled={!canCreateProduct || createMutation.isPending || createImageUploadPending}
-            onClick={async () => {
-              try {
-                setCreateImageUploadError(null);
-                let imageUrl = createForm.imageUrl.trim() || null;
-                if (createImageFile) {
-                  setCreateImageUploadPending(true);
-                  imageUrl = await uploadProductImage(createForm.sku.trim(), createImageFile);
-                }
-                createMutation.mutate({
-                  name: createForm.name.trim(),
-                  sku: createForm.sku.trim(),
-                  description: createForm.description.trim() ? createForm.description.trim() : null,
-                  price: Number(createForm.price),
-                  minimumQuantity: Number(createForm.minimumQuantity),
-                  startingQuantity: Number(createForm.startingQuantity),
-                  unitKind: createForm.unitKind,
-                  baseUnit: createForm.baseUnit,
-                  unitStep: Number(createForm.unitStep),
-                  isVisible: createForm.isVisible,
-                  categoryIds: createForm.categoryIds,
-                  storageLocationId: createForm.storageLocationId || null,
-                  imageUrl,
-                  imageAltText: createForm.imageAltText.trim() ? createForm.imageAltText.trim() : null,
-                });
-              } catch (error) {
-                setCreateImageUploadError(
-                  error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
-                );
-              } finally {
-                setCreateImageUploadPending(false);
-              }
-            }}
-          >
-            {createMutation.isPending || createImageUploadPending ? "Erstellt..." : "Produkt erstellen"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-            Abbrechen
-          </Button>
-        </div>
-      </Dialog>
+          </div>
+        </>
+      ) : null}
 
       {bookingProduct ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl">
             <h3 className="text-lg font-semibold text-foreground">Einbuchen</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{bookingProduct.name}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{bookingProduct!.name}</p>
 
             <div className="mt-4 space-y-3">
               <label className="block text-xs text-slate-600">
@@ -1455,6 +2344,7 @@ export function ProductsAdminPanel() {
                   }
 
                   setBookingError(null);
+                  if (!bookingProduct) return;
                   stockBookingMutation.mutate({
                     productId: bookingProduct.id,
                     quantityDelta: quantity,

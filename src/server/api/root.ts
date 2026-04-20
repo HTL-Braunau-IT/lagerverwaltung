@@ -8,6 +8,7 @@ import { productRouter } from "~/server/api/routers/product";
 import { loanRouter } from "~/server/api/routers/loan";
 import { storageLocationRouter } from "~/server/api/routers/storage-location";
 import { storageRoomRouter } from "~/server/api/routers/storage-room";
+import { systemRouter } from "~/server/api/routers/system";
 import { userRouter } from "~/server/api/routers/user";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
@@ -27,6 +28,7 @@ export const appRouter = createTRPCRouter({
   loan: loanRouter,
   storageLocation: storageLocationRouter,
   storageRoom: storageRoomRouter,
+  system: systemRouter,
   user: userRouter,
 });
 

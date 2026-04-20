@@ -1,4 +1,5 @@
-import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { NextResponse } from "next/server";
@@ -55,14 +56,7 @@ export async function POST(request: Request) {
     const uploadDir = path.join(process.cwd(), "public", "data", "uploads", "pictures", sku);
     await mkdir(uploadDir, { recursive: true });
 
-    const existingFiles = await readdir(uploadDir);
-    await Promise.all(
-      existingFiles
-        .filter((entry) => entry.toLowerCase().startsWith("img."))
-        .map((entry) => rm(path.join(uploadDir, entry), { force: true })),
-    );
-
-    const filename = `img.${ext}`;
+    const filename = `img${randomUUID()}.${ext}`;
     const outputPath = path.join(uploadDir, filename);
     const buffer = Buffer.from(await fileValue.arrayBuffer());
     await writeFile(outputPath, buffer);

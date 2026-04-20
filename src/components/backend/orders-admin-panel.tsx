@@ -1,34 +1,48 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Card } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
 const statusConfig: Record<
   OrderStatus,
-  { label: string; pillClassName: string; nextStatus: OrderStatus | null }
+  {
+    label: string;
+    pillClassName: string;
+    borderClassName: string;
+    nextStatus: OrderStatus | null;
+    advanceActionLabel: string | null;
+  }
 > = {
   OPEN: {
     label: "Offen",
     pillClassName: "",
+    borderClassName: "",
     nextStatus: "PREPARING",
+    advanceActionLabel: "Kommissionierung starten",
   },
   PREPARING: {
     label: "In Vorbereitung",
     pillClassName: "",
+    borderClassName: "",
     nextStatus: "READY_FOR_PICKUP",
+    advanceActionLabel: "Abholbereit melden",
   },
   READY_FOR_PICKUP: {
     label: "Abholbereit",
     pillClassName: "",
+    borderClassName: "",
     nextStatus: null,
+    advanceActionLabel: null,
   },
 };
 
@@ -52,18 +66,11 @@ function userLabel(user: { name: string | null; email: string | null }) {
 
 export function OrdersAdminPanel() {
   const utils = api.useUtils();
+  const searchParams = useSearchParams();
+  const searchTerm = (searchParams.get("search") ?? "").trim();
 
-  const [searchInput, setSearchInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | OrderStatus>("ALL");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setSearchTerm(searchInput.trim());
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [searchInput]);
 
   const ordersQuery = api.order.backendList.useInfiniteQuery(
     {
@@ -100,75 +107,74 @@ export function OrdersAdminPanel() {
   );
 
   return (
-    <Card className="rounded-2xl p-5">
+    <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="">
           <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
-          <p className="text-sm text-muted-foreground">Bestellungen suchen, oeffnen und Status aktualisieren.</p>
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 md:grid-cols-[1fr_220px]">
-        <label htmlFor="backend-order-search" className="block text-xs text-muted-foreground">
-          Suche nach Bestellnummer, Lehrer, Schueler oder Kostenstelle
-          <Input
-            id="backend-order-search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="z. B. 2026000001, max.mustermann, 4AH..."
-            className="mt-1 h-10 rounded-xl"
-          />
-        </label>
-
-        <label className="block text-xs text-muted-foreground">
-          Status
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as "ALL" | OrderStatus)}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <option value="ALL">Alle Status</option>
-            <option value="OPEN">Offen</option>
-            <option value="PREPARING">In Vorbereitung</option>
-            <option value="READY_FOR_PICKUP">Abholbereit</option>
-          </select>
-        </label>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Status:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "ALL" as const, label: "Alle" },
+              { value: "OPEN" as const, label: "Offen" },
+              { value: "PREPARING" as const, label: "In Vorbereitung" },
+              { value: "READY_FOR_PICKUP" as const, label: "Abholbereit" },
+            ] as const
+          ).map((opt) => {
+            const active = statusFilter === opt.value;
+            return (
+              <FilterPillButton
+                key={opt.value}
+                onClick={() => setStatusFilter(opt.value)}
+                active={active}
+              >
+                {opt.label}
+              </FilterPillButton>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+      <div className="overflow-x-auto">
+        <TableUI.Table className="table-fixed">
+          <TableUI.TableHeader>
             <tr>
-              <TableHead>Bestellnummer</TableHead>
-              <TableHead>Lehrer</TableHead>
-              <TableHead>Kostenstelle</TableHead>
-              <TableHead>Datum</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Aktion</TableHead>
+              <TableUI.TableHead>Bestellnummer</TableUI.TableHead>
+              <TableUI.TableHead>Lehrer</TableUI.TableHead>
+              <TableUI.TableHead>Kostenstelle</TableUI.TableHead>
+              <TableUI.TableHead>Datum</TableUI.TableHead>
+              <TableUI.TableHead>Status</TableUI.TableHead>
+              <TableUI.TableHead className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
+                Aktion
+              </TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {ordersQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
                   Bestellungen werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {ordersQuery.error ? (
               <tr>
-                <TableCell colSpan={6} className="text-destructive">
+                <TableUI.TableCell colSpan={6} className="text-destructive">
                   Bestellungen konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
             {!ordersQuery.isLoading && !ordersQuery.error && sortedOrders.length === 0 ? (
               <tr>
-                <TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
                   Keine Bestellungen gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
 
@@ -179,182 +185,187 @@ export function OrdersAdminPanel() {
 
               return (
                 <Fragment key={order.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => setExpandedOrderId((current) => (current === order.id ? null : order.id))}
-                    className="cursor-pointer"
                   >
-                    <TableCell className="font-medium text-foreground">
+                    <TableUI.TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <span>{order.orderNumber}</span>
                         {order.workerNote ? (
-                          <span className="inline-flex items-center rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-orange-800">
+                          <Badge variant="note">
                             Hinweis
-                          </span>
+                          </Badge>
                         ) : null}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    </TableUI.TableCell>
+                    <TableUI.TableCell >
                       <p>{userLabel(order.user)}</p>
                       {order.sourceRequest?.student ? (
-                        <p className="text-xs text-slate-500">
-                          Schueler: {userLabel(order.sourceRequest.student)}
+                        <p className="text-[9px] text-slate-500 italic">
+                          Schüler: {userLabel(order.sourceRequest.student)}
                         </p>
                       ) : null}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    </TableUI.TableCell>
+                    <TableUI.TableCell>
                       {order.costCenter.code} - {order.costCenter.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(order.createdAt)}</TableCell>
-                    <TableCell>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell>{formatDate(order.createdAt)}</TableUI.TableCell>
+                    <TableUI.TableCell>
                       <Badge
                         variant={
                           order.status === "READY_FOR_PICKUP"
-                            ? "success"
+                            ? "orderThird"
                             : order.status === "OPEN"
-                              ? "destructive"
-                              : "secondary"
+                              ? "orderFirst"
+                              : "orderSecond"
                         }
                         className={status.pillClassName}
                       >
                         {status.label}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (!nextStatus) return;
-                          updateStatusMutation.mutate({
-                            orderId: order.id,
-                            nextStatus,
-                          });
-                        }}
-                        disabled={!nextStatus || updateStatusMutation.isPending}
-                        variant="outline"
-                        size="sm"
-                        className="disabled:cursor-not-allowed disabled:opacity-55"
-                      >
-                        {nextStatus ? `Zu ${statusConfig[nextStatus].label}` : "Final"}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                    </TableUI.TableCell>
+                    <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
+                      {nextStatus && status.advanceActionLabel ? (
+                        <Button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            updateStatusMutation.mutate({
+                              orderId: order.id,
+                              nextStatus,
+                            });
+                          }}
+                          disabled={updateStatusMutation.isPending}
+                          variant={nextStatus === "READY_FOR_PICKUP" ? "solid" : "glass"}
+                          size="sm"
+                          aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
+                        >
+                          {status.advanceActionLabel}
+                        </Button>
+                      ) : (
+                        <span
+                          className="inline-flex w-full max-w-full justify-center rounded-full py-1.5 text-center text-xs text-muted-foreground"
+                          aria-label="Keine weitere Aktion"
+                        >
+                          —
+                        </span>
+                      )}
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={6} className="px-3 py-4">
-                        {expandedOrderQuery.isLoading ? (
-                          <p className="text-sm text-muted-foreground">Details werden geladen...</p>
-                        ) : null}
-                        {expandedOrderQuery.error ? (
-                          <p className="text-sm text-rose-700">Details konnten nicht geladen werden.</p>
-                        ) : null}
-                        {!expandedOrderQuery.isLoading &&
-                        !expandedOrderQuery.error &&
-                        expandedOrderQuery.data &&
-                        expandedOrderQuery.data.id === order.id ? (
-                          <div className="space-y-4">
-                            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Bestellnummer</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {expandedOrderQuery.data.orderNumber}
-                                </p>
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Lehrer</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {userLabel(expandedOrderQuery.data.user)}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
-                                </p>
-                                {expandedOrderQuery.data.sourceRequest?.student ? (
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Erstellt</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {formatDate(expandedOrderQuery.data.createdAt)}
-                                </p>
-                              </div>
-                              <div className="rounded-lg border border-border bg-card p-3">
-                                <p className="text-xs uppercase tracking-wide text-muted-foreground">Zuletzt aktualisiert</p>
-                                <p className="mt-1 text-sm font-semibold text-foreground">
-                                  {formatDate(expandedOrderQuery.data.updatedAt)}
-                                </p>
-                              </div>
-                            </div>
-
-                            {expandedOrderQuery.data.workerNote ? (
-                              <div className="rounded-xl border border-orange-300 bg-orange-50 p-3">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
-                                  Hinweis fuer Lager
-                                </p>
-                                <p className="mt-1 whitespace-pre-wrap text-sm text-orange-900">
-                                  {expandedOrderQuery.data.workerNote}
-                                </p>
-                              </div>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={6}
+                    rowClassName="bg-muted/30"
+                    cellClassName="p-3"
+                    containerClassName=""
+                    contentClassName={`${status.borderClassName}`.trim()}
+                  >
+                    {expandedOrderQuery.isLoading ? (
+                      <p className="text-sm text-muted-foreground">Details werden geladen...</p>
+                    ) : null}
+                    {expandedOrderQuery.error ? (
+                      <p className="text-sm text-rose-700">Details konnten nicht geladen werden.</p>
+                    ) : null}
+                    {!expandedOrderQuery.isLoading &&
+                    !expandedOrderQuery.error &&
+                    expandedOrderQuery.data &&
+                    expandedOrderQuery.data.id === order.id ? (
+                      <div className="space-y-4">
+                        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+                          <DetailCard>
+                            <DetailText variant="kicker">Bestellnummer</DetailText>
+                            <DetailText variant="value">{expandedOrderQuery.data.orderNumber}</DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Lehrer</DetailText>
+                            <DetailText variant="value">{userLabel(expandedOrderQuery.data.user)}</DetailText>
+                            <DetailText variant="subvalue">
+                              {expandedOrderQuery.data.user.email ?? "Keine E-Mail"}
+                            </DetailText>
+                            {expandedOrderQuery.data.sourceRequest?.student ? (
+                              <p className="mt-2 text-[9px] text-muted-foreground italic">
+                                Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
+                              </p>
                             ) : null}
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Kostenstelle</DetailText>
+                            <DetailText variant="value">
+                              {order.costCenter.code} - {order.costCenter.name}
+                            </DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Erstellt</DetailText>
+                            <DetailText variant="value">{formatDate(expandedOrderQuery.data.createdAt)}</DetailText>
+                          </DetailCard>
+                          <DetailCard>
+                            <DetailText variant="kicker">Zuletzt aktualisiert</DetailText>
+                            <DetailText variant="value">{formatDate(expandedOrderQuery.data.updatedAt)}</DetailText>
+                          </DetailCard>
+                        </div>
 
-                            <div className="rounded-xl border border-border bg-card p-3">
-                              <p className="text-sm font-semibold text-foreground">Positionen</p>
-                              <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-                                <table className="min-w-full border-collapse text-left text-xs">
-                                  <thead className="bg-muted uppercase tracking-wide text-muted-foreground">
-                                    <tr>
-                                      <th className="px-2.5 py-2">Bild</th>
-                                      <th className="px-2.5 py-2">Produkt</th>
-                                      <th className="px-2.5 py-2">SKU</th>
-                                      <th className="px-2.5 py-2">Lagerplatz</th>
-                                      <th className="px-2.5 py-2">Menge</th>
-                                      <th className="px-2.5 py-2">Zeitpunkt</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {expandedOrderQuery.data.items.map((item) => (
-                                      <tr key={item.id} className="border-t border-border">
-                                        <td className="px-2.5 py-2">
-                                          <img
-                                            src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
-                                            alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
-                                            className="h-10 w-10 rounded border border-border object-cover"
-                                            onError={(event) => {
-                                              event.currentTarget.onerror = null;
-                                              event.currentTarget.src = "/pictures/placeholder.jpg";
-                                            }}
-                                          />
-                                        </td>
-                                        <td className="px-2.5 py-2 text-foreground">{item.product.name}</td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">{item.product.sku}</td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">
-                                          {item.product.storageLocation
-                                            ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
-                                            : "-"}
-                                        </td>
-                                        <td className="px-2.5 py-2 text-foreground">
-                                          {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
-                                        </td>
-                                        <td className="px-2.5 py-2 text-muted-foreground">{formatDate(item.createdAt)}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          </div>
+                        {expandedOrderQuery.data.workerNote ? (
+                          <DetailCard>
+                            <DetailText variant="noteTitle">
+                              Hinweis für Lager
+                            </DetailText>
+                            <DetailText variant="note">
+                              {expandedOrderQuery.data.workerNote}
+                            </DetailText>
+                          </DetailCard>
                         ) : null}
-                      </td>
-                    </tr>
-                  ) : null}
+
+                        <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                          <TableUI.Subtable className="mt-3">
+                            <TableUI.SubtableHeader>
+                              <tr>
+                                <TableUI.SubtableHead className="w-14">Bild</TableUI.SubtableHead>
+                                <TableUI.SubtableHead>Produkt</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-[7rem]">SKU</TableUI.SubtableHead>
+                                <TableUI.SubtableHead>Lagerplatz</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-24 whitespace-nowrap">Menge</TableUI.SubtableHead>
+                              </tr>
+                            </TableUI.SubtableHeader>
+                            <TableUI.SubtableBody>
+                              {expandedOrderQuery.data.items.map((item) => (
+                                <TableUI.SubtableRow key={item.id}>
+                                  <TableUI.SubtableCell>
+                                    <img
+                                      src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
+                                      alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
+                                      className="h-12 w-12 rounded object-cover"
+                                      onError={(event) => {
+                                        event.currentTarget.onerror = null;
+                                        event.currentTarget.src = "/pictures/placeholder.jpg";
+                                      }}
+                                    />
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="font-medium text-foreground">
+                                    {item.product.name}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground">{item.product.sku}</TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground">
+                                    {item.product.storageLocation
+                                      ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                      : "-"}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                    {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                                  </TableUI.SubtableCell>
+                                </TableUI.SubtableRow>
+                              ))}
+                            </TableUI.SubtableBody>
+                          </TableUI.Subtable>
+                        </DetailCard>
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {ordersQuery.hasNextPage ? (
         <div className="mt-4">

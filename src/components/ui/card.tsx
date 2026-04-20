@@ -3,7 +3,7 @@ import * as React from "react";
 type DivProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Card({ className = "", ...props }: DivProps) {
-  return <div className={`rounded-xl border border-border bg-card text-card-foreground shadow-sm ${className}`.trim()} {...props} />;
+  return <div className={`rounded-xl bg-card text-card-foreground ${className}`.trim()} {...props} />;
 }
 
 export function CardHeader({ className = "", ...props }: DivProps) {

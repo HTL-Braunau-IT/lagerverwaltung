@@ -8,14 +8,19 @@ type DataCellProps = React.TdHTMLAttributes<HTMLTableCellElement>;
 
 export function Table({ className = "", ...props }: TableProps) {
   return (
-    <div className="w-full overflow-auto">
-      <table className={`w-full caption-bottom text-sm ${className}`.trim()} {...props} />
+    <div className="w-full overflow-auto rounded-md">
+      <table className={`w-full border-separate border-spacing-0 caption-bottom text-sm ${className}`.trim()} {...props} />
     </div>
   );
 }
 
 export function TableHeader({ className = "", ...props }: SectionProps) {
-  return <thead className={`[&_tr]:border-b ${className}`.trim()} {...props} />;
+  return (
+    <thead
+      className={`bg-primary text-primary-foreground [&_th]:text-primary-foreground ${className}`.trim()}
+      {...props}
+    />
+  );
 }
 
 export function TableBody({ className = "", ...props }: SectionProps) {
@@ -23,7 +28,12 @@ export function TableBody({ className = "", ...props }: SectionProps) {
 }
 
 export function TableRow({ className = "", ...props }: RowProps) {
-  return <tr className={`border-b border-border transition-colors hover:bg-muted/40 ${className}`.trim()} {...props} />;
+  return (
+    <tr
+      className={`bg-card/40 backdrop-blur-sm cursor-pointer select-none transition-colors duration-60 delay-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
+      {...props}
+    />
+  );
 }
 
 export function TableHead({ className = "", ...props }: CellProps) {
@@ -36,5 +46,164 @@ export function TableHead({ className = "", ...props }: CellProps) {
 }
 
 export function TableCell({ className = "", ...props }: DataCellProps) {
-  return <td className={`px-3 py-3 align-middle text-sm ${className}`.trim()} {...props} />;
+  return <td className={`px-3 py-3 align-middle text-sm text-foreground ${className}`.trim()} {...props} />;
+}
+
+type TableExpandableRowProps = {
+  open: boolean;
+  colSpan: number;
+  children: React.ReactNode;
+  /**
+   * Applied to the `<tr>` that contains the expandable content.
+   */
+  rowClassName?: string;
+  /**
+   * Applied to the `<td>` wrapper cell.
+   */
+  cellClassName?: string;
+  /**
+   * Applied to the `<td>` wrapper cell when closed.
+   * Defaults to removing all padding so the row collapses to zero height.
+   */
+  collapsedCellClassName?: string;
+  /**
+   * Applied to the animated outer `<div>`.
+   */
+  containerClassName?: string;
+  /**
+   * Applied to the inner `<div>` that actually holds content (measured for height).
+   */
+  contentClassName?: string;
+};
+
+export function TableExpandableRow({
+  open,
+  colSpan,
+  children,
+  rowClassName = "",
+  cellClassName = "",
+  collapsedCellClassName = "p-0",
+  containerClassName = "",
+  contentClassName = "",
+}: TableExpandableRowProps) {
+  const baseContentClassName = "w-full overflow-hidden rounded-md border-0 pt-2 pb-1.5 px-2";
+  const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const [maxHeight, setMaxHeight] = React.useState<string>("0px");
+
+  React.useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    if (!open) {
+      setMaxHeight("0px");
+      return;
+    }
+
+    const update = () => {
+      // `scrollHeight` covers padding but not margins (fine for our use).
+      // Add a small buffer to avoid rare 1-2px clipping with borders/subpixel rounding.
+      setMaxHeight(`${el.scrollHeight + 8}px`);
+    };
+
+    update();
+
+    // Keep height in sync for async content (images, fonts, data).
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(() => update());
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+
+    // Fallback: do a second measure next frame.
+    const raf = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(raf);
+  }, [open, children]);
+
+  return (
+    <tr className={rowClassName}>
+      <td
+        colSpan={colSpan}
+        className={`${open ? cellClassName : collapsedCellClassName} align-top`.trim()}
+      >
+        <div
+          aria-hidden={!open}
+          style={{ maxHeight }}
+          className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+            open ? "opacity-100" : "opacity-0"
+          } ${containerClassName}`.trim()}
+        >
+          <div ref={contentRef} className={`${baseContentClassName} ${contentClassName}`.trim()}>
+            {children}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/** `<thead>` for nested tables: muted strip, distinct from the main `Table` primary header. */
+export function SubtableHeader({ className = "", ...props }: SectionProps) {
+  return (
+    <thead
+      className={`bg-primary text-primary-foreground [&_th]:text-primary-foreground ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+/** `<tbody>` for nested `Subtable`s (matches `TableBody` row border behavior). */
+export function SubtableBody({ className = "", ...props }: SectionProps) {
+  return <tbody className={`[&_tr:last-child]:border-0 ${className}`.trim()} {...props} />;
+}
+
+/** Compact `<th>` for use inside `<SubtableHeader>`. */
+export function SubtableHead({ className = "", ...props }: CellProps) {
+  return (
+    <th
+      className={`h-6 min-w-0 px-2 py-1.5 text-left align-middle text-[10px] font-semibold uppercase tracking-wide ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+/** Compact `<td>` for use inside `<SubtableBody>`. */
+export function SubtableCell({ className = "", ...props }: DataCellProps) {
+  return (
+    <td className={`px-2 py-1.5 align-middle text-xs leading-snug text-foreground ${className}`.trim()} {...props} />
+  );
+}
+
+/** Row for nested tables: same border rhythm as `TableRow` without pointer / selection blocking. */
+export function SubtableRow({ className = "", ...props }: RowProps) {
+  return (
+    <tr
+      className={`cursor-default select-text transition-colors duration-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
+      {...props}
+    />
+  );
+}
+
+type SubtableProps = {
+  className?: string;
+  tableClassName?: string;
+  children: React.ReactNode;
+};
+
+/**
+ * Nested compact table: renders `<table>` directly (not `Table`) so you do not stack two
+ * transparent `rounded-md` wrappers. Solid `bg-card` + no `backdrop-blur` on `SubtableRow`
+ * keeps expandable `bg-muted` from showing through at the corners.
+ */
+export function Subtable({ className = "", tableClassName = "", children }: SubtableProps) {
+  return (
+    <div className={`w-full overflow-hidden rounded-sm bg-card/60 ${className}`.trim()}>
+      <div className="overflow-x-auto">
+        <table
+          className={`w-full border-separate border-spacing-0 caption-bottom text-xs [&_td]:py-1.5 [&_th]:py-1.5 ${tableClassName}`.trim()}
+        >
+          {children}
+        </table>
+      </div>
+    </div>
+  );
 }
