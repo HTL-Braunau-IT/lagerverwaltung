@@ -1061,7 +1061,7 @@ export function ProductsAdminPanel() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-md">
         <TableUI.Table className="table-fixed">
           <colgroup>
             <col className="w-[43%]" />
@@ -1111,6 +1111,12 @@ export function ProductsAdminPanel() {
             {visibleProducts.map((product) => {
               const isExpanded = expandedRowId === product.id;
               const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
+              const isBelowMinimum = (() => {
+                const minimum = toNumber(product.minimumQuantity);
+                if (minimum <= 0) return false;
+                const quantity = toNumber(product.quantityOnHand);
+                return quantity < minimum;
+              })();
               const form = formsById[product.id] ?? createInitialForm(product);
               const pendingEditImage = editPendingImageById[product.id];
               const previewImage = product.images[0];
@@ -1144,7 +1150,13 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className={`cursor-pointer ${isNearMinimum ? "rounded-md outline outline-2 -outline-offset-2 outline-accent-orange/60" : ""}`}
+                    className={`cursor-pointer ${
+                      isBelowMinimum
+                        ? "rounded-md outline outline-2 outline-offset-[-4px] outline-destructive"
+                        : isNearMinimum
+                          ? "rounded-md outline outline-2 outline-offset-[-4px] outline-accent-orange"
+                          : ""
+                    }`}
                   >
                     <TableUI.TableCell className="min-w-0 max-w-0">
                       <div className="relative inline-block max-w-full">
@@ -1183,8 +1195,8 @@ export function ProductsAdminPanel() {
                   <TableUI.TableExpandableRow
                     open={isExpanded}
                     colSpan={6}
-                    rowClassName="border-t border-border bg-muted/30"
-                    cellClassName="min-w-0 align-top bg-muted/30 px-1 py-5"
+                    rowClassName="bg-muted/30"
+                    cellClassName="min-w-0 align-top px-1 py-5"
                     contentClassName="!p-0"
                   >
                     {isExpanded ? (
