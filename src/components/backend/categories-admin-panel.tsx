@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
 type CategoryForm = {
@@ -93,34 +93,34 @@ export function CategoriesAdminPanel() {
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+        <TableUI.Table>
+          <TableUI.TableHeader className="bg-muted/50">
             <tr>
-              <TableHead>Name</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Produkte</TableHead>
+              <TableUI.TableHead>Name</TableUI.TableHead>
+              <TableUI.TableHead>Slug</TableUI.TableHead>
+              <TableUI.TableHead>Produkte</TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody className="bg-white">
+          </TableUI.TableHeader>
+          <TableUI.TableBody className="bg-white">
             {categoriesQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Kategorien werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {categoriesQuery.error ? (
               <tr>
-                <TableCell colSpan={3} className="text-destructive">
+                <TableUI.TableCell colSpan={3} className="text-destructive">
                   Kategorien konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {!categoriesQuery.isLoading && !categoriesQuery.error && items.length === 0 ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Keine Kategorien gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {items.map((category) => {
@@ -128,22 +128,31 @@ export function CategoriesAdminPanel() {
 
               return (
                 <Fragment key={category.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
-                      setExpandedCategoryId((current) => (current === category.id ? null : category.id));
-                      setForm((current) => (expandedCategoryId === category.id ? current : { name: category.name }));
+                      setExpandedCategoryId((current) => {
+                        const next = current === category.id ? null : category.id;
+                        setForm((prev) => (next ? { name: category.name } : prev));
+                        return next;
+                      });
                     }}
                     className={`cursor-pointer bg-white hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : ""} select-none`}
                   >
-                    <TableCell className="font-medium text-foreground">{category.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{category.slug ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{category._count.products}</TableCell>
-                  </TableRow>
+                    <TableUI.TableCell className="font-medium text-foreground">{category.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{category.slug ?? "-"}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{category._count.products}</TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="bg-muted/30">
-                      <td colSpan={3} className="p-3">
-                        <div className="w-full p-3">
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={3}
+                    rowClassName="bg-muted/30"
+                    cellClassName="min-w-0 align-top px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    {isExpanded ? (
+                      <div className="mx-4 flex min-w-0 flex-col gap-4">
+                        <div className="w-full rounded-lg bg-card/40 p-4">
                           <div className="mb-3 flex items-center justify-between gap-2">
                             <h3 className="text-base font-semibold text-foreground">Kategorie bearbeiten</h3>
                           </div>
@@ -158,26 +167,33 @@ export function CategoriesAdminPanel() {
                               Name
                               <Input
                                 value={form.name}
+                                onClick={(event) => event.stopPropagation()}
                                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                                 className="mt-1 h-10 rounded-xl"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
                               Slug (automatisch)
-                              <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
+                              <Input
+                                value={generatedSlug}
+                                readOnly
+                                onClick={(event) => event.stopPropagation()}
+                                className="mt-1 h-10 rounded-xl"
+                              />
                             </label>
                           </div>
 
                           <div className="mt-4 flex flex-wrap items-center gap-2">
                             <Button
                               type="button"
-                              onClick={() =>
+                              onClick={(event) => {
+                                event.stopPropagation();
                                 updateMutation.mutate({
                                   id: category.id,
                                   name: form.name.trim(),
                                   slug: generatedSlug,
-                                })
-                              }
+                                });
+                              }}
                               disabled={!canSave || updateMutation.isPending}
                             >
                               {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
@@ -186,21 +202,24 @@ export function CategoriesAdminPanel() {
                             <Button
                               type="button"
                               variant="destructive"
-                              onClick={() => deleteMutation.mutate({ id: category.id })}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteMutation.mutate({ id: category.id });
+                              }}
                               disabled={deleteMutation.isPending}
                             >
                               {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
                             </Button>
                           </div>
                         </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {categoriesQuery.hasNextPage ? (
         <div className="mt-4">
