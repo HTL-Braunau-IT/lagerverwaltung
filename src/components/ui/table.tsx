@@ -117,7 +117,9 @@ export function TableExpandableRow({
     // Fallback: do a second measure next frame.
     const raf = requestAnimationFrame(update);
     return () => cancelAnimationFrame(raf);
-  }, [open, children]);
+    // Do not depend on `children`: inline JSX makes a new element reference every parent render,
+    // which would re-run this effect constantly and thrash layout + ResizeObserver.
+  }, [open]);
 
   return (
     <tr className={rowClassName}>
