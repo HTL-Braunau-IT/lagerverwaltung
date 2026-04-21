@@ -88,54 +88,96 @@ export function TableExpandableRow({
 }: TableExpandableRowProps) {
   const baseContentClassName = "w-full overflow-hidden rounded-md border-0 pt-2 pb-1.5 px-2";
   const contentRef = React.useRef<HTMLDivElement | null>(null);
+  const lastOpenChildrenRef = React.useRef<React.ReactNode>(null);
+  const prevOpenForExitRef = React.useRef(open);
+  const closeRafRef = React.useRef<{ outer?: number; inner?: number }>({});
   const [maxHeight, setMaxHeight] = React.useState<string>("0px");
+  const [exitActive, setExitActive] = React.useState(false);
+
+  if (open) {
+    lastOpenChildrenRef.current = children;
+  }
+
+  const displayChildren = open ? children : exitActive ? lastOpenChildrenRef.current : null;
+  const panelOpen = open || exitActive;
 
   React.useLayoutEffect(() => {
     const el = contentRef.current;
-    if (!el) return;
 
-    if (!open) {
-      setMaxHeight("0px");
+    if (open) {
+      prevOpenForExitRef.current = true;
+      if (exitActive) setExitActive(false);
+      if (!el) return;
+
+      const update = () => {
+        // `scrollHeight` covers padding but not margins (fine for our use).
+        // Add a small buffer to avoid rare 1-2px clipping with borders/subpixel rounding.
+        setMaxHeight(`${el.scrollHeight + 8}px`);
+      };
+
+      update();
+
+      // Keep height in sync for async content (images, fonts, data).
+      if (typeof ResizeObserver !== "undefined") {
+        const ro = new ResizeObserver(() => update());
+        ro.observe(el);
+        return () => ro.disconnect();
+      }
+
+      const raf = requestAnimationFrame(update);
+      return () => cancelAnimationFrame(raf);
+    }
+
+    // Closing edge: bump `exitActive` first so the next pass measures frozen children (parents
+    // often pass `null` children when `open` is false, e.g. `{open && <Panel />}`).
+    if (prevOpenForExitRef.current) {
+      prevOpenForExitRef.current = false;
+      setExitActive(true);
       return;
     }
 
-    const update = () => {
-      // `scrollHeight` covers padding but not margins (fine for our use).
-      // Add a small buffer to avoid rare 1-2px clipping with borders/subpixel rounding.
-      setMaxHeight(`${el.scrollHeight + 8}px`);
-    };
-
-    update();
-
-    // Keep height in sync for async content (images, fonts, data).
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(() => update());
-      ro.observe(el);
-      return () => ro.disconnect();
+    if (exitActive && el) {
+      const pinned = `${el.scrollHeight + 8}px`;
+      setMaxHeight(pinned);
+      const { current: rafs } = closeRafRef;
+      rafs.outer = requestAnimationFrame(() => {
+        rafs.inner = requestAnimationFrame(() => setMaxHeight("0px"));
+      });
+      return () => {
+        if (rafs.outer !== undefined) cancelAnimationFrame(rafs.outer);
+        if (rafs.inner !== undefined) cancelAnimationFrame(rafs.inner);
+        rafs.outer = undefined;
+        rafs.inner = undefined;
+      };
     }
 
-    // Fallback: do a second measure next frame.
-    const raf = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(raf);
+    setMaxHeight("0px");
     // Do not depend on `children`: inline JSX makes a new element reference every parent render,
     // which would re-run this effect constantly and thrash layout + ResizeObserver.
-  }, [open]);
+  }, [open, exitActive]);
+
+  const onCollapseTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>) => {
+    if (event.propertyName !== "max-height") return;
+    if (open) return;
+    setExitActive(false);
+  };
 
   return (
     <tr className={rowClassName}>
       <td
         colSpan={colSpan}
-        className={`${open ? cellClassName : collapsedCellClassName} align-top`.trim()}
+        className={`${panelOpen ? cellClassName : collapsedCellClassName} align-top`.trim()}
       >
         <div
-          aria-hidden={!open}
+          aria-hidden={!panelOpen}
           style={{ maxHeight }}
-          className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-out ${
+          onTransitionEnd={onCollapseTransitionEnd}
+          className={`overflow-hidden transition-[max-height,opacity] duration-200 ease-in-out ${
             open ? "opacity-100" : "opacity-0"
-          } ${containerClassName}`.trim()}
+          } ${!open ? "pointer-events-none" : ""} ${containerClassName}`.trim()}
         >
           <div ref={contentRef} className={`${baseContentClassName} ${contentClassName}`.trim()}>
-            {children}
+            {displayChildren}
           </div>
         </div>
       </td>

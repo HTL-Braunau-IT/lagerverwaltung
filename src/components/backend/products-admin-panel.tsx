@@ -1180,14 +1180,15 @@ export function ProductsAdminPanel() {
                       {toNumber(product.minimumQuantity)}
                     </TableUI.TableCell>
                   </TableUI.TableRow>
-                  {isExpanded ? (
                   <TableUI.TableExpandableRow
-                    open
+                    open={isExpanded}
                     colSpan={6}
                     rowClassName="border-t border-border bg-muted/30"
                     cellClassName="min-w-0 align-top bg-muted/30 px-1 py-5"
                     contentClassName="!p-0"
                   >
+                    {isExpanded ? (
+                    <>
                     <div className="mx-4 flex min-w-0 flex-col gap-4">
                       <div className="grid min-h-0 grid-cols-1 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:items-stretch md:gap-4">
                         <div className="flex min-h-0 min-w-0 flex-col gap-4">
@@ -2202,8 +2203,9 @@ export function ProductsAdminPanel() {
                         </div>
 
                     <BookingHistory productId={product.id} />
+                    </>
+                    ) : null}
                   </TableUI.TableExpandableRow>
-                  ) : null}
                 </Fragment>
               );
             })}
