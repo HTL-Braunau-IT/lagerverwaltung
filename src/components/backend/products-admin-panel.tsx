@@ -2040,7 +2040,7 @@ export function ProductsAdminPanel() {
                                                         },
                                                       );
                                                     }}
-                                                    className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-slate-600 hover:bg-red-600/80 hover:text-slate-900"
+                                                    className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-slate-600 hover:bg-destructive hover:text-white"
                                                     aria-label="Bild entfernen"
                                                   >
                                                     {imageDeletePendingKey === deleteKey ? (
@@ -2191,7 +2191,7 @@ export function ProductsAdminPanel() {
                                                 }
                                               }}
                                               disabled={editDocumentUploadPendingById[product.id]}
-                                              className="h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                              className="h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
                                               aria-label="Dokument entfernen"
                                             >
                                               {editDocumentUploadPendingById[product.id] ? (
