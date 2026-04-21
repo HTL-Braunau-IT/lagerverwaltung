@@ -170,7 +170,7 @@ export function TagIcon({ className = "h-4 w-4" }: { className?: string } = {}) 
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
-      <circle cx="7.5" cy="7.5" r="1.5" fill="currentColor" />
+      <circle cx="6" cy="7.5" r="1.5" fill="currentColor" />
     </svg>
   );
 }
