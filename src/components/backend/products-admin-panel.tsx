@@ -419,6 +419,7 @@ export function ProductsAdminPanel() {
   const [locationListOpen, setLocationListOpen] = useState(false);
   const categoryFilterRootRef = useRef<HTMLDivElement>(null);
   const locationFilterRootRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const categoryInputId = useId();
   const locationInputId = useId();
   const categoryListboxId = useId();
@@ -491,6 +492,30 @@ export function ProductsAdminPanel() {
       isNearMinimumStock(product.quantityOnHand, product.minimumQuantity),
     );
   }, [showNearMinimumOnly, sortedProducts]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+    if (!productsQuery.hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting) return;
+        if (productsQuery.isFetchingNextPage) return;
+        void productsQuery.fetchNextPage();
+      },
+      { rootMargin: "400px 0px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    productsQuery.fetchNextPage,
+    productsQuery.hasNextPage,
+    productsQuery.isFetchingNextPage,
+    visibleProducts.length,
+  ]);
   const storageLocationsById = useMemo(() => {
     return new Map((storageLocationsQuery.data ?? []).map((storageLocation) => [storageLocation.id, storageLocation]));
   }, [storageLocationsQuery.data]);
@@ -2226,14 +2251,10 @@ export function ProductsAdminPanel() {
       </div>
       {productsQuery.hasNextPage ? (
         <div className="mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void productsQuery.fetchNextPage()}
-            disabled={productsQuery.isFetchingNextPage}
-          >
-            {productsQuery.isFetchingNextPage ? "Lade mehr..." : "Mehr laden"}
-          </Button>
+          <div ref={loadMoreRef} className="h-px w-full" aria-hidden="true" />
+          {productsQuery.isFetchingNextPage ? (
+            <p className="mt-3 text-sm text-muted-foreground">Lade mehr...</p>
+          ) : null}
         </div>
       ) : null}
 
