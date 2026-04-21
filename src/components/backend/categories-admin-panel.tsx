@@ -9,6 +9,7 @@ import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
+import { DetailCard, DetailText } from "~/components/ui/detail-card";
 
 type CategoryForm = {
   name: string;
@@ -92,16 +93,16 @@ export function CategoriesAdminPanel() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-md">
         <TableUI.Table>
-          <TableUI.TableHeader className="bg-muted/50">
+          <TableUI.TableHeader className="">
             <tr>
               <TableUI.TableHead>Name</TableUI.TableHead>
               <TableUI.TableHead>Slug</TableUI.TableHead>
               <TableUI.TableHead>Produkte</TableUI.TableHead>
             </tr>
           </TableUI.TableHeader>
-          <TableUI.TableBody className="bg-white">
+          <TableUI.TableBody className="">
             {categoriesQuery.isLoading ? (
               <tr>
                 <TableUI.TableCell colSpan={3} className="text-muted-foreground">
@@ -136,7 +137,7 @@ export function CategoriesAdminPanel() {
                         return next;
                       });
                     }}
-                    className={`cursor-pointer bg-white hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : ""} select-none`}
+                    className={""}
                   >
                     <TableUI.TableCell className="font-medium text-foreground">{category.name}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{category.slug ?? "-"}</TableUI.TableCell>
@@ -151,25 +152,15 @@ export function CategoriesAdminPanel() {
                     contentClassName="!p-0"
                   >
                     {isExpanded ? (
-                      <div className="mx-4 flex min-w-0 flex-col gap-4">
-                        <div className="w-full rounded-lg bg-card/40 p-4">
-                          <div className="mb-3 flex items-center justify-between gap-2">
-                            <h3 className="text-base font-semibold text-foreground">Kategorie bearbeiten</h3>
-                          </div>
-
-                          <p className="text-sm text-muted-foreground">
-                            Produkte:{" "}
-                            <span className="font-medium text-foreground">{category._count.products}</span>
-                          </p>
-
-                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="px-4 flex min-w-0 flex-col gap-4">
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-1">
                             <label className="text-xs text-muted-foreground">
                               Name
                               <Input
                                 value={form.name}
                                 onClick={(event) => event.stopPropagation()}
                                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="mt-1 h-10 rounded-xl"
+                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
@@ -178,41 +169,50 @@ export function CategoriesAdminPanel() {
                                 value={generatedSlug}
                                 readOnly
                                 onClick={(event) => event.stopPropagation()}
-                                className="mt-1 h-10 rounded-xl"
+                                className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
                               />
                             </label>
-                          </div>
+                            <label className="text-xs text-muted-foreground">
+                              Produkte in Kategorie
+                              <Input
+                                value={category._count.products}
+                                readOnly
+                                className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                              />
+                            </label>
+                            <div className="mt-4.5 grid grid-cols-2 gap-2 items-center">
+                              <Button
+                                type="button"
+                                variant="solid"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  updateMutation.mutate({
+                                    id: category.id,
+                                    name: form.name.trim(),
+                                    slug: generatedSlug,
+                                  });
+                                }}
+                                disabled={!canSave || updateMutation.isPending}
+                                size="lg"
+                              >
+                                {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
+                              </Button>
 
-                          <div className="mt-4 flex flex-wrap items-center gap-2">
-                            <Button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                updateMutation.mutate({
-                                  id: category.id,
-                                  name: form.name.trim(),
-                                  slug: generatedSlug,
-                                });
-                              }}
-                              disabled={!canSave || updateMutation.isPending}
-                            >
-                              {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-                            </Button>
-
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteMutation.mutate({ id: category.id });
-                              }}
-                              disabled={deleteMutation.isPending}
-                            >
-                              {deleteMutation.isPending ? "Loescht..." : "Kategorie loeschen"}
-                            </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  deleteMutation.mutate({ id: category.id });
+                                }}
+                                disabled={deleteMutation.isPending}
+                                size="lg"
+                              >
+                                {deleteMutation.isPending ? "Loescht..." : "Kategorie löschen"}
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
                     ) : null}
                   </TableUI.TableExpandableRow>
                 </Fragment>
