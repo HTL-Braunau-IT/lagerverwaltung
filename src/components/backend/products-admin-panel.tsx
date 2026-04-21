@@ -1162,7 +1162,7 @@ export function ProductsAdminPanel() {
                       <div className="relative inline-block max-w-full">
                         <span className="break-words">{product.name}</span>
                         {previewImage?.url && hoveredProductId === product.id && !isExpanded ? (
-                          <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md border border-border bg-card p-1 shadow-lg">
+                          <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md bg-card/90 p-1">
                             <img
                               src={previewImage.url}
                               alt={previewImage.altText || `${product.name} Produktbild`}

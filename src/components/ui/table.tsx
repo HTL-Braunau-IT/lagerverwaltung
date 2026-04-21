@@ -30,7 +30,7 @@ export function TableBody({ className = "", ...props }: SectionProps) {
 export function TableRow({ className = "", ...props }: RowProps) {
   return (
     <tr
-      className={`bg-card/40 backdrop-blur-sm cursor-pointer select-none transition-colors duration-60 delay-60 hover:delay-0 hover:bg-card/80 ${className}`.trim()}
+      className={`relative isolate z-0 bg-card/40 backdrop-blur-sm cursor-pointer select-none transition-colors duration-60 delay-60 hover:delay-0 hover:z-20 hover:bg-card/80 ${className}`.trim()}
       {...props}
     />
   );
