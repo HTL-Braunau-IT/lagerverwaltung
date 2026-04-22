@@ -1,15 +1,28 @@
 import * as React from "react";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type InputVariant = "default" | "title" | "subtitle";
+
+type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  variant?: InputVariant;
+};
+
+const baseClassName =
+  "flex h-8 w-full rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+const variantClasses: Record<InputVariant, string> = {
+  default: "",
+  title: "h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground",
+  subtitle: "h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900",
+};
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
-  { className = "", ...props },
+  { className = "", variant = "default", ...props },
   ref,
 ) {
   return (
     <input
       ref={ref}
-      className={`flex h-8 w-full rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 ${className}`.trim()}
+      className={`${baseClassName} ${variantClasses[variant]} ${className}`.trim()}
       {...props}
     />
   );
