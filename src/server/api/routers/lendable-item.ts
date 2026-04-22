@@ -28,6 +28,10 @@ const backendDeleteInput = z.object({
   id: z.string().min(1),
 });
 
+const backendClearImageInput = z.object({
+  id: z.string().min(1),
+});
+
 export const lendableItemRouter = createTRPCRouter({
   backendList: adminProcedure.input(backendListInput).query(async ({ ctx, input }) => {
     const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
@@ -159,6 +163,17 @@ export const lendableItemRouter = createTRPCRouter({
 
     await ctx.db.lendableItem.delete({ where: { id: input.id } });
     return { id: input.id };
+  }),
+
+  backendClearImage: adminProcedure.input(backendClearImageInput).mutation(async ({ ctx, input }) => {
+    const existing = await ctx.db.lendableItem.findUnique({
+      where: { id: input.id },
+      select: { id: true },
+    });
+    if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Artikel wurde nicht gefunden." });
+
+    await ctx.db.lendableItemImage.deleteMany({ where: { lendableItemId: input.id } });
+    return { ok: true as const };
   }),
 });
 
