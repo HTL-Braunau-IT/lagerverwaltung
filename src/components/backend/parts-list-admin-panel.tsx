@@ -3,13 +3,12 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
-
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { PlusIcon } from "~/components/layout/icon-renders";
+import * as TableUI from "~/components/ui/table";
+import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
 type PartListItemForm = {
   productId: string;
@@ -70,6 +69,8 @@ export function PartsListAdminPanel() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [filesSectionCollapsed, setFilesSectionCollapsed] = useState(true);
+  const [confirmDeletePartList, setConfirmDeletePartList] = useState(false);
   const [activeProductRowKey, setActiveProductRowKey] = useState<string | null>(null);
   const [productSearchInput, setProductSearchInput] = useState("");
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -83,6 +84,16 @@ export function PartsListAdminPanel() {
     }, 250);
     return () => window.clearTimeout(timeout);
   }, [productSearchInput]);
+
+  useEffect(() => {
+    if (!selectedId) setConfirmDeletePartList(false);
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!confirmDeletePartList) return;
+    const timeout = window.setTimeout(() => setConfirmDeletePartList(false), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [confirmDeletePartList]);
 
   const listsQuery = api.partsList.backendList.useQuery({
     search: searchTerm || undefined,
@@ -103,6 +114,11 @@ export function PartsListAdminPanel() {
 
   const loadPartListForEdit = async (id: string) => {
     setSelectedId(id);
+    setUploadError(null);
+    setImageFile(null);
+    setDocumentFile(null);
+    setFilesSectionCollapsed(true);
+    setConfirmDeletePartList(false);
     const data = await utils.partsList.backendById.fetch({ id });
     setForm({
       name: data?.name ?? "",
@@ -264,7 +280,7 @@ export function PartsListAdminPanel() {
 
     return (
       <div>
-        <input
+        <Input
           ref={(node) => {
             if (node) {
               productInputRefs.current.set(rowKey, node);
@@ -313,7 +329,7 @@ export function PartsListAdminPanel() {
             }
           }}
           placeholder="SKU oder Name tippen..."
-          className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+          className="h-10"
         />
         {item.productId && duplicateProductIds.has(item.productId) ? (
           <p className="mt-1 text-xs text-destructive">Produkt ist bereits in einer anderen Zeile enthalten.</p>
@@ -362,12 +378,13 @@ export function PartsListAdminPanel() {
     }
   };
 
-  const uploadImageForSelected = async () => {
-    if (!selectedId || !imageFile) return;
+  const uploadImageForSelected = async (fileOverride?: File) => {
+    const fileToUpload = fileOverride ?? imageFile;
+    if (!selectedId || !fileToUpload) return;
     setUploadError(null);
     setUploadBusy(true);
     try {
-      await uploadImageForPartList(selectedId, imageFile);
+      await uploadImageForPartList(selectedId, fileToUpload);
       setImageFile(null);
       await Promise.all([
         utils.partsList.backendList.invalidate(),
@@ -381,12 +398,13 @@ export function PartsListAdminPanel() {
     }
   };
 
-  const uploadDocumentForSelected = async () => {
-    if (!selectedId || !documentFile) return;
+  const uploadDocumentForSelected = async (fileOverride?: File) => {
+    const fileToUpload = fileOverride ?? documentFile;
+    if (!selectedId || !fileToUpload) return;
     setUploadError(null);
     setUploadBusy(true);
     try {
-      await uploadDocumentForPartList(selectedId, documentFile);
+      await uploadDocumentForPartList(selectedId, fileToUpload);
       setDocumentFile(null);
       await utils.partsList.backendById.invalidate({ id: selectedId });
       await selectedPartListQuery.refetch();
@@ -420,6 +438,16 @@ export function PartsListAdminPanel() {
     }
   };
 
+  const onDeletePartListClick = () => {
+    if (!selectedId || deleteMutation.isPending) return;
+    if (!confirmDeletePartList) {
+      setConfirmDeletePartList(true);
+      return;
+    }
+    setConfirmDeletePartList(false);
+    deleteMutation.mutate({ id: selectedId });
+  };
+
   return (
     <Card className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -438,35 +466,35 @@ export function PartsListAdminPanel() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <tr>
-              <TableHead>Name</TableHead>
-              <TableHead>Beschreibung</TableHead>
-              <TableHead>Produkte</TableHead>
+      <div className="overflow-x-auto rounded-md">
+        <TableUI.Table>
+          <TableUI.TableHeader className="">
+            <tr className="">
+              <TableUI.TableHead>Name</TableUI.TableHead>
+              <TableUI.TableHead>Beschreibung</TableUI.TableHead>
+              <TableUI.TableHead>Produkte</TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {listsQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Teilelisten werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {listsQuery.error ? (
               <tr>
-                <TableCell colSpan={3} className="text-destructive">
+                <TableUI.TableCell colSpan={3} className="text-destructive">
                   Teilelisten konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {!listsQuery.isLoading && !listsQuery.error && (listsQuery.data?.length ?? 0) === 0 ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Keine Teilelisten gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {(listsQuery.data ?? []).map((list) => {
@@ -474,7 +502,7 @@ export function PartsListAdminPanel() {
 
               return (
                 <Fragment key={list.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
                       if (selectedId === list.id) {
                         setSelectedId(null);
@@ -483,30 +511,31 @@ export function PartsListAdminPanel() {
                       }
                       void loadPartListForEdit(list.id);
                     }}
-                    className={`cursor-pointer select-none bg-white hover:bg-muted/30 ${
-                      isExpanded ? "bg-muted/15" : ""
+                    className={`cursor-pointer ${
+                      isExpanded ? "" : ""
                     }`}
                   >
-                    <TableCell className="font-medium text-foreground">{list.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{list.description ?? "-"}</TableCell>
-                    <TableCell className="text-muted-foreground">{list.items.length}</TableCell>
-                  </TableRow>
+                    <TableUI.TableCell className="font-medium text-foreground">{list.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{list.description ?? "-"}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{list.items.length}</TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="bg-muted/30">
-                      <td colSpan={3} className="p-3">
-                        <div className="w-full p-3">
-                          <div className="mb-3 flex items-center justify-between gap-2">
-                            <h3 className="text-base font-semibold text-foreground">Teileliste bearbeiten</h3>
-                          </div>
-
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={3}
+                    rowClassName="bg-muted/30"
+                    cellClassName="p-3"
+                    contentClassName="!p-0"
+                  >
+                    {isExpanded ? (
+                      <div className="w-full p-3">
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                             <label className="text-xs text-muted-foreground">
                               Name
                               <Input
                                 value={form.name}
                                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="mt-1 h-10 rounded-xl"
+                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
@@ -516,100 +545,99 @@ export function PartsListAdminPanel() {
                                 onChange={(event) =>
                                   setForm((prev) => ({ ...prev, description: event.target.value }))
                                 }
-                                className="mt-1 h-10 rounded-xl"
+                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
                               />
                             </label>
                           </div>
 
-                          <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-card">
-                            <table className="min-w-full table-fixed border-collapse text-left text-sm">
-                              <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
-                                <tr>
-                                  <th className="w-[50%] px-3 py-2">Produkt</th>
-                                  <th className="w-[16%] px-3 py-2">Menge</th>
-                                  <th className="w-[14%] px-3 py-2">Einheit</th>
-                                  <th className="w-[20%] px-3 py-2">Aktion</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {form.items.map((item, index) => (
-                                  <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                                    <td className="px-3 py-2 align-top">{renderProductCell(item, index)}</td>
-                                    <td className="px-3 py-2 align-top">
-                                      <input
-                                        type="number"
-                                        min={0.001}
-                                        step={0.001}
-                                        value={item.quantity}
-                                        onChange={(event) =>
-                                          setForm((prev) => ({
-                                            ...prev,
-                                            items: prev.items.map((entry, entryIndex) =>
-                                              entryIndex === index
-                                                ? {
-                                                    ...entry,
-                                                    quantity: event.target.value,
-                                                  }
-                                                : entry,
-                                            ),
-                                          }))
-                                        }
-                                        className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                                      />
-                                    </td>
-                                    <td className="px-3 py-2 align-top">
-                                      <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
-                                        {item.displayUnit || "-"}
+                          <TableUI.Subtable className="mt-4" tableClassName="table-fixed text-left text-sm">
+                            <TableUI.SubtableHeader className=" text-muted-foreground">
+                              <tr>
+                                <TableUI.SubtableHead className="w-[50%]">Produkt</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-[16%]">Menge</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-[14%]">Einheit</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-[20%]">Aktion</TableUI.SubtableHead>
+                              </tr>
+                            </TableUI.SubtableHeader>
+                            <TableUI.SubtableBody className="">
+                              {form.items.map((item, index) => (
+                                <TableUI.SubtableRow key={`${index}-${item.productId}`} className="hover:bg-transparent">
+                                  <TableUI.SubtableCell className="">
+                                    {renderProductCell(item, index)}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="">
+                                    <Input
+                                      type="number"
+                                      min={0.001}
+                                      step={0.001}
+                                      value={item.quantity}
+                                      onChange={(event) =>
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          items: prev.items.map((entry, entryIndex) =>
+                                            entryIndex === index
+                                              ? {
+                                                  ...entry,
+                                                  quantity: event.target.value,
+                                                }
+                                              : entry,
+                                          ),
+                                        }))
+                                      }
+                                      className="h-10 px-3 py-2"
+                                    />
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="">
+                                    <span className=" inline-flex h-10 w-full items-center rounded-md bg-card/80 px-3 py-2 text-sm text-muted-foreground">
+                                      {item.displayUnit || "-"}
+                                    </span>
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="">
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      onClick={() =>
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          items: prev.items.filter((_, entryIndex) => entryIndex !== index),
+                                        }))
+                                      }
+                                      disabled={form.items.length <= 1}
+                                      className="!h-10 rounded-xs"
+                                    >
+                                      <span className="inline-flex items-center gap-2">
+                                        <WastebinIcon size={16} className="opacity-90" />
+                                        <span>Zeile entfernen</span>
                                       </span>
-                                    </td>
-                                    <td className="px-3 py-2 align-top">
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() =>
-                                          setForm((prev) => ({
-                                            ...prev,
-                                            items: prev.items.filter((_, entryIndex) => entryIndex !== index),
-                                          }))
-                                        }
-                                        disabled={form.items.length <= 1}
-                                      >
-                                        Zeile entfernen
-                                      </Button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                    </Button>
+                                  </TableUI.SubtableCell>
+                                </TableUI.SubtableRow>
+                              ))}
+                            </TableUI.SubtableBody>
+                          </TableUI.Subtable>
 
-                          <div className="mt-3">
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              onClick={() =>
-                                setForm((prev) => ({
-                                  ...prev,
-                                  items: [
-                                    ...prev.items,
-                                    { productId: "", productLabel: "", quantity: "1", displayUnit: "-" },
-                                  ],
-                                }))
-                              }
-                            >
-                              Produktzeile hinzufuegen
-                            </Button>
-                          </div>
-
-                          <div className="mt-4">
-                            {hasDuplicateProducts ? (
-                              <p className="mb-2 text-xs text-destructive">
-                                Jedes Produkt darf nur einmal in der Teileliste vorkommen.
-                              </p>
-                            ) : null}
-                            <div className="flex flex-wrap items-center gap-2">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="mt-4">
                               <Button
                                 type="button"
+                                variant="glass"
+                                onClick={() =>
+                                  setForm((prev) => ({
+                                    ...prev,
+                                    items: [
+                                      ...prev.items,
+                                      { productId: "", productLabel: "", quantity: "1", displayUnit: "-" },
+                                    ],
+                                  }))
+                                }
+                              >
+                                Produktzeile hinzufügen
+                              </Button>
+                            </div>
+                            <div className="mt-4 flex flex-col items-stretch gap-1">
+                              <Button
+                                type="button"
+                                variant="solid"
                                 onClick={() => {
                                   if (!selectedId) return;
                                   updateMutation.mutate({
@@ -621,132 +649,292 @@ export function PartsListAdminPanel() {
                                 }}
                                 disabled={!canSave || updateMutation.isPending}
                               >
-                                {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
+                                {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
                               </Button>
-
+                              {hasDuplicateProducts ? (
+                                <p className="text-xs text-destructive">
+                                  Jedes Produkt darf nur einmal in der Teileliste vorkommen.
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="mt-4">
                               <Button
                                 type="button"
                                 variant="destructive"
-                                onClick={() => selectedId && deleteMutation.mutate({ id: selectedId })}
+                                onClick={onDeletePartListClick}
                                 disabled={deleteMutation.isPending}
                               >
-                                {deleteMutation.isPending ? "Loescht..." : "Teileliste loeschen"}
+                                {deleteMutation.isPending
+                                  ? "Löscht..."
+                                  : confirmDeletePartList
+                                    ? "Nochmal klicken zum Löschen"
+                                    : "Teileliste löschen"}
                               </Button>
                             </div>
                           </div>
 
-                          <div className="mt-4 rounded-xl border border-border bg-card p-4">
-                            <h4 className="text-sm font-semibold text-foreground">Dateien</h4>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Optionales Bild und Dokumente fuer diese Teileliste hochladen.
-                            </p>
-
-                            {uploadError ? <p className="mt-2 text-xs text-destructive">{uploadError}</p> : null}
-
-                            <div className="mt-3 grid gap-3 md:grid-cols-2">
-                              <div className="rounded-lg border border-border p-3">
-                                <p className="text-xs font-medium text-foreground">Bild</p>
-                                {currentImageUrl ? (
-                                  <img
-                                    src={currentImageUrl}
-                                    alt={`Vorschaubild ${form.name}`}
-                                    className="mt-2 h-24 w-24 rounded-md border border-border object-cover"
-                                  />
-                                ) : (
-                                  <p className="mt-2 text-xs text-muted-foreground">Noch kein Bild vorhanden.</p>
-                                )}
-                                <input
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/webp,image/gif"
-                                  onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-                                  className="mt-3 block w-full text-xs text-muted-foreground"
-                                />
-                                <div className="mt-2 flex gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => void uploadImageForSelected()}
-                                    disabled={!imageFile || uploadBusy}
-                                  >
-                                    Bild hochladen
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => selectedId && clearImageMutation.mutate({ id: selectedId })}
-                                    disabled={!currentImageUrl || clearImageMutation.isPending || uploadBusy}
-                                  >
-                                    Bild entfernen
-                                  </Button>
-                                </div>
+                          <div className="mt-3 rounded-md bg-card/40 p-3 min-w-0">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setFilesSectionCollapsed((current) => !current);
+                              }}
+                              className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
+                              aria-expanded={!filesSectionCollapsed}
+                              aria-controls="parts-list-files-section"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+                                <span
+                                  aria-hidden="true"
+                                  className="shrink-0 text-slate-500"
+                                  title={filesSectionCollapsed ? "Ausklappen" : "Einklappen"}
+                                >
+                                  <ChevronDownIcon open={!filesSectionCollapsed} className="h-4 w-4" />
+                                </span>
                               </div>
-
-                              <div className="rounded-lg border border-border p-3">
-                                <p className="text-xs font-medium text-foreground">Dokumente</p>
-                                <input
-                                  type="file"
-                                  accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                                  onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)}
-                                  className="mt-2 block w-full text-xs text-muted-foreground"
-                                />
-                                <div className="mt-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={() => void uploadDocumentForSelected()}
-                                    disabled={!documentFile || uploadBusy}
-                                  >
-                                    Dokument hochladen
-                                  </Button>
-                                </div>
-                                <div className="mt-3 space-y-1.5">
-                                  {currentDocuments.length === 0 ? (
-                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
-                                  ) : (
-                                    currentDocuments.map((document) => (
-                                      <div
-                                        key={document.id}
-                                        className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5"
+                              {!filesSectionCollapsed ? (
+                                <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                              ) : null}
+                            </button>
+                            {!filesSectionCollapsed ? (
+                              <div id="parts-list-files-section" className="space-y-3 pt-3">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-stretch">
+                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                    <div>
+                                      <p className="select-none text-sm text-slate-600">Bild hochladen</p>
+                                      <label
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
+                                          uploadBusy
+                                            ? "cursor-default opacity-90"
+                                            : "cursor-pointer hover:bg-violet-100"
+                                        }`}
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-busy={uploadBusy ? true : undefined}
                                       >
-                                        <a
-                                          href={document.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                        <input
+                                          type="file"
+                                          accept="image/png,image/jpeg,image/webp,image/gif"
+                                          disabled={uploadBusy}
+                                          className="sr-only"
+                                          onChange={(event) => {
+                                            const file = event.target.files?.[0];
+                                            if (!file) return;
+                                            setUploadError(null);
+                                            setImageFile(file);
+                                            void uploadImageForSelected(file).finally(() => {
+                                              event.target.value = "";
+                                            });
+                                          }}
+                                        />
+                                        <span
+                                          className={`inline-flex shrink-0 rounded-sm bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                            uploadBusy ? "opacity-70" : "group-hover:bg-violet-700"
+                                          }`}
                                         >
-                                          {document.originalName}
-                                        </a>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[11px] text-muted-foreground">
-                                            {formatBytes(document.sizeBytes)}
-                                          </span>
-                                          <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="outline"
-                                            onClick={() => void deleteDocumentForSelected(document.id)}
-                                            disabled={uploadBusy}
-                                          >
-                                            Entfernen
-                                          </Button>
+                                          Datei auswählen
+                                        </span>
+                                        <span
+                                          className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                            uploadBusy
+                                              ? "text-muted-foreground"
+                                              : imageFile
+                                                ? "font-medium text-slate-900"
+                                                : "text-slate-500"
+                                          }`}
+                                          role="status"
+                                          title={uploadBusy ? undefined : imageFile?.name}
+                                        >
+                                          {uploadBusy
+                                            ? "Bild wird hochgeladen..."
+                                            : (imageFile?.name ?? "Keine Datei ausgewählt")}
+                                        </span>
+                                      </label>
+                                    </div>
+                                    <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
+                                      <p className="mb-1 text-xs font-medium text-slate-700">Aktuelles Bild</p>
+                                      {currentImageUrl ? (
+                                        (() => {
+                                          const displayImagePath = (() => {
+                                            try {
+                                              const pathname = new URL(currentImageUrl, "http://dummy").pathname;
+                                              const file = pathname.split("/").pop() ?? "";
+                                              return file ? `${file}` : pathname || currentImageUrl;
+                                            } catch {
+                                              return currentImageUrl;
+                                            }
+                                          })();
+
+                                          return (
+                                            <div className="relative rounded-sm border-b-2 border-violet-400/80 bg-card/80 p-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className="flex w-full min-w-0 items-center gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                              >
+                                                <img
+                                                  src={currentImageUrl}
+                                                  alt={`${form.name} Bild`}
+                                                  className="h-14 w-14 shrink-0 rounded-xs object-cover"
+                                                  onError={(errEvent) => {
+                                                    errEvent.currentTarget.onerror = null;
+                                                    errEvent.currentTarget.src = "/pictures/placeholder.jpg";
+                                                  }}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-[10px] leading-snug">
+                                                    <span className="text-slate-600 font-semibold">Name:</span>
+                                                    <span className="break-all text-slate-700">{displayImagePath}</span>
+
+                                                    <span className="text-slate-600 font-semibold">Alt-Text:</span>
+                                                    <span className="min-w-0 line-clamp-2 text-slate-600">
+                                                      {`Vorschaubild ${form.name}`}
+                                                    </span>
+
+                                                    <span className="text-slate-600 font-semibold">Größe:</span>
+                                                    <span className="tabular-nums text-muted-foreground">—</span>
+                                                  </div>
+                                                </div>
+                                              </button>
+
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  if (!selectedId) return;
+                                                  clearImageMutation.mutate({ id: selectedId });
+                                                }}
+                                                disabled={!currentImageUrl || clearImageMutation.isPending || uploadBusy}
+                                                className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                                aria-label="Bild entfernen"
+                                              >
+                                                {uploadBusy || clearImageMutation.isPending ? (
+                                                  <span className="text-xs">...</span>
+                                                ) : (
+                                                  <WastebinIcon size={16} className="opacity-90" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          );
+                                        })()
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground">Noch kein Bild vorhanden.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex min-h-0 flex-col gap-3 md:h-full">
+                                    <div>
+                                      <p className="select-none text-sm text-slate-600">Dokument hochladen</p>
+                                      <label
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-amber-500/65 bg-card/40 p-3 text-sm ${
+                                          uploadBusy
+                                            ? "cursor-default opacity-90"
+                                            : "cursor-pointer hover:bg-amber-100"
+                                        }`}
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-busy={uploadBusy ? true : undefined}
+                                      >
+                                        <input
+                                          type="file"
+                                          accept=".pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                                          disabled={uploadBusy}
+                                          className="sr-only"
+                                          onChange={async (event) => {
+                                            const file = event.target.files?.[0];
+                                            if (!file) return;
+                                            setUploadError(null);
+                                            setDocumentFile(file);
+                                            try {
+                                              await uploadDocumentForSelected(file);
+                                            } finally {
+                                              event.target.value = "";
+                                            }
+                                          }}
+                                        />
+                                        <span
+                                          className={`inline-flex shrink-0 rounded-sm bg-amber-700 px-3 py-2 text-sm font-semibold text-white ${
+                                            uploadBusy ? "opacity-70" : "group-hover:bg-amber-800"
+                                          }`}
+                                        >
+                                          Datei auswählen
+                                        </span>
+                                        <span
+                                          className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                            uploadBusy ? "text-muted-foreground" : "text-slate-500"
+                                          }`}
+                                          role="status"
+                                          title={uploadBusy ? undefined : documentFile?.name ?? undefined}
+                                        >
+                                          {uploadBusy
+                                            ? "Dokument wird hochgeladen..."
+                                            : (documentFile?.name ?? "Keine Datei ausgewählt")}
+                                        </span>
+                                      </label>
+                                    </div>
+                                    <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
+                                      <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
+                                      {currentDocuments.length === 0 ? (
+                                        <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                      ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {currentDocuments.map((document) => (
+                                            <div
+                                              key={document.id}
+                                              className="flex items-center justify-between gap-2 rounded-sm bg-card/80 px-2 py-1.5"
+                                            >
+                                              <a
+                                                href={document.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className="truncate text-xs text-primary underline-offset-2 hover:underline"
+                                              >
+                                                {document.originalName}
+                                              </a>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-muted-foreground">
+                                                  {formatBytes(document.sizeBytes)}
+                                                </span>
+                                                <Button
+                                                  type="button"
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  onClick={async (event) => {
+                                                    event.stopPropagation();
+                                                    await deleteDocumentForSelected(document.id);
+                                                  }}
+                                                  disabled={uploadBusy}
+                                                  className="h-8 w-8 p-0 rounded-xs text-slate-600 transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                                  aria-label="Dokument entfernen"
+                                                >
+                                                  {uploadBusy ? (
+                                                    <span className="text-xs">...</span>
+                                                  ) : (
+                                                    <WastebinIcon size={16} className="opacity-90" />
+                                                  )}
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ))}
                                         </div>
-                                      </div>
-                                    ))
-                                  )}
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+                            ) : null}
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
 
       {showSuggestions
