@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
@@ -120,18 +121,13 @@ export function StorageLocationsAdminPanel() {
           {roomItems.map((room) => {
             const active = effectiveRoomId === room.id;
             return (
-              <button
+              <FilterPillButton
                 key={room.id}
-                type="button"
                 onClick={() => setLocationRoomFilter(room.id)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                active={active}
               >
                 {room.name}
-              </button>
+              </FilterPillButton>
             );
           })}
         </div>
