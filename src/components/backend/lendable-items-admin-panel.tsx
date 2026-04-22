@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -124,24 +124,24 @@ export function LendableItemsAdminPanel() {
       </div>
 
       <div className="overflow-x-auto overflow-y-visible rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Lagerraum</TableHead>
-              <TableHead>Bestand</TableHead>
-              <TableHead>Sichtbar</TableHead>
-              <TableHead>Bild</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <TableUI.Table>
+          <TableUI.TableHeader className="bg-muted/50">
+            <tr>
+              <TableUI.TableHead>Name</TableUI.TableHead>
+              <TableUI.TableHead>Lagerraum</TableUI.TableHead>
+              <TableUI.TableHead>Bestand</TableUI.TableHead>
+              <TableUI.TableHead>Sichtbar</TableUI.TableHead>
+              <TableUI.TableHead>Bild</TableUI.TableHead>
+            </tr>
+          </TableUI.TableHeader>
+          <TableUI.TableBody>
             {sortedItems.map((item) => {
               const isExpanded = expandedItemId === item.id;
               const rowForm = formsById[item.id] ?? createFormFromItem(item);
 
               return (
                 <Fragment key={item.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
                       setExpandedItemId((current) => (current === item.id ? null : item.id));
                       setFormsById((current) => ({
@@ -149,18 +149,26 @@ export function LendableItemsAdminPanel() {
                         [item.id]: current[item.id] ?? createFormFromItem(item),
                       }));
                     }}
-                    className="cursor-pointer bg-white"
+                    className=""
                   >
-                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    <TableCell>{item.storageRoom.name}</TableCell>
-                    <TableCell>{item.quantityOnHand}</TableCell>
-                    <TableCell>{item.isVisible ? "Ja" : "Nein"}</TableCell>
-                    <TableCell>{item.images[0]?.url ? "Vorhanden" : "-"}</TableCell>
-                  </TableRow>
+                    <TableUI.TableCell className="font-medium text-foreground">{item.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{item.storageRoom.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{item.quantityOnHand}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{item.isVisible ? "Ja" : "Nein"}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">
+                      {item.images[0]?.url ? "Vorhanden" : "-"}
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={5} className="px-3 py-4">
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={5}
+                    rowClassName="bg-muted/30"
+                    cellClassName="min-w-0 align-top px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    {isExpanded ? (
+                      <div className="px-4 flex min-w-0 flex-col gap-4">
                         <div className="grid gap-3 md:grid-cols-2">
                           <label className="text-xs text-muted-foreground">
                             Name
@@ -267,7 +275,9 @@ export function LendableItemsAdminPanel() {
                                     error instanceof Error ? error.message : "Upload fehlgeschlagen.",
                                   );
                                 } finally {
-                                  setInlineImageUploadPendingItemId((current) => (current === item.id ? null : current));
+                                  setInlineImageUploadPendingItemId((current) =>
+                                    current === item.id ? null : current,
+                                  );
                                   inputEl.value = "";
                                 }
                               }}
@@ -355,14 +365,14 @@ export function LendableItemsAdminPanel() {
                             Loeschen
                           </Button>
                         </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
     </Card>
   );
