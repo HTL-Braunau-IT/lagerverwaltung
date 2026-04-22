@@ -173,45 +173,43 @@ export function CostCentersAdminPanel() {
                             Code (automatisch)
                             <Input
                               value={generatedCode}
-                              readOnly
+                              disabled
                               onClick={(event) => event.stopPropagation()}
                               variant="subtitle"
                             />
                           </label>
+                          <Button
+                            type="button"
+                            variant="solid"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateMutation.mutate({
+                                id: center.id,
+                                code: generatedCode,
+                                name: form.name.trim(),
+                              });
+                            }}
+                            disabled={!canSave || updateMutation.isPending}
+                            size="lg"
+                          >
+                            {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
+                          </Button>
 
-                          <div className="mt-4.5 grid grid-cols-2 gap-2 items-center">
-                            <Button
-                              type="button"
-                              variant="solid"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                updateMutation.mutate({
-                                  id: center.id,
-                                  code: generatedCode,
-                                  name: form.name.trim(),
-                                });
-                              }}
-                              disabled={!canSave || updateMutation.isPending}
-                              size="lg"
-                            >
-                              {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
-                            </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteMutation.mutate({ id: center.id });
+                            }}
+                            disabled={deleteMutation.isPending}
+                            size="lg"
+                          >
+                            {deleteMutation.isPending ? "Löscht..." : "Kostenstelle löschen"}
+                          </Button>  
 
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteMutation.mutate({ id: center.id });
-                              }}
-                              disabled={deleteMutation.isPending}
-                              size="lg"
-                            >
-                              {deleteMutation.isPending ? "Loescht..." : "Kostenstelle loeschen"}
-                            </Button>
-                          </div>
                         </div>
-                      </div>
+                      </div>  
                     ) : null}
                   </TableUI.TableExpandableRow>
                 </Fragment>
