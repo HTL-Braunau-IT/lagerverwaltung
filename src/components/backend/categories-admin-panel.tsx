@@ -160,7 +160,7 @@ export function CategoriesAdminPanel() {
                                 value={form.name}
                                 onClick={(event) => event.stopPropagation()}
                                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
+                                variant="title"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
@@ -169,15 +169,15 @@ export function CategoriesAdminPanel() {
                                 value={generatedSlug}
                                 readOnly
                                 onClick={(event) => event.stopPropagation()}
-                                className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                                variant="subtitle"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
                               Produkte in Kategorie
                               <Input
                                 value={category._count.products}
-                                readOnly
-                                className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                                disabled
+                                variant="subtitle"
                               />
                             </label>
                             <div className="mt-4.5 grid grid-cols-2 gap-2 items-center">

@@ -535,7 +535,7 @@ export function PartsListAdminPanel() {
                               <Input
                                 value={form.name}
                                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
+                                variant="title"
                               />
                             </label>
                             <label className="text-xs text-muted-foreground">
@@ -545,7 +545,7 @@ export function PartsListAdminPanel() {
                                 onChange={(event) =>
                                   setForm((prev) => ({ ...prev, description: event.target.value }))
                                 }
-                                className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
+                                variant="subtitle"
                               />
                             </label>
                           </div>
@@ -584,7 +584,6 @@ export function PartsListAdminPanel() {
                                           ),
                                         }))
                                       }
-                                      className="h-10 px-3 py-2"
                                     />
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="">

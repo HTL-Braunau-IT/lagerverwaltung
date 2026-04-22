@@ -1242,7 +1242,7 @@ export function ProductsAdminPanel() {
                                       [product.id]: { ...form, name: event.target.value },
                                     }))
                                   }
-                                  className="h-11 mt-1 w-full px-2.5 py-2 text-slate-900 !text-lg font-semibold text-foreground"
+                                  variant="title"
                                 />
                               </label>
                               <label className="block text-sm text-slate-600">
@@ -1256,7 +1256,7 @@ export function ProductsAdminPanel() {
                                       [product.id]: { ...form, sku: event.target.value },
                                     }))
                                   }
-                                  className="h-11 mt-1 w-full px-2.5 py-2 !text-lg text-slate-900"
+                                  variant="subtitle"
                                 />
                               </label>
                               <label className="block text-sm text-slate-600 md:col-span-3">
