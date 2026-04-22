@@ -123,7 +123,7 @@ export function LendableItemsAdminPanel() {
         </button>
       </div>
 
-      <div className="overflow-x-auto overflow-y-visible rounded-xl border border-border">
+      <div className="overflow-x-auto overflow-y-visible">
         <TableUI.Table>
           <TableUI.TableHeader className="bg-muted/50">
             <tr>
