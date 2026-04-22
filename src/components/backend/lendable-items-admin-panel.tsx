@@ -144,8 +144,6 @@ export function LendableItemsAdminPanel() {
               <TableUI.TableHead>Name</TableUI.TableHead>
               <TableUI.TableHead>Lagerraum</TableUI.TableHead>
               <TableUI.TableHead>Bestand</TableUI.TableHead>
-              <TableUI.TableHead>Sichtbar</TableUI.TableHead>
-              <TableUI.TableHead>Bild</TableUI.TableHead>
             </tr>
           </TableUI.TableHeader>
           <TableUI.TableBody>
@@ -168,15 +166,11 @@ export function LendableItemsAdminPanel() {
                     <TableUI.TableCell className="font-medium text-foreground">{item.name}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{item.storageRoom.name}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{item.quantityOnHand}</TableUI.TableCell>
-                    <TableUI.TableCell className="text-muted-foreground">{item.isVisible ? "Ja" : "Nein"}</TableUI.TableCell>
-                    <TableUI.TableCell className="text-muted-foreground">
-                      {item.images[0]?.url ? "Vorhanden" : "-"}
-                    </TableUI.TableCell>
                   </TableUI.TableRow>
 
                   <TableUI.TableExpandableRow
                     open={isExpanded}
-                    colSpan={5}
+                    colSpan={3}
                     rowClassName="bg-muted/30"
                     cellClassName="min-w-0 align-top px-1 py-5"
                     contentClassName="!p-0"
