@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
 type CostCenterForm = {
@@ -99,35 +99,35 @@ export function CostCentersAdminPanel() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+      <div className="overflow-x-auto rounded-md">
+        <TableUI.Table>
+          <TableUI.TableHeader className="">
             <tr>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Bestellungen</TableHead>
+              <TableUI.TableHead>Code</TableUI.TableHead>
+              <TableUI.TableHead>Name</TableUI.TableHead>
+              <TableUI.TableHead>Bestellungen</TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody className="bg-white">
+          </TableUI.TableHeader>
+          <TableUI.TableBody className="">
             {costCentersQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Kostenstellen werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {costCentersQuery.error ? (
               <tr>
-                <TableCell colSpan={3} className="text-destructive">
+                <TableUI.TableCell colSpan={3} className="text-destructive">
                   Kostenstellen konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {!costCentersQuery.isLoading && !costCentersQuery.error && items.length === 0 ? (
               <tr>
-                <TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
                   Keine Kostenstellen gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {items.map((center) => {
@@ -135,56 +135,64 @@ export function CostCentersAdminPanel() {
 
               return (
                 <Fragment key={center.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
-                      setExpandedCostCenterId((current) => (current === center.id ? null : center.id));
-                      setForm((current) => (expandedCostCenterId === center.id ? current : { name: center.name }));
+                      setExpandedCostCenterId((current) => {
+                        const next = current === center.id ? null : center.id;
+                        setForm((prev) => (next ? { name: center.name } : prev));
+                        return next;
+                      });
                     }}
-                    className={`cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : "bg-white"} select-none`}
+                    className=""
                   >
-                    <TableCell className="font-medium text-foreground">{center.code}</TableCell>
-                    <TableCell className="text-muted-foreground">{center.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{center._count.orders}</TableCell>
-                  </TableRow>
+                    <TableUI.TableCell className="font-medium text-foreground">{center.code}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{center.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{center._count.orders}</TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="bg-muted/30">
-                      <td colSpan={3} className="p-3">
-                        <div className="w-full rounded-md bg-muted/30 p-3">
-                          <div className="mb-3 flex items-center justify-between gap-2">
-                            <h3 className="text-base font-semibold text-foreground">Kostenstelle bearbeiten</h3>
-                          </div>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={3}
+                    rowClassName="bg-muted/30"
+                    cellClassName="min-w-0 align-top px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    {isExpanded ? (
+                      <div className="px-4 flex min-w-0 flex-col gap-4">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-1">
+                          <label className="text-xs text-muted-foreground">
+                            Name
+                            <Input
+                              value={form.name}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                              variant="title"
+                            />
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Code (automatisch)
+                            <Input
+                              value={generatedCode}
+                              readOnly
+                              onClick={(event) => event.stopPropagation()}
+                              variant="subtitle"
+                            />
+                          </label>
 
-                          <p className="text-sm text-muted-foreground">
-                            Code: <span className="font-medium text-foreground">{center.code}</span>
-                          </p>
-
-                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <label className="text-xs text-muted-foreground">
-                              Name
-                              <Input
-                                value={form.name}
-                                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="mt-1 h-10 rounded-xl"
-                              />
-                            </label>
-                            <label className="text-xs text-muted-foreground">
-                              Code (automatisch)
-                              <Input value={generatedCode} readOnly className="mt-1 h-10 rounded-xl" />
-                            </label>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <div className="mt-4.5 grid grid-cols-2 gap-2 items-center">
                             <Button
                               type="button"
-                              onClick={() =>
+                              variant="solid"
+                              onClick={(event) => {
+                                event.stopPropagation();
                                 updateMutation.mutate({
                                   id: center.id,
                                   code: generatedCode,
                                   name: form.name.trim(),
-                                })
-                              }
+                                });
+                              }}
                               disabled={!canSave || updateMutation.isPending}
+                              size="lg"
                             >
                               {updateMutation.isPending ? "Speichert..." : "Aenderungen speichern"}
                             </Button>
@@ -192,21 +200,25 @@ export function CostCentersAdminPanel() {
                             <Button
                               type="button"
                               variant="destructive"
-                              onClick={() => deleteMutation.mutate({ id: center.id })}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteMutation.mutate({ id: center.id });
+                              }}
                               disabled={deleteMutation.isPending}
+                              size="lg"
                             >
                               {deleteMutation.isPending ? "Loescht..." : "Kostenstelle loeschen"}
                             </Button>
                           </div>
                         </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
       {costCentersQuery.hasNextPage ? (
         <div className="mt-4">
