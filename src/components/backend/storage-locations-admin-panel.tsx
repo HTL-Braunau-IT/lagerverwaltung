@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
 type StorageLocationForm = {
@@ -148,154 +148,174 @@ export function StorageLocationsAdminPanel() {
       </div>
 
       
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table>
-          <TableHeader className="bg-muted/50">
+      <div className="overflow-x-auto rounded-md">
+        <TableUI.Table>
+          <TableUI.TableHeader className="">
             <tr>
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Lagerraum</TableHead>
-              <TableHead>Produkte</TableHead>
+              <TableUI.TableHead>Code</TableUI.TableHead>
+              <TableUI.TableHead>Name</TableUI.TableHead>
+              <TableUI.TableHead>Lagerraum</TableUI.TableHead>
+              <TableUI.TableHead>Produkte</TableUI.TableHead>
             </tr>
-          </TableHeader>
-          <TableBody className="bg-white">
+          </TableUI.TableHeader>
+          <TableUI.TableBody className="">
             {locationsQuery.isLoading ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Lagerplätze werden geladen...
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {locationsQuery.error ? (
               <tr>
-                <TableCell colSpan={4} className="text-destructive">
+                <TableUI.TableCell colSpan={4} className="text-destructive">
                   Lagerplätze konnten nicht geladen werden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {!locationsQuery.isLoading && !locationsQuery.error && locationItems.length === 0 ? (
               <tr>
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Keine Lagerplätze gefunden.
-                </TableCell>
+                </TableUI.TableCell>
               </tr>
             ) : null}
             {locationItems.map((location) => {
               const isExpanded = expandedLocationId === location.id;
               return (
                 <Fragment key={location.id}>
-                  <TableRow
+                  <TableUI.TableRow
                     onClick={() => {
-                      setExpandedLocationId((current) => (current === location.id ? null : location.id));
-                      setLocationForm((current) =>
-                        expandedLocationId === location.id
-                          ? current
-                          : {
-                              name: location.name,
-                              storageRoomId: location.storageRoomId,
-                              description: location.description ?? "",
-                            },
-                      );
-                    }}
-                    className={`cursor-pointer bg-white hover:bg-muted/30 ${isExpanded ? "bg-muted/15" : ""} select-none`}
-                  >
-                    <TableCell className="font-medium text-foreground">{location.code}</TableCell>
-                    <TableCell className="text-muted-foreground">{location.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{location.storageRoom.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{location._count.products}</TableCell>
-                  </TableRow>
-
-                  {isExpanded ? (
-                    <tr className="bg-muted/30">
-                      <td colSpan={4} className="p-3">
-                        <div className="w-full p-3">
-                          <div className="mb-3 flex items-center justify-between gap-2">
-                            <h3 className="text-base font-semibold text-foreground">Lagerplatz bearbeiten</h3>
-                          </div>
-
-                          <p className="text-sm text-muted-foreground">
-                            Produkte:{" "}
-                            <span className="font-medium text-foreground">{location._count.products}</span>
-                          </p>
-
-                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <label className="text-xs text-muted-foreground">
-                              Name
-                              <Input
-                                value={locationForm.name}
-                                onChange={(event) => setLocationForm((prev) => ({ ...prev, name: event.target.value }))}
-                                className="mt-1 h-10 rounded-xl"
-                                autoFocus
-                              />
-                            </label>
-                            <label className="text-xs text-muted-foreground">
-                              Code (automatisch)
-                              <Input value={generatedLocationCode} readOnly className="mt-1 h-10 rounded-xl" />
-                            </label>
-                            <label className="text-xs text-muted-foreground">
-                              Lagerraum
-                              <select
-                                value={locationForm.storageRoomId}
-                                onChange={(event) =>
-                                  setLocationForm((prev) => ({ ...prev, storageRoomId: event.target.value }))
-                                }
-                                className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                              >
-                                <option value="">Bitte wählen</option>
-                                {roomItems.map((room) => (
-                                  <option key={room.id} value={room.id}>
-                                    {room.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="text-xs text-muted-foreground md:col-span-2">
-                              Beschreibung (optional)
-                              <Input
-                                value={locationForm.description}
-                                onChange={(event) =>
-                                  setLocationForm((prev) => ({ ...prev, description: event.target.value }))
-                                }
-                                className="mt-1 h-10 rounded-xl"
-                              />
-                            </label>
-                          </div>
-
-                          <div className="mt-4 flex flex-wrap items-center gap-2">
-                            <Button
-                              type="button"
-                              onClick={() =>
-                                updateLocationMutation.mutate({
-                                  id: location.id,
-                                  code: generatedLocationCode,
-                                  name: locationForm.name.trim(),
-                                  storageRoomId: locationForm.storageRoomId,
-                                  description: locationForm.description.trim() ? locationForm.description.trim() : null,
-                                })
+                      setExpandedLocationId((current) => {
+                        const next = current === location.id ? null : location.id;
+                        setLocationForm((prev) =>
+                          next
+                            ? {
+                                name: location.name,
+                                storageRoomId: location.storageRoomId,
+                                description: location.description ?? "",
                               }
-                              disabled={!canSave || updateLocationMutation.isPending}
-                            >
-                              {updateLocationMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                            </Button>
+                            : prev,
+                        );
+                        return next;
+                      });
+                    }}
+                    className=""
+                  >
+                    <TableUI.TableCell className="font-medium text-foreground">{location.code}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{location.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{location.storageRoom.name}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{location._count.products}</TableUI.TableCell>
+                  </TableUI.TableRow>
 
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              onClick={() => deleteLocationMutation.mutate({ id: location.id })}
-                              disabled={deleteLocationMutation.isPending}
-                            >
-                              {deleteLocationMutation.isPending ? "Löscht..." : "Lagerplatz löschen"}
-                            </Button>
-                          </div>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={4}
+                    rowClassName="bg-muted/30"
+                    cellClassName="min-w-0 align-top px-1 py-5"
+                    contentClassName="!p-0"
+                  >
+                    {isExpanded ? (
+                      <div className="px-4 flex min-w-0 flex-col gap-4">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <h3 className="text-base font-semibold text-foreground">Lagerplatz bearbeiten</h3>
                         </div>
-                      </td>
-                    </tr>
-                  ) : null}
+
+                        <p className="text-sm text-muted-foreground">
+                          Produkte: <span className="font-medium text-foreground">{location._count.products}</span>
+                        </p>
+
+                        <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-2">
+                          <label className="text-xs text-muted-foreground">
+                            Name
+                            <Input
+                              value={locationForm.name}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setLocationForm((prev) => ({ ...prev, name: event.target.value }))
+                              }
+                              className="mt-1 h-10 rounded-xl"
+                              autoFocus
+                            />
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Code (automatisch)
+                            <Input
+                              value={generatedLocationCode}
+                              readOnly
+                              onClick={(event) => event.stopPropagation()}
+                              className="mt-1 h-10 rounded-xl"
+                            />
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Lagerraum
+                            <select
+                              value={locationForm.storageRoomId}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setLocationForm((prev) => ({ ...prev, storageRoomId: event.target.value }))
+                              }
+                              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+                            >
+                              <option value="">Bitte wählen</option>
+                              {roomItems.map((room) => (
+                                <option key={room.id} value={room.id}>
+                                  {room.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="text-xs text-muted-foreground md:col-span-2">
+                            Beschreibung (optional)
+                            <Input
+                              value={locationForm.description}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setLocationForm((prev) => ({ ...prev, description: event.target.value }))
+                              }
+                              className="mt-1 h-10 rounded-xl"
+                            />
+                          </label>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              updateLocationMutation.mutate({
+                                id: location.id,
+                                code: generatedLocationCode,
+                                name: locationForm.name.trim(),
+                                storageRoomId: locationForm.storageRoomId,
+                                description: locationForm.description.trim() ? locationForm.description.trim() : null,
+                              });
+                            }}
+                            disabled={!canSave || updateLocationMutation.isPending}
+                          >
+                            {updateLocationMutation.isPending ? "Speichert..." : "Änderungen speichern"}
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteLocationMutation.mutate({ id: location.id });
+                            }}
+                            disabled={deleteLocationMutation.isPending}
+                          >
+                            {deleteLocationMutation.isPending ? "Löscht..." : "Lagerplatz löschen"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
-          </TableBody>
-        </Table>
+          </TableUI.TableBody>
+        </TableUI.Table>
       </div>
 
       {locationsQuery.hasNextPage ? (
