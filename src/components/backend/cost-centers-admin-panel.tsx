@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -36,6 +36,7 @@ export function CostCentersAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const costCentersQuery = api.costCenter.backendList.useInfiniteQuery(
     {
@@ -80,6 +81,16 @@ export function CostCentersAdminPanel() {
 
   const generatedCode = toCostCenterCode(form.name.trim());
   const canSave = form.name.trim().length > 0 && generatedCode.length > 0;
+
+  useEffect(() => {
+    if (!expandedCostCenterId) setConfirmDelete(false);
+  }, [expandedCostCenterId]);
+
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const timeout = window.setTimeout(() => setConfirmDelete(false), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [confirmDelete]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -200,12 +211,22 @@ export function CostCentersAdminPanel() {
                             variant="destructive"
                             onClick={(event) => {
                               event.stopPropagation();
+                              if (deleteMutation.isPending) return;
+                              if (!confirmDelete) {
+                                setConfirmDelete(true);
+                                return;
+                              }
+                              setConfirmDelete(false);
                               deleteMutation.mutate({ id: center.id });
                             }}
                             disabled={deleteMutation.isPending}
                             size="lg"
                           >
-                            {deleteMutation.isPending ? "Löscht..." : "Kostenstelle löschen"}
+                            {deleteMutation.isPending
+                              ? "Löscht..."
+                              : confirmDelete
+                                ? "Nochmal klicken zum Löschen"
+                                : "Kostenstelle löschen"}
                           </Button>  
 
                         </div>
