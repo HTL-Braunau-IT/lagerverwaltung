@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
@@ -103,13 +104,13 @@ export default function PartListDetailPage() {
   const [sessionId] = useState(() => getOrCreateSessionId());
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [showCartModal, setShowCartModal] = useState(false);
-  const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [quantityInput, setQuantityInput] = useState("1");
   const [lastAddedPartListQuantity, setLastAddedPartListQuantity] = useState<number | null>(null);
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   const utils = api.useUtils();
+  const toast = useToast();
   const selectedPartListQuery = api.partsList.byIdForShop.useQuery(
     { id: partListId },
     { enabled: Boolean(partListId) },
@@ -119,19 +120,21 @@ export default function PartListDetailPage() {
       await utils.cart.get.invalidate({ sessionId });
 
       if (result.ok) {
-        setPartListWarning(null);
         setShowCartModal(true);
         return;
       }
 
       if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
-        setPartListWarning(
+        toast.warning(
           `${result.partListName}: maximal ${result.maxOrderable}x verfügbar.`,
         );
         return;
       }
 
-      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
+    },
+    onError: () => {
+      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
 
@@ -278,7 +281,6 @@ export default function PartListDetailPage() {
                       const requestedQuantity =
                         maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
                       setLastAddedPartListQuantity(requestedQuantity);
-                      setPartListWarning(null);
                       addPartListMutation.mutate({
                         sessionId,
                         partListId: selectedPartList.id,
@@ -374,8 +376,6 @@ export default function PartListDetailPage() {
           sessionId={sessionId}
           canSeePartListProductCount={canSeePartListProductCount}
           onAddedToCart={() => setShowCartModal(true)}
-          warning={partListWarning}
-          onWarningChange={setPartListWarning}
         />
       </section>
 

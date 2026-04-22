@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
@@ -60,6 +61,7 @@ function formatBaseUnitLabel(baseUnit: string) {
 
 export function PartsListAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
@@ -67,7 +69,6 @@ export function PartsListAdminPanel() {
   const [form, setForm] = useState<PartListForm>(createEmptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [filesSectionCollapsed, setFilesSectionCollapsed] = useState(true);
   const [confirmDeletePartList, setConfirmDeletePartList] = useState(false);
@@ -114,7 +115,6 @@ export function PartsListAdminPanel() {
 
   const loadPartListForEdit = async (id: string) => {
     setSelectedId(id);
-    setUploadError(null);
     setImageFile(null);
     setDocumentFile(null);
     setFilesSectionCollapsed(true);
@@ -139,6 +139,7 @@ export function PartsListAdminPanel() {
         utils.partsList.backendList.invalidate(),
         selectedId ? utils.partsList.backendById.invalidate({ id: selectedId }) : Promise.resolve(),
       ]);
+      toast.success("Teileliste aktualisiert.");
     },
   });
   const deleteMutation = api.partsList.backendDelete.useMutation({
@@ -146,6 +147,7 @@ export function PartsListAdminPanel() {
       await utils.partsList.backendList.invalidate();
       setSelectedId(null);
       setForm(createEmptyForm());
+      toast.success("Teileliste geloescht.");
     },
   });
   const clearImageMutation = api.partsList.backendClearImage.useMutation({
@@ -154,6 +156,7 @@ export function PartsListAdminPanel() {
         utils.partsList.backendList.invalidate(),
         selectedId ? utils.partsList.backendById.invalidate({ id: selectedId }) : Promise.resolve(),
       ]);
+      toast.success("Bild entfernt.");
     },
   });
 
@@ -381,7 +384,6 @@ export function PartsListAdminPanel() {
   const uploadImageForSelected = async (fileOverride?: File) => {
     const fileToUpload = fileOverride ?? imageFile;
     if (!selectedId || !fileToUpload) return;
-    setUploadError(null);
     setUploadBusy(true);
     try {
       await uploadImageForPartList(selectedId, fileToUpload);
@@ -391,8 +393,9 @@ export function PartsListAdminPanel() {
         utils.partsList.backendById.invalidate({ id: selectedId }),
       ]);
       await selectedPartListQuery.refetch();
+      toast.success("Bild hochgeladen.");
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.");
+      toast.error(error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.");
     } finally {
       setUploadBusy(false);
     }
@@ -401,15 +404,15 @@ export function PartsListAdminPanel() {
   const uploadDocumentForSelected = async (fileOverride?: File) => {
     const fileToUpload = fileOverride ?? documentFile;
     if (!selectedId || !fileToUpload) return;
-    setUploadError(null);
     setUploadBusy(true);
     try {
       await uploadDocumentForPartList(selectedId, fileToUpload);
       setDocumentFile(null);
       await utils.partsList.backendById.invalidate({ id: selectedId });
       await selectedPartListQuery.refetch();
+      toast.success("Dokument hochgeladen.");
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.");
+      toast.error(error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.");
     } finally {
       setUploadBusy(false);
     }
@@ -417,7 +420,6 @@ export function PartsListAdminPanel() {
 
   const deleteDocumentForSelected = async (documentId: string) => {
     if (!selectedId) return;
-    setUploadError(null);
     setUploadBusy(true);
     try {
       const response = await fetch("/api/backend/parts-list/delete-document", {
@@ -431,8 +433,9 @@ export function PartsListAdminPanel() {
       }
       await utils.partsList.backendById.invalidate({ id: selectedId });
       await selectedPartListQuery.refetch();
+      toast.success("Dokument geloescht.");
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Dokument konnte nicht geloescht werden.");
+      toast.error(error instanceof Error ? error.message : "Dokument konnte nicht geloescht werden.");
     } finally {
       setUploadBusy(false);
     }
@@ -720,7 +723,6 @@ export function PartsListAdminPanel() {
                                           onChange={(event) => {
                                             const file = event.target.files?.[0];
                                             if (!file) return;
-                                            setUploadError(null);
                                             setImageFile(file);
                                             void uploadImageForSelected(file).finally(() => {
                                               event.target.value = "";
@@ -844,7 +846,6 @@ export function PartsListAdminPanel() {
                                           onChange={async (event) => {
                                             const file = event.target.files?.[0];
                                             if (!file) return;
-                                            setUploadError(null);
                                             setDocumentFile(file);
                                             try {
                                               await uploadDocumentForSelected(file);

@@ -10,9 +10,11 @@ export function SystemAdminPanel() {
   const dbInfoQuery = api.system.dbInfo.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    meta: { silent: true },
   });
   const dbHealthQuery = api.system.dbHealth.useQuery(undefined, {
     refetchOnWindowFocus: false,
+    meta: { silent: true },
   });
 
   useEffect(() => {

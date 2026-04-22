@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
@@ -32,6 +33,7 @@ function toCategorySlug(name: string): string {
 
 export function CategoriesAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
@@ -55,6 +57,7 @@ export function CategoriesAdminPanel() {
         utils.category.list.invalidate(),
         expandedCategoryId ? utils.category.byId.invalidate({ id: expandedCategoryId }) : Promise.resolve(),
       ]);
+      toast.success("Kategorie aktualisiert.");
     },
   });
   const deleteMutation = api.category.backendDelete.useMutation({
@@ -62,6 +65,7 @@ export function CategoriesAdminPanel() {
       await Promise.all([utils.category.backendList.invalidate(), utils.category.list.invalidate()]);
       setExpandedCategoryId(null);
       setForm(createEmptyForm());
+      toast.success("Kategorie geloescht.");
     },
   });
 

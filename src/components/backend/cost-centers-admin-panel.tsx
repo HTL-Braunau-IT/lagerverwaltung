@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
@@ -31,6 +32,7 @@ function toCostCenterCode(name: string): string {
 
 export function CostCentersAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
@@ -52,6 +54,7 @@ export function CostCentersAdminPanel() {
     onSuccess: async () => {
       await Promise.all([utils.costCenter.backendList.invalidate(), utils.costCenter.list.invalidate()]);
       setForm(createEmptyForm());
+      toast.success("Kostenstelle erstellt.");
     },
   });
   const updateMutation = api.costCenter.backendUpdate.useMutation({
@@ -61,6 +64,7 @@ export function CostCentersAdminPanel() {
         utils.costCenter.list.invalidate(),
         expandedCostCenterId ? utils.costCenter.byId.invalidate({ id: expandedCostCenterId }) : Promise.resolve(),
       ]);
+      toast.success("Kostenstelle aktualisiert.");
     },
   });
   const deleteMutation = api.costCenter.backendDelete.useMutation({
@@ -68,6 +72,7 @@ export function CostCentersAdminPanel() {
       await Promise.all([utils.costCenter.backendList.invalidate(), utils.costCenter.list.invalidate()]);
       setExpandedCostCenterId(null);
       setForm(createEmptyForm());
+      toast.success("Kostenstelle geloescht.");
     },
   });
 

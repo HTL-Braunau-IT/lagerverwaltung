@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
@@ -187,13 +188,13 @@ export default function ProductDetailPage() {
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
 
   const utils = api.useUtils();
+  const toast = useToast();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
   const [showCartModal, setShowCartModal] = useState(false);
   const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
   const [quantityInput, setQuantityInput] = useState("1");
   const [areaWidthInput, setAreaWidthInput] = useState("1");
   const [areaHeightInput, setAreaHeightInput] = useState("1");
-  const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("details");
   const stickyTopOffset = 24;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
@@ -205,7 +206,7 @@ export default function ProductDetailPage() {
       setShowCartModal(true);
     },
     onError: (error) => {
-      setPartListWarning(error.message);
+      toast.warning(error.message);
     },
   });
 
@@ -578,8 +579,6 @@ export default function ProductDetailPage() {
           sessionId={sessionId}
           canSeePartListProductCount={canSeePartListProductCount}
           onAddedToCart={() => setShowCartModal(true)}
-          warning={partListWarning}
-          onWarningChange={setPartListWarning}
         />
       </section>
 

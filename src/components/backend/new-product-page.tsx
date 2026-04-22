@@ -8,6 +8,7 @@ import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -91,6 +92,7 @@ function createEmptyForm(): ProductCreateFormState {
 export function NewProductPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const toast = useToast();
 
   const categoriesQuery = api.category.list.useQuery();
   const storageRoomsQuery = api.storageRoom.list.useQuery();
@@ -99,7 +101,6 @@ export function NewProductPage() {
   const [form, setForm] = useState<ProductCreateFormState>(createEmptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadPending, setUploadPending] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const storageLocationsById = useMemo(
     () => new Map((storageLocationsQuery.data ?? []).map((loc) => [loc.id, loc])),
@@ -146,13 +147,13 @@ export function NewProductPage() {
   const createMutation = api.product.backendCreate.useMutation({
     onSuccess: async () => {
       await Promise.all([utils.product.backendList.invalidate(), utils.product.list.invalidate()]);
+      toast.success("Produkt erstellt.");
       router.push("/backend/products");
     },
   });
 
   const handleSubmit = async () => {
     if (!canCreate) return;
-    setUploadError(null);
     setUploadPending(true);
     try {
       let imageUrl = form.imageUrl.trim() || null;
@@ -175,7 +176,7 @@ export function NewProductPage() {
         imageAltText: form.imageAltText.trim() ? form.imageAltText.trim() : null,
       });
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
+      toast.error(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
       setUploadPending(false);
       return;
     } finally {
@@ -190,8 +191,6 @@ export function NewProductPage() {
           <h2 className="text-xl font-semibold text-foreground">Neues Produkt</h2>
         </div>
       </div>
-
-      {uploadError ? <p className="mb-3 text-sm text-destructive">{uploadError}</p> : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">

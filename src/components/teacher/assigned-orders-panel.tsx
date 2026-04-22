@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
+import { useToast } from "~/components/ui/toast";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -42,6 +43,7 @@ function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICK
 
 export function AssignedOrdersPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const [costCenterByRequestId, setCostCenterByRequestId] = useState<Record<string, string>>({});
   const [quantityDraftByItemId, setQuantityDraftByItemId] = useState<Record<string, string>>({});
 
@@ -69,11 +71,13 @@ export function AssignedOrdersPanel() {
   const rejectMutation = api.order.rejectAssignedRequest.useMutation({
     onSuccess: async () => {
       await invalidateAfterRequestChange();
+      toast.success("Bestellung abgelehnt.");
     },
   });
   const approveMutation = api.order.approveAssignedRequest.useMutation({
     onSuccess: async () => {
       await invalidateAfterRequestChange();
+      toast.success("Bestellung freigegeben.");
     },
   });
 
@@ -89,12 +93,14 @@ export function AssignedOrdersPanel() {
   const approveLoanMutation = api.loan.teacherApproveLoan.useMutation({
     onSuccess: async () => {
       await invalidateAfterLoanAction();
+      toast.success("Ausleihe freigegeben.");
     },
   });
 
   const rejectLoanMutation = api.loan.teacherRejectLoan.useMutation({
     onSuccess: async () => {
       await invalidateAfterLoanAction();
+      toast.success("Ausleihe abgelehnt.");
     },
   });
 

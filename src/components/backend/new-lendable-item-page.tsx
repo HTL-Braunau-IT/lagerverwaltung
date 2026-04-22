@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
@@ -36,14 +37,18 @@ function emptyForm(): FormState {
 export function NewLendableItemPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const toast = useToast();
 
   const roomsQuery = api.storageRoom.list.useQuery();
-  const createMutation = api.lendableItem.backendCreate.useMutation();
-  const updateMutation = api.lendableItem.backendUpdate.useMutation();
+  const createMutation = api.lendableItem.backendCreate.useMutation({
+    meta: { silent: true },
+  });
+  const updateMutation = api.lendableItem.backendUpdate.useMutation({
+    meta: { silent: true },
+  });
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [createImageFile, setCreateImageFile] = useState<File | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadPending, setUploadPending] = useState(false);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
@@ -78,8 +83,6 @@ export function NewLendableItemPage() {
   };
 
   const handleSubmit = async () => {
-    setSubmitError(null);
-
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || null,
@@ -109,9 +112,10 @@ export function NewLendableItemPage() {
       }
 
       await utils.lendableItem.backendList.invalidate();
+      toast.success("Leihgerät erstellt.");
       router.push("/backend/lendable-items");
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
+      toast.error(error instanceof Error ? error.message : "Speichern fehlgeschlagen.");
     } finally {
       setUploadPending(false);
     }
@@ -124,8 +128,6 @@ export function NewLendableItemPage() {
           <h2 className="text-xl font-semibold text-foreground">Neues Leihgerät</h2>
         </div>
       </div>
-
-      {submitError ? <p className="mb-3 text-sm text-destructive">{submitError}</p> : null}
 
       <div className="grid gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">

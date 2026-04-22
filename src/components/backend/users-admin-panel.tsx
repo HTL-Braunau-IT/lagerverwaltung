@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 
 type UserAccessForm = {
@@ -25,6 +26,7 @@ function createInitialForm(user: {
 
 export function UsersAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
@@ -44,6 +46,7 @@ export function UsersAdminPanel() {
   const updateAccessMutation = api.user.backendUpdateStorageAccess.useMutation({
     onSuccess: async () => {
       await utils.user.backendList.invalidate();
+      toast.success("Benutzerzugriff aktualisiert.");
     },
   });
 

@@ -8,6 +8,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 
 type PartListItemForm = {
@@ -51,12 +52,12 @@ function formatBaseUnitLabel(baseUnit: string) {
 export function NewPartsListPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const toast = useToast();
 
   const [form, setForm] = useState<PartListForm>(createEmptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
 
   const [activeProductRowKey, setActiveProductRowKey] = useState<string | null>(null);
@@ -222,7 +223,9 @@ export function NewPartsListPage() {
 
   const showSuggestions = activeProductRowKey !== null && productSearchTerm.length > 0 && dropdownPosition !== null;
 
-  const createMutation = api.partsList.backendCreate.useMutation();
+  const createMutation = api.partsList.backendCreate.useMutation({
+    meta: { silent: true },
+  });
 
   const uploadImageForPartList = async (partListId: string, file: File) => {
     const body = new FormData();
@@ -253,8 +256,6 @@ export function NewPartsListPage() {
           <h2 className="text-xl font-semibold text-foreground">Neue Teileliste</h2>
         </div>
       </div>
-
-      {submitError ? <p className="mb-3 text-sm text-destructive">{submitError}</p> : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">
@@ -550,7 +551,6 @@ export function NewPartsListPage() {
           <Button
             type="button"
             onClick={async () => {
-              setSubmitError(null);
               let created: { id: string };
               try {
                 created = await createMutation.mutateAsync({
@@ -559,7 +559,7 @@ export function NewPartsListPage() {
                   items: normalizedFormItems,
                 });
               } catch (error) {
-                setSubmitError(error instanceof Error ? error.message : "Teileliste konnte nicht erstellt werden.");
+                toast.error(error instanceof Error ? error.message : "Teileliste konnte nicht erstellt werden.");
                 return;
               }
 
@@ -572,7 +572,7 @@ export function NewPartsListPage() {
                   await uploadDocumentForPartList(created.id, documentFile);
                 }
               } catch (error) {
-                setSubmitError(
+                toast.error(
                   error instanceof Error
                     ? `Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden: ${error.message}`
                     : "Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden.",
@@ -583,6 +583,7 @@ export function NewPartsListPage() {
               setUploadBusy(false);
 
               await utils.partsList.backendList.invalidate();
+              toast.success("Teileliste erstellt.");
               router.push("/backend/parts-list");
             }}
             disabled={!canSave || createMutation.isPending || uploadBusy}

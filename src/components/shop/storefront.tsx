@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 
@@ -73,6 +74,7 @@ export function Storefront() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = api.useUtils();
+  const toast = useToast();
   const searchFromUrl = searchParams.get("search") ?? "";
   const categoryFromUrl = searchParams.get("categoryId") ?? undefined;
   const storageLocationIdFromUrl = searchParams.get("storageLocationId") ?? undefined;
@@ -85,7 +87,6 @@ export function Storefront() {
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
-  const [partListWarning, setPartListWarning] = useState<string | null>(null);
   const [showCartModal, setShowCartModal] = useState(false);
   const [lastAddedProductName, setLastAddedProductName] = useState<string | null>(null);
   const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
@@ -144,15 +145,15 @@ export function Storefront() {
       await utils.cart.get.invalidate({ sessionId });
       setShowCartModal(true);
       setActiveAddProductId(null);
-      setPartListWarning(null);
     },
     onError: (error) => {
       const warning = toMixedStorageRoomWarning(error.message);
       setActiveAddProductId(null);
       if (warning) {
-        setPartListWarning(warning);
+        toast.warning(warning);
         return;
       }
+      toast.error("Produkt konnte nicht in den Warenkorb gelegt werden.");
     },
   });
 
@@ -475,8 +476,6 @@ export function Storefront() {
             setLastAddedProductQuantity(null);
             setShowCartModal(true);
           }}
-          warning={partListWarning}
-          onWarningChange={setPartListWarning}
         />
       </section>
 

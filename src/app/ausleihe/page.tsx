@@ -9,6 +9,7 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
+import { useToast } from "~/components/ui/toast";
 import { PackageIcon } from "~/components/layout/icon-renders";
 
 function decimalToNumber(value: unknown) {
@@ -185,6 +186,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
 export default function AusleihePage() {
   const { data: session } = useSession();
   const userRole = session?.user.role;
+  const toast = useToast();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
 
@@ -206,11 +208,13 @@ export default function AusleihePage() {
   });
 
   const createLoanMutation = api.loan.createLoan.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       setSelectedItemId(null);
       setQuantityDraft("1");
       setSelectedTeacherExternalId("");
       setDueInfoOpen(false);
+      await myLoansQuery.refetch();
+      toast.success(userRole === "STUDENT" ? "Ausleihe zur Freigabe gesendet." : "Ausleihe angelegt.");
     },
   });
 

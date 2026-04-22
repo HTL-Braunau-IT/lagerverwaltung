@@ -10,6 +10,7 @@ import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Card } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
+import { useToast } from "~/components/ui/toast";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
@@ -66,6 +67,7 @@ function userLabel(user: { name: string | null; email: string | null }) {
 
 export function OrdersAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
 
@@ -89,12 +91,14 @@ export function OrdersAdminPanel() {
   );
 
   const updateStatusMutation = api.order.backendUpdateStatus.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       await Promise.all([
         utils.order.backendList.invalidate(),
         utils.order.backendOpenCount.invalidate(),
         expandedOrderId ? utils.order.backendById.invalidate({ id: expandedOrderId }) : Promise.resolve(),
       ]);
+      const label = statusConfig[variables.nextStatus as OrderStatus]?.label ?? "Status aktualisiert";
+      toast.success(`Bestellung: ${label}.`);
     },
   });
 

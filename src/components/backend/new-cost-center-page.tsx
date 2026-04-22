@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 
 type CostCenterForm = {
@@ -29,14 +30,16 @@ function toCostCenterCode(name: string): string {
 export function NewCostCenterPage() {
   const router = useRouter();
   const utils = api.useUtils();
+  const toast = useToast();
 
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const generatedCode = useMemo(() => toCostCenterCode(form.name.trim()), [form.name]);
   const canSave = form.name.trim().length > 0 && generatedCode.length > 0;
 
-  const createMutation = api.costCenter.backendCreate.useMutation();
+  const createMutation = api.costCenter.backendCreate.useMutation({
+    meta: { silent: true },
+  });
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -45,8 +48,6 @@ export function NewCostCenterPage() {
           <h2 className="text-xl font-semibold text-foreground">Neue Kostenstelle</h2>
         </div>
       </div>
-
-      {submitError ? <p className="mb-3 text-sm text-destructive">{submitError}</p> : null}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <label className="text-xs text-muted-foreground">
@@ -68,14 +69,14 @@ export function NewCostCenterPage() {
         <Button
           type="button"
           onClick={async () => {
-            setSubmitError(null);
             try {
               await createMutation.mutateAsync({ code: generatedCode, name: form.name.trim() });
             } catch (error) {
-              setSubmitError(error instanceof Error ? error.message : "Kostenstelle konnte nicht erstellt werden.");
+              toast.error(error instanceof Error ? error.message : "Kostenstelle konnte nicht erstellt werden.");
               return;
             }
             await Promise.all([utils.costCenter.backendList.invalidate(), utils.costCenter.list.invalidate()]);
+            toast.success("Kostenstelle erstellt.");
             router.push("/backend/cost-centers");
           }}
           disabled={!canSave || createMutation.isPending}

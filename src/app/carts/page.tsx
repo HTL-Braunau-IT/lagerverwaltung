@@ -6,6 +6,7 @@ import { WastebinIcon } from "~/components/layout/icon-renders";
 import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -39,6 +40,7 @@ function formatPrice(value: unknown) {
 
 export default function CartsPage() {
   const utils = api.useUtils();
+  const toast = useToast();
   const [sessionId] = useState(() =>
     typeof window === "undefined" ? "" : getOrCreateSessionId(),
   );
@@ -47,7 +49,6 @@ export default function CartsPage() {
   const [confirmClearCart, setConfirmClearCart] = useState(false);
   const [expressSku, setExpressSku] = useState("");
   const [expressQuantity, setExpressQuantity] = useState("1");
-  const [expressAddError, setExpressAddError] = useState<string | null>(null);
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -69,22 +70,26 @@ export default function CartsPage() {
     onSuccess: async () => {
       setCartName("");
       await Promise.all([utils.cart.get.invalidate({ sessionId }), utils.cart.listSavedCarts.invalidate()]);
+      toast.success("Warenkorb gespeichert.");
     },
   });
 
   const loadSavedCartMutation = api.cart.loadSavedCart.useMutation({
     onSuccess: async () => {
       await Promise.all([utils.cart.get.invalidate({ sessionId }), utils.cart.listSavedCarts.invalidate()]);
+      toast.success("Warenkorb geladen.");
     },
   });
 
   const deleteSavedCartMutation = api.cart.deleteSavedCart.useMutation({
     onSuccess: async () => {
       await utils.cart.listSavedCarts.invalidate();
+      toast.success("Warenkorb geloescht.");
     },
   });
 
   const addItemMutation = api.cart.addItem.useMutation({
+    meta: { silent: true },
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
     },
@@ -166,6 +171,7 @@ export default function CartsPage() {
         ),
       );
       await utils.cart.get.invalidate({ sessionId });
+      toast.success("Warenkorb geleert.");
     } finally {
       setIsClearingCart(false);
     }
@@ -183,22 +189,21 @@ export default function CartsPage() {
 
   const onExpressAddSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setExpressAddError(null);
 
     const sku = expressSku.trim();
     if (sku.length === 0) {
-      setExpressAddError("Bitte SKU eingeben.");
+      toast.error("Bitte SKU eingeben.");
       return;
     }
 
     const quantity = Number(expressQuantity);
     if (!Number.isFinite(quantity) || quantity <= 0) {
-      setExpressAddError("Bitte eine gueltige Menge eingeben.");
+      toast.error("Bitte eine gueltige Menge eingeben.");
       return;
     }
 
     if (sessionId.length === 0) {
-      setExpressAddError("Session nicht verfuegbar. Bitte Seite neu laden.");
+      toast.error("Session nicht verfuegbar. Bitte Seite neu laden.");
       return;
     }
 
@@ -207,7 +212,7 @@ export default function CartsPage() {
       const match =
         result.items.find((item) => item.sku.toLowerCase() === sku.toLowerCase()) ?? result.items[0];
       if (!match) {
-        setExpressAddError("Kein Produkt mit dieser SKU gefunden.");
+        toast.error("Kein Produkt mit dieser SKU gefunden.");
         return;
       }
 
@@ -219,9 +224,10 @@ export default function CartsPage() {
 
       setExpressSku("");
       setExpressQuantity("1");
+      toast.success("Produkt hinzugefuegt.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-      setExpressAddError(message);
+      toast.error(message);
     }
   };
 
@@ -466,7 +472,6 @@ export default function CartsPage() {
               >
                 {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
               </Button>
-              {expressAddError ? <p className="text-xs text-rose-700">{expressAddError}</p> : null}
             </form>
           </section>
 

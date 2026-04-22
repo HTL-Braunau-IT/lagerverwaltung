@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
+import { useToast } from "~/components/ui/toast";
 import { PinIcon } from "~/components/layout/icon-renders";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 
@@ -121,8 +122,6 @@ type ShopPartListsAsideProps = StickySizing & {
   sessionId: string;
   canSeePartListProductCount: boolean;
   onAddedToCart?: () => void;
-  warning?: string | null;
-  onWarningChange?: (warning: string | null) => void;
 };
 
 export function ShopPartListsAside({
@@ -132,20 +131,16 @@ export function ShopPartListsAside({
   sessionId,
   canSeePartListProductCount,
   onAddedToCart,
-  warning,
-  onWarningChange,
 }: ShopPartListsAsideProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const utils = api.useUtils();
+  const toast = useToast();
 
   const [showAllPartListsModal, setShowAllPartListsModal] = useState(false);
   const [partListModalSearch, setPartListModalSearch] = useState("");
   const [activeAddPartListId, setActiveAddPartListId] = useState<string | null>(null);
   const [quantitiesByPartList, setQuantitiesByPartList] = useState<Record<string, string>>({});
-  const [internalWarning, setInternalWarning] = useState<string | null>(null);
-  const partListWarning = onWarningChange ? warning ?? null : internalWarning;
-  const setPartListWarning = onWarningChange ?? setInternalWarning;
 
   const partListsQuery = api.partsList.listForShop.useQuery();
   const pinnedPartListsQuery = api.partsList.pinnedForUser.useQuery(undefined, {
@@ -163,25 +158,24 @@ export function ShopPartListsAside({
       setActiveAddPartListId(null);
 
       if (result.ok) {
-        setPartListWarning(null);
         onAddedToCart?.();
         return;
       }
 
       if (result.reason === "INSUFFICIENT_PART_LIST_STOCK") {
-        setPartListWarning(`${result.partListName}: maximal ${result.maxOrderable}x verfügbar.`);
+        toast.warning(`${result.partListName}: maximal ${result.maxOrderable}x verfügbar.`);
         return;
       }
 
-      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
     },
     onError: (error) => {
       const warning = toMixedStorageRoomWarning(error.message);
       if (warning) {
-        setPartListWarning(warning);
+        toast.warning(warning);
         return;
       }
-      setPartListWarning("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
     },
   });
 
@@ -227,11 +221,6 @@ export function ShopPartListsAside({
               </Button>
             </div>
 
-            {partListWarning ? (
-              <div className="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-                {partListWarning}
-              </div>
-            ) : null}
             {partListsQuery.isLoading ? (
               <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
             ) : null}
@@ -317,7 +306,6 @@ export function ShopPartListsAside({
                             const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                             const requestedQuantity =
                               maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
-                            setPartListWarning(null);
                             setActiveAddPartListId(partList.id);
                             addPartListMutation.mutate({
                               sessionId,
@@ -456,7 +444,6 @@ export function ShopPartListsAside({
                                 const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                                 const requestedQuantity =
                                   maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
-                                setPartListWarning(null);
                                 setActiveAddPartListId(partList.id);
                                 addPartListMutation.mutate({
                                   sessionId,
@@ -569,7 +556,6 @@ export function ShopPartListsAside({
                                 const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                                 const requestedQuantity =
                                   maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
-                                setPartListWarning(null);
                                 setActiveAddPartListId(partList.id);
                                 addPartListMutation.mutate({
                                   sessionId,

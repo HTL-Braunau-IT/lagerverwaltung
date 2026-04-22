@@ -10,6 +10,7 @@ import { useState } from "react";
 import SuperJSON from "superjson";
 
 import type { AppRouter } from "~/server/api/root";
+import { ToastProvider } from "~/components/ui/toast";
 import { createQueryClient } from "./query-client";
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
@@ -71,7 +72,7 @@ export function TRPCReactProvider(props: {
     <SessionProvider session={props.session}>
       <QueryClientProvider client={queryClient}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
-          {props.children}
+          <ToastProvider>{props.children}</ToastProvider>
         </api.Provider>
       </QueryClientProvider>
     </SessionProvider>

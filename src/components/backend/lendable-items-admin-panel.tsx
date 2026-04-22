@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
@@ -61,13 +62,13 @@ function createFormFromItem(item: LendableItemListEntry): FormState {
 
 export function LendableItemsAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [formsById, setFormsById] = useState<Record<string, FormState>>({});
   const [imageCacheBustById, setImageCacheBustById] = useState<Record<string, number>>({});
-  const [inlineImageUploadError, setInlineImageUploadError] = useState<string | null>(null);
   const [inlineImageUploadPendingItemId, setInlineImageUploadPendingItemId] = useState<string | null>(null);
   const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
 
@@ -81,12 +82,14 @@ export function LendableItemsAdminPanel() {
   const updateMutation = api.lendableItem.backendUpdate.useMutation({
     onSuccess: async () => {
       await utils.lendableItem.backendList.invalidate();
+      toast.success("Leihgerät aktualisiert.");
     },
   });
 
   const deleteMutation = api.lendableItem.backendDelete.useMutation({
     onSuccess: async () => {
       await utils.lendableItem.backendList.invalidate();
+      toast.success("Leihgerät geloescht.");
     },
   });
 
@@ -99,6 +102,7 @@ export function LendableItemsAdminPanel() {
         return { ...current, [variables.id]: { ...prev, imageUrl: "", imageAltText: "" } };
       });
       setImageCacheBustById((current) => ({ ...current, [variables.id]: Date.now() }));
+      toast.success("Bild entfernt.");
     },
   });
 
@@ -340,7 +344,6 @@ export function LendableItemsAdminPanel() {
                                           if (!file) return;
 
                                           try {
-                                            setInlineImageUploadError(null);
                                             setInlineImageUploadPendingItemId(item.id);
                                             const url = await uploadImage(item.id, file);
                                             setFormsById((current) => ({
@@ -348,8 +351,9 @@ export function LendableItemsAdminPanel() {
                                               [item.id]: { ...(current[item.id] ?? rowForm), imageUrl: url },
                                             }));
                                             setImageCacheBustById((current) => ({ ...current, [item.id]: Date.now() }));
+                                            toast.success("Bild hochgeladen.");
                                           } catch (error) {
-                                            setInlineImageUploadError(
+                                            toast.error(
                                               error instanceof Error ? error.message : "Upload fehlgeschlagen.",
                                             );
                                           } finally {
@@ -385,10 +389,6 @@ export function LendableItemsAdminPanel() {
                                       </span>
                                     </label>
                                   </div>
-
-                                  {inlineImageUploadError ? (
-                                    <p className="text-xs text-destructive">{inlineImageUploadError}</p>
-                                  ) : null}
 
                                   <div className="mt-auto space-y-1.5 border-t border-border pt-3">
                                     <p className="mb-1 text-xs font-medium text-foreground">Aktuelles Bild</p>

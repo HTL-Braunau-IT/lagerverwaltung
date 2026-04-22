@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 
 import { api } from "~/trpc/react";
+import { useToast } from "~/components/ui/toast";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -22,6 +23,7 @@ function getOrCreateSessionId() {
 export default function CheckoutPage() {
   const { data: session, status: sessionStatus } = useSession();
   const utils = api.useUtils();
+  const toast = useToast();
   const [sessionId] = useState(() =>
     typeof window === "undefined" ? "" : getOrCreateSessionId(),
   );
@@ -41,13 +43,53 @@ export default function CheckoutPage() {
   });
 
   const checkoutMutation = api.cart.checkout.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await utils.cart.get.invalidate({ sessionId });
+      if (data.ok) {
+        toast.success(`Bestellung abgeschickt. Bestellnummer: ${data.orderNumber}`);
+        return;
+      }
+      switch (data.reason) {
+        case "EMPTY_CART":
+          toast.error("Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufuegen.");
+          break;
+        case "INVALID_COST_CENTER":
+          toast.error("Die ausgewaehlte Kostenstelle ist ungueltig. Bitte erneut waehlen.");
+          break;
+        case "INSUFFICIENT_STOCK":
+          toast.error("Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.");
+          break;
+        case "MIXED_STORAGE_ROOMS":
+          toast.warning(
+            "Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.",
+          );
+          break;
+      }
     },
   });
   const submitForTeacherApprovalMutation = api.cart.submitForTeacherApproval.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await utils.cart.get.invalidate({ sessionId });
+      if (data.ok) {
+        toast.success("Anfrage an Lehrperson gesendet.");
+        return;
+      }
+      switch (data.reason) {
+        case "EMPTY_CART":
+          toast.error("Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufuegen.");
+          break;
+        case "INVALID_TEACHER":
+          toast.error("Die ausgewaehlte Lehrperson ist ungueltig. Bitte erneut waehlen.");
+          break;
+        case "INSUFFICIENT_STOCK":
+          toast.error("Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.");
+          break;
+        case "MIXED_STORAGE_ROOMS":
+          toast.warning(
+            "Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.",
+          );
+          break;
+      }
     },
   });
 
@@ -186,80 +228,6 @@ export default function CheckoutPage() {
             ? "Bestellung wird gespeichert..."
             : "Bestellen"}
         </button>
-
-        {submitForTeacherApprovalMutation.data?.ok && (
-          <p className="mt-3 text-sm text-emerald-700">
-            Anfrage erfolgreich an Lehrperson gesendet.
-          </p>
-        )}
-        {submitForTeacherApprovalMutation.data &&
-          !submitForTeacherApprovalMutation.data.ok &&
-          submitForTeacherApprovalMutation.data.reason === "EMPTY_CART" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufuegen.
-            </p>
-          )}
-        {submitForTeacherApprovalMutation.data &&
-          !submitForTeacherApprovalMutation.data.ok &&
-          submitForTeacherApprovalMutation.data.reason === "INVALID_TEACHER" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Die ausgewaehlte Lehrperson ist ungueltig. Bitte erneut waehlen.
-            </p>
-          )}
-        {submitForTeacherApprovalMutation.data &&
-          !submitForTeacherApprovalMutation.data.ok &&
-          submitForTeacherApprovalMutation.data.reason === "INSUFFICIENT_STOCK" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.
-            </p>
-          )}
-        {submitForTeacherApprovalMutation.data &&
-          !submitForTeacherApprovalMutation.data.ok &&
-          submitForTeacherApprovalMutation.data.reason === "MIXED_STORAGE_ROOMS" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.
-            </p>
-          )}
-        {submitForTeacherApprovalMutation.error && (
-          <p className="mt-3 text-sm text-rose-700">
-            Anfrage fehlgeschlagen. Bitte pruefe deine Eingaben und versuche es erneut.
-          </p>
-        )}
-
-        {checkoutMutation.data?.ok && (
-          <p className="mt-3 text-sm text-emerald-700">
-            Bestellung erfolgreich gespeichert. Bestellnummer: {checkoutMutation.data.orderNumber}
-          </p>
-        )}
-        {checkoutMutation.data && !checkoutMutation.data.ok && checkoutMutation.data.reason === "EMPTY_CART" && (
-          <p className="mt-3 text-sm text-rose-700">Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufuegen.</p>
-        )}
-        {checkoutMutation.data &&
-          !checkoutMutation.data.ok &&
-          checkoutMutation.data.reason === "INVALID_COST_CENTER" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Die ausgewaehlte Kostenstelle ist ungueltig. Bitte erneut waehlen.
-            </p>
-          )}
-        {checkoutMutation.data &&
-          !checkoutMutation.data.ok &&
-          checkoutMutation.data.reason === "INSUFFICIENT_STOCK" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.
-            </p>
-          )}
-        {checkoutMutation.data &&
-          !checkoutMutation.data.ok &&
-          checkoutMutation.data.reason === "MIXED_STORAGE_ROOMS" && (
-            <p className="mt-3 text-sm text-rose-700">
-              Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.
-            </p>
-          )}
-        {checkoutMutation.error && (
-          <p className="mt-3 text-sm text-rose-700">
-            Bestellung fehlgeschlagen. Bitte pruefe deine Eingaben und versuche es erneut.
-          </p>
-        )}
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Link

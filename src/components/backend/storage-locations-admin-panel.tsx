@@ -8,6 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 
@@ -32,6 +33,7 @@ function toStorageLocationCode(name: string): string {
 
 export function StorageLocationsAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
@@ -93,6 +95,7 @@ export function StorageLocationsAdminPanel() {
         utils.storageLocation.list.invalidate(),
         expandedLocationId ? utils.storageLocation.byId.invalidate({ id: expandedLocationId }) : Promise.resolve(),
       ]);
+      toast.success("Lagerplatz aktualisiert.");
     },
   });
   const deleteLocationMutation = api.storageLocation.backendDelete.useMutation({
@@ -100,6 +103,7 @@ export function StorageLocationsAdminPanel() {
       await Promise.all([utils.storageLocation.backendList.invalidate(), utils.storageLocation.list.invalidate()]);
       setExpandedLocationId(null);
       setLocationForm(createEmptyLocationForm());
+      toast.success("Lagerplatz geloescht.");
     },
   });
 

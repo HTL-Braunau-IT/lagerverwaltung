@@ -10,6 +10,7 @@ import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
+import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 
@@ -383,6 +384,7 @@ function BookingHistory({ productId }: { productId: string }) {
 
 export function ProductsAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
@@ -395,7 +397,6 @@ export function ProductsAdminPanel() {
   const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
-  const [editUploadErrorById, setEditUploadErrorById] = useState<Record<string, string | null>>({});
   /** File chosen in the edit form; uploaded only when saving. */
   const [editPendingImageById, setEditPendingImageById] = useState<
     Record<string, { file: File; previewUrl: string } | null>
@@ -404,7 +405,6 @@ export function ProductsAdminPanel() {
   const [editSelectedImageIdById, setEditSelectedImageIdById] = useState<Record<string, string | null>>({});
   const [imageDeletePendingKey, setImageDeletePendingKey] = useState<string | null>(null);
   const [editDocumentUploadPendingById, setEditDocumentUploadPendingById] = useState<Record<string, boolean>>({});
-  const [editDocumentUploadErrorById, setEditDocumentUploadErrorById] = useState<Record<string, string | null>>({});
   const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
   const [bookingProduct, setBookingProduct] = useState<{ id: string; name: string } | null>(null);
   const [bookingQuantityInput, setBookingQuantityInput] = useState("");
@@ -445,12 +445,14 @@ export function ProductsAdminPanel() {
   const updateMutation = api.product.backendUpdate.useMutation({
     onSuccess: async () => {
       await utils.product.backendList.invalidate();
+      toast.success("Produkt gespeichert.");
     },
   });
   // Product creation moved to /backend/products/new.
   const deleteProductImageMutation = api.product.backendDeleteProductImage.useMutation({
     onSuccess: async () => {
       await utils.product.backendList.invalidate();
+      toast.success("Produktbild entfernt.");
     },
     onSettled: () => {
       setImageDeletePendingKey(null);
@@ -476,6 +478,7 @@ export function ProductsAdminPanel() {
       setBookingSupplierInput("");
       setBookingNoteInput("");
       setBookingError(null);
+      toast.success("Bestandsbuchung gespeichert.");
     },
   });
 
@@ -718,10 +721,7 @@ export function ProductsAdminPanel() {
       if (pending) {
         const sku = form.sku.trim();
         if (!sku) {
-          setEditUploadErrorById((current) => ({
-            ...current,
-            [product.id]: "Bitte zuerst eine SKU eingeben.",
-          }));
+          toast.error("Bitte zuerst eine SKU eingeben.");
           return;
         }
         try {
@@ -729,7 +729,6 @@ export function ProductsAdminPanel() {
             ...current,
             [product.id]: true,
           }));
-          setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
           const uploadedUrl = await uploadProductImage(sku, pending.file);
           const created = await addProductImageMutation.mutateAsync({
             productId: product.id,
@@ -758,11 +757,9 @@ export function ProductsAdminPanel() {
             ...current,
             [product.id]: created.id,
           }));
+          toast.success("Bild hochgeladen.");
         } catch (error) {
-          setEditUploadErrorById((current) => ({
-            ...current,
-            [product.id]: error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.",
-          }));
+          toast.error(error instanceof Error ? error.message : "Bild konnte nicht hochgeladen werden.");
           return;
         } finally {
           setEditUploadPendingById((current) => ({
@@ -806,6 +803,7 @@ export function ProductsAdminPanel() {
       formsById,
       setHasUnsavedChangesById,
       setImageFieldsTouchedById,
+      toast,
       updateMutation,
       uploadProductImage,
     ],
@@ -1718,30 +1716,20 @@ export function ProductsAdminPanel() {
                                             if (!file) return;
                                             const sku = form.sku.trim();
                                             if (!sku) {
-                                              setEditUploadErrorById((current) => ({
-                                                ...current,
-                                                [product.id]: "Bitte zuerst eine SKU eingeben.",
-                                              }));
+                                              toast.error("Bitte zuerst eine SKU eingeben.");
                                               event.target.value = "";
                                               return;
                                             }
                                             if (!file.type.startsWith("image/")) {
-                                              setEditUploadErrorById((current) => ({
-                                                ...current,
-                                                [product.id]: "Bitte eine Bilddatei auswaehlen.",
-                                              }));
+                                              toast.error("Bitte eine Bilddatei auswaehlen.");
                                               event.target.value = "";
                                               return;
                                             }
                                             if (file.size > MAX_UPLOAD_BYTES) {
-                                              setEditUploadErrorById((current) => ({
-                                                ...current,
-                                                [product.id]: "Das Bild ist zu gross. Maximal 8 MB erlaubt.",
-                                              }));
+                                              toast.error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
                                               event.target.value = "";
                                               return;
                                             }
-                                            setEditUploadErrorById((current) => ({ ...current, [product.id]: null }));
                                             setEditPendingImageById((current) => {
                                               const prev = current[product.id];
                                               if (prev?.previewUrl) {
@@ -1802,9 +1790,6 @@ export function ProductsAdminPanel() {
                                         </span>
                                       </label>
                                     </div>
-                                    {editUploadErrorById[product.id] ? (
-                                      <p className="text-xs text-destructive">{editUploadErrorById[product.id]}</p>
-                                    ) : null}
 
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                                       <button
@@ -2107,20 +2092,15 @@ export function ProductsAdminPanel() {
                                             ...current,
                                             [product.id]: true,
                                           }));
-                                          setEditDocumentUploadErrorById((current) => ({
-                                            ...current,
-                                            [product.id]: null,
-                                          }));
                                           await uploadProductDocument(product.id, file);
                                           await utils.product.backendList.invalidate();
+                                          toast.success("Dokument hochgeladen.");
                                         } catch (error) {
-                                          setEditDocumentUploadErrorById((current) => ({
-                                            ...current,
-                                            [product.id]:
-                                              error instanceof Error
-                                                ? error.message
-                                                : "Dokument konnte nicht hochgeladen werden.",
-                                          }));
+                                          toast.error(
+                                            error instanceof Error
+                                              ? error.message
+                                              : "Dokument konnte nicht hochgeladen werden.",
+                                          );
                                         } finally {
                                           setEditDocumentUploadPendingById((current) => ({
                                             ...current,
@@ -2153,11 +2133,6 @@ export function ProductsAdminPanel() {
                                     </span>
                                   </label>
                                 </div>
-                                {editDocumentUploadErrorById[product.id] ? (
-                                  <p className="text-xs text-destructive">
-                                    {editDocumentUploadErrorById[product.id]}
-                                  </p>
-                                ) : null}
 
                                 <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
                                   <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
@@ -2194,20 +2169,15 @@ export function ProductsAdminPanel() {
                                                     ...current,
                                                     [product.id]: true,
                                                   }));
-                                                  setEditDocumentUploadErrorById((current) => ({
-                                                    ...current,
-                                                    [product.id]: null,
-                                                  }));
                                                   await deleteProductDocument(document.id);
                                                   await utils.product.backendList.invalidate();
+                                                  toast.success("Dokument geloescht.");
                                                 } catch (error) {
-                                                  setEditDocumentUploadErrorById((current) => ({
-                                                    ...current,
-                                                    [product.id]:
-                                                      error instanceof Error
-                                                        ? error.message
-                                                        : "Dokument konnte nicht geloescht werden.",
-                                                  }));
+                                                  toast.error(
+                                                    error instanceof Error
+                                                      ? error.message
+                                                      : "Dokument konnte nicht geloescht werden.",
+                                                  );
                                                 } finally {
                                                   setEditDocumentUploadPendingById((current) => ({
                                                     ...current,

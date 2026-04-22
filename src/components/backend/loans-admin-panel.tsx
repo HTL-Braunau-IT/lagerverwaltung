@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import * as TableUI from "~/components/ui/table";
+import { useToast } from "~/components/ui/toast";
 import { FilterPillButton } from "../ui/filter-pill-button";
 import { DetailCard, DetailText } from "../ui/detail-card";
 
@@ -56,6 +57,7 @@ const loanStatusBadge: Record<LoanStatus, LoanStatusBadge> = {
 
 export function LoansAdminPanel() {
   const utils = api.useUtils();
+  const toast = useToast();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
 
@@ -73,6 +75,7 @@ export function LoansAdminPanel() {
       await utils.loan.backendListLoans.invalidate();
       await utils.loan.backendOpenCount.invalidate();
       setExpandedLoanId(null);
+      toast.success("Ausleihe ausgegeben.");
     },
   });
 
@@ -81,12 +84,14 @@ export function LoansAdminPanel() {
       await utils.loan.backendListLoans.invalidate();
       await utils.loan.backendOpenCount.invalidate();
       setExpandedLoanId(null);
+      toast.success("Ausleihe zurueckgebucht.");
     },
   });
 
   const remindMutation = api.loan.backendSendReminderNow.useMutation({
     onSuccess: async () => {
       await utils.loan.backendListLoans.invalidate();
+      toast.success("Erinnerung gesendet.");
     },
   });
 
