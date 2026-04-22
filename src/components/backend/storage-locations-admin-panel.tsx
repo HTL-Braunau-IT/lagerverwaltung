@@ -217,15 +217,7 @@ export function StorageLocationsAdminPanel() {
                   >
                     {isExpanded ? (
                       <div className="px-4 flex min-w-0 flex-col gap-4">
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <h3 className="text-base font-semibold text-foreground">Lagerplatz bearbeiten</h3>
-                        </div>
-
-                        <p className="text-sm text-muted-foreground">
-                          Produkte: <span className="font-medium text-foreground">{location._count.products}</span>
-                        </p>
-
-                        <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-1">
                           <label className="text-xs text-muted-foreground">
                             Name
                             <Input
@@ -234,17 +226,27 @@ export function StorageLocationsAdminPanel() {
                               onChange={(event) =>
                                 setLocationForm((prev) => ({ ...prev, name: event.target.value }))
                               }
-                              className="mt-1 h-10 rounded-xl"
-                              autoFocus
+                              variant="title"
                             />
                           </label>
                           <label className="text-xs text-muted-foreground">
                             Code (automatisch)
                             <Input
                               value={generatedLocationCode}
-                              readOnly
+                              disabled
                               onClick={(event) => event.stopPropagation()}
-                              className="mt-1 h-10 rounded-xl"
+                              variant="subtitle"
+                            />
+                          </label>
+                          <label className="text-xs text-muted-foreground">
+                            Beschreibung (optional)
+                            <Input
+                              value={locationForm.description}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setLocationForm((prev) => ({ ...prev, description: event.target.value }))
+                              }
+                              variant="default"
                             />
                           </label>
                           <label className="text-xs text-muted-foreground">
@@ -255,7 +257,7 @@ export function StorageLocationsAdminPanel() {
                               onChange={(event) =>
                                 setLocationForm((prev) => ({ ...prev, storageRoomId: event.target.value }))
                               }
-                              className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+                              className="mt-1 flex h-10 w-full appearance-none rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <option value="">Bitte wählen</option>
                               {roomItems.map((room) => (
@@ -265,48 +267,46 @@ export function StorageLocationsAdminPanel() {
                               ))}
                             </select>
                           </label>
-                          <label className="text-xs text-muted-foreground md:col-span-2">
-                            Beschreibung (optional)
+                          <label className="text-xs text-muted-foreground">
+                            Produkte
                             <Input
-                              value={locationForm.description}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setLocationForm((prev) => ({ ...prev, description: event.target.value }))
-                              }
-                              className="mt-1 h-10 rounded-xl"
-                            />
+                            variant="default"
+                            disabled
+                            value={location._count.products}
+                            >
+                            
+                            </Input>
                           </label>
-                        </div>
-
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateLocationMutation.mutate({
-                                id: location.id,
-                                code: generatedLocationCode,
-                                name: locationForm.name.trim(),
-                                storageRoomId: locationForm.storageRoomId,
-                                description: locationForm.description.trim() ? locationForm.description.trim() : null,
-                              });
-                            }}
-                            disabled={!canSave || updateLocationMutation.isPending}
-                          >
-                            {updateLocationMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteLocationMutation.mutate({ id: location.id });
-                            }}
-                            disabled={deleteLocationMutation.isPending}
-                          >
-                            {deleteLocationMutation.isPending ? "Löscht..." : "Lagerplatz löschen"}
-                          </Button>
+                          <div className="grid grid-cols-2 gap-4 items-end">
+                            <Button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                updateLocationMutation.mutate({
+                                  id: location.id,
+                                  code: generatedLocationCode,
+                                  name: locationForm.name.trim(),
+                                  storageRoomId: locationForm.storageRoomId,
+                                  description: locationForm.description.trim() ? locationForm.description.trim() : null,
+                                });
+                              }}
+                              disabled={!canSave || updateLocationMutation.isPending}
+                              variant="solid"
+                            >
+                              {updateLocationMutation.isPending ? "Speichert..." : "Änderungen speichern"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteLocationMutation.mutate({ id: location.id });
+                              }}
+                              disabled={deleteLocationMutation.isPending}
+                            >
+                              {deleteLocationMutation.isPending ? "Löscht..." : "Lagerplatz löschen"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ) : null}
