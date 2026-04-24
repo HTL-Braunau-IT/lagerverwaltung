@@ -13,6 +13,8 @@ import { Switch } from "~/components/ui/switch";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -393,7 +395,6 @@ export function ProductsAdminPanel() {
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
-  const [hasUnsavedChangesById, setHasUnsavedChangesById] = useState<Record<string, boolean>>({});
   const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
@@ -670,10 +671,6 @@ export function ProductsAdminPanel() {
       ...current,
       [product.id]: false,
     }));
-    setHasUnsavedChangesById((current) => ({
-      ...current,
-      [product.id]: false,
-    }));
   }, [clearEditPendingImage]);
 
   const computeHasUnsavedChanges = useCallback(
@@ -692,22 +689,10 @@ export function ProductsAdminPanel() {
         imageAltText: imageTouched ? f.imageAltText.trim() : "",
         categoryIds: [...f.categoryIds].sort(),
       });
-
-      const changed = JSON.stringify(normalize(current)) !== JSON.stringify(normalize(initial));
-      return changed || pendingImage;
+      return isDirty(current, initial, normalize, pendingImage);
     },
     [editPendingImageById, formsById, imageFieldsTouchedById],
   );
-
-  const hasUnsavedChanges = expandedRowId ? !!hasUnsavedChangesById[expandedRowId] : false;
-
-  useEffect(() => {
-    if (!expandedRowId) return;
-    const product = visibleProducts.find((p) => p.id === expandedRowId);
-    if (!product) return;
-    const dirty = computeHasUnsavedChanges(product);
-    setHasUnsavedChangesById((current) => (current[expandedRowId] === dirty ? current : { ...current, [expandedRowId]: dirty }));
-  }, [computeHasUnsavedChanges, expandedRowId, visibleProducts]);
 
   const handleSaveProduct = useCallback(
     async (product: { id: string } & Parameters<typeof createInitialForm>[0]) => {
@@ -790,7 +775,6 @@ export function ProductsAdminPanel() {
           imageUrl,
           imageAltText,
         });
-        setHasUnsavedChangesById((current) => ({ ...current, [product.id]: false }));
         setImageFieldsTouchedById((current) => ({ ...current, [product.id]: false }));
       } catch {
         // tRPC surfaces toast or error boundary elsewhere
@@ -801,13 +785,22 @@ export function ProductsAdminPanel() {
       editPendingImageById,
       editSelectedImageIdById,
       formsById,
-      setHasUnsavedChangesById,
       setImageFieldsTouchedById,
       toast,
       updateMutation,
       uploadProductImage,
     ],
   );
+
+  const expandedProduct = useMemo(() => {
+    if (!expandedRowId) return null;
+    return visibleProducts.find((p) => p.id === expandedRowId) ?? null;
+  }, [expandedRowId, visibleProducts]);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!expandedProduct) return false;
+    return computeHasUnsavedChanges(expandedProduct);
+  }, [computeHasUnsavedChanges, expandedProduct]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -2228,61 +2221,32 @@ export function ProductsAdminPanel() {
         </div>
       ) : null}
 
-      {expandedRowId && hasUnsavedChanges ? (
-        <>
-          <div className="h-24" aria-hidden="true" />
-          <div className="fixed inset-x-0 bottom-4 z-50 px-4">
-            <div className="mx-auto w-full max-w-6xl">
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive bg-background/70 shadow-lg backdrop-blur p-4">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-foreground">
-                    {visibleProducts.find((p) => p.id === expandedRowId)?.name ?? "Produkt"}
-                  </p>
-                  <p className="text-xs text-destructive">Ausstehende Änderungen</p>
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const product = visibleProducts.find((p) => p.id === expandedRowId);
-                      if (!product) return;
-                      handleResetProduct(product);
-                    }}
-                    variant="outline"
-                  >
-                    Zurücksetzen
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      const product = visibleProducts.find((p) => p.id === expandedRowId);
-                      if (!product) return;
-                      void handleSaveProduct(product);
-                    }}
-                    disabled={
-                      updateMutation.isPending ||
-                      (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
-                      addProductImageMutation.isPending ||
-                      (expandedRowId !== null ? !!editDocumentUploadPendingById[expandedRowId] : false)
-                    }
-                    className="shrink-0 disabled:opacity-60"
-                  >
-                    {updateMutation.isPending ||
-                    (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
-                    addProductImageMutation.isPending ? (
-                      "Speichert..."
-                    ) : (
-                      "Speichern"
-                    )}
-                  </Button>
-                </div>                
-              </div>
-            </div>
-          </div>
-        </>
-      ) : null}
+      <UnsavedChangesBar
+        open={!!expandedRowId && hasUnsavedChanges}
+        title={expandedProduct?.name ?? "Produkt"}
+        onReset={() => {
+          if (!expandedProduct) return;
+          handleResetProduct(expandedProduct);
+        }}
+        onSave={() => {
+          if (!expandedProduct) return;
+          void handleSaveProduct(expandedProduct);
+        }}
+        saveDisabled={
+          updateMutation.isPending ||
+          (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
+          addProductImageMutation.isPending ||
+          (expandedRowId !== null ? !!editDocumentUploadPendingById[expandedRowId] : false)
+        }
+        resetDisabled={updateMutation.isPending}
+        saveLabel={
+          updateMutation.isPending ||
+          (expandedRowId !== null ? !!editUploadPendingById[expandedRowId] : false) ||
+          addProductImageMutation.isPending
+            ? "Speichert..."
+            : "Speichern"
+        }
+      />
 
       {bookingProduct ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 px-4">

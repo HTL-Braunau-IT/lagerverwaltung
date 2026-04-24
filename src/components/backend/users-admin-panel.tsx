@@ -8,6 +8,8 @@ import { Card } from "~/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 type UserAccessForm = {
   hasAllStorageRoomAccess: boolean;
@@ -31,6 +33,7 @@ export function UsersAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [formsByUserId, setFormsByUserId] = useState<Record<string, UserAccessForm>>({});
+  const [baselineByUserId, setBaselineByUserId] = useState<Record<string, UserAccessForm>>({});
 
   const usersQuery = api.user.backendList.useInfiniteQuery(
     {
@@ -57,6 +60,21 @@ export function UsersAdminPanel() {
       ),
     [usersQuery.data],
   );
+
+  const expandedContext = useMemo(() => {
+    if (!expandedUserId) return null;
+    const user = users.find((u) => u.id === expandedUserId);
+    if (!user) return null;
+    const baseline = baselineByUserId[user.id] ?? createInitialForm(user);
+    const current = formsByUserId[user.id] ?? baseline;
+    const normalize = (f: UserAccessForm) => ({
+      hasAllStorageRoomAccess: f.hasAllStorageRoomAccess,
+      storageRoomIds: [...f.storageRoomIds].sort(),
+    });
+    const dirty = isDirty(current, baseline, normalize);
+    const canSave = current.hasAllStorageRoomAccess || current.storageRoomIds.length > 0;
+    return { user, baseline, current, dirty, canSave };
+  }, [baselineByUserId, expandedUserId, formsByUserId, users]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -108,6 +126,10 @@ export function UsersAdminPanel() {
                     onClick={() => {
                       setExpandedUserId((current) => (current === user.id ? null : user.id));
                       setFormsByUserId((current) => ({
+                        ...current,
+                        [user.id]: current[user.id] ?? createInitialForm(user),
+                      }));
+                      setBaselineByUserId((current) => ({
                         ...current,
                         [user.id]: current[user.id] ?? createInitialForm(user),
                       }));
@@ -201,36 +223,11 @@ export function UsersAdminPanel() {
                             </button>
                           </div>
 
-                          <div className="mt-4 flex flex-wrap items-center gap-2">
-                            <Button
-                              type="button"
-                              onClick={() =>
-                                updateAccessMutation.mutate({
-                                  userId: user.id,
-                                  hasAllStorageRoomAccess: form.hasAllStorageRoomAccess,
-                                  storageRoomIds: form.storageRoomIds,
-                                })
-                              }
-                              disabled={
-                                updateAccessMutation.isPending ||
-                                (!form.hasAllStorageRoomAccess && form.storageRoomIds.length === 0)
-                              }
-                            >
-                              {updateAccessMutation.isPending ? "Speichert..." : "Rechte speichern"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() =>
-                                setFormsByUserId((current) => ({
-                                  ...current,
-                                  [user.id]: createInitialForm(user),
-                                }))
-                              }
-                            >
-                              Zurücksetzen
-                            </Button>
-                          </div>
+                          {!form.hasAllStorageRoomAccess && form.storageRoomIds.length === 0 ? (
+                            <p className="mt-4 text-xs text-destructive">
+                              Bitte mindestens einen Lagerraum auswählen oder „Alle Lagerraeume“ aktivieren.
+                            </p>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -255,6 +252,40 @@ export function UsersAdminPanel() {
         </div>
       ) : null}
 
+      <UnsavedChangesBar
+        open={!!expandedContext?.dirty}
+        title={expandedContext?.user.name ?? expandedContext?.user.email ?? "Benutzer"}
+        onReset={() => {
+          if (!expandedContext) return;
+          setFormsByUserId((current) => ({
+            ...current,
+            [expandedContext.user.id]: expandedContext.baseline,
+          }));
+        }}
+        onSave={() => {
+          if (!expandedContext) return;
+          if (updateAccessMutation.isPending) return;
+          if (!expandedContext.canSave) return;
+          updateAccessMutation.mutate(
+            {
+              userId: expandedContext.user.id,
+              hasAllStorageRoomAccess: expandedContext.current.hasAllStorageRoomAccess,
+              storageRoomIds: expandedContext.current.storageRoomIds,
+            },
+            {
+              onSuccess: () => {
+                setBaselineByUserId((current) => ({
+                  ...current,
+                  [expandedContext.user.id]: expandedContext.current,
+                }));
+              },
+            },
+          );
+        }}
+        saveDisabled={updateAccessMutation.isPending || !expandedContext?.canSave}
+        resetDisabled={updateAccessMutation.isPending}
+        saveLabel={updateAccessMutation.isPending ? "Speichert..." : "Speichern"}
+      />
 
     </Card>
   );

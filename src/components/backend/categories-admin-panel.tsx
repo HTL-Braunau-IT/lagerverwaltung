@@ -11,6 +11,8 @@ import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 type CategoryForm = {
   name: string;
@@ -39,6 +41,7 @@ export function CategoriesAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [form, setForm] = useState<CategoryForm>(createEmptyForm);
+  const [baselineForm, setBaselineForm] = useState<CategoryForm>(createEmptyForm);
 
   const categoriesQuery = api.category.backendList.useInfiniteQuery(
     {
@@ -65,6 +68,7 @@ export function CategoriesAdminPanel() {
       await Promise.all([utils.category.backendList.invalidate(), utils.category.list.invalidate()]);
       setExpandedCategoryId(null);
       setForm(createEmptyForm());
+      setBaselineForm(createEmptyForm());
       toast.success("Kategorie geloescht.");
     },
   });
@@ -78,6 +82,12 @@ export function CategoriesAdminPanel() {
 
   const generatedSlug = toCategorySlug(form.name.trim());
   const canSave = form.name.trim().length > 0 && generatedSlug.length > 0;
+
+  const isExpandedDirty = useMemo(() => {
+    if (!expandedCategoryId) return false;
+    const normalize = (f: CategoryForm) => ({ name: f.name.trim() });
+    return isDirty(form, baselineForm, normalize);
+  }, [baselineForm, expandedCategoryId, form]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -138,6 +148,7 @@ export function CategoriesAdminPanel() {
                       setExpandedCategoryId((current) => {
                         const next = current === category.id ? null : category.id;
                         setForm((prev) => (next ? { name: category.name } : prev));
+                        setBaselineForm(next ? { name: category.name } : createEmptyForm());
                         return next;
                       });
                     }}
@@ -184,24 +195,7 @@ export function CategoriesAdminPanel() {
                                 variant="subtitle"
                               />
                             </label>
-                            <div className="mt-4.5 grid grid-cols-2 gap-2 items-center">
-                              <Button
-                                type="button"
-                                variant="solid"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  updateMutation.mutate({
-                                    id: category.id,
-                                    name: form.name.trim(),
-                                    slug: generatedSlug,
-                                  });
-                                }}
-                                disabled={!canSave || updateMutation.isPending}
-                                size="lg"
-                              >
-                                {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                              </Button>
-
+                            <div className="mt-4.5 flex items-center justify-end">
                               <Button
                                 type="button"
                                 variant="destructive"
@@ -237,6 +231,41 @@ export function CategoriesAdminPanel() {
           </Button>
         </div>
       ) : null}
+
+      <UnsavedChangesBar
+        open={isExpandedDirty}
+        title={
+          expandedCategoryId
+            ? (items.find((c) => c.id === expandedCategoryId)?.name ?? "Kategorie")
+            : "Kategorie"
+        }
+        onReset={() => {
+          if (!expandedCategoryId) return;
+          setForm(baselineForm);
+        }}
+        onSave={() => {
+          if (!expandedCategoryId) return;
+          const category = items.find((c) => c.id === expandedCategoryId);
+          if (!category) return;
+          if (updateMutation.isPending) return;
+          if (!canSave) return;
+          updateMutation.mutate(
+            {
+              id: category.id,
+              name: form.name.trim(),
+              slug: toCategorySlug(form.name.trim()),
+            },
+            {
+              onSuccess: () => {
+                setBaselineForm({ name: form.name });
+              },
+            },
+          );
+        }}
+        saveDisabled={!canSave || updateMutation.isPending}
+        resetDisabled={updateMutation.isPending}
+        saveLabel={updateMutation.isPending ? "Speichert..." : "Speichern"}
+      />
 
     </Card>
   );

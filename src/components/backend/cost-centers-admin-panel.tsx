@@ -10,6 +10,8 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 type CostCenterForm = {
   name: string;
@@ -38,6 +40,7 @@ export function CostCentersAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
+  const [baselineForm, setBaselineForm] = useState<CostCenterForm>(createEmptyForm);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const costCentersQuery = api.costCenter.backendList.useInfiniteQuery(
@@ -72,6 +75,7 @@ export function CostCentersAdminPanel() {
       await Promise.all([utils.costCenter.backendList.invalidate(), utils.costCenter.list.invalidate()]);
       setExpandedCostCenterId(null);
       setForm(createEmptyForm());
+      setBaselineForm(createEmptyForm());
       toast.success("Kostenstelle geloescht.");
     },
   });
@@ -86,6 +90,12 @@ export function CostCentersAdminPanel() {
 
   const generatedCode = toCostCenterCode(form.name.trim());
   const canSave = form.name.trim().length > 0 && generatedCode.length > 0;
+
+  const isExpandedDirty = useMemo(() => {
+    if (!expandedCostCenterId) return false;
+    const normalize = (f: CostCenterForm) => ({ name: f.name.trim() });
+    return isDirty(form, baselineForm, normalize);
+  }, [baselineForm, expandedCostCenterId, form]);
 
   useEffect(() => {
     if (!expandedCostCenterId) setConfirmDelete(false);
@@ -156,6 +166,7 @@ export function CostCentersAdminPanel() {
                       setExpandedCostCenterId((current) => {
                         const next = current === center.id ? null : center.id;
                         setForm((prev) => (next ? { name: center.name } : prev));
+                        setBaselineForm(next ? { name: center.name } : createEmptyForm());
                         return next;
                       });
                     }}
@@ -194,23 +205,6 @@ export function CostCentersAdminPanel() {
                               variant="subtitle"
                             />
                           </label>
-                          <Button
-                            type="button"
-                            variant="solid"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateMutation.mutate({
-                                id: center.id,
-                                code: generatedCode,
-                                name: form.name.trim(),
-                              });
-                            }}
-                            disabled={!canSave || updateMutation.isPending}
-                            size="lg"
-                          >
-                            {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                          </Button>
-
                           <Button
                             type="button"
                             variant="destructive"
@@ -257,6 +251,40 @@ export function CostCentersAdminPanel() {
         </div>
       ) : null}
 
+      <UnsavedChangesBar
+        open={isExpandedDirty}
+        title={
+          expandedCostCenterId
+            ? (items.find((c) => c.id === expandedCostCenterId)?.name ?? "Kostenstelle")
+            : "Kostenstelle"
+        }
+        onReset={() => {
+          if (!expandedCostCenterId) return;
+          setForm(baselineForm);
+        }}
+        onSave={() => {
+          if (!expandedCostCenterId) return;
+          const center = items.find((c) => c.id === expandedCostCenterId);
+          if (!center) return;
+          if (updateMutation.isPending) return;
+          if (!canSave) return;
+          updateMutation.mutate(
+            {
+              id: center.id,
+              code: toCostCenterCode(form.name.trim()),
+              name: form.name.trim(),
+            },
+            {
+              onSuccess: () => {
+                setBaselineForm({ name: form.name });
+              },
+            },
+          );
+        }}
+        saveDisabled={!canSave || updateMutation.isPending}
+        resetDisabled={updateMutation.isPending}
+        saveLabel={updateMutation.isPending ? "Speichert..." : "Speichern"}
+      />
     </Card>
   );
 }

@@ -11,6 +11,8 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 type StorageLocationForm = {
   name: string;
@@ -41,6 +43,7 @@ export function StorageLocationsAdminPanel() {
   const [locationRoomFilter, setLocationRoomFilter] = useState("");
   const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
   const [locationForm, setLocationForm] = useState<StorageLocationForm>(createEmptyLocationForm);
+  const [baselineForm, setBaselineForm] = useState<StorageLocationForm>(createEmptyLocationForm);
 
   const roomsQuery = api.storageRoom.backendList.useInfiniteQuery(
     {
@@ -103,6 +106,7 @@ export function StorageLocationsAdminPanel() {
       await Promise.all([utils.storageLocation.backendList.invalidate(), utils.storageLocation.list.invalidate()]);
       setExpandedLocationId(null);
       setLocationForm(createEmptyLocationForm());
+      setBaselineForm(createEmptyLocationForm());
       toast.success("Lagerplatz geloescht.");
     },
   });
@@ -110,6 +114,16 @@ export function StorageLocationsAdminPanel() {
   const generatedLocationCode = toStorageLocationCode(locationForm.name.trim());
   const canSave =
     Boolean(generatedLocationCode) && locationForm.name.trim().length > 0 && Boolean(locationForm.storageRoomId);
+
+  const isExpandedDirty = useMemo(() => {
+    if (!expandedLocationId) return false;
+    const normalize = (f: StorageLocationForm) => ({
+      name: f.name.trim(),
+      storageRoomId: f.storageRoomId,
+      description: f.description.trim(),
+    });
+    return isDirty(locationForm, baselineForm, normalize);
+  }, [baselineForm, expandedLocationId, locationForm]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -197,6 +211,15 @@ export function StorageLocationsAdminPanel() {
                               }
                             : prev,
                         );
+                        setBaselineForm(
+                          next
+                            ? {
+                                name: location.name,
+                                storageRoomId: location.storageRoomId,
+                                description: location.description ?? "",
+                              }
+                            : createEmptyLocationForm(),
+                        );
                         return next;
                       });
                     }}
@@ -277,24 +300,7 @@ export function StorageLocationsAdminPanel() {
                             
                             </Input>
                           </label>
-                          <div className="grid grid-cols-2 gap-4 items-end">
-                            <Button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                updateLocationMutation.mutate({
-                                  id: location.id,
-                                  code: generatedLocationCode,
-                                  name: locationForm.name.trim(),
-                                  storageRoomId: locationForm.storageRoomId,
-                                  description: locationForm.description.trim() ? locationForm.description.trim() : null,
-                                });
-                              }}
-                              disabled={!canSave || updateLocationMutation.isPending}
-                              variant="solid"
-                            >
-                              {updateLocationMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                            </Button>
+                          <div className="flex items-end justify-end">
                             <Button
                               type="button"
                               variant="destructive"
@@ -330,6 +336,43 @@ export function StorageLocationsAdminPanel() {
           </Button>
         </div>
       ) : null}
+
+      <UnsavedChangesBar
+        open={isExpandedDirty}
+        title={expandedLocationId ? (locationItems.find((l) => l.id === expandedLocationId)?.name ?? "Lagerplatz") : "Lagerplatz"}
+        onReset={() => {
+          if (!expandedLocationId) return;
+          setLocationForm(baselineForm);
+        }}
+        onSave={() => {
+          if (!expandedLocationId) return;
+          const loc = locationItems.find((l) => l.id === expandedLocationId);
+          if (!loc) return;
+          if (updateLocationMutation.isPending) return;
+          if (!canSave) return;
+          updateLocationMutation.mutate(
+            {
+              id: loc.id,
+              code: toStorageLocationCode(locationForm.name.trim()),
+              name: locationForm.name.trim(),
+              storageRoomId: locationForm.storageRoomId,
+              description: locationForm.description.trim() ? locationForm.description.trim() : null,
+            },
+            {
+              onSuccess: () => {
+                setBaselineForm({
+                  name: locationForm.name,
+                  storageRoomId: locationForm.storageRoomId,
+                  description: locationForm.description,
+                });
+              },
+            },
+          );
+        }}
+        saveDisabled={!canSave || updateLocationMutation.isPending}
+        resetDisabled={updateLocationMutation.isPending}
+        saveLabel={updateLocationMutation.isPending ? "Speichert..." : "Speichern"}
+      />
     </Card>
   );
 }

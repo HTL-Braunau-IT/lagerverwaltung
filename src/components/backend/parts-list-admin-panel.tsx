@@ -10,6 +10,8 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 type PartListItemForm = {
   productId: string;
@@ -67,6 +69,7 @@ export function PartsListAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<PartListForm>(createEmptyForm);
+  const [baselineForm, setBaselineForm] = useState<PartListForm>(createEmptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
@@ -120,7 +123,7 @@ export function PartsListAdminPanel() {
     setFilesSectionCollapsed(true);
     setConfirmDeletePartList(false);
     const data = await utils.partsList.backendById.fetch({ id });
-    setForm({
+    const nextForm: PartListForm = {
       name: data?.name ?? "",
       description: data?.description ?? "",
       items:
@@ -130,7 +133,9 @@ export function PartsListAdminPanel() {
           quantity: String(Number(item.quantity)),
           displayUnit: formatBaseUnitLabel(item.product.baseUnit),
         })) ?? [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
-    });
+    };
+    setForm(nextForm);
+    setBaselineForm(nextForm);
   };
 
   const updateMutation = api.partsList.backendUpdate.useMutation({
@@ -147,6 +152,7 @@ export function PartsListAdminPanel() {
       await utils.partsList.backendList.invalidate();
       setSelectedId(null);
       setForm(createEmptyForm());
+      setBaselineForm(createEmptyForm());
       toast.success("Teileliste geloescht.");
     },
   });
@@ -194,6 +200,20 @@ export function PartsListAdminPanel() {
   const normalizedFormItems = form.items
     .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
     .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
+
+  const isEditorDirty = useMemo(() => {
+    if (!selectedId) return false;
+    const normalize = (f: PartListForm) => ({
+      name: f.name.trim(),
+      description: f.description.trim(),
+      items: f.items
+        .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
+        .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0)
+        .slice()
+        .sort((a: { productId: string }, b: { productId: string }) => a.productId.localeCompare(b.productId)),
+    });
+    return isDirty(form, baselineForm, normalize, Boolean(imageFile || documentFile));
+  }, [baselineForm, documentFile, form, imageFile, selectedId]);
 
   const getProductRowKey = (index: number) => `edit-${index}`;
 
@@ -637,22 +657,6 @@ export function PartsListAdminPanel() {
                               </Button>
                             </div>
                             <div className="mt-4 flex flex-col items-stretch gap-1">
-                              <Button
-                                type="button"
-                                variant="solid"
-                                onClick={() => {
-                                  if (!selectedId) return;
-                                  updateMutation.mutate({
-                                    id: selectedId,
-                                    name: form.name.trim(),
-                                    description: form.description.trim() ? form.description.trim() : null,
-                                    items: normalizedFormItems,
-                                  });
-                                }}
-                                disabled={!canSave || updateMutation.isPending}
-                              >
-                                {updateMutation.isPending ? "Speichert..." : "Änderungen speichern"}
-                              </Button>
                               {hasDuplicateProducts ? (
                                 <p className="text-xs text-destructive">
                                   Jedes Produkt darf nur einmal in der Teileliste vorkommen.
@@ -979,6 +983,41 @@ export function PartsListAdminPanel() {
             document.body,
           )
         : null}
+
+      <UnsavedChangesBar
+        open={isEditorDirty}
+        title={selectedPartListQuery.data?.name ?? "Teileliste"}
+        onReset={() => {
+          if (!selectedId) return;
+          setForm(baselineForm);
+          setImageFile(null);
+          setDocumentFile(null);
+        }}
+        onSave={() => {
+          if (!selectedId) return;
+          if (updateMutation.isPending) return;
+          if (uploadBusy) return;
+          if (!canSave) return;
+          updateMutation.mutate(
+            {
+              id: selectedId,
+              name: form.name.trim(),
+              description: form.description.trim() ? form.description.trim() : null,
+              items: normalizedFormItems,
+            },
+            {
+              onSuccess: () => {
+                setBaselineForm(form);
+                setImageFile(null);
+                setDocumentFile(null);
+              },
+            },
+          );
+        }}
+        saveDisabled={!selectedId || !canSave || uploadBusy || updateMutation.isPending}
+        resetDisabled={!selectedId || uploadBusy || updateMutation.isPending}
+        saveLabel={updateMutation.isPending ? "Speichert..." : "Speichern"}
+      />
 
     </Card>
   );

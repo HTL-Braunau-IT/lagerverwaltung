@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -15,6 +15,8 @@ import {
   WastebinIcon,
 } from "~/components/layout/icon-renders";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { isDirty } from "~/components/backend/dirty";
+import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -78,20 +80,6 @@ function normalizeFormState(form: FormState): Omit<FormState, "id"> {
   };
 }
 
-function isFormDirty(current: FormState, baseline: FormState): boolean {
-  const a = normalizeFormState(current);
-  const b = normalizeFormState(baseline);
-  return (
-    a.name !== b.name ||
-    a.description !== b.description ||
-    a.quantityOnHand !== b.quantityOnHand ||
-    a.storageRoomId !== b.storageRoomId ||
-    a.isVisible !== b.isVisible ||
-    a.imageUrl !== b.imageUrl ||
-    a.imageAltText !== b.imageAltText
-  );
-}
-
 export function LendableItemsAdminPanel() {
   const utils = api.useUtils();
   const toast = useToast();
@@ -102,7 +90,6 @@ export function LendableItemsAdminPanel() {
   const [formsById, setFormsById] = useState<Record<string, FormState>>({});
   const [imageCacheBustById, setImageCacheBustById] = useState<Record<string, number>>({});
   const [inlineImageUploadPendingItemId, setInlineImageUploadPendingItemId] = useState<string | null>(null);
-  const [unsavedToastEntered, setUnsavedToastEntered] = useState(false);
 
   const roomsQuery = api.storageRoom.list.useQuery();
   const itemsQuery = api.lendableItem.backendList.useQuery({
@@ -166,17 +153,9 @@ export function LendableItemsAdminPanel() {
     if (!item) return null;
     const baseline = createFormFromItem(item);
     const current = formsById[item.id] ?? baseline;
-    const dirty = isFormDirty(current, baseline);
+    const dirty = isDirty(current, baseline, normalizeFormState);
     return { item, baseline, current, dirty };
   }, [expandedItemId, sortedItems, formsById]);
-
-  useEffect(() => {
-    if (expandedContext?.dirty) {
-      const frame = requestAnimationFrame(() => setUnsavedToastEntered(true));
-      return () => cancelAnimationFrame(frame);
-    }
-    setUnsavedToastEntered(false);
-  }, [expandedContext?.dirty, expandedContext?.item.id]);
 
   const uploadImage = async (itemId: string, file: File) => {
     if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
@@ -548,68 +527,34 @@ export function LendableItemsAdminPanel() {
         </TableUI.Table>
       </div>
 
-      {expandedContext?.dirty ? (
-        <div
-          className={`pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4 transition-all duration-200 ease-out ${
-            unsavedToastEntered ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-          }`}
-          aria-live="polite"
-          role="status"
-        >
-          <div className="pointer-events-auto w-full max-w-3xl rounded-sm bg-card/90 backdrop-blur shadow-lg border-b-3 border-primary">
-            <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <DetailText variant="kicker">Ungespeicherte Änderungen</DetailText>
-                </div>
-                <DetailText variant="value">
-                  {expandedContext.item.name}
-                </DetailText>
-              </div>
-              <div className="flex items-center gap-2 sm:shrink-0 [&>button]:w-28 [&>button]:shrink-0">
-                <Button
-                  type="button"
-                  variant="glass"
-                  className="rounded-sm"             
-                  onClick={() => {
-                    setFormsById((current) => ({
-                      ...current,
-                      [expandedContext.item.id]: createFormFromItem(expandedContext.item),
-                    }));
-                  }}
-                  disabled={updateMutation.isPending}
-                >
-                  Zurücksetzen
-                </Button>
-                <Button
-                  type="button"
-                  variant="solid"
-                  className="rounded-sm animate-pulse hover:animate-none"
-                  onClick={() => {
-                    const payload = {
-                      id: expandedContext.item.id,
-                      name: expandedContext.current.name.trim(),
-                      description: expandedContext.current.description.trim() || null,
-                      quantityOnHand: Math.max(
-                        0,
-                        Math.floor(Number(expandedContext.current.quantityOnHand) || 0),
-                      ),
-                      storageRoomId: expandedContext.current.storageRoomId,
-                      isVisible: expandedContext.current.isVisible,
-                      imageUrl: expandedContext.current.imageUrl.trim() || null,
-                      imageAltText: expandedContext.current.imageAltText.trim() || null,
-                    };
-                    updateMutation.mutate(payload);
-                  }}
-                  disabled={updateMutation.isPending}
-                >
-                  Speichern
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <UnsavedChangesBar
+        open={!!expandedContext?.dirty}
+        title={expandedContext?.item.name ?? "Leihgerät"}
+        onReset={() => {
+          if (!expandedContext) return;
+          setFormsById((current) => ({
+            ...current,
+            [expandedContext.item.id]: createFormFromItem(expandedContext.item),
+          }));
+        }}
+        onSave={() => {
+          if (!expandedContext) return;
+          const payload = {
+            id: expandedContext.item.id,
+            name: expandedContext.current.name.trim(),
+            description: expandedContext.current.description.trim() || null,
+            quantityOnHand: Math.max(0, Math.floor(Number(expandedContext.current.quantityOnHand) || 0)),
+            storageRoomId: expandedContext.current.storageRoomId,
+            isVisible: expandedContext.current.isVisible,
+            imageUrl: expandedContext.current.imageUrl.trim() || null,
+            imageAltText: expandedContext.current.imageAltText.trim() || null,
+          };
+          updateMutation.mutate(payload);
+        }}
+        saveDisabled={updateMutation.isPending}
+        resetDisabled={updateMutation.isPending}
+        saveLabel={updateMutation.isPending ? "Speichert..." : "Speichern"}
+      />
     </Card>
   );
 }
