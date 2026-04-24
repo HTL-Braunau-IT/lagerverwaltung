@@ -59,6 +59,12 @@ const backendListProductsInput = z.object({
   cursor: z.string().min(1).optional(),
 });
 
+const backendCategoryCountsInput = z.object({
+  search: z.string().trim().optional(),
+  storageRoomId: z.string().min(1).optional(),
+  storageLocationId: z.string().min(1).optional(),
+});
+
 const updateProductInput = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1),
@@ -381,6 +387,79 @@ export const productRouter = createTRPCRouter({
         items: enrichedItems,
         nextCursor,
       };
+    }),
+
+  backendCategoryCounts: adminProcedure
+    .input(backendCategoryCountsInput)
+    .query(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      const search = input.search?.trim();
+      const andFilters: Array<Record<string, unknown>> = [];
+      const roomWhere = productRoomWhereForAccess(access);
+
+      if (search) {
+        andFilters.push({
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { sku: { contains: search, mode: "insensitive" as const } },
+            { description: { contains: search, mode: "insensitive" as const } },
+          ],
+        });
+      }
+      if (input.storageRoomId) {
+        andFilters.push({ storageLocation: { storageRoomId: input.storageRoomId } });
+      }
+      if (input.storageLocationId) {
+        andFilters.push({ storageLocationId: input.storageLocationId });
+      }
+      if (roomWhere) {
+        andFilters.push(roomWhere);
+      }
+      const where = andFilters.length > 0 ? { AND: andFilters } : undefined;
+
+      const [products, categories] = await Promise.all([
+        ctx.db.product.findMany({
+          where,
+          select: {
+            id: true,
+            categoryId: true,
+            categories: {
+              select: {
+                categoryId: true,
+              },
+            },
+          },
+        }),
+        ctx.db.category.findMany({
+          select: {
+            id: true,
+            name: true,
+          },
+          orderBy: [{ name: "asc" }, { id: "asc" }],
+        }),
+      ]);
+
+      const countsById = new Map<string, number>();
+      for (const category of categories) {
+        countsById.set(category.id, 0);
+      }
+
+      for (const product of products) {
+        const membershipIds = new Set(
+          [...product.categories.map((entry) => entry.categoryId), product.categoryId].filter(
+            (categoryId): categoryId is string => Boolean(categoryId),
+          ),
+        );
+        for (const categoryId of membershipIds) {
+          countsById.set(categoryId, (countsById.get(categoryId) ?? 0) + 1);
+        }
+      }
+
+      return categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        productCount: countsById.get(category.id) ?? 0,
+      }));
     }),
 
   backendUpdate: adminProcedure

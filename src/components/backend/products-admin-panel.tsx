@@ -396,6 +396,7 @@ export function ProductsAdminPanel() {
   const [storageLocationFilter, setStorageLocationFilter] = useState("");
   const [showNearMinimumOnly, setShowNearMinimumOnly] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [imageFieldsTouchedById, setImageFieldsTouchedById] = useState<Record<string, boolean>>({});
   const [formsById, setFormsById] = useState<Record<string, ProductFormState>>({});
   const [editUploadPendingById, setEditUploadPendingById] = useState<Record<string, boolean>>({});
@@ -432,22 +433,28 @@ export function ProductsAdminPanel() {
   const productsQuery = api.product.backendList.useInfiniteQuery(
     {
       search: searchTerm || undefined,
-      categoryId: categoryFilter || undefined,
+      categoryId: expandedCategoryId || undefined,
       storageRoomId: storageRoomFilter || undefined,
       storageLocationId: storageLocationFilter || undefined,
       limit: 100,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !!expandedCategoryId,
     },
   );
+  const categoryCountsQuery = api.product.backendCategoryCounts.useQuery({
+    search: searchTerm || undefined,
+    storageRoomId: storageRoomFilter || undefined,
+    storageLocationId: storageLocationFilter || undefined,
+  });
   const categoriesQuery = api.category.list.useQuery();
   const storageRoomsQuery = api.storageRoom.list.useQuery();
   const storageLocationsQuery = api.storageLocation.list.useQuery();
 
   const updateMutation = api.product.backendUpdate.useMutation({
     onSuccess: async () => {
-      await utils.product.backendList.invalidate();
+      await Promise.all([utils.product.backendList.invalidate(), utils.product.backendCategoryCounts.invalidate()]);
       toast.success("Produkt gespeichert.");
     },
   });
@@ -533,6 +540,18 @@ export function ProductsAdminPanel() {
 
   useEffect(() => {
     if (showNearMinimumOnly) return;
+    if (!productsQuery.hasNextPage) return;
+    if (productsQuery.isFetchingNextPage) return;
+    void productsQuery.fetchNextPage();
+  }, [
+    showNearMinimumOnly,
+    productsQuery.hasNextPage,
+    productsQuery.isFetchingNextPage,
+    productsQuery.fetchNextPage,
+  ]);
+
+  useEffect(() => {
+    if (showNearMinimumOnly) return;
     const target = loadMoreRef.current;
     if (!target) return;
     if (!productsQuery.hasNextPage) return;
@@ -598,6 +617,11 @@ export function ProductsAdminPanel() {
     }
     return "";
   }, [locationListOpen, listLocationSearch, storageLocationFilter, storageLocationsById]);
+  const categoryRows = useMemo(() => {
+    const rows = (categoryCountsQuery.data ?? []).filter((row) => row.productCount > 0);
+    if (!categoryFilter) return rows;
+    return rows.filter((row) => row.id === categoryFilter);
+  }, [categoryCountsQuery.data, categoryFilter]);
 
   useEffect(() => {
     if (!categoryListOpen && !locationListOpen) return;
@@ -623,6 +647,14 @@ export function ProductsAdminPanel() {
       setStorageLocationFilter("");
     }
   }, [storageRoomFilter, storageLocationFilter, storageLocationsById]);
+
+  useEffect(() => {
+    if (!expandedCategoryId) return;
+    const stillVisible = categoryRows.some((row) => row.id === expandedCategoryId);
+    if (stillVisible) return;
+    setExpandedCategoryId(null);
+    setExpandedRowId(null);
+  }, [categoryRows, expandedCategoryId]);
   // (creation-only state removed)
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
@@ -830,7 +862,7 @@ export function ProductsAdminPanel() {
 
   const expandedProduct = useMemo(() => {
     if (!expandedRowId) return null;
-    return visibleProducts.find((p) => p.id === expandedRowId) ?? null;
+    return visibleProducts.find((product) => product.id === expandedRowId) ?? null;
   }, [expandedRowId, visibleProducts]);
 
   const hasUnsavedChanges = useMemo(() => {
@@ -1136,71 +1168,102 @@ export function ProductsAdminPanel() {
             </tr>
           </TableUI.TableHeader>
           <TableUI.TableBody>
-            {productsQuery.isLoading ? (
+            {categoryCountsQuery.isLoading ? (
               <tr>
                 <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
-                  Produkte werden geladen...
+                  Kategorien werden geladen...
                 </TableUI.TableCell>
               </tr>
             ) : null}
 
-            {productsQuery.error ? (
+            {categoryCountsQuery.error ? (
               <tr>
                 <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
-                  Produkte konnten nicht geladen werden.
+                  Kategorien konnten nicht geladen werden.
                 </TableUI.TableCell>
               </tr>
             ) : null}
 
-            {!productsQuery.isLoading &&
-            !productsQuery.error &&
-            isPreparingNearMinimumList ? (
+            {!categoryCountsQuery.isLoading && !categoryCountsQuery.error && categoryRows.length === 0 ? (
               <tr>
                 <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
-                  Produkte fuer Mindestbestandsansicht werden vorbereitet...
+                  Keine Kategorien gefunden.
                 </TableUI.TableCell>
               </tr>
             ) : null}
 
-            {!productsQuery.isLoading &&
-            !productsQuery.error &&
-            !isPreparingNearMinimumList &&
-            visibleProducts.length === 0 ? (
-              <tr>
-                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
-                  Keine Produkte gefunden.
-                </TableUI.TableCell>
-              </tr>
-            ) : null}
-
-            {visibleProducts.map((product) => {
-              const isExpanded = expandedRowId === product.id;
-              const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
-              const isBelowMinimum = (() => {
-                const minimum = toNumber(product.minimumQuantity);
-                if (minimum <= 0) return false;
-                const quantity = toNumber(product.quantityOnHand);
-                return quantity < minimum;
-              })();
-              const form = formsById[product.id] ?? createInitialForm(product);
-              const pendingEditImage = editPendingImageById[product.id];
-              const previewImage = product.images[0];
-              const locationText = product.storageLocation
-                ? `${product.storageLocation.code} - ${product.storageLocation.name}`
-                : "-";
-              const selectedRoomId =
-                form.storageRoomId || storageLocationsById.get(form.storageLocationId)?.storageRoomId || "";
-              const filteredStorageLocationsForForm = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
-                selectedRoomId ? storageLocation.storageRoomId === selectedRoomId : true,
-              );
-              const imageUploadBusy = !!editUploadPendingById[product.id];
-              const imageFilePending = !!pendingEditImage;
-              const urlFieldDisabled = imageFilePending || imageUploadBusy;
-              const altFieldDisabled = imageUploadBusy;
-              const isHoverPreviewVisible = hoveredProductId === product.id && !isExpanded && !!previewImage?.url;
-
+            {!categoryCountsQuery.isLoading && !categoryCountsQuery.error
+              ? categoryRows.map((categoryGroup) => {
+              const isCategoryExpanded = expandedCategoryId === categoryGroup.id;
               return (
-                <Fragment key={product.id}>
+                <Fragment key={categoryGroup.id}>
+                  <TableUI.TableRow
+                    onClick={() => {
+                      setExpandedRowId(null);
+                      setExpandedCategoryId((current) => (current === categoryGroup.id ? null : categoryGroup.id));
+                    }}
+                    className="cursor-pointer bg-muted/40 hover:bg-muted/60"
+                  >
+                    <TableUI.TableCell colSpan={6} className="min-w-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <ChevronDownIcon open={isCategoryExpanded} className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold">{categoryGroup.name}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {categoryGroup.productCount} Produkt{categoryGroup.productCount === 1 ? "" : "e"}
+                        </span>
+                      </div>
+                    </TableUI.TableCell>
+                  </TableUI.TableRow>
+                  {isCategoryExpanded ? (
+                    productsQuery.isLoading || isPreparingNearMinimumList ? (
+                      <tr>
+                        <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                          Produkte werden geladen...
+                        </TableUI.TableCell>
+                      </tr>
+                    ) : productsQuery.error ? (
+                      <tr>
+                        <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
+                          Produkte konnten nicht geladen werden.
+                        </TableUI.TableCell>
+                      </tr>
+                    ) : visibleProducts.length === 0 ? (
+                      <tr>
+                        <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                          Keine Produkte in dieser Kategorie.
+                        </TableUI.TableCell>
+                      </tr>
+                    ) : (
+                      visibleProducts.map((product) => {
+                          const isExpanded = expandedRowId === product.id;
+                          const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
+                          const isBelowMinimum = (() => {
+                            const minimum = toNumber(product.minimumQuantity);
+                            if (minimum <= 0) return false;
+                            const quantity = toNumber(product.quantityOnHand);
+                            return quantity < minimum;
+                          })();
+                          const form = formsById[product.id] ?? createInitialForm(product);
+                          const pendingEditImage = editPendingImageById[product.id];
+                          const previewImage = product.images[0];
+                          const locationText = product.storageLocation
+                            ? `${product.storageLocation.code} - ${product.storageLocation.name}`
+                            : "-";
+                          const selectedRoomId =
+                            form.storageRoomId || storageLocationsById.get(form.storageLocationId)?.storageRoomId || "";
+                          const filteredStorageLocationsForForm = (storageLocationsQuery.data ?? []).filter((storageLocation) =>
+                            selectedRoomId ? storageLocation.storageRoomId === selectedRoomId : true,
+                          );
+                          const imageUploadBusy = !!editUploadPendingById[product.id];
+                          const imageFilePending = !!pendingEditImage;
+                          const urlFieldDisabled = imageFilePending || imageUploadBusy;
+                          const altFieldDisabled = imageUploadBusy;
+                          const isHoverPreviewVisible = hoveredProductId === product.id && !isExpanded && !!previewImage?.url;
+
+                          return (
+                            <Fragment key={`${categoryGroup.id}:${product.id}`}>
                   <TableUI.TableRow
                     onClick={() => {
                       setExpandedRowId((current) => (current === product.id ? null : product.id));
@@ -1246,7 +1309,7 @@ export function ProductsAdminPanel() {
                       {product.sku}
                     </TableUI.TableCell>
                     <TableUI.TableCell className="min-w-0 max-w-0 break-words">
-                      {product.category?.name ?? "-"}
+                      {categoryGroup.name}
                     </TableUI.TableCell>
                     <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {locationText}
@@ -2256,9 +2319,15 @@ export function ProductsAdminPanel() {
                     </>
                     ) : null}
                   </TableUI.TableExpandableRow>
+                            </Fragment>
+                          );
+                        })
+                      )
+                    ) : null}
                 </Fragment>
               );
-            })}
+                })
+              : null}
           </TableUI.TableBody>
         </TableUI.Table>
       </div>
