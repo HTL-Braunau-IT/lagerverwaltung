@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { pdf } from "@react-pdf/renderer";
 import { WastebinIcon } from "~/components/layout/icon-renders";
 import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
@@ -9,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
+import { CartPdfDocument } from "~/components/shop/pdf/cart-pdf-document";
+import { ShopExportPdfButton } from "~/components/shop/shop-quantity-add-to-cart";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -239,8 +242,58 @@ export default function CartsPage() {
     }
   };
 
+  const exportCartPdf = async () => {
+    if (activeItems.length === 0) {
+      toast.warning("Warenkorb ist leer.");
+      return;
+    }
+
+    try {
+      const standaloneLines = groupedCartItems.standalone.map((item) => ({
+        id: item.id,
+        productName: item.product.name,
+        sku: item.product.sku ?? item.productId,
+        quantity: decimalToNumber(item.quantity),
+        unit: item.product.baseUnit,
+        unitPrice: decimalToNumber(item.product.price),
+      }));
+      const partListGroups = groupedCartItems.partLists.map((group) => ({
+        id: group.id,
+        name: group.name,
+        items: group.items.map((item) => ({
+          id: item.id,
+          productName: item.product.name,
+          sku: item.product.sku ?? item.productId,
+          quantity: decimalToNumber(item.quantity),
+          unit: item.product.baseUnit,
+          unitPrice: decimalToNumber(item.product.price),
+        })),
+      }));
+      const positionCount =
+        standaloneLines.length + partListGroups.reduce((sum, group) => sum + group.items.length, 0);
+
+      const blob = await pdf(
+        <CartPdfDocument
+          lines={standaloneLines}
+          partListGroups={partListGroups}
+          generatedAt={new Date()}
+          total={cartTotal}
+          positionCount={positionCount}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `warenkorb-${new Date().toISOString().slice(0, 10)}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("PDF Export fehlgeschlagen.");
+    }
+  };
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <Dialog
         open={savedCartPreview !== null}
         onClose={() => setSavedCartPreview(null)}
@@ -421,6 +474,10 @@ export default function CartsPage() {
               <p className="text-xs text-slate-500">Artikel in dieser Browser-Sitzung</p>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <ShopExportPdfButton
+                onClick={() => void exportCartPdf()}
+                disabled={activeItems.length === 0}
+              />
               <button
                 onClick={onClearCartClick}
                 disabled={
@@ -439,8 +496,14 @@ export default function CartsPage() {
               </button>
               <Link
                 href="/checkout"
-                className="rounded-xl bg-sky-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-500"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary/90 px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
               >
+                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                    <path d="M5 12h14" />
+                    <path d="m13 6 6 6-6 6" />
+                  </svg>
+                </span>
                 Bestellen
               </Link>
             </div>

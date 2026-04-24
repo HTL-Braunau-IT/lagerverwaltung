@@ -4,15 +4,21 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { pdf } from "@react-pdf/renderer";
 
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
-import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
+import {
+  ShopAddToCartButton,
+  ShopExportPdfButton,
+  ShopQuantityStepper,
+} from "~/components/shop/shop-quantity-add-to-cart";
 import { PackageIcon } from "~/components/layout/icon-renders";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { PartListPdfDocument } from "~/components/shop/pdf/part-list-pdf-document";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -31,12 +37,6 @@ function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
   return 0;
-}
-
-function formatPrice(value: unknown) {
-  return new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR" }).format(
-    decimalToNumber(value),
-  );
 }
 
 function formatStock(value: unknown, baseUnit: string) {
@@ -215,6 +215,35 @@ export default function PartListDetailPage() {
   const selectedImageUrl = selectedPartList.imageUrl ?? "/pictures/placeholder.jpg";
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
 
+  const exportPartListPdf = async () => {
+    try {
+      const blob = await pdf(
+        <PartListPdfDocument
+          name={selectedPartList.name}
+          description={selectedPartList.description}
+          maxOrderable={selectedPartList.maxOrderable}
+          generatedAt={new Date()}
+          items={selectedPartList.items.map((item) => ({
+            id: item.id,
+            productName: item.product.name,
+            sku: item.product.sku,
+            quantity: decimalToNumber(item.quantity),
+            unit: item.product.baseUnit,
+            quantityOnHand: decimalToNumber(item.product.quantityOnHand),
+          }))}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `teileliste-${selectedPartList.name.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("PDF Export fehlgeschlagen.");
+    }
+  };
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
@@ -265,6 +294,7 @@ export default function PartListDetailPage() {
                   />
                 </div>
                 <div className="mt-3 flex w-full flex-nowrap items-center gap-2">
+                  <ShopExportPdfButton onClick={() => void exportPartListPdf()} />
                   <ShopQuantityStepper
                     value={quantityInput}
                     onChange={setQuantityInput}

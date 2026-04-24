@@ -97,3 +97,37 @@ export function ShopAddToCartButton({
     </Button>
   );
 }
+
+export function ShopExportPdfButton({
+  onClick,
+  disabled,
+  pending,
+  className,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  pending?: boolean;
+  className?: string;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className={[
+        "h-8 min-h-8 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none",
+        className ?? "",
+      ].join(" ")}
+    >
+      <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path d="M12 3v12" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M5 21h14" />
+        </svg>
+      </span>
+      {pending ? "Wird exportiert..." : "Als PDF exportieren"}
+    </Button>
+  );
+}
