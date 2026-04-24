@@ -335,9 +335,6 @@ export function Storefront() {
                         {product.name}
                       </h2>
                       <div className="flex items-start justify-between gap-3">
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          {product.description ?? "Keine Beschreibung."}
-                        </p>
                         <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
                           {formatPrice(product.price)} 
                         </p>

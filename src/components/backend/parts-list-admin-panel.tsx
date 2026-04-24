@@ -69,6 +69,51 @@ function formatBaseUnitLabel(baseUnit: string) {
   return BASE_UNIT_LABELS[baseUnit] ?? baseUnit;
 }
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object") {
+    const maybeData = (error as { data?: { zodError?: { fieldErrors?: Record<string, string[] | undefined> } } }).data;
+    const fieldErrors = maybeData?.zodError?.fieldErrors;
+    if (fieldErrors) {
+      const zodFieldMessage = Object.values(fieldErrors)
+        .flat()
+        .find((message): message is string => typeof message === "string" && message.trim().length > 0);
+      if (zodFieldMessage) return zodFieldMessage;
+    }
+  }
+
+  const rawMessage = error instanceof Error ? error.message.trim() : "";
+  if (!rawMessage) return fallback;
+
+  if (
+    (rawMessage.startsWith("[") && rawMessage.endsWith("]")) ||
+    (rawMessage.startsWith("{") && rawMessage.endsWith("}"))
+  ) {
+    try {
+      const parsed = JSON.parse(rawMessage) as unknown;
+      if (Array.isArray(parsed)) {
+        const firstArrayMessage = parsed.find(
+          (entry): entry is { message: string } =>
+            typeof entry === "object" &&
+            entry !== null &&
+            "message" in entry &&
+            typeof (entry as { message?: unknown }).message === "string" &&
+            (entry as { message: string }).message.trim().length > 0,
+        );
+        if (firstArrayMessage) return firstArrayMessage.message;
+      } else if (parsed && typeof parsed === "object" && "message" in parsed) {
+        const objectMessage = (parsed as { message?: unknown }).message;
+        if (typeof objectMessage === "string" && objectMessage.trim().length > 0) {
+          return objectMessage;
+        }
+      }
+    } catch {
+      // Keep fallback behavior below when payload is not valid JSON.
+    }
+  }
+
+  return rawMessage;
+}
+
 export function PartsListAdminPanel() {
   const utils = api.useUtils();
   const toast = useToast();
@@ -144,6 +189,9 @@ export function PartsListAdminPanel() {
         selectedId ? utils.partsList.backendById.invalidate({ id: selectedId }) : Promise.resolve(),
       ]);
       toast.success("Teileliste aktualisiert.");
+    },
+    onError: (error) => {
+      toast.error(extractErrorMessage(error, "Teileliste konnte nicht aktualisiert werden."));
     },
   });
   const deleteMutation = api.partsList.backendDelete.useMutation({

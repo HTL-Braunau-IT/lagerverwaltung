@@ -4,9 +4,17 @@ import { z } from "zod";
 import { adminProcedure, createTRPCRouter, publicProcedure, teacherProcedure } from "~/server/api/trpc";
 import { calculatePartListMaxOrderable } from "~/server/api/routers/utils/stock";
 
+const PART_LIST_ITEM_QUANTITY_MAX = 99_999_999_999.999;
+
 const partListItemInput = z.object({
   productId: z.string().min(1),
-  quantity: z.coerce.number().positive(),
+  quantity: z.coerce
+    .number()
+    .positive("Menge muss groesser als 0 sein.")
+    .max(
+      PART_LIST_ITEM_QUANTITY_MAX,
+      `Menge darf maximal ${PART_LIST_ITEM_QUANTITY_MAX.toLocaleString("de-AT")} sein.`,
+    ),
 });
 
 const backendByIdInput = z.object({

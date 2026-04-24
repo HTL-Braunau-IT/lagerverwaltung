@@ -56,6 +56,51 @@ function formatBaseUnitLabel(baseUnit: string) {
   return BASE_UNIT_LABELS[baseUnit] ?? baseUnit;
 }
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === "object") {
+    const maybeData = (error as { data?: { zodError?: { fieldErrors?: Record<string, string[] | undefined> } } }).data;
+    const fieldErrors = maybeData?.zodError?.fieldErrors;
+    if (fieldErrors) {
+      const zodFieldMessage = Object.values(fieldErrors)
+        .flat()
+        .find((message): message is string => typeof message === "string" && message.trim().length > 0);
+      if (zodFieldMessage) return zodFieldMessage;
+    }
+  }
+
+  const rawMessage = error instanceof Error ? error.message.trim() : "";
+  if (!rawMessage) return fallback;
+
+  if (
+    (rawMessage.startsWith("[") && rawMessage.endsWith("]")) ||
+    (rawMessage.startsWith("{") && rawMessage.endsWith("}"))
+  ) {
+    try {
+      const parsed = JSON.parse(rawMessage) as unknown;
+      if (Array.isArray(parsed)) {
+        const firstArrayMessage = parsed.find(
+          (entry): entry is { message: string } =>
+            typeof entry === "object" &&
+            entry !== null &&
+            "message" in entry &&
+            typeof (entry as { message?: unknown }).message === "string" &&
+            (entry as { message: string }).message.trim().length > 0,
+        );
+        if (firstArrayMessage) return firstArrayMessage.message;
+      } else if (parsed && typeof parsed === "object" && "message" in parsed) {
+        const objectMessage = (parsed as { message?: unknown }).message;
+        if (typeof objectMessage === "string" && objectMessage.trim().length > 0) {
+          return objectMessage;
+        }
+      }
+    } catch {
+      // Keep fallback behavior below when payload is not valid JSON.
+    }
+  }
+
+  return rawMessage;
+}
+
 export function NewPartsListPage() {
   const router = useRouter();
   const utils = api.useUtils();
@@ -568,7 +613,7 @@ export function NewPartsListPage() {
                   items: normalizedFormItems,
                 });
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Teileliste konnte nicht erstellt werden.");
+                toast.error(extractErrorMessage(error, "Teileliste konnte nicht erstellt werden."));
                 return;
               }
 
@@ -582,9 +627,10 @@ export function NewPartsListPage() {
                 }
               } catch (error) {
                 toast.error(
-                  error instanceof Error
-                    ? `Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden: ${error.message}`
-                    : "Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden.",
+                  `Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden: ${extractErrorMessage(
+                    error,
+                    "Unbekannter Fehler",
+                  )}`,
                 );
                 setUploadBusy(false);
                 return;
