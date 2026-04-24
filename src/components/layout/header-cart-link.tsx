@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { api } from "~/trpc/react";
@@ -40,6 +41,8 @@ function getOrCreateSessionId() {
 
 export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkProps) {
   const [sessionId, setSessionId] = useState("");
+  const pathname = usePathname();
+  const isActive = pathname === "/carts" || pathname.startsWith("/carts/");
 
   useEffect(() => {
     setSessionId(getOrCreateSessionId());
@@ -63,7 +66,10 @@ export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkPr
   return (
     <Link
       href="/carts"
-      className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
+      aria-current={isActive ? "page" : undefined}
+      className={`group inline-flex min-w-24 flex-col items-center gap-1 transition-colors ${
+        isActive ? "text-foreground" : `text-muted-foreground ${hoverClassName}`
+      }`}
     >
       <span className="relative flex h-10 w-10 items-center justify-center">
         {icon}
@@ -74,7 +80,7 @@ export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkPr
           {badgeLabel}
         </span>
       </span>
-      <span className="text-sm font-medium">{label}</span>
+      <span className={`text-sm font-medium ${isActive ? "underline underline-offset-4" : ""}`}>{label}</span>
     </Link>
   );
 }

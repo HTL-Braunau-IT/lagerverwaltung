@@ -6,6 +6,7 @@ import { Inter } from "next/font/google";
 
 import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-button";
 import { HeaderCartLink } from "~/components/layout/header-cart-link";
+import { HeaderNavLink } from "~/components/layout/header-nav-link";
 import { Search } from "~/components/layout/search";
 import {
   AdministrationIcon,
@@ -34,36 +35,6 @@ const roleLabels: Record<"ADMIN" | "TEACHER" | "STUDENT", string> = {
   TEACHER: "Lehrkraft",
   STUDENT: "Schueler",
 };
-
-type HeaderNavLinkProps = {
-  href: string;
-  label: string;
-  hoverClassName: string;
-  icon: React.ReactNode;
-  badgeLabel?: string;
-};
-
-function HeaderNavLink({ href, label, hoverClassName, icon, badgeLabel }: HeaderNavLinkProps) {
-  return (
-    <Link
-      href={href}
-      className={`group inline-flex min-w-24 flex-col items-center gap-1 text-muted-foreground transition-colors ${hoverClassName}`}
-    >
-      <span className="relative flex h-10 w-10 items-center justify-center">
-        {icon}
-        {badgeLabel ? (
-          <span
-            className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
-            aria-label={`${badgeLabel} offene Freigaben`}
-          >
-            {badgeLabel}
-          </span>
-        ) : null}
-      </span>
-      <span className="text-sm font-medium">{label}</span>
-    </Link>
-  );
-}
 
 export default async function RootLayout({
   children,
@@ -96,7 +67,7 @@ export default async function RootLayout({
           <TRPCReactProvider session={session}>
             <header
               data-app-shell-header="true"
-              className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-hidden glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
+              className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-visible glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
             >
               <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-2 px-6">
                 <Link
@@ -145,7 +116,7 @@ export default async function RootLayout({
                       icon={<AdministrationIcon />}
                     />
                   ) : null}
-                  <div className="relative">
+                  <div className="relative z-[60]">
                     <div className="group relative inline-flex min-w-24 flex-col items-center text-muted-foreground transition-colors hover:text-primary">
                       <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border text-xs font-semibold text-foreground">
                         {session.user.image ? (
@@ -162,7 +133,7 @@ export default async function RootLayout({
                         )}
                       </span>
                       <p className="pt-1 text-sm font-medium text-muted-foreground">Mein Benutzer</p>
-                      <div className="pointer-events-none absolute top-full w-72 rounded-lg border border-border bg-card p-3 opacity-0 shadow-md transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                      <div className="pointer-events-none absolute top-full z-[70] mt-1 w-72 rounded-lg border border-border bg-card p-3 opacity-0 shadow-md transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
                         <p className="text-sm font-medium text-center text-foreground">
                           {session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}
                         </p>
