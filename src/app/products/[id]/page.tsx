@@ -44,6 +44,24 @@ function formatBaseUnitLabel(baseUnit: string) {
   return baseUnit.toLowerCase().replace("2", "²");
 }
 
+function toMixedStorageRoomWarning(message: string | null | undefined): string | null {
+  if (!message) return null;
+  if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
+    const [, existingRoom, incomingRoom] = message.split(":");
+    if (existingRoom && incomingRoom) {
+      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufuegst.`;
+    }
+    return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
+  }
+  if (message === "MIXED_STORAGE_ROOMS") {
+    return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
+  }
+  if (message.startsWith("PRODUCT_WITHOUT_STORAGE_ROOM:")) {
+    return "Dieses Produkt ist keinem Lagerraum zugeordnet und kann nicht in den Warenkorb gelegt werden.";
+  }
+  return null;
+}
+
 /** Rot: Bestand ≤ Mindestbestand. Gelb: darüber bis einschließlich 110 % des Mindestbestands. Grün: über 110 %. */
 function stockAvailabilityDotClass(minimum: number, onHand: number): string {
   if (minimum <= 0) return "bg-muted-foreground/45";
@@ -206,7 +224,12 @@ export default function ProductDetailPage() {
       setShowCartModal(true);
     },
     onError: (error) => {
-      toast.warning(error.message);
+      const warning = toMixedStorageRoomWarning(error.message);
+      if (warning) {
+        toast.warning(warning);
+        return;
+      }
+      toast.error("Produkt konnte nicht in den Warenkorb gelegt werden.");
     },
   });
 
