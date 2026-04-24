@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -13,6 +14,7 @@ import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
+const ORDER_STATUSES: OrderStatus[] = ["OPEN", "PREPARING", "READY_FOR_PICKUP"];
 
 const statusConfig: Record<
   OrderStatus,
@@ -73,6 +75,10 @@ export function OrdersAdminPanel() {
 
   const [statusFilter, setStatusFilter] = useState<"ALL" | OrderStatus>("ALL");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [menuOpenOrderId, setMenuOpenOrderId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const menuButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
 
   const ordersQuery = api.order.backendList.useInfiniteQuery(
     {
@@ -109,6 +115,54 @@ export function OrdersAdminPanel() {
       ),
     [ordersQuery.data],
   );
+
+  const closeStatusMenu = () => {
+    setMenuOpenOrderId(null);
+    setMenuPosition(null);
+  };
+
+  const updateMenuPosition = (orderId: string | null) => {
+    if (!orderId) {
+      setMenuPosition(null);
+      return;
+    }
+    const trigger = menuButtonRefs.current.get(orderId);
+    if (!trigger) {
+      setMenuPosition(null);
+      return;
+    }
+    const rect = trigger.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 6,
+      left: Math.min(Math.max(8, rect.right - 220), window.innerWidth - 228),
+    });
+  };
+
+  useEffect(() => {
+    if (!menuOpenOrderId) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const targetNode = event.target;
+      if (!(targetNode instanceof Node)) return;
+      const trigger = menuButtonRefs.current.get(menuOpenOrderId);
+      if (trigger?.contains(targetNode)) return;
+      if (menuContainerRef.current?.contains(targetNode)) return;
+      closeStatusMenu();
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeStatusMenu();
+    };
+    const onLayoutChange = () => updateMenuPosition(menuOpenOrderId);
+    document.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("resize", onLayoutChange);
+    window.addEventListener("scroll", onLayoutChange, true);
+    window.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      window.removeEventListener("resize", onLayoutChange);
+      window.removeEventListener("scroll", onLayoutChange, true);
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [menuOpenOrderId]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -150,6 +204,7 @@ export function OrdersAdminPanel() {
               <TableUI.TableHead>Bestellnummer</TableUI.TableHead>
               <TableUI.TableHead>Lehrer</TableUI.TableHead>
               <TableUI.TableHead>Kostenstelle</TableUI.TableHead>
+              <TableUI.TableHead>Positionen</TableUI.TableHead>
               <TableUI.TableHead>Datum</TableUI.TableHead>
               <TableUI.TableHead>Status</TableUI.TableHead>
               <TableUI.TableHead className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
@@ -213,6 +268,7 @@ export function OrdersAdminPanel() {
                     <TableUI.TableCell>
                       {order.costCenter.code} - {order.costCenter.name}
                     </TableUI.TableCell>
+                    <TableUI.TableCell className="tabular-nums">{order.items.length}</TableUI.TableCell>
                     <TableUI.TableCell>{formatDate(order.createdAt)}</TableUI.TableCell>
                     <TableUI.TableCell>
                       <Badge
@@ -229,31 +285,70 @@ export function OrdersAdminPanel() {
                       </Badge>
                     </TableUI.TableCell>
                     <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
-                      {nextStatus && status.advanceActionLabel ? (
-                        <Button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            updateStatusMutation.mutate({
-                              orderId: order.id,
-                              nextStatus,
-                            });
-                          }}
-                          disabled={updateStatusMutation.isPending}
-                          variant={nextStatus === "READY_FOR_PICKUP" ? "solid" : "glass"}
-                          size="sm"
-                          aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
-                        >
-                          {status.advanceActionLabel}
-                        </Button>
-                      ) : (
-                        <span
-                          className="inline-flex w-full max-w-full justify-center rounded-full py-1.5 text-center text-xs text-muted-foreground"
-                          aria-label="Keine weitere Aktion"
-                        >
-                          —
-                        </span>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        {nextStatus && status.advanceActionLabel && order.status !== "READY_FOR_PICKUP" ? (
+                          <div className="inline-flex h-8 min-w-[13.5rem] items-center overflow-hidden rounded-md border border-border bg-card/80">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                updateStatusMutation.mutate({
+                                  orderId: order.id,
+                                  nextStatus,
+                                });
+                              }}
+                              disabled={updateStatusMutation.isPending}
+                              aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
+                              className="inline-flex h-full items-center px-3 text-xs text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {status.advanceActionLabel}
+                            </button>
+                            <span aria-hidden="true" className="text-xs text-border">
+                              |
+                            </span>
+                            <button
+                              type="button"
+                              ref={(node) => {
+                                if (node) {
+                                  menuButtonRefs.current.set(order.id, node);
+                                } else {
+                                  menuButtonRefs.current.delete(order.id);
+                                }
+                              }}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setMenuOpenOrderId((current) => {
+                                  const next = current === order.id ? null : order.id;
+                                  if (next) updateMenuPosition(next);
+                                  else setMenuPosition(null);
+                                  return next;
+                                });
+                              }}
+                              disabled={updateStatusMutation.isPending}
+                              aria-label="Status-Menü öffnen"
+                              className="inline-flex h-full items-center px-2 text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
+                                <path
+                                  d="M6 9l6 6 6-6"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className="inline-flex rounded-full py-1.5 text-center text-xs text-muted-foreground"
+                            aria-label="Keine weitere Aktion"
+                          >
+                            —
+                          </span>
+                        )}
+                      </div>
                     </TableUI.TableCell>
                   </TableUI.TableRow>
 
@@ -383,6 +478,48 @@ export function OrdersAdminPanel() {
           </Button>
         </div>
       ) : null}
+      {(() => {
+        const activeOrderStatus = sortedOrders.find((order) => order.id === menuOpenOrderId)?.status;
+        return menuOpenOrderId && menuPosition ? (
+          createPortal(
+            <div
+              ref={menuContainerRef}
+              className="fixed z-[120] w-[220px] rounded-md border border-border bg-card p-1 shadow-lg"
+              style={{
+                top: menuPosition.top,
+                left: menuPosition.left,
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              {ORDER_STATUSES.map((targetStatus) => {
+                const label = statusConfig[targetStatus].label;
+                const isCurrent = activeOrderStatus === targetStatus;
+                return (
+                  <button
+                    key={targetStatus}
+                    type="button"
+                    disabled={isCurrent || updateStatusMutation.isPending}
+                    className="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (isCurrent) return;
+                      updateStatusMutation.mutate({
+                        orderId: menuOpenOrderId,
+                        nextStatus: targetStatus,
+                      });
+                      closeStatusMenu();
+                    }}
+                  >
+                    <span>{label}</span>
+                    {isCurrent ? <span className="text-xs text-muted-foreground">Aktuell</span> : null}
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )
+        ) : null;
+      })()}
     </Card>
   );
 }

@@ -99,12 +99,13 @@ function ensureRequestIsPending(status: "PENDING" | "APPROVED" | "REJECTED") {
   });
 }
 
-const allowedTransitions: Record<"OPEN" | "PREPARING" | "READY_FOR_PICKUP", Array<"OPEN" | "PREPARING" | "READY_FOR_PICKUP">> =
-  {
-    OPEN: ["PREPARING"],
-    PREPARING: ["READY_FOR_PICKUP"],
-    READY_FOR_PICKUP: [],
-  };
+type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
+
+function isTransitionAllowed(currentStatus: OrderStatus, nextStatus: OrderStatus) {
+  if (currentStatus === nextStatus) return true;
+  if (currentStatus === "READY_FOR_PICKUP" && nextStatus !== "READY_FOR_PICKUP") return false;
+  return true;
+}
 
 export const orderRouter = createTRPCRouter({
   backendOpenCount: adminProcedure.query(async ({ ctx }) => {
@@ -340,11 +341,10 @@ export const orderRouter = createTRPCRouter({
           };
         }
 
-        const possibleNextStatuses = allowedTransitions[order.status];
-        if (!possibleNextStatuses.includes(input.nextStatus)) {
+        if (!isTransitionAllowed(order.status, input.nextStatus)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Ungueltiger Statuswechsel.",
+            message: "Rueckwechsel von 'Abholbereit' ist nicht erlaubt.",
           });
         }
 
