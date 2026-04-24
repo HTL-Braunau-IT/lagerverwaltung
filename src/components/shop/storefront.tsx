@@ -203,7 +203,7 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
+        <div className="grid auto-rows-max content-start gap-4 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
           {productQuery.isLoading && (
             <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -280,7 +280,7 @@ export function Storefront() {
                     router.push(`/products/${product.id}`);
                   }
                 }}
-                className="relative h-full cursor-pointer overflow-hidden rounded-2xl transition hover:border-primary/50"
+                className="relative cursor-pointer overflow-hidden rounded-2xl transition hover:border-primary/50"
               >
                 {storageRoomBadgeLetter && (
                   <div
@@ -300,7 +300,7 @@ export function Storefront() {
                   </div>
                 )}
 
-                <div className="flex h-full flex-col p-3">
+                <div className="flex flex-col p-3">
                   <div className="space-y-2">
                     <div className="overflow-hidden rounded-xl border border-border bg-muted">
                       <ProductImageCarousel images={product.images} productName={product.name} />
@@ -318,7 +318,7 @@ export function Storefront() {
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-2">
+                  <div className="pt-2">
                     <div
                       className="flex w-full items-start gap-2 bg-white"
                       onClick={(event) => event.stopPropagation()}
