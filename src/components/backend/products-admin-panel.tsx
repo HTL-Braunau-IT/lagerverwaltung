@@ -57,6 +57,7 @@ type ProductFormState = {
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const MAX_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
+const NEAR_MINIMUM_PAGE_SIZE = 100;
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
@@ -418,6 +419,7 @@ export function ProductsAdminPanel() {
   const [listLocationSearch, setListLocationSearch] = useState("");
   const [categoryListOpen, setCategoryListOpen] = useState(false);
   const [locationListOpen, setLocationListOpen] = useState(false);
+  const [nearMinimumVisibleCount, setNearMinimumVisibleCount] = useState(NEAR_MINIMUM_PAGE_SIZE);
   const categoryFilterRootRef = useRef<HTMLDivElement>(null);
   const locationFilterRootRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -490,14 +492,47 @@ export function ProductsAdminPanel() {
       ),
     [productsQuery.data],
   );
+  const nearMinimumProducts = useMemo(
+    () =>
+      sortedProducts.filter((product) => isNearMinimumStock(product.quantityOnHand, product.minimumQuantity)),
+    [sortedProducts],
+  );
+  const isPreparingNearMinimumList =
+    showNearMinimumOnly && (productsQuery.hasNextPage || productsQuery.isFetchingNextPage);
   const visibleProducts = useMemo(() => {
     if (!showNearMinimumOnly) return sortedProducts;
-    return sortedProducts.filter((product) =>
-      isNearMinimumStock(product.quantityOnHand, product.minimumQuantity),
-    );
-  }, [showNearMinimumOnly, sortedProducts]);
+    if (isPreparingNearMinimumList) return [];
+    return nearMinimumProducts.slice(0, nearMinimumVisibleCount);
+  }, [
+    showNearMinimumOnly,
+    sortedProducts,
+    isPreparingNearMinimumList,
+    nearMinimumProducts,
+    nearMinimumVisibleCount,
+  ]);
+  const hasMoreNearMinimumProducts =
+    showNearMinimumOnly &&
+    !isPreparingNearMinimumList &&
+    nearMinimumVisibleCount < nearMinimumProducts.length;
 
   useEffect(() => {
+    setNearMinimumVisibleCount(NEAR_MINIMUM_PAGE_SIZE);
+  }, [showNearMinimumOnly, searchTerm, categoryFilter, storageRoomFilter, storageLocationFilter]);
+
+  useEffect(() => {
+    if (!showNearMinimumOnly) return;
+    if (!productsQuery.hasNextPage) return;
+    if (productsQuery.isFetchingNextPage) return;
+    void productsQuery.fetchNextPage();
+  }, [
+    showNearMinimumOnly,
+    productsQuery.hasNextPage,
+    productsQuery.isFetchingNextPage,
+    productsQuery.fetchNextPage,
+  ]);
+
+  useEffect(() => {
+    if (showNearMinimumOnly) return;
     const target = loadMoreRef.current;
     if (!target) return;
     if (!productsQuery.hasNextPage) return;
@@ -515,6 +550,7 @@ export function ProductsAdminPanel() {
     observer.observe(target);
     return () => observer.disconnect();
   }, [
+    showNearMinimumOnly,
     productsQuery.fetchNextPage,
     productsQuery.hasNextPage,
     productsQuery.isFetchingNextPage,
@@ -1116,7 +1152,20 @@ export function ProductsAdminPanel() {
               </tr>
             ) : null}
 
-            {!productsQuery.isLoading && !productsQuery.error && visibleProducts.length === 0 ? (
+            {!productsQuery.isLoading &&
+            !productsQuery.error &&
+            isPreparingNearMinimumList ? (
+              <tr>
+                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                  Produkte fuer Mindestbestandsansicht werden vorbereitet...
+                </TableUI.TableCell>
+              </tr>
+            ) : null}
+
+            {!productsQuery.isLoading &&
+            !productsQuery.error &&
+            !isPreparingNearMinimumList &&
+            visibleProducts.length === 0 ? (
               <tr>
                 <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
                   Keine Produkte gefunden.
@@ -2213,12 +2262,25 @@ export function ProductsAdminPanel() {
           </TableUI.TableBody>
         </TableUI.Table>
       </div>
-      {productsQuery.hasNextPage ? (
+      {!showNearMinimumOnly && productsQuery.hasNextPage ? (
         <div className="mt-4">
           <div ref={loadMoreRef} className="h-px w-full" aria-hidden="true" />
           {productsQuery.isFetchingNextPage ? (
             <p className="mt-3 text-sm text-muted-foreground">Lade mehr...</p>
           ) : null}
+        </div>
+      ) : null}
+      {showNearMinimumOnly && hasMoreNearMinimumProducts ? (
+        <div className="mt-4 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setNearMinimumVisibleCount((current) => current + NEAR_MINIMUM_PAGE_SIZE);
+            }}
+          >
+            Mehr laden
+          </Button>
         </div>
       ) : null}
 
