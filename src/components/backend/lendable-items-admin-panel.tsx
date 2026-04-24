@@ -17,6 +17,7 @@ import {
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -90,6 +91,9 @@ export function LendableItemsAdminPanel() {
   const [formsById, setFormsById] = useState<Record<string, FormState>>({});
   const [imageCacheBustById, setImageCacheBustById] = useState<Record<string, number>>({});
   const [inlineImageUploadPendingItemId, setInlineImageUploadPendingItemId] = useState<string | null>(null);
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: expandedItemId,
+  });
 
   const roomsQuery = api.storageRoom.list.useQuery();
   const itemsQuery = api.lendableItem.backendList.useQuery({
@@ -510,11 +514,16 @@ export function LendableItemsAdminPanel() {
                             className="!w-36"
                             onClick={(event) => {
                               event.stopPropagation();
-                              deleteMutation.mutate({ id: item.id });
+                              if (deleteMutation.isPending) return;
+                              confirmOrRunDelete(() => deleteMutation.mutate({ id: item.id }));
                             }}
                             disabled={deleteMutation.isPending}
                           >
-                            Löschen
+                            {deleteMutation.isPending
+                              ? "Löscht..."
+                              : isConfirmingDelete
+                                ? "Nochmal klicken"
+                                : "Löschen"}
                           </Button>
                         </div>
                       </div>

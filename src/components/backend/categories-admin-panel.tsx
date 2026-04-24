@@ -13,6 +13,7 @@ import { PlusIcon } from "~/components/layout/icon-renders";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 type CategoryForm = {
   name: string;
@@ -42,6 +43,9 @@ export function CategoriesAdminPanel() {
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [form, setForm] = useState<CategoryForm>(createEmptyForm);
   const [baselineForm, setBaselineForm] = useState<CategoryForm>(createEmptyForm);
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: expandedCategoryId,
+  });
 
   const categoriesQuery = api.category.backendList.useInfiniteQuery(
     {
@@ -199,14 +203,19 @@ export function CategoriesAdminPanel() {
                               <Button
                                 type="button"
                                 variant="destructive"
+                                className="!w-36"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  deleteMutation.mutate({ id: category.id });
+                                  if (deleteMutation.isPending) return;
+                                  confirmOrRunDelete(() => deleteMutation.mutate({ id: category.id }));
                                 }}
                                 disabled={deleteMutation.isPending}
-                                size="lg"
                               >
-                                {deleteMutation.isPending ? "Loescht..." : "Kategorie löschen"}
+                                {deleteMutation.isPending
+                                  ? "Löscht..."
+                                  : isConfirmingDelete
+                                    ? "Nochmal klicken"
+                                    : "Löschen"}
                               </Button>
                             </div>
                           </div>

@@ -12,6 +12,7 @@ import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 type PartListItemForm = {
   productId: string;
@@ -74,7 +75,9 @@ export function PartsListAdminPanel() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [filesSectionCollapsed, setFilesSectionCollapsed] = useState(true);
-  const [confirmDeletePartList, setConfirmDeletePartList] = useState(false);
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: selectedId,
+  });
   const [activeProductRowKey, setActiveProductRowKey] = useState<string | null>(null);
   const [productSearchInput, setProductSearchInput] = useState("");
   const [productSearchTerm, setProductSearchTerm] = useState("");
@@ -88,16 +91,6 @@ export function PartsListAdminPanel() {
     }, 250);
     return () => window.clearTimeout(timeout);
   }, [productSearchInput]);
-
-  useEffect(() => {
-    if (!selectedId) setConfirmDeletePartList(false);
-  }, [selectedId]);
-
-  useEffect(() => {
-    if (!confirmDeletePartList) return;
-    const timeout = window.setTimeout(() => setConfirmDeletePartList(false), 3500);
-    return () => window.clearTimeout(timeout);
-  }, [confirmDeletePartList]);
 
   const listsQuery = api.partsList.backendList.useQuery({
     search: searchTerm || undefined,
@@ -121,7 +114,6 @@ export function PartsListAdminPanel() {
     setImageFile(null);
     setDocumentFile(null);
     setFilesSectionCollapsed(true);
-    setConfirmDeletePartList(false);
     const data = await utils.partsList.backendById.fetch({ id });
     const nextForm: PartListForm = {
       name: data?.name ?? "",
@@ -463,12 +455,7 @@ export function PartsListAdminPanel() {
 
   const onDeletePartListClick = () => {
     if (!selectedId || deleteMutation.isPending) return;
-    if (!confirmDeletePartList) {
-      setConfirmDeletePartList(true);
-      return;
-    }
-    setConfirmDeletePartList(false);
-    deleteMutation.mutate({ id: selectedId });
+    confirmOrRunDelete(() => deleteMutation.mutate({ id: selectedId }));
   };
 
   return (
@@ -625,7 +612,7 @@ export function PartsListAdminPanel() {
                                         }))
                                       }
                                       disabled={form.items.length <= 1}
-                                      className="!h-10 rounded-xs"
+                                      className="!h-10 rounded-sm"
                                     >
                                       <span className="inline-flex items-center gap-2">
                                         <WastebinIcon size={16} className="opacity-90" />
@@ -638,11 +625,12 @@ export function PartsListAdminPanel() {
                             </TableUI.SubtableBody>
                           </TableUI.Subtable>
 
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="mt-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="mt-4 justify-self-start">
                               <Button
                                 type="button"
                                 variant="glass"
+                                className="!w-48"
                                 onClick={() =>
                                   setForm((prev) => ({
                                     ...prev,
@@ -656,26 +644,27 @@ export function PartsListAdminPanel() {
                                 Produktzeile hinzufügen
                               </Button>
                             </div>
-                            <div className="mt-4 flex flex-col items-stretch gap-1">
-                              {hasDuplicateProducts ? (
-                                <p className="text-xs text-destructive">
-                                  Jedes Produkt darf nur einmal in der Teileliste vorkommen.
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="mt-4">
+                            <div className="mt-4 justify-self-end">
                               <Button
                                 type="button"
                                 variant="destructive"
                                 onClick={onDeletePartListClick}
                                 disabled={deleteMutation.isPending}
+                                className="!w-36"
                               >
                                 {deleteMutation.isPending
                                   ? "Löscht..."
-                                  : confirmDeletePartList
-                                    ? "Nochmal klicken zum Löschen"
-                                    : "Teileliste löschen"}
+                                  : isConfirmingDelete
+                                    ? "Nochmal klicken"
+                                    : "Löschen"}
                               </Button>
+                            </div>
+                            <div className="col-span-2 flex flex-col items-stretch gap-1">
+                              {hasDuplicateProducts ? (
+                                <p className="text-xs text-destructive">
+                                  Jedes Produkt darf nur einmal in der Teileliste vorkommen.
+                                </p>
+                              ) : null}
                             </div>
                           </div>
 

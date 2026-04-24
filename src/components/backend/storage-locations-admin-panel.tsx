@@ -13,6 +13,7 @@ import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 type StorageLocationForm = {
   name: string;
@@ -44,6 +45,9 @@ export function StorageLocationsAdminPanel() {
   const [expandedLocationId, setExpandedLocationId] = useState<string | null>(null);
   const [locationForm, setLocationForm] = useState<StorageLocationForm>(createEmptyLocationForm);
   const [baselineForm, setBaselineForm] = useState<StorageLocationForm>(createEmptyLocationForm);
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: expandedLocationId,
+  });
 
   const roomsQuery = api.storageRoom.backendList.useInfiniteQuery(
     {
@@ -304,13 +308,19 @@ export function StorageLocationsAdminPanel() {
                             <Button
                               type="button"
                               variant="destructive"
+                              className="!w-36"
                               onClick={(event) => {
                                 event.stopPropagation();
-                                deleteLocationMutation.mutate({ id: location.id });
+                                if (deleteLocationMutation.isPending) return;
+                                confirmOrRunDelete(() => deleteLocationMutation.mutate({ id: location.id }));
                               }}
                               disabled={deleteLocationMutation.isPending}
                             >
-                              {deleteLocationMutation.isPending ? "Löscht..." : "Lagerplatz löschen"}
+                              {deleteLocationMutation.isPending
+                                ? "Löscht..."
+                                : isConfirmingDelete
+                                  ? "Nochmal klicken"
+                                  : "Löschen"}
                             </Button>
                           </div>
                         </div>

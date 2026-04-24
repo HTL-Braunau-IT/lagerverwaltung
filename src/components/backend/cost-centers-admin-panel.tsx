@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -12,6 +12,7 @@ import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 type CostCenterForm = {
   name: string;
@@ -41,7 +42,9 @@ export function CostCentersAdminPanel() {
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
   const [baselineForm, setBaselineForm] = useState<CostCenterForm>(createEmptyForm);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: expandedCostCenterId,
+  });
 
   const costCentersQuery = api.costCenter.backendList.useInfiniteQuery(
     {
@@ -96,16 +99,6 @@ export function CostCentersAdminPanel() {
     const normalize = (f: CostCenterForm) => ({ name: f.name.trim() });
     return isDirty(form, baselineForm, normalize);
   }, [baselineForm, expandedCostCenterId, form]);
-
-  useEffect(() => {
-    if (!expandedCostCenterId) setConfirmDelete(false);
-  }, [expandedCostCenterId]);
-
-  useEffect(() => {
-    if (!confirmDelete) return;
-    const timeout = window.setTimeout(() => setConfirmDelete(false), 3500);
-    return () => window.clearTimeout(timeout);
-  }, [confirmDelete]);
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -208,24 +201,19 @@ export function CostCentersAdminPanel() {
                           <Button
                             type="button"
                             variant="destructive"
+                            className="!w-36 col-span-2 justify-self-end"
                             onClick={(event) => {
                               event.stopPropagation();
                               if (deleteMutation.isPending) return;
-                              if (!confirmDelete) {
-                                setConfirmDelete(true);
-                                return;
-                              }
-                              setConfirmDelete(false);
-                              deleteMutation.mutate({ id: center.id });
+                              confirmOrRunDelete(() => deleteMutation.mutate({ id: center.id }));
                             }}
                             disabled={deleteMutation.isPending}
-                            size="lg"
                           >
                             {deleteMutation.isPending
                               ? "Löscht..."
-                              : confirmDelete
-                                ? "Nochmal klicken zum Löschen"
-                                : "Kostenstelle löschen"}
+                              : isConfirmingDelete
+                                ? "Nochmal klicken"
+                                : "Löschen"}
                           </Button>  
 
                         </div>

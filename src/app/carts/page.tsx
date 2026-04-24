@@ -426,7 +426,7 @@ export default function CartsPage() {
                 {isClearingCart
                   ? "Wird gelöscht..."
                   : confirmClearCart
-                    ? "Nochmal klicken zum Löschen"
+                    ? "Nochmal klicken"
                     : "Alle Produkte löschen"}
               </button>
               <Link
