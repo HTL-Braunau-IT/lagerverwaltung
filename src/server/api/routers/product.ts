@@ -168,55 +168,67 @@ export const productRouter = createTRPCRouter({
     }
     const where =
       andFilters.length > 0 ? { AND: [{ isVisible: true }, ...andFilters] } : { isVisible: true };
-
-    const items = await ctx.db.product.findMany({
-      where,
-      take: input.limit + 1,
-      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-      orderBy: [{ name: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        description: true,
-        price: true,
-        quantityOnHand: true,
-        minimumQuantity: true,
-        unitKind: true,
-        baseUnit: true,
-        unitStep: true,
-        isVisible: true,
-        categoryId: true,
-        storageLocationId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
+    const availableWhere = { AND: [where, { quantityOnHand: { gt: 0 } }] };
+    const [items, filteredAvailableCount, totalAvailableCount] = await Promise.all([
+      ctx.db.product.findMany({
+        where,
+        take: input.limit + 1,
+        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          description: true,
+          price: true,
+          quantityOnHand: true,
+          minimumQuantity: true,
+          unitKind: true,
+          baseUnit: true,
+          unitStep: true,
+          isVisible: true,
+          categoryId: true,
+          storageLocationId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
-        },
-        storageLocation: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            storageRoom: {
-              select: {
-                id: true,
-                name: true,
+          storageLocation: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              storageRoom: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
-        },
-        images: {
-          orderBy: { sortOrder: "asc" },
-          select: {
-            id: true,
-            url: true,
-            altText: true,
+          images: {
+            orderBy: { sortOrder: "asc" },
+            select: {
+              id: true,
+              url: true,
+              altText: true,
+            },
           },
         },
-      },
-    });
+      }),
+      input.cursor
+        ? Promise.resolve<number | undefined>(undefined)
+        : ctx.db.product.count({
+            where: availableWhere,
+          }),
+      input.cursor
+        ? Promise.resolve<number | undefined>(undefined)
+        : ctx.db.product.count({
+            where: { AND: [{ isVisible: true }, { quantityOnHand: { gt: 0 } }] },
+          }),
+    ]);
 
     let nextCursor: string | undefined;
     if (items.length > input.limit) {
@@ -224,7 +236,7 @@ export const productRouter = createTRPCRouter({
       nextCursor = next?.id;
     }
 
-    return { items, nextCursor };
+    return { items, nextCursor, filteredAvailableCount, totalAvailableCount };
   }),
 
   byId: publicProcedure

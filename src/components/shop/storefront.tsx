@@ -166,6 +166,9 @@ export function Storefront() {
     [productQuery.data?.pages],
   );
   const hasProducts = products.length > 0;
+  const firstPage = productQuery.data?.pages[0];
+  const filteredProductCount = firstPage?.filteredAvailableCount ?? products.length;
+  const totalProductCount = firstPage?.totalAvailableCount ?? filteredProductCount;
   const hasActiveFilters =
     Boolean(searchTerm) || Boolean(selectedCategoryId) || Boolean(selectedStorageLocationId);
 
@@ -194,8 +197,12 @@ export function Storefront() {
   ]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
+      <div className="mt-0 inline-flex w-fit self-start rounded-lg border border-border/70 bg-card/70 px-3 py-1.5 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">Produkte: </span>{" "}
+        {productQuery.isLoading ? "..." : `${filteredProductCount} von ${totalProductCount}`}
+      </div>
+      <section className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
