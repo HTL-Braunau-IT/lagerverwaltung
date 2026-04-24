@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 
 type ProductImage = {
   id: string;
@@ -200,6 +201,9 @@ export function ProductImageGallery({
 }) {
   const [paletteByImageId, setPaletteByImageId] = useState<Record<string, EdgePalette>>({});
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" });
+  const hasMultipleImages = images.length > 1;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -209,25 +213,87 @@ export function ProductImageGallery({
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+    emblaApi?.scrollTo(0, true);
+  }, [images, emblaApi]);
+
   return (
     <div className="space-y-3">
-      {images.map((image) => {
-        const palette = paletteByImageId[image.id];
-        return (
-          <GalleryImageFrame
-            key={image.id}
-            image={image}
-            productName={productName}
-            palette={palette}
-            reduceMotion={reduceMotion}
-            onPaletteFromImage={(imageId, nextPalette) => {
-              setPaletteByImageId((previous) =>
-                previous[imageId] ? previous : { ...previous, [imageId]: nextPalette },
+      <div className="relative">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {images.map((image) => {
+              const palette = paletteByImageId[image.id];
+              return (
+                <div className="min-w-0 shrink-0 grow-0 basis-full" key={image.id}>
+                  <GalleryImageFrame
+                    image={image}
+                    productName={productName}
+                    palette={palette}
+                    reduceMotion={reduceMotion}
+                    onPaletteFromImage={(imageId, nextPalette) => {
+                      setPaletteByImageId((previous) =>
+                        previous[imageId] ? previous : { ...previous, [imageId]: nextPalette },
+                      );
+                    }}
+                  />
+                </div>
               );
-            }}
-          />
-        );
-      })}
+            })}
+          </div>
+        </div>
+
+        {hasMultipleImages && (
+          <>
+            <button
+              type="button"
+              onClick={() => emblaApi?.scrollPrev()}
+              disabled={!(emblaApi?.canScrollPrev() ?? false)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Vorheriges Bild"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => emblaApi?.scrollNext()}
+              disabled={!(emblaApi?.canScrollNext() ?? false)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Naechstes Bild"
+            >
+              ›
+            </button>
+          </>
+        )}
+      </div>
+
+      {hasMultipleImages && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {images.map((image, index) => (
+            <button
+              type="button"
+              key={`${image.id}-dot`}
+              onClick={() => emblaApi?.scrollTo(index)}
+              className={[
+                "h-2 w-2 rounded-full transition-colors",
+                index === selectedIndex ? "bg-foreground" : "bg-muted-foreground/40",
+              ].join(" ")}
+              aria-label={`Bild ${index + 1} anzeigen`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

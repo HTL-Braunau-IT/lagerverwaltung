@@ -10,6 +10,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
+import { ProductImageCarousel } from "~/components/shop/product-image-carousel";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
@@ -91,7 +92,6 @@ export function Storefront() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [lastAddedProductName, setLastAddedProductName] = useState<string | null>(null);
   const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
-  const [failedProductImages, setFailedProductImages] = useState<Set<string>>(new Set());
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const canSeePartListProductCount =
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
@@ -258,9 +258,6 @@ export function Storefront() {
           )}
 
           {products.map((product) => {
-            const previewImage = product.images[0];
-            const hasImageError = failedProductImages.has(product.id);
-            const showImagePlaceholder = !previewImage?.url || hasImageError;
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
             const unitStep = getQuantityStepForBaseUnit(product.baseUnit);
             const stockOnHand = decimalToNumber(product.quantityOnHand);
@@ -306,29 +303,7 @@ export function Storefront() {
                 <div className="flex h-full flex-col p-3">
                   <div className="space-y-2">
                     <div className="overflow-hidden rounded-xl border border-border bg-muted">
-                      {showImagePlaceholder ? (
-                        <div
-                          className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
-                          aria-label={`${product.name} Platzhalterbild`}
-                        >
-                          Kein Produktbild
-                        </div>
-                      ) : (
-                        <img
-                          src={previewImage.url}
-                          alt={previewImage.altText ?? `${product.name} Produktbild`}
-                          className="h-40 w-full object-cover"
-                          loading="lazy"
-                          onError={() => {
-                            setFailedProductImages((prev) => {
-                              if (prev.has(product.id)) return prev;
-                              const next = new Set(prev);
-                              next.add(product.id);
-                              return next;
-                            });
-                          }}
-                        />
-                      )}
+                      <ProductImageCarousel images={product.images} productName={product.name} />
                     </div>
 
                     <div className="grid grid-cols-1 gap-1.5">

@@ -209,7 +209,6 @@ export const productRouter = createTRPCRouter({
         },
         images: {
           orderBy: { sortOrder: "asc" },
-          take: 1,
           select: {
             id: true,
             url: true,
