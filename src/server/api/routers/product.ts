@@ -5,6 +5,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { adminProcedure, createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
 import {
   assertProductsAccessibleByRoomAccess,
   assertStorageRoomAllowed,
@@ -73,7 +74,7 @@ const updateProductInput = z.object({
   price: z.coerce.number().min(0),
   minimumQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
-  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "M2", "G", "KG", "ML", "L"]),
+  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "MM2", "M2", "G", "KG", "ML", "L"]),
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean(),
   categoryIds: z.array(z.string().min(1)).default([]),
@@ -94,7 +95,7 @@ const createProductInput = z.object({
   minimumQuantity: z.coerce.number().min(0),
   startingQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
-  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "M2", "G", "KG", "ML", "L"]),
+  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "MM2", "M2", "G", "KG", "ML", "L"]),
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean().default(true),
   categoryIds: z.array(z.string().min(1)).default([]),
@@ -111,6 +112,35 @@ const backendBookStockInput = z.object({
   supplier: z.string().trim().min(1),
   note: z.string().trim().nullable(),
 });
+
+function assertQuantityOnStep(quantity: number, baseUnit: string, label: string) {
+  const step = getQuantityStepForBaseUnit(baseUnit);
+  if (!isQuantityAlignedToStep(quantity, step)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${label} muss in ${step.toLocaleString("de-AT")}er-Schritten angegeben werden.`,
+    });
+  }
+}
+
+function assertProductQuantitiesAreValid(input: {
+  baseUnit: string;
+  unitStep: number;
+  minimumQuantity: number;
+  startingQuantity?: number;
+}) {
+  const expectedStep = getQuantityStepForBaseUnit(input.baseUnit);
+  if (input.unitStep !== expectedStep) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Schrittweite fuer ${input.baseUnit} muss ${expectedStep.toLocaleString("de-AT")} sein.`,
+    });
+  }
+  assertQuantityOnStep(input.minimumQuantity, input.baseUnit, "Mindestbestand");
+  if (input.startingQuantity !== undefined) {
+    assertQuantityOnStep(input.startingQuantity, input.baseUnit, "Startbestand");
+  }
+}
 
 export const productRouter = createTRPCRouter({
   list: publicProcedure.input(listProductsInput).query(async ({ ctx, input }) => {
@@ -465,6 +495,11 @@ export const productRouter = createTRPCRouter({
   backendUpdate: adminProcedure
     .input(updateProductInput)
     .mutation(async ({ ctx, input }) => {
+      assertProductQuantitiesAreValid({
+        baseUnit: input.baseUnit,
+        unitStep: input.unitStep,
+        minimumQuantity: input.minimumQuantity,
+      });
       const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
       await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.id]);
 
@@ -551,6 +586,12 @@ export const productRouter = createTRPCRouter({
   backendCreate: adminProcedure
     .input(createProductInput)
     .mutation(async ({ ctx, input }) => {
+      assertProductQuantitiesAreValid({
+        baseUnit: input.baseUnit,
+        unitStep: input.unitStep,
+        minimumQuantity: input.minimumQuantity,
+        startingQuantity: input.startingQuantity,
+      });
       const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
 
       if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
@@ -711,6 +752,18 @@ export const productRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       const access = await getStorageRoomAccessForUser(ctx.db, userId);
       await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.productId]);
+
+      const product = await ctx.db.product.findUnique({
+        where: { id: input.productId },
+        select: { id: true, baseUnit: true },
+      });
+      if (!product) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Produkt wurde nicht gefunden.",
+        });
+      }
+      assertQuantityOnStep(input.quantityDelta, product.baseUnit, "Menge");
 
       return ctx.db.$transaction(async (tx) => {
         await tx.product.update({

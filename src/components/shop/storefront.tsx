@@ -11,6 +11,7 @@ import { Card } from "~/components/ui/card";
 import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -261,7 +262,7 @@ export function Storefront() {
             const hasImageError = failedProductImages.has(product.id);
             const showImagePlaceholder = !previewImage?.url || hasImageError;
             const quantityInput = quantitiesByProduct[product.id] ?? "1";
-            const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
+            const unitStep = getQuantityStepForBaseUnit(product.baseUnit);
             const stockOnHand = decimalToNumber(product.quantityOnHand);
             const parsedQuantity = Number(quantityInput);
             const selectedQuantity =

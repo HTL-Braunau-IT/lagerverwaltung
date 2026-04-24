@@ -15,6 +15,7 @@ import * as TableUI from "~/components/ui/table";
 import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
+import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -30,6 +31,7 @@ const baseUnits = [
   { value: "CM", label: "cm" },
   { value: "M", label: "m" },
   { value: "CM2", label: "cm2" },
+  { value: "MM2", label: "mm2" },
   { value: "M2", label: "m2" },
   { value: "G", label: "g" },
   { value: "KG", label: "kg" },
@@ -1246,6 +1248,7 @@ export function ProductsAdminPanel() {
                             return quantity < minimum;
                           })();
                           const form = formsById[product.id] ?? createInitialForm(product);
+                          const quantityStep = getQuantityStepForBaseUnit(form.baseUnit);
                           const pendingEditImage = editPendingImageById[product.id];
                           const previewImage = product.images[0];
                           const locationText = product.storageLocation
@@ -1482,7 +1485,7 @@ export function ProductsAdminPanel() {
                                         <NumberStepper
                                           value={form.minimumQuantity}
                                           min={0}
-                                          step={0.001}
+                                          step={quantityStep}
                                           onChange={(value) =>
                                             setFormsById((current) => ({
                                               ...current,
@@ -1500,8 +1503,8 @@ export function ProductsAdminPanel() {
                                       <div className="mt-1 flex justify-center">
                                         <NumberStepper
                                           value={form.unitStep}
-                                          min={0.001}
-                                          step={0.001}
+                                          min={quantityStep}
+                                          step={quantityStep}
                                           onChange={(value) =>
                                             setFormsById((current) => ({
                                               ...current,
@@ -1565,7 +1568,12 @@ export function ProductsAdminPanel() {
                                               ...current,
                                               [product.id]: {
                                                 ...form,
-                                                baseUnit: event.target.value as ProductFormState["baseUnit"],
+                                              baseUnit: event.target.value as ProductFormState["baseUnit"],
+                                              unitStep: String(
+                                                getQuantityStepForBaseUnit(
+                                                  event.target.value as ProductFormState["baseUnit"],
+                                                ),
+                                              ),
                                               },
                                             }))
                                           }

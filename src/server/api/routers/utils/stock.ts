@@ -76,7 +76,7 @@ export async function assertSufficientStock(
     if (required.requiredQuantity > available) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: `INSUFFICIENT_STOCK:${product.id}:${Math.floor(available)}`,
+        message: `INSUFFICIENT_STOCK:${product.id}:${available}`,
       });
     }
   }

@@ -10,6 +10,7 @@ import {
   calculatePartListMaxOrderable,
 } from "~/server/api/routers/utils/stock";
 import { resolveSingleStorageRoomForProductIds } from "~/server/api/routers/utils/storage-access";
+import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
 
 const sessionInput = z.object({
   sessionId: z.string().min(1).max(128),
@@ -175,6 +176,16 @@ function requireWorkerNoteForStudent(role: string, workerNote: string | undefine
   return normalized;
 }
 
+function assertCartQuantityStep(quantity: number, baseUnit: string) {
+  const step = getQuantityStepForBaseUnit(baseUnit);
+  if (!isQuantityAlignedToStep(quantity, step)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Menge muss in ${step.toLocaleString("de-AT")}er-Schritten fuer ${baseUnit} angegeben werden.`,
+    });
+  }
+}
+
 export const cartRouter = createTRPCRouter({
   listTeachersForCheckout: protectedProcedure.query(async ({ ctx }) => {
     if (!["STUDENT", "ADMIN"].includes(ctx.session.user.role)) {
@@ -275,6 +286,18 @@ export const cartRouter = createTRPCRouter({
           resolveCurrentCartStorageRoom(tx, cart.id),
           resolveProductStorageRoom(tx, input.productId),
         ]);
+
+        const product = await tx.product.findUnique({
+          where: { id: input.productId },
+          select: { id: true, baseUnit: true },
+        });
+        if (!product) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Produkt wurde nicht gefunden.",
+          });
+        }
+        assertCartQuantityStep(input.quantity, product.baseUnit);
 
         if (currentCartRoom && currentCartRoom.id !== incomingProductRoom.id) {
           throw createMixedStorageRoomsError(currentCartRoom.name, incomingProductRoom.name);
@@ -468,6 +491,20 @@ export const cartRouter = createTRPCRouter({
             quantity: true,
           },
         });
+
+        if (input.quantity > 0) {
+          const product = await tx.product.findUnique({
+            where: { id: input.line.productId },
+            select: { id: true, baseUnit: true },
+          });
+          if (!product) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Produkt wurde nicht gefunden.",
+            });
+          }
+          assertCartQuantityStep(input.quantity, product.baseUnit);
+        }
 
         const nextItems: Array<{ productId: string; quantity: unknown }> = cartItems
           .filter(

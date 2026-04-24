@@ -1,0 +1,1 @@
+ALTER TYPE "BaseUnit" ADD VALUE 'MM2';

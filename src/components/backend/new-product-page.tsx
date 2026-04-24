@@ -9,6 +9,7 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
+import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -24,6 +25,7 @@ const baseUnits = [
   { value: "CM", label: "cm" },
   { value: "M", label: "m" },
   { value: "CM2", label: "cm2" },
+  { value: "MM2", label: "mm2" },
   { value: "M2", label: "m2" },
   { value: "G", label: "g" },
   { value: "KG", label: "kg" },
@@ -115,6 +117,8 @@ export function NewProductPage() {
     return selectedRoomId ? all.filter((loc) => loc.storageRoomId === selectedRoomId) : all;
   }, [selectedRoomId, storageLocationsQuery.data]);
 
+  const quantityStep = useMemo(() => getQuantityStepForBaseUnit(form.baseUnit), [form.baseUnit]);
+
   const canCreate = useMemo(() => {
     const price = parseMoneyInput(form.price);
     return (
@@ -124,13 +128,15 @@ export function NewProductPage() {
       price >= 0 &&
       Number.isFinite(Number(form.minimumQuantity)) &&
       Number(form.minimumQuantity) >= 0 &&
+      isQuantityAlignedToStep(Number(form.minimumQuantity), quantityStep) &&
       Number.isFinite(Number(form.startingQuantity)) &&
       Number(form.startingQuantity) >= 0 &&
+      isQuantityAlignedToStep(Number(form.startingQuantity), quantityStep) &&
       Number.isFinite(Number(form.unitStep)) &&
-      Number(form.unitStep) > 0 &&
+      Number(form.unitStep) === quantityStep &&
       !uploadPending
     );
-  }, [form, uploadPending]);
+  }, [form, quantityStep, uploadPending]);
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
     if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
@@ -238,7 +244,7 @@ export function NewProductPage() {
           <Input
             type="number"
             min={0}
-            step={0.001}
+            step={quantityStep}
             value={form.minimumQuantity}
             onChange={(e) => setForm((c) => ({ ...c, minimumQuantity: e.target.value }))}
             className="mt-1 h-10 rounded-xl"
@@ -250,7 +256,7 @@ export function NewProductPage() {
           <Input
             type="number"
             min={0}
-            step={0.001}
+            step={quantityStep}
             value={form.startingQuantity}
             onChange={(e) => setForm((c) => ({ ...c, startingQuantity: e.target.value }))}
             className="mt-1 h-10 rounded-xl"
@@ -261,8 +267,8 @@ export function NewProductPage() {
           Schrittweite
           <Input
             type="number"
-            min={0.001}
-            step={0.001}
+            min={quantityStep}
+            step={quantityStep}
             value={form.unitStep}
             onChange={(e) => setForm((c) => ({ ...c, unitStep: e.target.value }))}
             className="mt-1 h-10 rounded-xl"
@@ -288,7 +294,13 @@ export function NewProductPage() {
           Basiseinheit
           <select
             value={form.baseUnit}
-            onChange={(e) => setForm((c) => ({ ...c, baseUnit: e.target.value as ProductCreateFormState["baseUnit"] }))}
+            onChange={(e) =>
+              setForm((c) => {
+                const nextBaseUnit = e.target.value as ProductCreateFormState["baseUnit"];
+                const nextStep = getQuantityStepForBaseUnit(nextBaseUnit);
+                return { ...c, baseUnit: nextBaseUnit, unitStep: String(nextStep) };
+              })
+            }
             disabled={uploadPending}
             className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none text-center"
           >

@@ -23,6 +23,7 @@ enum BaseUnit {
     CM
     M
     CM2
+    MM2
     M2
     G
     KG

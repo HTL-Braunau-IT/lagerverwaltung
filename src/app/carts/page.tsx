@@ -8,6 +8,7 @@ import { Dialog } from "~/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
+import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -213,6 +214,13 @@ export default function CartsPage() {
         result.items.find((item) => item.sku.toLowerCase() === sku.toLowerCase()) ?? result.items[0];
       if (!match) {
         toast.error("Kein Produkt mit dieser SKU gefunden.");
+        return;
+      }
+      const quantityStep = getQuantityStepForBaseUnit(match.baseUnit);
+      if (!isQuantityAlignedToStep(quantity, quantityStep)) {
+        toast.error(
+          `Fuer ${match.baseUnit.toLowerCase()} ist nur eine Menge in ${quantityStep.toLocaleString("de-AT")}er-Schritten erlaubt.`,
+        );
         return;
       }
 
@@ -458,8 +466,8 @@ export default function CartsPage() {
                   value={expressQuantity}
                   onChange={(e) => setExpressQuantity(e.target.value)}
                   type="number"
-                  step="1"
-                  min="1"
+                  step="0.001"
+                  min="0.001"
                   className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
                 />
               </label>
@@ -512,6 +520,10 @@ export default function CartsPage() {
                         </div>
                         <div className="flex flex-col items-center">
                           <div className="flex items-start gap-1">
+                            {(() => {
+                              const itemStep = getQuantityStepForBaseUnit(item.product.baseUnit);
+                              return (
+                                <>
                             <button
                               onClick={() =>
                                 setQuantityMutation.mutate({
@@ -520,7 +532,7 @@ export default function CartsPage() {
                                     productId: item.productId,
                                     sourcePartListId: item.sourcePartListId,
                                   },
-                                  quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                                  quantity: Math.max(0, decimalToNumber(item.quantity) - itemStep),
                                 })
                               }
                               className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
@@ -538,13 +550,16 @@ export default function CartsPage() {
                                     productId: item.productId,
                                     sourcePartListId: item.sourcePartListId,
                                   },
-                                  quantity: decimalToNumber(item.quantity) + 1,
+                                  quantity: decimalToNumber(item.quantity) + itemStep,
                                 })
                               }
                               className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
                             >
                               +
                             </button>
+                                </>
+                              );
+                            })()}
                           </div>
                           <p className="text-center text-[11px] text-slate-500">
                             Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
@@ -593,6 +608,10 @@ export default function CartsPage() {
                   </div>
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1">
+                      {(() => {
+                        const itemStep = getQuantityStepForBaseUnit(item.product.baseUnit);
+                        return (
+                          <>
                       <button
                         onClick={() =>
                           setQuantityMutation.mutate({
@@ -601,7 +620,7 @@ export default function CartsPage() {
                               productId: item.productId,
                               sourcePartListId: item.sourcePartListId,
                             },
-                            quantity: Math.max(0, decimalToNumber(item.quantity) - 1),
+                            quantity: Math.max(0, decimalToNumber(item.quantity) - itemStep),
                           })
                         }
                         className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
@@ -619,13 +638,16 @@ export default function CartsPage() {
                               productId: item.productId,
                               sourcePartListId: item.sourcePartListId,
                             },
-                            quantity: decimalToNumber(item.quantity) + 1,
+                            quantity: decimalToNumber(item.quantity) + itemStep,
                           })
                         }
                         className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
                       >
                         +
                       </button>
+                          </>
+                        );
+                      })()}
                     </div>
                     <p className="text-center text-[11px] text-slate-500">
                       Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}

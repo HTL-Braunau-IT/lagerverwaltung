@@ -14,6 +14,7 @@ import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 import { CheckIcon, ClipboardCopyIcon, PackageIcon } from "~/components/layout/icon-renders";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
+import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -246,7 +247,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!productQuery.data) return;
-    const step = Math.max(decimalToNumber(productQuery.data.unitStep), 0.001);
+    const step = getQuantityStepForBaseUnit(productQuery.data.baseUnit);
     // Avoid synchronous setState directly in the effect body (lint rule).
     queueMicrotask(() => {
       setQuantityInput(step.toString());
@@ -304,7 +305,7 @@ export default function ProductDetailPage() {
   const product = productQuery.data;
   const isAreaProduct = product.unitKind === "AREA";
   const stockOnHand = decimalToNumber(product.quantityOnHand);
-  const unitStep = Math.max(decimalToNumber(product.unitStep), 0.001);
+  const unitStep = getQuantityStepForBaseUnit(product.baseUnit);
   const parsedQuantity = Number(quantityInput);
   const areaWidth = Number(areaWidthInput);
   const areaHeight = Number(areaHeightInput);
