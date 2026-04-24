@@ -16,6 +16,7 @@ type PartListItemForm = {
   productLabel: string;
   quantity: string;
   displayUnit: string;
+  storageRoomId: string | null;
 };
 
 type PartListForm = {
@@ -29,6 +30,7 @@ const EMPTY_PART_LIST_ITEM: PartListItemForm = {
   productLabel: "",
   quantity: "1",
   displayUnit: "-",
+  storageRoomId: null,
 };
 
 const BASE_UNIT_LABELS: Record<string, string> = {
@@ -151,6 +153,7 @@ export function NewPartsListPage() {
         id: product.id,
         label: `${product.sku} - ${product.name}`,
         baseUnit: product.baseUnit,
+        storageRoomId: product.storageLocation?.storageRoomId ?? null,
       })),
     [productsQuery.data],
   );
@@ -169,6 +172,23 @@ export function NewPartsListPage() {
   }, [form.items]);
 
   const hasDuplicateProducts = duplicateProductIds.size > 0;
+  const storageRoomValidationMessage = useMemo(() => {
+    const selectedItems = form.items.filter((item) => item.productId.length > 0);
+    if (selectedItems.length === 0) return null;
+    if (selectedItems.some((item) => !item.storageRoomId)) {
+      return "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.";
+    }
+
+    const distinctStorageRooms = new Set(
+      selectedItems
+        .map((item) => item.storageRoomId)
+        .filter((storageRoomId): storageRoomId is string => Boolean(storageRoomId)),
+    );
+    if (distinctStorageRooms.size > 1) {
+      return "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.";
+    }
+    return null;
+  }, [form.items]);
   const normalizedFormItems = form.items
     .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
     .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
@@ -177,7 +197,8 @@ export function NewPartsListPage() {
     form.name.trim().length > 0 &&
     form.items.length > 0 &&
     form.items.every((item) => item.productId.length > 0 && Number(item.quantity) > 0) &&
-    !hasDuplicateProducts;
+    !hasDuplicateProducts &&
+    !storageRoomValidationMessage;
 
   const getProductRowKey = (index: number) => `create-${index}`;
 
@@ -217,7 +238,7 @@ export function NewPartsListPage() {
 
   const handleProductInputChange = (index: number, value: string) => {
     const rowKey = getProductRowKey(index);
-    updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "" }));
+    updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "", storageRoomId: null }));
     setActiveProductRowKey(rowKey);
     setProductSearchInput(value);
     setHighlightedSuggestionIndex(0);
@@ -231,7 +252,10 @@ export function NewPartsListPage() {
     }, 120);
   };
 
-  const selectProductSuggestion = (index: number, selected: { id: string; label: string; baseUnit: string }) => {
+  const selectProductSuggestion = (
+    index: number,
+    selected: { id: string; label: string; baseUnit: string; storageRoomId: string | null },
+  ) => {
     const alreadySelectedInAnotherRow = form.items.some(
       (item, itemIndex) => itemIndex !== index && item.productId === selected.id,
     );
@@ -243,6 +267,7 @@ export function NewPartsListPage() {
       productId: selected.id,
       productLabel: selected.label,
       displayUnit: formatBaseUnitLabel(selected.baseUnit),
+      storageRoomId: selected.storageRoomId,
     }));
     setActiveProductRowKey(null);
     setProductSearchInput("");
@@ -601,10 +626,17 @@ export function NewPartsListPage() {
         {hasDuplicateProducts ? (
           <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
         ) : null}
+        {storageRoomValidationMessage ? (
+          <p className="mb-2 text-xs text-destructive">{storageRoomValidationMessage}</p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             onClick={async () => {
+              if (storageRoomValidationMessage) {
+                toast.error(storageRoomValidationMessage);
+                return;
+              }
               let created: { id: string };
               try {
                 created = await createMutation.mutateAsync({

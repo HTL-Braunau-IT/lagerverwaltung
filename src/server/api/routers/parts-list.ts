@@ -95,6 +95,62 @@ async function ensureProductsExist(
   }
 }
 
+async function ensureProductsBelongToSingleStorageRoom(
+  db: {
+    product: {
+      findMany: (args: {
+        where: { id: { in: string[] } };
+        select: {
+          id: true;
+          storageLocationId: true;
+          storageLocation: {
+            select: {
+              storageRoomId: true;
+            };
+          };
+        };
+      }) => Promise<Array<{ id: string; storageLocationId: string | null; storageLocation: { storageRoomId: string } | null }>>;
+    };
+  },
+  items: Array<{ productId: string }>,
+) {
+  const ids = [...new Set(items.map((item) => item.productId))];
+  const products = await db.product.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      storageLocationId: true,
+      storageLocation: {
+        select: {
+          storageRoomId: true,
+        },
+      },
+    },
+  });
+
+  const idsWithoutLocation = products
+    .filter((product) => !product.storageLocationId || !product.storageLocation?.storageRoomId)
+    .map((product) => product.id);
+  if (idsWithoutLocation.length > 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.",
+    });
+  }
+
+  const storageRoomIds = new Set(
+    products
+      .map((product) => product.storageLocation?.storageRoomId ?? null)
+      .filter((storageRoomId): storageRoomId is string => Boolean(storageRoomId)),
+  );
+  if (storageRoomIds.size > 1) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.",
+    });
+  }
+}
+
 export const partsListRouter = createTRPCRouter({
   listForShop: publicProcedure.query(async ({ ctx }) => {
     const lists = await ctx.db.partList.findMany({
@@ -329,6 +385,11 @@ export const partsListRouter = createTRPCRouter({
                 sku: true,
                 baseUnit: true,
                 quantityOnHand: true,
+                storageLocation: {
+                  select: {
+                    storageRoomId: true,
+                  },
+                },
               },
             },
           },
@@ -349,6 +410,7 @@ export const partsListRouter = createTRPCRouter({
   backendCreate: adminProcedure.input(backendCreateInput).mutation(async ({ ctx, input }) => {
     ensureUniqueProducts(input.items);
     await ensureProductsExist(ctx.db, input.items);
+    await ensureProductsBelongToSingleStorageRoom(ctx.db, input.items);
 
     return ctx.db.partList.create({
       data: {
@@ -372,6 +434,7 @@ export const partsListRouter = createTRPCRouter({
   backendUpdate: adminProcedure.input(backendUpdateInput).mutation(async ({ ctx, input }) => {
     ensureUniqueProducts(input.items);
     await ensureProductsExist(ctx.db, input.items);
+    await ensureProductsBelongToSingleStorageRoom(ctx.db, input.items);
 
     return ctx.db.$transaction(async (tx) => {
       const existing = await tx.partList.findUnique({

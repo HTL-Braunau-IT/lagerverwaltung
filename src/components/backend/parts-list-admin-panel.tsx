@@ -19,6 +19,7 @@ type PartListItemForm = {
   productLabel: string;
   quantity: string;
   displayUnit: string;
+  storageRoomId: string | null;
 };
 
 type PartListForm = {
@@ -32,6 +33,7 @@ const EMPTY_PART_LIST_ITEM: PartListItemForm = {
   productLabel: "",
   quantity: "1",
   displayUnit: "-",
+  storageRoomId: null,
 };
 
 type PartListDocument = {
@@ -176,7 +178,8 @@ export function PartsListAdminPanel() {
           productLabel: `${item.product.sku} - ${item.product.name}`,
           quantity: String(Number(item.quantity)),
           displayUnit: formatBaseUnitLabel(item.product.baseUnit),
-        })) ?? [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
+          storageRoomId: item.product.storageLocation?.storageRoomId ?? null,
+        })) ?? [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-", storageRoomId: null }],
     };
     setForm(nextForm);
     setBaselineForm(nextForm);
@@ -219,6 +222,7 @@ export function PartsListAdminPanel() {
         id: product.id,
         label: `${product.sku} - ${product.name}`,
         baseUnit: product.baseUnit,
+        storageRoomId: product.storageLocation?.storageRoomId ?? null,
       })),
     [productsQuery.data],
   );
@@ -235,15 +239,32 @@ export function PartsListAdminPanel() {
     );
   }, [form.items]);
 
-  const isEditing = Boolean(selectedId);
   const currentImageUrl = selectedPartListQuery.data?.imageUrl ?? null;
   const currentDocuments = (selectedPartListQuery.data?.documents ?? []) as PartListDocument[];
   const hasDuplicateProducts = duplicateProductIds.size > 0;
+  const storageRoomValidationMessage = useMemo(() => {
+    const selectedItems = form.items.filter((item) => item.productId.length > 0);
+    if (selectedItems.length === 0) return null;
+    if (selectedItems.some((item) => !item.storageRoomId)) {
+      return "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.";
+    }
+
+    const distinctStorageRooms = new Set(
+      selectedItems
+        .map((item) => item.storageRoomId)
+        .filter((storageRoomId): storageRoomId is string => Boolean(storageRoomId)),
+    );
+    if (distinctStorageRooms.size > 1) {
+      return "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.";
+    }
+    return null;
+  }, [form.items]);
   const canSave =
     form.name.trim().length > 0 &&
     form.items.length > 0 &&
     form.items.every((item) => item.productId.length > 0 && Number(item.quantity) > 0) &&
-    !hasDuplicateProducts;
+    !hasDuplicateProducts &&
+    !storageRoomValidationMessage;
   const normalizedFormItems = form.items
     .map((item) => ({ productId: item.productId, quantity: Number(item.quantity) }))
     .filter((item) => item.productId.length > 0 && Number.isFinite(item.quantity) && item.quantity > 0);
@@ -300,7 +321,7 @@ export function PartsListAdminPanel() {
 
   const handleProductInputChange = (index: number, value: string) => {
     const rowKey = getProductRowKey(index);
-    updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "" }));
+    updateFormItem(index, (item) => ({ ...item, productLabel: value, productId: "", storageRoomId: null }));
     setActiveProductRowKey(rowKey);
     setProductSearchInput(value);
     setHighlightedSuggestionIndex(0);
@@ -314,7 +335,10 @@ export function PartsListAdminPanel() {
     }, 120);
   };
 
-  const selectProductSuggestion = (index: number, selected: { id: string; label: string; baseUnit: string }) => {
+  const selectProductSuggestion = (
+    index: number,
+    selected: { id: string; label: string; baseUnit: string; storageRoomId: string | null },
+  ) => {
     const alreadySelectedInAnotherRow = form.items.some(
       (item, itemIndex) => itemIndex !== index && item.productId === selected.id,
     );
@@ -326,6 +350,7 @@ export function PartsListAdminPanel() {
       productId: selected.id,
       productLabel: selected.label,
       displayUnit: formatBaseUnitLabel(selected.baseUnit),
+      storageRoomId: selected.storageRoomId,
     }));
     setActiveProductRowKey(null);
     setProductSearchInput("");
@@ -722,6 +747,9 @@ export function PartsListAdminPanel() {
                                   Jedes Produkt darf nur einmal in der Teileliste vorkommen.
                                 </p>
                               ) : null}
+                              {storageRoomValidationMessage ? (
+                                <p className="text-xs text-destructive">{storageRoomValidationMessage}</p>
+                              ) : null}
                             </div>
                           </div>
 
@@ -1044,6 +1072,10 @@ export function PartsListAdminPanel() {
           if (updateMutation.isPending) return;
           if (uploadBusy) return;
           if (!canSave) return;
+          if (storageRoomValidationMessage) {
+            toast.error(storageRoomValidationMessage);
+            return;
+          }
           updateMutation.mutate(
             {
               id: selectedId,
