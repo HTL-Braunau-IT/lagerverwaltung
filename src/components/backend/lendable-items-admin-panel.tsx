@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -9,7 +9,12 @@ import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
-import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/icon-renders";
+import {
+  PlusIcon,
+  WarningTriangleIcon,
+  WastebinIcon,
+} from "~/components/layout/icon-renders";
+import { DetailCard, DetailText } from "~/components/ui/detail-card";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -60,6 +65,33 @@ function createFormFromItem(item: LendableItemListEntry): FormState {
   };
 }
 
+function normalizeFormState(form: FormState): Omit<FormState, "id"> {
+  const normalizedQuantity = Math.max(0, Math.floor(Number(form.quantityOnHand) || 0));
+  return {
+    name: form.name.trim(),
+    description: form.description.trim(),
+    quantityOnHand: String(normalizedQuantity),
+    storageRoomId: form.storageRoomId,
+    isVisible: form.isVisible,
+    imageUrl: form.imageUrl.trim(),
+    imageAltText: form.imageAltText.trim(),
+  };
+}
+
+function isFormDirty(current: FormState, baseline: FormState): boolean {
+  const a = normalizeFormState(current);
+  const b = normalizeFormState(baseline);
+  return (
+    a.name !== b.name ||
+    a.description !== b.description ||
+    a.quantityOnHand !== b.quantityOnHand ||
+    a.storageRoomId !== b.storageRoomId ||
+    a.isVisible !== b.isVisible ||
+    a.imageUrl !== b.imageUrl ||
+    a.imageAltText !== b.imageAltText
+  );
+}
+
 export function LendableItemsAdminPanel() {
   const utils = api.useUtils();
   const toast = useToast();
@@ -70,7 +102,7 @@ export function LendableItemsAdminPanel() {
   const [formsById, setFormsById] = useState<Record<string, FormState>>({});
   const [imageCacheBustById, setImageCacheBustById] = useState<Record<string, number>>({});
   const [inlineImageUploadPendingItemId, setInlineImageUploadPendingItemId] = useState<string | null>(null);
-  const [editMediaSectionCollapsedById, setEditMediaSectionCollapsedById] = useState<Record<string, boolean>>({});
+  const [unsavedToastEntered, setUnsavedToastEntered] = useState(false);
 
   const roomsQuery = api.storageRoom.list.useQuery();
   const itemsQuery = api.lendableItem.backendList.useQuery({
@@ -80,8 +112,25 @@ export function LendableItemsAdminPanel() {
 
   const createMutation = api.lendableItem.backendCreate.useMutation();
   const updateMutation = api.lendableItem.backendUpdate.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       await utils.lendableItem.backendList.invalidate();
+      setFormsById((current) => {
+        const prev = current[variables.id];
+        if (!prev) return current;
+        return {
+          ...current,
+          [variables.id]: {
+            ...prev,
+            name: variables.name,
+            description: variables.description ?? "",
+            quantityOnHand: String(variables.quantityOnHand),
+            storageRoomId: variables.storageRoomId,
+            isVisible: variables.isVisible ?? prev.isVisible,
+            imageUrl: variables.imageUrl ?? "",
+            imageAltText: variables.imageAltText ?? "",
+          },
+        };
+      });
       toast.success("Leihgerät aktualisiert.");
     },
   });
@@ -110,6 +159,24 @@ export function LendableItemsAdminPanel() {
     () => [...(itemsQuery.data ?? [])].sort((a, b) => a.name.localeCompare(b.name)),
     [itemsQuery.data],
   );
+
+  const expandedContext = useMemo(() => {
+    if (!expandedItemId) return null;
+    const item = sortedItems.find((i) => i.id === expandedItemId);
+    if (!item) return null;
+    const baseline = createFormFromItem(item);
+    const current = formsById[item.id] ?? baseline;
+    const dirty = isFormDirty(current, baseline);
+    return { item, baseline, current, dirty };
+  }, [expandedItemId, sortedItems, formsById]);
+
+  useEffect(() => {
+    if (expandedContext?.dirty) {
+      const frame = requestAnimationFrame(() => setUnsavedToastEntered(true));
+      return () => cancelAnimationFrame(frame);
+    }
+    setUnsavedToastEntered(false);
+  }, [expandedContext?.dirty, expandedContext?.item.id]);
 
   const uploadImage = async (itemId: string, file: File) => {
     if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
@@ -181,346 +248,294 @@ export function LendableItemsAdminPanel() {
                   >
                     {isExpanded ? (
                       <div className="px-4 flex min-w-0 flex-col gap-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <label className="text-xs text-muted-foreground col-span-2">
-                            Name
-                            <Input
-                              value={rowForm.name}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [item.id]: { ...rowForm, name: event.target.value },
-                                }))
-                              }
-                              variant="title"
-                            />
-                          </label>
-                          <label className="text-xs text-muted-foreground">
-                            Beschreibung
-                            <Input
-                              value={rowForm.description}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [item.id]: { ...rowForm, description: event.target.value },
-                                }))
-                              }
-                              variant="default"
-                            />
-                          </label>
-                          <div className="grid grid-cols-3 gap-2 items-end">
+                        <div className="grid gap-3 md:grid-cols-2 items-center">
+                          <div className="min-w-0 flex flex-col gap-2">
                             <label className="text-xs text-muted-foreground">
-                              Bestand
+                              Name
                               <Input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={rowForm.quantityOnHand}
+                                value={rowForm.name}
                                 onClick={(event) => event.stopPropagation()}
                                 onChange={(event) =>
                                   setFormsById((current) => ({
                                     ...current,
-                                    [item.id]: { ...rowForm, quantityOnHand: event.target.value },
+                                    [item.id]: { ...rowForm, name: event.target.value },
+                                  }))
+                                }
+                                variant="title"
+                              />
+                            </label>
+                            <label className="text-xs text-muted-foreground">
+                              Beschreibung
+                              <Input
+                                value={rowForm.description}
+                                onClick={(event) => event.stopPropagation()}
+                                onChange={(event) =>
+                                  setFormsById((current) => ({
+                                    ...current,
+                                    [item.id]: { ...rowForm, description: event.target.value },
                                   }))
                                 }
                                 variant="default"
                               />
                             </label>
-                            <label className="text-xs text-muted-foreground">
-                              Lagerraum
-                              <select
-                                value={rowForm.storageRoomId}
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={(event) =>
+                            <div className="grid grid-cols-3 items-end gap-2">
+                              <label className="text-xs text-muted-foreground">
+                                Bestand
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={rowForm.quantityOnHand}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [item.id]: { ...rowForm, quantityOnHand: event.target.value },
+                                    }))
+                                  }
+                                  variant="default"
+                                />
+                              </label>
+                              <label className="text-xs text-muted-foreground">
+                                Lagerraum
+                                <select
+                                  value={rowForm.storageRoomId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [item.id]: { ...rowForm, storageRoomId: event.target.value },
+                                    }))
+                                  }
+                                  className="mt-1 flex h-10 w-full appearance-none rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <option value="">Lagerraum waehlen</option>
+                                  {(roomsQuery.data ?? []).map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                      {room.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
                                   setFormsById((current) => ({
                                     ...current,
-                                    [item.id]: { ...rowForm, storageRoomId: event.target.value },
-                                  }))
-                                }
-                                className="mt-1 flex h-10 w-full appearance-none rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <option value="">Lagerraum waehlen</option>
-                                {(roomsQuery.data ?? []).map((room) => (
-                                  <option key={room.id} value={room.id}>
-                                    {room.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setFormsById((current) => ({
-                                  ...current,
-                                  [item.id]: { ...rowForm, isVisible: !rowForm.isVisible },
-                                }));
-                              }}
-                              className={`flex h-11 w-full items-center justify-between gap-3 rounded-md border-2 bg-card/40 mt-1 px-3 py-2 text-left transition ${
-                                rowForm.isVisible ? "border-emerald-500/60" : "border-red-500/60"
-                              }`}
-                              aria-label="Ausleihbarkeit umschalten"
-                              aria-pressed={rowForm.isVisible}
-                            >
-                              <span className="text-sm text-foreground">Ausleihbar</span>
-                              <span
-                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-                                  rowForm.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
+                                    [item.id]: { ...rowForm, isVisible: !rowForm.isVisible },
+                                  }));
+                                }}
+                                className={`mt-1 flex h-11 w-full items-center justify-between gap-3 rounded-md border-2 bg-card/40 px-3 py-2 text-left transition ${
+                                  rowForm.isVisible ? "border-emerald-500/60" : "border-red-500/60"
                                 }`}
-                                aria-hidden="true"
+                                aria-label="Ausleihbarkeit umschalten"
+                                aria-pressed={rowForm.isVisible}
                               >
+                                <span className="text-sm text-foreground">Ausleihbar</span>
                                 <span
-                                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                                    rowForm.isVisible ? "translate-x-5" : "translate-x-1"
+                                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                    rowForm.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
                                   }`}
-                                />
-                              </span>
-                            </button>
-                          </div>
-
-
-
-                        </div>
-
-                        <div className="rounded-md bg-card/40 p-3 min-w-0">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setEditMediaSectionCollapsedById((current) => ({
-                                ...current,
-                                [item.id]: !(current[item.id] ?? true),
-                              }));
-                            }}
-                            className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 rounded-md"
-                            aria-expanded={!(editMediaSectionCollapsedById[item.id] ?? true)}
-                            aria-controls={`edit-media-section-${item.id}`}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-lg font-semibold text-foreground">Bilder & Dokumente</p>
-                              <span
-                                aria-hidden="true"
-                                className="shrink-0 text-muted-foreground"
-                                title={(editMediaSectionCollapsedById[item.id] ?? true) ? "Ausklappen" : "Einklappen"}
-                              >
-                                <ChevronDownIcon
-                                  open={!(editMediaSectionCollapsedById[item.id] ?? true)}
-                                  className="h-4 w-4"
-                                />
-                              </span>
+                                  aria-hidden="true"
+                                >
+                                  <span
+                                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                      rowForm.isVisible ? "translate-x-5" : "translate-x-1"
+                                    }`}
+                                  />
+                                </span>
+                              </button>
                             </div>
-                            {!(editMediaSectionCollapsedById[item.id] ?? true) ? (
-                              <div className="mt-2 h-px w-full bg-border" aria-hidden="true" />
-                            ) : null}
-                          </button>
+                          </div>
+                          <DetailCard className="hover:!bg-card/40">
+                            <div className="flex items-center justify-between gap-3">
+                              <DetailText variant="title">Bilder & Dokumente</DetailText>
+                            </div>
+                            <div className="mt-2 h-px w-full bg-border" aria-hidden="true" />
 
-                          {!(editMediaSectionCollapsedById[item.id] ?? true) ? (
-                            <div id={`edit-media-section-${item.id}`} className="space-y-3 pt-3">
-                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-start">
-                                <div className="min-w-0 space-y-4">
-                                  <div>
-                                    <p className="select-none text-sm text-muted-foreground">Bild hochladen</p>
-                                    <label
-                                      className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
-                                        inlineImageUploadPendingItemId === item.id
-                                          ? "cursor-default opacity-90"
-                                          : "cursor-pointer hover:bg-violet-100"
-                                      }`}
-                                      onClick={(event) => event.stopPropagation()}
-                                      aria-busy={inlineImageUploadPendingItemId === item.id ? true : undefined}
-                                    >
-                                      <input
-                                        id={`edit-lendable-item-image-${item.id}`}
-                                        type="file"
-                                        accept="image/*"
-                                        disabled={inlineImageUploadPendingItemId === item.id}
-                                        className="sr-only"
-                                        onChange={async (event) => {
-                                          event.stopPropagation();
-                                          const inputEl = event.currentTarget;
-                                          const file = inputEl.files?.[0];
-                                          if (!file) return;
-
-                                          try {
-                                            setInlineImageUploadPendingItemId(item.id);
-                                            const url = await uploadImage(item.id, file);
-                                            setFormsById((current) => ({
-                                              ...current,
-                                              [item.id]: { ...(current[item.id] ?? rowForm), imageUrl: url },
-                                            }));
-                                            setImageCacheBustById((current) => ({ ...current, [item.id]: Date.now() }));
-                                            toast.success("Bild hochgeladen.");
-                                          } catch (error) {
-                                            toast.error(
-                                              error instanceof Error ? error.message : "Upload fehlgeschlagen.",
-                                            );
-                                          } finally {
-                                            setInlineImageUploadPendingItemId((current) =>
-                                              current === item.id ? null : current,
-                                            );
-                                            inputEl.value = "";
-                                          }
-                                        }}
-                                      />
-                                      <span
-                                        className={`inline-flex shrink-0 rounded-sm bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
-                                          inlineImageUploadPendingItemId === item.id
-                                            ? "opacity-70"
-                                            : "group-hover:bg-violet-700"
-                                        }`}
+                            <div className="pt-2">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
+                                <div className="min-w-0">
+                                      <DetailText 
+                                        variant="subvalue"
+                                        className="ml-1 "
                                       >
-                                        Datei auswählen
-                                      </span>
-                                      <span
-                                        className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                        Bild hochladen
+                                      </DetailText>
+                                      <label
+                                        className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-md border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
                                           inlineImageUploadPendingItemId === item.id
-                                            ? "text-muted-foreground"
-                                            : rowForm.imageUrl.trim()
-                                              ? "font-medium text-foreground"
-                                              : "text-muted-foreground"
+                                            ? "cursor-default opacity-90"
+                                            : "cursor-pointer hover:bg-violet-100"
                                         }`}
-                                        role="status"
+                                        onClick={(event) => event.stopPropagation()}
+                                        aria-busy={inlineImageUploadPendingItemId === item.id ? true : undefined}
                                       >
-                                        {inlineImageUploadPendingItemId === item.id
-                                          ? "Bild wird hochgeladen..."
-                                          : "Keine Datei ausgewählt"}
-                                      </span>
-                                    </label>
-                                  </div>
+                                        <input
+                                          id={`edit-lendable-item-image-${item.id}`}
+                                          type="file"
+                                          accept="image/*"
+                                          disabled={inlineImageUploadPendingItemId === item.id}
+                                          className="sr-only"
+                                          onChange={async (event) => {
+                                            event.stopPropagation();
+                                            const inputEl = event.currentTarget;
+                                            const file = inputEl.files?.[0];
+                                            if (!file) return;
 
-                                  <div className="mt-auto space-y-1.5 border-t border-border pt-3">
-                                    <p className="mb-1 text-xs font-medium text-foreground">Aktuelles Bild</p>
-                                    {(rowForm.imageUrl.trim() || item.images[0]?.url) ? (
-                                      (() => {
-                                        const currentImageUrl = rowForm.imageUrl.trim() || item.images[0]?.url || "";
-                                        const currentAltText =
-                                          (rowForm.imageAltText.trim() || item.images[0]?.altText || "").trim();
-                                        const cacheBust = imageCacheBustById[item.id];
-                                        const imgSrc = cacheBust ? `${currentImageUrl}?v=${cacheBust}` : currentImageUrl;
-                                        const displayImagePath = (() => {
-                                          try {
-                                            const pathname = new URL(currentImageUrl, "http://dummy").pathname;
-                                            const file = pathname.split("/").pop() ?? "";
-                                            return file ? `${file}` : pathname || currentImageUrl;
-                                          } catch {
-                                            return currentImageUrl;
-                                          }
-                                        })();
-
-                                        return (
-                                          <div className="relative rounded-sm border-b-2 border-violet-400/80 bg-card/80 p-1.5">
-                                            <button
-                                              type="button"
-                                              onClick={(event) => event.stopPropagation()}
-                                              className="flex w-full min-w-0 items-center gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
-                                            >
-                                              <img
-                                                src={imgSrc}
-                                                alt={`${rowForm.name} Bild`}
-                                                className="h-14 w-14 shrink-0 rounded-xs object-cover"
-                                                onError={(errEvent) => {
-                                                  errEvent.currentTarget.onerror = null;
-                                                  errEvent.currentTarget.src = "/pictures/placeholder.jpg";
-                                                }}
-                                              />
-                                              <div className="min-w-0 flex-1">
-                                                <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-[10px] leading-snug">
-                                                  <span className="text-muted-foreground font-semibold">Name:</span>
-                                                  <span className="break-all text-foreground">{displayImagePath}</span>
-
-                                                  <span className="text-muted-foreground font-semibold">Alt-Text:</span>
-                                                  <span className="min-w-0 line-clamp-2 text-muted-foreground">
-                                                    {currentAltText || `Vorschaubild ${rowForm.name}`}
-                                                  </span>
-
-                                                  <span className="text-muted-foreground font-semibold">Größe:</span>
-                                                  <span className="tabular-nums text-muted-foreground">—</span>
-                                                </div>
-                                              </div>
-                                            </button>
-
-                                            <Button
-                                              type="button"
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={(event) => {
-                                                event.stopPropagation();
-                                                clearImageMutation.mutate({ id: item.id });
-                                              }}
-                                              disabled={
-                                                !currentImageUrl ||
-                                                clearImageMutation.isPending ||
-                                                inlineImageUploadPendingItemId === item.id
-                                              }
-                                              className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-muted-foreground transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
-                                              aria-label="Bild entfernen"
-                                            >
-                                              {inlineImageUploadPendingItemId === item.id || clearImageMutation.isPending ? (
-                                                <span className="text-xs">...</span>
-                                              ) : (
-                                                <WastebinIcon size={16} className="opacity-90" />
-                                              )}
-                                            </Button>
-                                          </div>
-                                        );
-                                      })()
-                                    ) : (
-                                      <p className="text-xs text-muted-foreground">Noch kein Bild vorhanden.</p>
-                                    )}
-                                  </div>
+                                            try {
+                                              setInlineImageUploadPendingItemId(item.id);
+                                              const url = await uploadImage(item.id, file);
+                                              setFormsById((current) => ({
+                                                ...current,
+                                                [item.id]: { ...(current[item.id] ?? rowForm), imageUrl: url },
+                                              }));
+                                              setImageCacheBustById((current) => ({ ...current, [item.id]: Date.now() }));
+                                              toast.success("Bild hochgeladen.");
+                                            } catch (error) {
+                                              toast.error(
+                                                error instanceof Error ? error.message : "Upload fehlgeschlagen.",
+                                              );
+                                            } finally {
+                                              setInlineImageUploadPendingItemId((current) =>
+                                                current === item.id ? null : current,
+                                              );
+                                              inputEl.value = "";
+                                            }
+                                          }}
+                                        />
+                                        <span
+                                          className={`inline-flex shrink-0 rounded-sm bg-violet-600 px-3 py-2 text-sm font-semibold text-white ${
+                                            inlineImageUploadPendingItemId === item.id
+                                              ? "opacity-70"
+                                              : "group-hover:bg-violet-700"
+                                          }`}
+                                        >
+                                          Datei auswählen
+                                        </span>
+                                        <span
+                                          className={`min-w-0 flex-1 break-all text-left text-sm ${
+                                            inlineImageUploadPendingItemId === item.id
+                                              ? "text-muted-foreground"
+                                              : rowForm.imageUrl.trim()
+                                                ? "font-medium text-foreground"
+                                                : "text-muted-foreground"
+                                          }`}
+                                          role="status"min-w-0 space-y-4
+                                        >
+                                          {inlineImageUploadPendingItemId === item.id
+                                            ? "Bild wird hochgeladen..."
+                                            : "Keine Datei ausgewählt"}
+                                        </span>
+                                      </label>
                                 </div>
 
-                                <div className="hidden md:block" />
+                                <div className="min-w-0 space-y-1.5 pt-3 md:pl-4 md:pt-0">
+                                      <DetailText
+                                        variant="subvalue"
+                                        className="ml-1"
+                                        >
+                                        Aktuelles Bild
+                                        </DetailText>
+                                      {(rowForm.imageUrl.trim() || item.images[0]?.url) ? (
+                                        (() => {
+                                          const currentImageUrl = rowForm.imageUrl.trim() || item.images[0]?.url || "";
+                                          const currentAltText =
+                                            (rowForm.imageAltText.trim() || item.images[0]?.altText || "").trim();
+                                          const cacheBust = imageCacheBustById[item.id];
+                                          const imgSrc = cacheBust ? `${currentImageUrl}?v=${cacheBust}` : currentImageUrl;
+                                          const displayImagePath = (() => {
+                                            try {
+                                              const pathname = new URL(currentImageUrl, "http://dummy").pathname;
+                                              const file = pathname.split("/").pop() ?? "";
+                                              return file ? `${file}` : pathname || currentImageUrl;
+                                            } catch {
+                                              return currentImageUrl;
+                                            }
+                                          })();
+
+                                          return (
+                                            <div className="relative rounded-sm border-b-2 border-violet-400/80 bg-card/60 p-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={(event) => event.stopPropagation()}
+                                                className="flex w-full min-w-0 items-center gap-2 rounded-md text-left outline-none transition focus-visible:ring-2 focus-visible:ring-violet-400/80"
+                                              >
+                                                <img
+                                                  src={imgSrc}
+                                                  alt={`${rowForm.name} Bild`}
+                                                  className="h-14 w-14 shrink-0 rounded-xs object-cover"
+                                                  onError={(errEvent) => {
+                                                    errEvent.currentTarget.onerror = null;
+                                                    errEvent.currentTarget.src = "/pictures/placeholder.jpg";
+                                                  }}
+                                                />
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-[10px] leading-snug">
+                                                    <span className="text-muted-foreground font-semibold">Name:</span>
+                                                    <span className="break-all text-foreground">{displayImagePath}</span>
+
+                                                    <span className="text-muted-foreground font-semibold">Alt-Text:</span>
+                                                    <span className="min-w-0 line-clamp-2 text-muted-foreground">
+                                                      {currentAltText || `Vorschaubild ${rowForm.name}`}
+                                                    </span>
+
+                                                    <span className="text-muted-foreground font-semibold">Größe:</span>
+                                                    <span className="tabular-nums text-muted-foreground">—</span>
+                                                  </div>
+                                                </div>
+                                              </button>
+
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  clearImageMutation.mutate({ id: item.id });
+                                                }}
+                                                disabled={
+                                                  !currentImageUrl ||
+                                                  clearImageMutation.isPending ||
+                                                  inlineImageUploadPendingItemId === item.id
+                                                }
+                                                className="absolute bottom-1 right-1 h-8 w-8 p-0 rounded-xs text-muted-foreground transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
+                                                aria-label="Bild entfernen"
+                                              >
+                                                {inlineImageUploadPendingItemId === item.id || clearImageMutation.isPending ? (
+                                                  <span className="text-xs">...</span>
+                                                ) : (
+                                                  <WastebinIcon size={16} className="opacity-90" />
+                                                )}
+                                              </Button>
+                                            </div>
+                                          );
+                                        })()
+                                      ) : (
+                                        <DetailText
+                                          variant="subvalue"
+                                          className="ml-1 font-semibold">
+                                            Noch kein Bild vorhanden.
+                                        </DetailText>
+                                      )}
+                                    </div>
                               </div>
                             </div>
-                          ) : null}
+                          </DetailCard>
                         </div>
-                        <div className="mt-4 flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              updateMutation.mutate({
-                                id: item.id,
-                                name: rowForm.name.trim(),
-                                description: rowForm.description.trim() || null,
-                                quantityOnHand: Math.max(0, Math.floor(Number(rowForm.quantityOnHand) || 0)),
-                                storageRoomId: rowForm.storageRoomId,
-                                isVisible: rowForm.isVisible,
-                                imageUrl: rowForm.imageUrl.trim() || null,
-                                imageAltText: rowForm.imageAltText.trim() || null,
-                              });
-                            }}
-                            disabled={updateMutation.isPending}
-                          >
-                            Speichern
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFormsById((current) => ({
-                                ...current,
-                                [item.id]: createFormFromItem(item),
-                              }));
-                            }}
-                          >
-                            Zuruecksetzen
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="text-destructive hover:text-destructive"
+                            variant="destructive"
+                            className="!w-36"
                             onClick={(event) => {
                               event.stopPropagation();
                               deleteMutation.mutate({ id: item.id });
                             }}
                             disabled={deleteMutation.isPending}
                           >
-                            Loeschen
+                            Löschen
                           </Button>
                         </div>
                       </div>
@@ -532,6 +547,69 @@ export function LendableItemsAdminPanel() {
           </TableUI.TableBody>
         </TableUI.Table>
       </div>
+
+      {expandedContext?.dirty ? (
+        <div
+          className={`pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4 transition-all duration-200 ease-out ${
+            unsavedToastEntered ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+          }`}
+          aria-live="polite"
+          role="status"
+        >
+          <div className="pointer-events-auto w-full max-w-3xl rounded-sm bg-card/90 backdrop-blur shadow-lg border-b-3 border-primary">
+            <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <DetailText variant="kicker">Ungespeicherte Änderungen</DetailText>
+                </div>
+                <DetailText variant="value">
+                  {expandedContext.item.name}
+                </DetailText>
+              </div>
+              <div className="flex items-center gap-2 sm:shrink-0 [&>button]:w-28 [&>button]:shrink-0">
+                <Button
+                  type="button"
+                  variant="glass"
+                  className="rounded-sm"             
+                  onClick={() => {
+                    setFormsById((current) => ({
+                      ...current,
+                      [expandedContext.item.id]: createFormFromItem(expandedContext.item),
+                    }));
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  Zurücksetzen
+                </Button>
+                <Button
+                  type="button"
+                  variant="solid"
+                  className="rounded-sm animate-pulse hover:animate-none"
+                  onClick={() => {
+                    const payload = {
+                      id: expandedContext.item.id,
+                      name: expandedContext.current.name.trim(),
+                      description: expandedContext.current.description.trim() || null,
+                      quantityOnHand: Math.max(
+                        0,
+                        Math.floor(Number(expandedContext.current.quantityOnHand) || 0),
+                      ),
+                      storageRoomId: expandedContext.current.storageRoomId,
+                      isVisible: expandedContext.current.isVisible,
+                      imageUrl: expandedContext.current.imageUrl.trim() || null,
+                      imageAltText: expandedContext.current.imageAltText.trim() || null,
+                    };
+                    updateMutation.mutate(payload);
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  Speichern
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }
