@@ -1148,6 +1148,7 @@ export function ProductsAdminPanel() {
               const imageFilePending = !!pendingEditImage;
               const urlFieldDisabled = imageFilePending || imageUploadBusy;
               const altFieldDisabled = imageUploadBusy;
+              const isHoverPreviewVisible = hoveredProductId === product.id && !isExpanded && !!previewImage?.url;
 
               return (
                 <Fragment key={product.id}>
@@ -1166,7 +1167,7 @@ export function ProductsAdminPanel() {
                     onMouseLeave={() =>
                       setHoveredProductId((current) => (current === product.id ? null : current))
                     }
-                    className={`cursor-pointer ${
+                    className={`cursor-pointer ${isHoverPreviewVisible ? "z-30" : ""} ${
                       isBelowMinimum
                         ? "rounded-md outline outline-2 outline-offset-[-4px] outline-destructive"
                         : isNearMinimum
@@ -1177,8 +1178,8 @@ export function ProductsAdminPanel() {
                     <TableUI.TableCell className="min-w-0 max-w-0">
                       <div className="relative inline-block max-w-full">
                         <span className="break-words">{product.name}</span>
-                        {previewImage?.url && hoveredProductId === product.id && !isExpanded ? (
-                          <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 rounded-md bg-card/90 p-1">
+                        {isHoverPreviewVisible ? (
+                          <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 rounded-md bg-card/90 p-1">
                             <img
                               src={previewImage.url}
                               alt={previewImage.altText || `${product.name} Produktbild`}
