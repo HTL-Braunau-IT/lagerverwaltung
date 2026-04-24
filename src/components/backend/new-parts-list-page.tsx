@@ -24,6 +24,13 @@ type PartListForm = {
   items: PartListItemForm[];
 };
 
+const EMPTY_PART_LIST_ITEM: PartListItemForm = {
+  productId: "",
+  productLabel: "",
+  quantity: "1",
+  displayUnit: "-",
+};
+
 const BASE_UNIT_LABELS: Record<string, string> = {
   PCS: "Stk",
   MM: "mm",
@@ -41,7 +48,7 @@ function createEmptyForm(): PartListForm {
   return {
     name: "",
     description: "",
-    items: [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
+    items: [{ ...EMPTY_PART_LIST_ITEM }],
   };
 }
 
@@ -386,10 +393,12 @@ export function NewPartsListPage() {
                       onClick={() =>
                         setForm((prev) => ({
                           ...prev,
-                          items: prev.items.filter((_, entryIndex) => entryIndex !== index),
+                          items:
+                            prev.items.length <= 1
+                              ? [{ ...EMPTY_PART_LIST_ITEM }]
+                              : prev.items.filter((_, entryIndex) => entryIndex !== index),
                         }))
                       }
-                      disabled={form.items.length <= 1}
                     >
                       Zeile entfernen
                     </Button>
@@ -408,7 +417,7 @@ export function NewPartsListPage() {
           onClick={() =>
             setForm((prev) => ({
               ...prev,
-              items: [...prev.items, { productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
+              items: [...prev.items, { ...EMPTY_PART_LIST_ITEM }],
             }))
           }
         >

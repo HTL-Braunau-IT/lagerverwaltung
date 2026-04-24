@@ -27,6 +27,13 @@ type PartListForm = {
   items: PartListItemForm[];
 };
 
+const EMPTY_PART_LIST_ITEM: PartListItemForm = {
+  productId: "",
+  productLabel: "",
+  quantity: "1",
+  displayUnit: "-",
+};
+
 type PartListDocument = {
   id: string;
   fileName: string;
@@ -54,7 +61,7 @@ function createEmptyForm(): PartListForm {
   return {
     name: "",
     description: "",
-    items: [{ productId: "", productLabel: "", quantity: "1", displayUnit: "-" }],
+    items: [{ ...EMPTY_PART_LIST_ITEM }],
   };
 }
 
@@ -608,10 +615,12 @@ export function PartsListAdminPanel() {
                                       onClick={() =>
                                         setForm((prev) => ({
                                           ...prev,
-                                          items: prev.items.filter((_, entryIndex) => entryIndex !== index),
+                                          items:
+                                            prev.items.length <= 1
+                                              ? [{ ...EMPTY_PART_LIST_ITEM }]
+                                              : prev.items.filter((_, entryIndex) => entryIndex !== index),
                                         }))
                                       }
-                                      disabled={form.items.length <= 1}
                                       className="!h-10 rounded-sm"
                                     >
                                       <span className="inline-flex items-center gap-2">
@@ -636,7 +645,7 @@ export function PartsListAdminPanel() {
                                     ...prev,
                                     items: [
                                       ...prev.items,
-                                      { productId: "", productLabel: "", quantity: "1", displayUnit: "-" },
+                                      { ...EMPTY_PART_LIST_ITEM },
                                     ],
                                   }))
                                 }
