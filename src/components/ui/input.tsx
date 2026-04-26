@@ -7,7 +7,7 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 };
 
 const baseClassName =
-  "mt-1 flex h-10 w-full rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-10 w-full rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 const variantClasses: Record<InputVariant, string> = {
   default: "",
