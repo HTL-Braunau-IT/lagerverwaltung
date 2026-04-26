@@ -126,7 +126,7 @@ export function Select({
           "mt-1 w-full rounded-md bg-card/40 px-2.5 py-2 text-sm text-slate-900",
           "inline-flex items-center justify-between gap-2",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-          "disabled:cursor-not-allowed disabled:bg-slate-100",
+          "disabled:cursor-not-allowed",
           className
         )}
       >
