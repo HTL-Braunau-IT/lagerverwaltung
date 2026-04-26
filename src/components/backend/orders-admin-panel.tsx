@@ -1,20 +1,72 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
+import { Button, buttonClassName, type ButtonVariant } from "~/components/ui/button";
 import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Card } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
+import { ChevronDownIcon } from "~/components/layout/icon-renders";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 const ORDER_STATUSES: OrderStatus[] = ["OPEN", "PREPARING", "READY_FOR_PICKUP"];
+
+type OrderStatusActionVariant = Extract<ButtonVariant, "solid" | "glass">;
+
+function OrderStatusActionButton(props: {
+  variant: OrderStatusActionVariant;
+  actionLabel: string;
+  nextStatusLabel: string;
+  isMenuOpen: boolean;
+  disabled: boolean;
+  onAdvance: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  onToggleMenu: (event: ReactMouseEvent<HTMLButtonElement>) => void;
+  menuButtonRef: (node: HTMLButtonElement | null) => void;
+}) {
+  const { variant, actionLabel, nextStatusLabel, isMenuOpen, disabled, onAdvance, onToggleMenu, menuButtonRef } =
+    props;
+
+  return (
+    <div
+      aria-disabled={disabled}
+      className={buttonClassName({
+        variant,
+        size: "sm",
+        className:
+          "h-8 w-[13.5rem] max-w-[13.5rem] overflow-hidden rounded-sm !px-0 !py-0 !items-stretch !justify-start hover:!opacity-80",
+      })}
+    >
+      <button
+        type="button"
+        onClick={onAdvance}
+        disabled={disabled}
+        aria-label={`Status auf ${nextStatusLabel} setzen`}
+        className="flex h-full min-w-0 flex-1 items-center justify-center text-center text-xs text-current transition"
+      >
+        {actionLabel}
+      </button>
+      <span aria-hidden="true" className="shrink-0 self-center text-xs text-border select-none">
+        |
+      </span>
+      <button
+        type="button"
+        ref={menuButtonRef}
+        onClick={onToggleMenu}
+        disabled={disabled}
+        aria-label="Status-Menü öffnen"
+        className="inline-flex h-full shrink-0 items-center px-2 text-current transition"
+      >
+        <ChevronDownIcon open={isMenuOpen} className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 const statusConfig: Record<
   OrderStatus,
@@ -204,10 +256,14 @@ export function OrdersAdminPanel() {
               <TableUI.TableHead>Bestellnummer</TableUI.TableHead>
               <TableUI.TableHead>Lehrer</TableUI.TableHead>
               <TableUI.TableHead>Kostenstelle</TableUI.TableHead>
-              <TableUI.TableHead>Positionen</TableUI.TableHead>
+              <TableUI.TableHead className="w-[7rem] min-w-[7rem] max-w-[7rem] whitespace-nowrap">
+                Positionen
+              </TableUI.TableHead>
               <TableUI.TableHead>Datum</TableUI.TableHead>
-              <TableUI.TableHead>Status</TableUI.TableHead>
               <TableUI.TableHead className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
+                Status
+                </TableUI.TableHead>
+              <TableUI.TableHead className="w-[18rem] min-w-[18rem] max-w-[18rem] whitespace-nowrap">
                 Aktion
               </TableUI.TableHead>
             </tr>
@@ -241,6 +297,7 @@ export function OrdersAdminPanel() {
               const isExpanded = expandedOrderId === order.id;
               const status = statusConfig[order.status];
               const nextStatus = status.nextStatus;
+              const isMenuOpen = menuOpenOrderId === order.id;
 
               return (
                 <Fragment key={order.id}>
@@ -268,9 +325,11 @@ export function OrdersAdminPanel() {
                     <TableUI.TableCell>
                       {order.costCenter.code} - {order.costCenter.name}
                     </TableUI.TableCell>
-                    <TableUI.TableCell className="tabular-nums">{order.items.length}</TableUI.TableCell>
+                    <TableUI.TableCell className="w-[7rem] min-w-[7rem] max-w-[7rem] tabular-nums">
+                      {order.items.length}
+                    </TableUI.TableCell>
                     <TableUI.TableCell>{formatDate(order.createdAt)}</TableUI.TableCell>
-                    <TableUI.TableCell>
+                    <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
                       <Badge
                         variant={
                           order.status === "READY_FOR_PICKUP"
@@ -285,61 +344,38 @@ export function OrdersAdminPanel() {
                       </Badge>
                     </TableUI.TableCell>
                     <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-2 px-1">
                         {nextStatus && status.advanceActionLabel && order.status !== "READY_FOR_PICKUP" ? (
-                          <div className="inline-flex h-8 min-w-[13.5rem] items-center overflow-hidden rounded-md border border-border bg-card/80">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                updateStatusMutation.mutate({
-                                  orderId: order.id,
-                                  nextStatus,
-                                });
-                              }}
-                              disabled={updateStatusMutation.isPending}
-                              aria-label={`Status auf ${statusConfig[nextStatus].label} setzen`}
-                              className="inline-flex h-full items-center px-3 text-xs text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {status.advanceActionLabel}
-                            </button>
-                            <span aria-hidden="true" className="text-xs text-border">
-                              |
-                            </span>
-                            <button
-                              type="button"
-                              ref={(node) => {
-                                if (node) {
-                                  menuButtonRefs.current.set(order.id, node);
-                                } else {
-                                  menuButtonRefs.current.delete(order.id);
-                                }
-                              }}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setMenuOpenOrderId((current) => {
-                                  const next = current === order.id ? null : order.id;
-                                  if (next) updateMenuPosition(next);
-                                  else setMenuPosition(null);
-                                  return next;
-                                });
-                              }}
-                              disabled={updateStatusMutation.isPending}
-                              aria-label="Status-Menü öffnen"
-                              className="inline-flex h-full items-center px-2 text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
-                                <path
-                                  d="M6 9l6 6 6-6"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-                          </div>
+                          <OrderStatusActionButton
+                            variant={nextStatus === "READY_FOR_PICKUP" ? "solid" : "glass"}
+                            actionLabel={status.advanceActionLabel}
+                            nextStatusLabel={statusConfig[nextStatus].label}
+                            isMenuOpen={isMenuOpen}
+                            disabled={updateStatusMutation.isPending}
+                            onAdvance={(event) => {
+                              event.stopPropagation();
+                              updateStatusMutation.mutate({
+                                orderId: order.id,
+                                nextStatus,
+                              });
+                            }}
+                            menuButtonRef={(node) => {
+                              if (node) {
+                                menuButtonRefs.current.set(order.id, node);
+                              } else {
+                                menuButtonRefs.current.delete(order.id);
+                              }
+                            }}
+                            onToggleMenu={(event) => {
+                              event.stopPropagation();
+                              setMenuOpenOrderId((current) => {
+                                const next = current === order.id ? null : order.id;
+                                if (next) updateMenuPosition(next);
+                                else setMenuPosition(null);
+                                return next;
+                              });
+                            }}
+                          />
                         ) : (
                           <span
                             className="inline-flex rounded-full py-1.5 text-center text-xs text-muted-foreground"
@@ -484,7 +520,7 @@ export function OrdersAdminPanel() {
           createPortal(
             <div
               ref={menuContainerRef}
-              className="fixed z-[120] w-[220px] rounded-md border border-border bg-card p-1 shadow-lg"
+              className="fixed z-[120] w-[220px] rounded-md bg-card p-2 "
               style={{
                 top: menuPosition.top,
                 left: menuPosition.left,
@@ -494,12 +530,18 @@ export function OrdersAdminPanel() {
               {ORDER_STATUSES.map((targetStatus) => {
                 const label = statusConfig[targetStatus].label;
                 const isCurrent = activeOrderStatus === targetStatus;
+                const badgeVariant =
+                  targetStatus === "READY_FOR_PICKUP"
+                    ? "orderThird"
+                    : targetStatus === "OPEN"
+                      ? "orderFirst"
+                      : "orderSecond";
                 return (
                   <button
                     key={targetStatus}
                     type="button"
                     disabled={isCurrent || updateStatusMutation.isPending}
-                    className="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-left text-sm text-foreground transition hover:!bg-primary/10 disabled:cursor-not-allowed disabled:opacity-30"
                     onClick={(event) => {
                       event.stopPropagation();
                       if (isCurrent) return;
@@ -510,7 +552,7 @@ export function OrdersAdminPanel() {
                       closeStatusMenu();
                     }}
                   >
-                    <span>{label}</span>
+                    <Badge variant={badgeVariant}>{label}</Badge>
                     {isCurrent ? <span className="text-xs text-muted-foreground">Aktuell</span> : null}
                   </button>
                 );
