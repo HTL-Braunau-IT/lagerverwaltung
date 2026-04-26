@@ -7,8 +7,10 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
 import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
+import { DetailCard } from "../ui/detail-card";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -130,24 +132,28 @@ export function NewLendableItemPage() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Name
+          <span className="text-destructive pl-1">*</span>
           <Input
             value={form.name}
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="mt-1 h-10 rounded-xl"
-            autoFocus
+            variant="title"
+            className="mt-1"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Beschreibung
           <Input
             value={form.description}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-            className="mt-1 h-10 rounded-xl"
+            variant="subtitle"
+            className="mt-1"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+      </div>
+      <div className="grid grid-cols-3 gap-3 mt-4 items-end">
+        <label className="text-sm text-muted-foreground">
           Bestand
           <Input
             type="number"
@@ -155,49 +161,65 @@ export function NewLendableItemPage() {
             step="1"
             value={form.quantityOnHand}
             onChange={(e) => setForm((prev) => ({ ...prev, quantityOnHand: e.target.value }))}
-            className="mt-1 h-10 rounded-xl"
+            variant="default"
+            className="mt-1 h-11"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Lagerraum
-          <select
+          <span className="text-destructive pl-1">*</span>
+          <Select
             value={form.storageRoomId}
-            onChange={(e) => setForm((prev) => ({ ...prev, storageRoomId: e.target.value }))}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground"
-          >
-            <option value="">Lagerraum waehlen</option>
-            {(roomsQuery.data ?? []).map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex items-center gap-2 text-sm text-foreground md:col-span-2">
-          <input
-            type="checkbox"
-            checked={form.isVisible}
-            onChange={(e) => setForm((prev) => ({ ...prev, isVisible: e.target.checked }))}
+            onValueChange={(nextRoomId) => setForm((prev) => ({ ...prev, storageRoomId: nextRoomId }))}
+            disabled={uploadPending}
+            options={[
+              { value: "", label: "Lagerraum wählen" },
+              ...(roomsQuery.data ?? []).map((room) => ({ value: room.id, label: room.name })),
+            ]}
+            className="mt-1 h-11 w-full px-2.5 py-2 text-sm text-slate-900"
           />
-          Ausleihbar
         </label>
+        <button
+          type="button"
+          onClick={() => setForm((prev) => ({ ...prev, isVisible: !prev.isVisible }))}
+          className={`mt-1 flex h-11 w-full items-center justify-between gap-3 rounded-sm border-2 bg-card/40 px-3 py-2 text-left transition ${
+            form.isVisible ? "border-emerald-500/60" : "border-red-500/60"
+          }`}
+          aria-label="Ausleihbar umschalten"
+          aria-pressed={form.isVisible}
+          disabled={uploadPending}
+        >
+          <span className="text-sm text-slate-900">Ausleihbar</span>
+          <span
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+              form.isVisible ? "bg-emerald-500/60" : "bg-red-500/60"
+            }`}
+            aria-hidden="true"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                form.isVisible ? "translate-x-5" : "translate-x-1"
+              }`}
+            />
+          </span>
+        </button>
       </div>
 
-      <div className="mt-4 min-w-0 rounded-lg border border-slate-200 bg-white p-3">
+      <DetailCard className="mt-4 !bg-card/40 !hover:bg-card/40">
         <div className="space-y-3">
           <div>
-            <p className="text-lg font-semibold text-slate-900">Bild</p>
-            <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
+            <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
+            <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start md:gap-8">
+          <div className="grid grid-cols-1 gap-4 md:items-start md:gap-8">
             <div className="flex flex-col gap-3">
               <div>
-                <p className="select-none text-xs text-slate-600">Bild hochladen (optional)</p>
+                <p className="select-none text-sm text-slate-600">Bild hochladen (optional)</p>
                 <label
                   htmlFor="new-lendable-item-image"
-                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
-                    uploadPending ? "cursor-default opacity-90" : "cursor-pointer hover:bg-violet-100/90"
+                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
+                    uploadPending ? "cursor-default opacity-90" : "cursor-pointer hover:bg-violet-100"
                   }`}
                 >
                   <input
@@ -229,83 +251,39 @@ export function NewLendableItemPage() {
                     {createImageFile?.name ?? "Keine Datei ausgewählt"}
                   </span>
                 </label>
+                <p className="mt-2 text-xs text-muted-foreground">Unterstützt PNG, JPEG, WebP und GIF, Max 8MB.</p>
               </div>
-
-              <label className="text-xs text-muted-foreground">
-                Bild-URL (optional)
-                <Input
-                  value={form.imageUrl}
-                  onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
-                  className="mt-1 h-10 rounded-xl"
-                  placeholder="https://..."
-                  disabled={uploadPending}
-                />
-              </label>
-              <label className="text-xs text-muted-foreground">
-                Bild-Alt-Text (optional)
-                <Input
-                  value={form.imageAltText}
-                  onChange={(e) => setForm((prev) => ({ ...prev, imageAltText: e.target.value }))}
-                  className="mt-1 h-10 rounded-xl"
-                  disabled={uploadPending}
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Hinweis: Wenn eine Datei ausgewählt ist, wird die URL beim Erstellen ignoriert und nach dem Upload gesetzt.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <p className="select-none text-xs text-slate-600">Vorschau</p>
-              <button
-                type="button"
-                onClick={() => {
-                  if (imagePreviewUrl) {
-                    window.open(imagePreviewUrl, "_blank", "noopener,noreferrer");
-                    return;
-                  }
-                  const url = form.imageUrl.trim();
-                  if (url) {
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                className={`relative h-48 w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 ${
-                  imagePreviewUrl || form.imageUrl.trim()
-                    ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
-                    : "cursor-default opacity-90"
-                }`}
-                aria-label={
-                  imagePreviewUrl || form.imageUrl.trim()
-                    ? "Bild in neuem Tab oeffnen"
-                    : "Vorschau (noch kein Bild gewaehlt)"
-                }
-                disabled={!imagePreviewUrl && !form.imageUrl.trim()}
-              >
-                <img
-                  src={imagePreviewUrl ?? form.imageUrl.trim() ?? "/pictures/placeholder.jpg"}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src = "/pictures/placeholder.jpg";
-                  }}
-                />
-              </button>
             </div>
           </div>
         </div>
-      </div>
+      </DetailCard>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={handleSubmit} disabled={!canSave || createMutation.isPending || uploadPending}>
-          {createMutation.isPending ? "Erstellt..." : uploadPending ? "Lade Bild hoch..." : "Leihgerät erstellen"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/backend/lendable-items")} disabled={uploadPending}>
+      <div className="flex justify-between mt-4">
+        <Button
+          type="button"
+          variant="glass"
+          className="!w-36"
+          onClick={() => router.push("/backend/lendable-items")} disabled={uploadPending}
+          >
           <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
             <ArrowLeftIcon />
           </span>
           Zurück
         </Button>
+        <Button
+          type="button"
+          variant="solid"
+          className="!w-48"
+          onClick={handleSubmit}
+          disabled={!canSave || createMutation.isPending || uploadPending}>
+          {createMutation.isPending ? "Erstellt..." : uploadPending ? "Lade Bild hoch..." : "Leihgerät erstellen"}
+        </Button>
+
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+
+
       </div>
     </Card>
   );
