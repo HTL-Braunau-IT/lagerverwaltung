@@ -9,11 +9,13 @@ import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
-import { ArrowLeftIcon } from "~/components/layout/icon-renders";
+import { ArrowLeftIcon, WastebinIcon } from "~/components/layout/icon-renders";
+import * as TableUI from "~/components/ui/table";
+import { DetailCard, DetailText } from "../ui/detail-card";
 
 type PartListItemForm = {
   productId: string;
-  productLabel: string;
+  productLabel: string; 
   quantity: string;
   displayUnit: string;
   storageRoomId: string | null;
@@ -200,6 +202,30 @@ export function NewPartsListPage() {
     !hasDuplicateProducts &&
     !storageRoomValidationMessage;
 
+  const lastDuplicateToastShownRef = useRef(false);
+  const lastStorageRoomToastMessageRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (hasDuplicateProducts) {
+      if (!lastDuplicateToastShownRef.current) {
+        toast.error("Jedes Produkt darf nur einmal in der Teileliste vorkommen.");
+        lastDuplicateToastShownRef.current = true;
+      }
+    } else {
+      lastDuplicateToastShownRef.current = false;
+    }
+  }, [hasDuplicateProducts, toast]);
+
+  useEffect(() => {
+    if (!storageRoomValidationMessage) {
+      lastStorageRoomToastMessageRef.current = null;
+      return;
+    }
+    if (lastStorageRoomToastMessageRef.current === storageRoomValidationMessage) return;
+    toast.error(storageRoomValidationMessage);
+    lastStorageRoomToastMessageRef.current = storageRoomValidationMessage;
+  }, [storageRoomValidationMessage, toast]);
+
   const getProductRowKey = (index: number) => `create-${index}`;
 
   const updateDropdownPosition = (rowKey: string | null) => {
@@ -335,155 +361,162 @@ export function NewPartsListPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Name
+          <span className="text-destructive pl-1">*</span>
           <Input
             value={form.name}
             onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            className="mt-1 h-10 rounded-xl"
-            autoFocus
+            variant="title"
+            className="mt-1"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Beschreibung
           <Input
             value={form.description}
             onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            className="mt-1 h-10 rounded-xl"
+            variant="default"
+            className="!h-11 mt-1"
           />
         </label>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="min-w-full table-fixed border-collapse text-left text-sm">
-          <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="w-[50%] px-3 py-2">Produkt</th>
-              <th className="w-[16%] px-3 py-2">Menge</th>
-              <th className="w-[14%] px-3 py-2">Einheit</th>
-              <th className="w-[20%] px-3 py-2">Aktion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {form.items.map((item, index) => {
-              const rowKey = getProductRowKey(index);
-              return (
-                <tr key={`${index}-${item.productId}`} className="border-t border-border">
-                  <td className="px-3 py-2 align-top">
-                    <div>
-                      <input
-                        ref={(node) => {
-                          if (node) {
-                            productInputRefs.current.set(rowKey, node);
-                          } else {
-                            productInputRefs.current.delete(rowKey);
-                          }
-                        }}
-                        value={item.productLabel}
-                        onFocus={() => handleProductInputFocus(index, item.productLabel)}
-                        onBlur={() => closeProductSuggestions(index)}
-                        onChange={(event) => handleProductInputChange(index, event.target.value)}
-                        onKeyDown={(event) => {
-                          if (!showSuggestions || filteredProductSuggestions.length === 0) {
-                            if (event.key === "Escape") {
-                              setActiveProductRowKey(null);
-                            }
-                            return;
-                          }
-
-                          if (event.key === "ArrowDown") {
-                            event.preventDefault();
-                            setHighlightedSuggestionIndex((prev) => (prev + 1) % filteredProductSuggestions.length);
-                            return;
-                          }
-
-                          if (event.key === "ArrowUp") {
-                            event.preventDefault();
-                            setHighlightedSuggestionIndex((prev) =>
-                              prev <= 0 ? filteredProductSuggestions.length - 1 : prev - 1,
-                            );
-                            return;
-                          }
-
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            const selected = filteredProductSuggestions[highlightedSuggestionIndex];
-                            if (selected) {
-                              selectProductSuggestion(index, selected);
-                            }
-                            return;
-                          }
-
+      <TableUI.Subtable className="mt-4" tableClassName="table-fixed text-left text-sm">
+        <TableUI.SubtableHeader className=" text-muted-foreground">
+          <tr>
+            <TableUI.SubtableHead className="w-[50%]">Produkt <span className="text-destructive pl-1 text-xs">*</span></TableUI.SubtableHead>
+            <TableUI.SubtableHead className="w-[16%]">Menge</TableUI.SubtableHead>
+            <TableUI.SubtableHead className="w-[14%]">Einheit</TableUI.SubtableHead>
+            <TableUI.SubtableHead className="w-[20%]">Aktion</TableUI.SubtableHead>
+          </tr>
+        </TableUI.SubtableHeader>
+        <TableUI.SubtableBody>
+          {form.items.map((item, index) => {
+            const rowKey = getProductRowKey(index);
+            return (
+              <TableUI.SubtableRow key={`${index}-${item.productId}`} className="hover:bg-transparent">
+                <TableUI.SubtableCell className="align-top">
+                  <div>
+                    <Input
+                      ref={(node) => {
+                        if (node) {
+                          productInputRefs.current.set(rowKey, node);
+                        } else {
+                          productInputRefs.current.delete(rowKey);
+                        }
+                      }}
+                      value={item.productLabel}
+                      onFocus={() => handleProductInputFocus(index, item.productLabel)}
+                      onBlur={() => closeProductSuggestions(index)}
+                      onChange={(event) => handleProductInputChange(index, event.target.value)}
+                      onKeyDown={(event) => {
+                        if (!showSuggestions || filteredProductSuggestions.length === 0) {
                           if (event.key === "Escape") {
-                            event.preventDefault();
                             setActiveProductRowKey(null);
                           }
-                        }}
-                        placeholder="SKU oder Name tippen..."
-                        className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-                      />
-                      {item.productId && duplicateProductIds.has(item.productId) ? (
-                        <p className="mt-1 text-xs text-destructive">
-                          Produkt ist bereits in einer anderen Zeile enthalten.
-                        </p>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      type="number"
-                      min={0.001}
-                      step={0.001}
-                      value={item.quantity}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items: prev.items.map((entry, entryIndex) =>
-                            entryIndex === index
-                              ? {
-                                  ...entry,
-                                  quantity: event.target.value,
-                                }
-                              : entry,
-                          ),
-                        }))
-                      }
-                      className="h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
+                          return;
+                        }
+
+                        if (event.key === "ArrowDown") {
+                          event.preventDefault();
+                          setHighlightedSuggestionIndex((prev) => (prev + 1) % filteredProductSuggestions.length);
+                          return;
+                        }
+
+                        if (event.key === "ArrowUp") {
+                          event.preventDefault();
+                          setHighlightedSuggestionIndex((prev) =>
+                            prev <= 0 ? filteredProductSuggestions.length - 1 : prev - 1,
+                          );
+                          return;
+                        }
+
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          const selected = filteredProductSuggestions[highlightedSuggestionIndex];
+                          if (selected) {
+                            selectProductSuggestion(index, selected);
+                          }
+                          return;
+                        }
+
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          setActiveProductRowKey(null);
+                        }
+                      }}
+                      placeholder="SKU oder Name tippen..."
+                      className=""
                     />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <span className="inline-flex h-10 w-full items-center rounded-xl border border-input bg-muted/40 px-3 py-2 text-sm text-foreground">
-                      {item.displayUnit || "-"}
+                    {item.productId && duplicateProductIds.has(item.productId) ? (
+                      <p className="mt-1 text-xs text-destructive">
+                        Produkt ist bereits in einer anderen Zeile enthalten.
+                      </p>
+                    ) : null}
+                  </div>
+                </TableUI.SubtableCell>
+                <TableUI.SubtableCell className="align-top">
+                  <Input
+                    type="number"
+                    min={0.001}
+                    step={0.001}
+                    value={item.quantity}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        items: prev.items.map((entry, entryIndex) =>
+                          entryIndex === index
+                            ? {
+                                ...entry,
+                                quantity: event.target.value,
+                              }
+                            : entry,
+                        ),
+                      }))
+                    }
+                    className=""
+                  />
+                </TableUI.SubtableCell>
+                <TableUI.SubtableCell className="align-top">
+                  <Input
+                    variant="default"
+                    disabled
+                    value={item.displayUnit || "-"}
+                  />                    
+                </TableUI.SubtableCell>
+                <TableUI.SubtableCell className="align-top">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="!h-10"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        items:
+                          prev.items.length <= 1
+                            ? [{ ...EMPTY_PART_LIST_ITEM }]
+                            : prev.items.filter((_, entryIndex) => entryIndex !== index),
+                      }))
+                    }
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <WastebinIcon size={16} className="opacity-90" />
+                      <span>Zeile entfernen</span>
                     </span>
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          items:
-                            prev.items.length <= 1
-                              ? [{ ...EMPTY_PART_LIST_ITEM }]
-                              : prev.items.filter((_, entryIndex) => entryIndex !== index),
-                        }))
-                      }
-                    >
-                      Zeile entfernen
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </Button>
+                </TableUI.SubtableCell>
+              </TableUI.SubtableRow>
+            );
+          })}
+        </TableUI.SubtableBody>
+      </TableUI.Subtable>
 
       <div className="mt-3">
         <Button
           type="button"
-          variant="secondary"
+          variant="glass"
+          className="!w-48"
           onClick={() =>
             setForm((prev) => ({
               ...prev,
@@ -491,25 +524,25 @@ export function NewPartsListPage() {
             }))
           }
         >
-          Produktzeile hinzufuegen
+          Produktzeile hinzufügen
         </Button>
       </div>
 
-      <div className="mt-4 min-w-0 rounded-lg border border-slate-200 bg-white p-3">
+      <DetailCard className="mt-4 !bg-card/40 !hover:bg-card/40">
         <div className="space-y-3">
           <div>
             <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
-            <div className="mt-2 h-px w-full bg-slate-200/70" aria-hidden="true" />
+            <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 md:items-stretch">
             <div className="flex min-h-0 flex-col gap-3 md:h-full">
               <div>
-                <p className="select-none text-xs text-slate-600">Bild hochladen</p>
+                <p className="select-none text-sm text-slate-600">Bild hochladen</p>
                 <label
                   htmlFor="new-parts-list-image"
-                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-violet-50/90 p-3 text-sm ${
-                    uploadBusy ? "cursor-default opacity-90" : "cursor-pointer hover:bg-violet-100/90"
+                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-violet-400/70 bg-card/40 p-3 text-sm ${
+                    uploadBusy ? "cursor-default opacity-90" : "cursor-pointer hover:bg-violet-100"
                   }`}
                 >
                   <input
@@ -543,45 +576,17 @@ export function NewPartsListPage() {
                 </label>
               </div>
               <p className="min-w-0 flex-1 text-xs text-slate-600">
-                  Unterstützt PNG, JPEG, WebP und GIF. Wird nach dem Speichern der Teileliste übertragen.
+                  Unterstützt PNG, JPEG, WebP und GIF, Max 8MB.
               </p>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!imagePreviewUrl) return;
-                    window.open(imagePreviewUrl, "_blank", "noopener,noreferrer");
-                  }}
-                  className={`relative h-48 w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-56 sm:w-56 md:h-64 md:w-64 ${
-                    imagePreviewUrl
-                      ? "cursor-pointer ring-offset-2 transition hover:ring-2 hover:ring-violet-400/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600"
-                      : "cursor-default opacity-90"
-                  }`}
-                  aria-label={imagePreviewUrl ? "Bild in neuem Tab oeffnen" : "Vorschau (noch kein Bild gewaehlt)"}
-                  disabled={!imagePreviewUrl}
-                >
-                  <img
-                    src={imagePreviewUrl ?? "/pictures/placeholder.jpg"}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    onError={(event) => {
-                      event.currentTarget.onerror = null;
-                      event.currentTarget.src = "/pictures/placeholder.jpg";
-                    }}
-                  />
-                </button>
-
-              </div>
             </div>
 
             <div className="flex min-h-0 flex-col gap-3 md:h-full">
               <div>
-                <p className="select-none text-xs text-slate-600">Dokument hochladen</p>
+                <p className="select-none text-sm text-slate-600">Dokument hochladen</p>
                 <label
                   htmlFor="new-parts-list-document"
-                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-amber-50/90 p-3 text-sm ${
-                    uploadBusy ? "cursor-default opacity-90" : "cursor-pointer hover:bg-amber-100/90"
+                  className={`group mt-2 flex w-full min-w-0 select-none items-center gap-3 rounded-lg border-2 border-dashed border-amber-500/65 bg-card/40 p-3 text-sm ${
+                    uploadBusy ? "cursor-default opacity-90" : "cursor-pointer hover:bg-amber-100"
                   }`}
                 >
                   <input
@@ -615,74 +620,83 @@ export function NewPartsListPage() {
                 </label>
               </div>
               <p className="text-xs text-slate-600">
-                PDF, Text, Tabellen und Präsentationen. Wird nach dem Speichern der Teileliste übertragen.
+                PDF, Text, Tabellen und Präsentationen, Max 8MB.
               </p>
             </div>
           </div>
         </div>
+      </DetailCard>
+
+      <div className="mt-4 flex justify-between">
+        <Button
+          type="button"
+          variant="glass"
+          className="!w-36"
+          onClick={() => router.push("/backend/parts-list")}
+          disabled={uploadBusy}
+        >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <ArrowLeftIcon />
+          </span>
+          Zurück
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          className="!w-36"
+          onClick={async () => {
+            if (storageRoomValidationMessage) {
+              return;
+            }
+
+            let created: { id: string };
+            try {
+              created = await createMutation.mutateAsync({
+                name: form.name.trim(),
+                description: form.description.trim() ? form.description.trim() : null,
+                items: normalizedFormItems,
+              });
+            } catch (error) {
+              toast.error(extractErrorMessage(error, "Teileliste konnte nicht erstellt werden."));
+              return;
+            }
+
+            setUploadBusy(true);
+            try {
+              if (imageFile) {
+                await uploadImageForPartList(created.id, imageFile);
+              }
+              if (documentFile) {
+                await uploadDocumentForPartList(created.id, documentFile);
+              }
+            } catch (error) {
+              toast.error(
+                `Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden: ${extractErrorMessage(
+                  error,
+                  "Unbekannter Fehler",
+                )}`,
+              );
+              setUploadBusy(false);
+              return;
+            }
+
+            setUploadBusy(false);
+            await utils.partsList.backendList.invalidate();
+            toast.success("Teileliste erstellt.");
+            router.push("/backend/parts-list");
+          }}
+          disabled={!canSave || createMutation.isPending || uploadBusy}
+        >
+          {createMutation.isPending ? "Erstellt..." : uploadBusy ? "Lade Dateien hoch..." : "Teileliste erstellen"}
+        </Button>
+
+
       </div>
 
       <div className="mt-4">
-        {hasDuplicateProducts ? (
-          <p className="mb-2 text-xs text-destructive">Jedes Produkt darf nur einmal in der Teileliste vorkommen.</p>
-        ) : null}
-        {storageRoomValidationMessage ? (
-          <p className="mb-2 text-xs text-destructive">{storageRoomValidationMessage}</p>
-        ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            onClick={async () => {
-              if (storageRoomValidationMessage) {
-                toast.error(storageRoomValidationMessage);
-                return;
-              }
-              let created: { id: string };
-              try {
-                created = await createMutation.mutateAsync({
-                  name: form.name.trim(),
-                  description: form.description.trim() ? form.description.trim() : null,
-                  items: normalizedFormItems,
-                });
-              } catch (error) {
-                toast.error(extractErrorMessage(error, "Teileliste konnte nicht erstellt werden."));
-                return;
-              }
+          
 
-              setUploadBusy(true);
-              try {
-                if (imageFile) {
-                  await uploadImageForPartList(created.id, imageFile);
-                }
-                if (documentFile) {
-                  await uploadDocumentForPartList(created.id, documentFile);
-                }
-              } catch (error) {
-                toast.error(
-                  `Teileliste wurde erstellt, aber Dateien konnten nicht hochgeladen werden: ${extractErrorMessage(
-                    error,
-                    "Unbekannter Fehler",
-                  )}`,
-                );
-                setUploadBusy(false);
-                return;
-              }
-              setUploadBusy(false);
-
-              await utils.partsList.backendList.invalidate();
-              toast.success("Teileliste erstellt.");
-              router.push("/backend/parts-list");
-            }}
-            disabled={!canSave || createMutation.isPending || uploadBusy}
-          >
-            {createMutation.isPending ? "Erstellt..." : uploadBusy ? "Lade Dateien hoch..." : "Teileliste erstellen"}
-          </Button>
-          <Button type="button" variant="outline" onClick={() => router.push("/backend/parts-list")} disabled={uploadBusy}>
-            <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
-              <ArrowLeftIcon />
-            </span>
-            Zurück
-          </Button>
         </div>
       </div>
 
