@@ -52,19 +52,35 @@ export function NewCategoryPage() {
           <Input
             value={form.name}
             onChange={(event) => setForm({ name: event.target.value })}
-            className="mt-1 h-10 rounded-xl"
-            autoFocus
+            variant="title"
           />
         </label>
         <label className="text-xs text-muted-foreground">
           Slug (automatisch)
-          <Input value={generatedSlug} readOnly className="mt-1 h-10 rounded-xl" />
+          <Input
+            value={generatedSlug}
+            disabled
+            variant="subtitle"
+          />
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex justify-between mt-4">
         <Button
           type="button"
+          variant="glass"
+          onClick={() => router.push("/backend/categories")}
+          className="!w-36"
+          >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <ArrowLeftIcon />
+          </span>
+          Zurück
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          className="!w-36"
           onClick={() =>
             createMutation.mutate({
               name: form.name.trim(),
@@ -74,12 +90,6 @@ export function NewCategoryPage() {
           disabled={!canSave || createMutation.isPending}
         >
           {createMutation.isPending ? "Erstellt..." : "Kategorie erstellen"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/backend/categories")}>
-          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
-            <ArrowLeftIcon />
-          </span>
-          Zurück
         </Button>
       </div>
     </Card>

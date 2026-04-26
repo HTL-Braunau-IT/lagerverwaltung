@@ -186,7 +186,7 @@ export function CategoriesAdminPanel() {
                               Slug (automatisch)
                               <Input
                                 value={generatedSlug}
-                                readOnly
+                                disabled
                                 onClick={(event) => event.stopPropagation()}
                                 variant="subtitle"
                               />
