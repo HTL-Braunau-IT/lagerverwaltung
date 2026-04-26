@@ -50,24 +50,43 @@ export function NewCostCenterPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Name
+          <span className="text-destructive pl-1">*</span>
           <Input
             value={form.name}
+            variant="title"
             onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            className="mt-1 h-10 rounded-xl"
-            autoFocus
+            className="mt-1"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Code (automatisch)
-          <Input value={generatedCode} readOnly className="mt-1 h-10 rounded-xl" />
+          <Input
+            value={generatedCode}
+            variant="subtitle"
+            disabled
+            className="mt-1"
+            />
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex justify-between mt-4">
         <Button
           type="button"
+          variant="glass"
+          onClick={() => router.push("/backend/cost-centers")}
+          className="!w-36"
+          >
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <ArrowLeftIcon />
+          </span>
+          Zurück
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          className="!w-48"
           onClick={async () => {
             try {
               await createMutation.mutateAsync({ code: generatedCode, name: form.name.trim() });
@@ -82,12 +101,6 @@ export function NewCostCenterPage() {
           disabled={!canSave || createMutation.isPending}
         >
           {createMutation.isPending ? "Erstellt..." : "Kostenstelle erstellen"}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/backend/cost-centers")}>
-          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
-            <ArrowLeftIcon />
-          </span>
-          Zurück
         </Button>
       </div>
     </Card>
