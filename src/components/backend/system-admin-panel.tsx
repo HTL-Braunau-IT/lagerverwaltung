@@ -45,7 +45,7 @@ export function SystemAdminPanel() {
           ) : dbHealthQuery.isError ? (
             <span className="inline-flex items-center gap-2">
               <span
-                className="inline-flex h-2 w-2 rounded-full bg-red-600 shadow-[0_0_0_3px_rgba(220,38,38,0.25)]"
+                className="inline-flex h-2 w-2 rounded-full bg-red-600 shadow-[0_0_0_3px_rgba(220,38,38,0.25)]" 
                 aria-hidden="true"
               />
               <span className="text-sm text-muted-foreground">Fehler</span>

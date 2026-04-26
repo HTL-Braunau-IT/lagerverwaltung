@@ -14,9 +14,9 @@ export default async function BackendLayout({
 
   return (
     <main className="mx-auto w-[90%] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="grid gap-4 lg:grid-cols-[240px_1fr] lg:items-start">
+      <div className="grid gap-4 pt-5 lg:grid-cols-[240px_1fr] lg:items-start">
         <BackendSidebarNav />
-        <section className="pl-4 pb-4 pt-5">{children}</section>
+        <section className="pl-4 pb-4">{children}</section>
       </div>
     </main>
   );
