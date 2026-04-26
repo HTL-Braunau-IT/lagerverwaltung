@@ -206,107 +206,106 @@ export function LoansAdminPanel() {
                     </TableUI.TableCell>
                   </TableUI.TableRow>
 
-                  {isExpanded ? (
-                    <tr className="border-t border-border bg-muted/30">
-                      <td colSpan={4} className="px-3 py-4">
-                        <div className="space-y-4">
-                          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-3">
-                            <DetailCard>
-                              <DetailText variant="kicker">Referenznummer</DetailText>
-                              <DetailText variant="value">{loan.id.slice(0, 8)}</DetailText>
-                            </DetailCard>
-                            <DetailCard>
-                              <DetailText variant="kicker">Person</DetailText>
-                              <DetailText variant="value">{loan.borrower.name ?? loan.borrower.email ?? "-"}</DetailText>
-                            </DetailCard>
-                            <DetailCard>
-                              <DetailText variant="kicker">Erstellt</DetailText>
-                              <DetailText variant="value">{formatDate(loan.createdAt)}</DetailText>
-                            </DetailCard>
-                          </div>
+                  <TableUI.TableExpandableRow
+                    open={isExpanded}
+                    colSpan={4}
+                    rowClassName="border-t border-border bg-muted/30"
+                    cellClassName="px-3 py-4"
+                    contentClassName="!p-0 !pt-0 !pb-0 !px-0"
+                  >
+                    <div className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-3">
+                        <DetailCard>
+                          <DetailText variant="kicker">Referenznummer</DetailText>
+                          <DetailText variant="value">{loan.id.slice(0, 8)}</DetailText>
+                        </DetailCard>
+                        <DetailCard>
+                          <DetailText variant="kicker">Person</DetailText>
+                          <DetailText variant="value">{loan.borrower.name ?? loan.borrower.email ?? "-"}</DetailText>
+                        </DetailCard>
+                        <DetailCard>
+                          <DetailText variant="kicker">Erstellt</DetailText>
+                          <DetailText variant="value">{formatDate(loan.createdAt)}</DetailText>
+                        </DetailCard>
+                      </div>
 
-                          <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
-                            <TableUI.Subtable tableClassName="table-fixed">
-                              <TableUI.SubtableHeader>
-                                <tr>
-                                  <TableUI.SubtableHead className="min-w-[13rem] w-[42%] shrink-0">
-                                    Material
-                                  </TableUI.SubtableHead>
-                                  <TableUI.SubtableHead
-                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
-                                    title="Vom Lehrer:in freigegebene Stückzahl"
-                                  >
-                                    Freigegeben
-                                  </TableUI.SubtableHead>
-                                  <TableUI.SubtableHead
-                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
-                                    title="Bereits an die ausleihende Person übergeben"
-                                  >
-                                    Ausgegeben
-                                  </TableUI.SubtableHead>
-                                  <TableUI.SubtableHead
-                                    className="w-24 shrink-0 whitespace-nowrap tabular-nums"
-                                    title="Noch nicht zurückgegebene Stückzahl"
-                                  >
-                                    Offen
-                                  </TableUI.SubtableHead>
-                                  <TableUI.SubtableHead className="w-36 shrink-0 whitespace-nowrap">
-                                    Fällig am
-                                  </TableUI.SubtableHead>
-                                  <TableUI.SubtableHead className="min-w-[10rem] shrink-0">Aktion</TableUI.SubtableHead>
-                                </tr>
-                              </TableUI.SubtableHeader>
-                              <TableUI.SubtableBody>
-                                {loan.items.map((item) => {
-                                  const approved = decimalToNumber(item.quantityApproved);
-                                  const handedOver = decimalToNumber(item.quantityHandedOver);
-                                  const returned = decimalToNumber(item.quantityReturned);
-                                  const remainingToHandOver = approved - handedOver;
-                                  const remainingToReturn = handedOver - returned;
+                      <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                        <TableUI.Subtable tableClassName="table-fixed">
+                          <TableUI.SubtableHeader>
+                            <tr>
+                              <TableUI.SubtableHead className="min-w-[13rem] w-[42%] shrink-0">
+                                Material
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead
+                                className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                title="Vom Lehrer:in freigegebene Stückzahl"
+                              >
+                                Freigegeben
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead
+                                className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                title="Bereits an die ausleihende Person übergeben"
+                              >
+                                Ausgegeben
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead
+                                className="w-24 shrink-0 whitespace-nowrap tabular-nums"
+                                title="Noch nicht zurückgegebene Stückzahl"
+                              >
+                                Offen
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead className="w-36 shrink-0 whitespace-nowrap">
+                                Fällig am
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead className="min-w-[10rem] shrink-0">Aktion</TableUI.SubtableHead>
+                            </tr>
+                          </TableUI.SubtableHeader>
+                          <TableUI.SubtableBody>
+                            {loan.items.map((item) => {
+                              const approved = decimalToNumber(item.quantityApproved);
+                              const handedOver = decimalToNumber(item.quantityHandedOver);
+                              const returned = decimalToNumber(item.quantityReturned);
+                              const remainingToHandOver = approved - handedOver;
+                              const remainingToReturn = handedOver - returned;
 
-                                  return (
-                                    <TableUI.SubtableRow key={item.id}>
-                                      <TableUI.SubtableCell className="w-[32%] min-w-[13rem] shrink-0 font-medium text-foreground">
-                                        <div
-                                          className="min-w-0 truncate"
-                                          title={item.lendableItem?.name ?? undefined}
-                                        >
-                                          {item.lendableItem?.name ?? "-"}
-                                        </div>
-                                      </TableUI.SubtableCell>
-                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
-                                        {Math.floor(approved)}
-                                      </TableUI.SubtableCell>
-                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
-                                        {Math.floor(handedOver)}
-                                      </TableUI.SubtableCell>
-                                      <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
-                                        {Math.floor(remainingToReturn)}
-                                      </TableUI.SubtableCell>
-                                      <TableUI.SubtableCell className="text-muted-foreground">
-                                        {item.dueAt ? formatDate(item.dueAt) : "-"}
-                                      </TableUI.SubtableCell>
-                                      <TableUI.SubtableCell className="min-w-[10rem] shrink-0 align-top">
-                                        <LoanItemActions
-                                          item={item}
-                                          loanId={loan.id}
-                                          remainingToHandOver={remainingToHandOver}
-                                          remainingToReturn={remainingToReturn}
-                                          handoverMutation={handoverMutation}
-                                          returnMutation={returnMutation}
-                                          remindMutation={remindMutation}
-                                        />
-                                      </TableUI.SubtableCell>
-                                    </TableUI.SubtableRow>
-                                  );
-                                })}
-                              </TableUI.SubtableBody>
-                            </TableUI.Subtable>
-                          </DetailCard>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : null}
+                              return (
+                                <TableUI.SubtableRow key={item.id}>
+                                  <TableUI.SubtableCell className="w-[32%] min-w-[13rem] shrink-0 font-medium text-foreground">
+                                    <div className="min-w-0 truncate" title={item.lendableItem?.name ?? undefined}>
+                                      {item.lendableItem?.name ?? "-"}
+                                    </div>
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                    {Math.floor(approved)}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                    {Math.floor(handedOver)}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                                    {Math.floor(remainingToReturn)}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-muted-foreground">
+                                    {item.dueAt ? formatDate(item.dueAt) : "-"}
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="min-w-[10rem] shrink-0 align-top">
+                                    <LoanItemActions
+                                      item={item}
+                                      loanId={loan.id}
+                                      remainingToHandOver={remainingToHandOver}
+                                      remainingToReturn={remainingToReturn}
+                                      handoverMutation={handoverMutation}
+                                      returnMutation={returnMutation}
+                                      remindMutation={remindMutation}
+                                    />
+                                  </TableUI.SubtableCell>
+                                </TableUI.SubtableRow>
+                              );
+                            })}
+                          </TableUI.SubtableBody>
+                        </TableUI.Subtable>
+                      </DetailCard>
+                    </div>
+                  </TableUI.TableExpandableRow>
                 </Fragment>
               );
             })}
