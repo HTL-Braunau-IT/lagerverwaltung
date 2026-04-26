@@ -47,15 +47,16 @@ export function NewCategoryPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Name
+          <span className="text-destructive pl-1">*</span>
           <Input
             value={form.name}
             onChange={(event) => setForm({ name: event.target.value })}
             variant="title"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Slug (automatisch)
           <Input
             value={generatedSlug}
