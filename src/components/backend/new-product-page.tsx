@@ -551,7 +551,7 @@ export function NewProductPage() {
               >
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
                   disabled={uploadPending}
                   className="sr-only"
                   onChange={(e) => {
@@ -580,17 +580,8 @@ export function NewProductPage() {
                   {uploadPending ? "Bild wird hochgeladen..." : (imageFile?.name ?? "Keine Datei ausgewählt")}
                 </span>
               </label>
-              <p className="mt-1 text-xs text-muted-foreground">Optional, maximal 8 MB.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Unterstützt PNG, JPEG, WebP und GIF, Max 8MB.</p>
             </div>
-            <label className="block text-sm text-slate-600">
-              Bild-Alt-Text (optional)
-              <Input
-                value={form.imageAltText}
-                onChange={(e) => setForm((c) => ({ ...c, imageAltText: e.target.value }))}
-                className="mt-1"
-                disabled={uploadPending}
-              />
-            </label>
           </div>
         </DetailCard>
       </div>
