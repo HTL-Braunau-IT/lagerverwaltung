@@ -215,7 +215,7 @@ export function OrdersAdminPanel() {
           <TableUI.TableBody>
             {ordersQuery.isLoading ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={7} className="text-muted-foreground">
                   Bestellungen werden geladen...
                 </TableUI.TableCell>
               </tr>
@@ -223,7 +223,7 @@ export function OrdersAdminPanel() {
 
             {ordersQuery.error ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="text-destructive">
+                <TableUI.TableCell colSpan={7} className="text-destructive">
                   Bestellungen konnten nicht geladen werden.
                 </TableUI.TableCell>
               </tr>
@@ -231,7 +231,7 @@ export function OrdersAdminPanel() {
 
             {!ordersQuery.isLoading && !ordersQuery.error && sortedOrders.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={7} className="text-muted-foreground">
                   Keine Bestellungen gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -354,7 +354,7 @@ export function OrdersAdminPanel() {
 
                   <TableUI.TableExpandableRow
                     open={isExpanded}
-                    colSpan={6}
+                    colSpan={7}
                     rowClassName="bg-muted/30"
                     cellClassName="p-3"
                     containerClassName=""
