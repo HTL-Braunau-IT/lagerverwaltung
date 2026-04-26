@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { Select } from "~/components/ui/select";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 
 type StorageLocationForm = {
@@ -69,47 +70,63 @@ export function NewStorageLocationPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Name
+          <span className="text-destructive pl-1">*</span>
           <Input
             value={form.name}
             onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-            className="mt-1 h-10 rounded-xl"
-            autoFocus
+            variant="title"
+            className="mt-1"
           />
         </label>
-        <label className="text-xs text-muted-foreground">
+        <label className="text-sm text-muted-foreground">
           Code (automatisch)
-          <Input value={generatedCode} readOnly className="mt-1 h-10 rounded-xl" />
+          <Input
+            value={generatedCode}
+            disabled
+            variant="subtitle"
+            className="mt-1" />
         </label>
-        <label className="text-xs text-muted-foreground">
-          Lagerraum
-          <select
-            value={form.storageRoomId}
-            onChange={(event) => setForm((prev) => ({ ...prev, storageRoomId: event.target.value }))}
-            className="mt-1 h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground outline-none"
-          >
-            <option value="">Bitte wählen</option>
-            {roomItems.map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs text-muted-foreground md:col-span-2">
+        <label className="text-sm text-muted-foreground">
           Beschreibung (optional)
           <Input
             value={form.description}
             onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            className="mt-1 h-10 rounded-xl"
+            variant="default"
+            className="mt-1 h-11"
+          />
+        </label>
+        <label className="text-sm text-muted-foreground">
+          Lagerraum
+          <span className="text-destructive pl-1">*</span>
+          <Select
+            value={form.storageRoomId}
+            onValueChange={(nextRoomId) => setForm((prev) => ({ ...prev, storageRoomId: nextRoomId }))}
+            options={[
+              { value: "", label: "Bitte wählen" },
+              ...roomItems.map((room) => ({ value: room.id, label: room.name })),
+            ]}
+            className="mt-1 h-11 w-full px-2.5 py-2 text-sm text-slate-900"
           />
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex justify-between mt-4">
         <Button
           type="button"
+          variant="glass"
+          className="!w-36"
+          onClick={() => router.push("/backend/storage/locations")}>
+          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
+            <ArrowLeftIcon />
+          </span>
+          Zurück
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          className="!w-48"
           onClick={() =>
             createLocationMutation.mutate({
               code: generatedCode,
@@ -122,12 +139,13 @@ export function NewStorageLocationPage() {
         >
           {createLocationMutation.isPending ? "Erstellt..." : "Lagerplatz erstellen"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/backend/storage/locations")}>
-          <span className="mr-2 inline-flex [&_svg]:h-4 [&_svg]:w-4">
-            <ArrowLeftIcon />
-          </span>
-          Zurück
-        </Button>
+
+
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+
+
       </div>
     </Card>
   );
