@@ -1064,18 +1064,16 @@ export function ProductsAdminPanel() {
       <div className="overflow-x-auto rounded-md">
         <TableUI.Table className="table-fixed">
           <colgroup>
-            <col className="w-[43%]" />
-            <col className="w-[14%]" />
-            <col className="w-[8%]" />
-            <col className="w-[17%]" />
-            <col className="w-[8%]" />
+            <col className="w-[45%]" />
+            <col className="w-[15%]" />
+            <col className="w-[20%]" />
+            <col className="w-[10%]" />
             <col className="w-[10%]" />
           </colgroup>
           <TableUI.TableHeader>
             <tr>
               <TableUI.TableHead className="min-w-0">Name</TableUI.TableHead>
               <TableUI.TableHead className="min-w-0">SKU</TableUI.TableHead>
-              <TableUI.TableHead className="min-w-0">Kategorie</TableUI.TableHead>
               <TableUI.TableHead className="min-w-0">Lagerplatz</TableUI.TableHead>
               <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">Bestand</TableUI.TableHead>
               <TableUI.TableHead className="min-w-0 whitespace-normal leading-tight">
@@ -1086,7 +1084,7 @@ export function ProductsAdminPanel() {
           <TableUI.TableBody>
             {categoryCountsQuery.isLoading ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
                   Kategorien werden geladen...
                 </TableUI.TableCell>
               </tr>
@@ -1094,7 +1092,7 @@ export function ProductsAdminPanel() {
 
             {categoryCountsQuery.error ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
+                <TableUI.TableCell colSpan={5} className="bg-white text-destructive">
                   Kategorien konnten nicht geladen werden.
                 </TableUI.TableCell>
               </tr>
@@ -1102,7 +1100,7 @@ export function ProductsAdminPanel() {
 
             {!categoryCountsQuery.isLoading && !categoryCountsQuery.error && categoryRows.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
                   Keine Kategorien gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -1118,42 +1116,49 @@ export function ProductsAdminPanel() {
                       setExpandedRowId(null);
                       setExpandedCategoryId((current) => (current === categoryGroup.id ? null : categoryGroup.id));
                     }}
-                    className="cursor-pointer bg-muted/40 hover:bg-muted/60"
+                    className={`cursor-pointer ${isCategoryExpanded ? "bg-muted/30 hover:bg-muted/40" : ""}`}
                   >
-                    <TableUI.TableCell colSpan={6} className="min-w-0">
+                    <TableUI.TableCell
+                      colSpan={5}
+                      className={`min-w-0 ${isCategoryExpanded ? "relative border-b border-border/60" : ""}`}
+                    >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <ChevronDownIcon open={isCategoryExpanded} className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-semibold">{categoryGroup.name}</span>
+                          <span className="font-semibold">
+                            {categoryGroup.name} {" "}
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              ({categoryGroup.productCount} Produkt{categoryGroup.productCount === 1 ? "" : "e"})
+                            </span>
+                            </span>
                         </div>
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {categoryGroup.productCount} Produkt{categoryGroup.productCount === 1 ? "" : "e"}
-                        </span>
                       </div>
                     </TableUI.TableCell>
                   </TableUI.TableRow>
                   {isCategoryExpanded ? (
                     productsQuery.isLoading || isPreparingNearMinimumList ? (
                       <tr>
-                        <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                        <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
                           Produkte werden geladen...
                         </TableUI.TableCell>
                       </tr>
                     ) : productsQuery.error ? (
                       <tr>
-                        <TableUI.TableCell colSpan={6} className="bg-white text-destructive">
+                        <TableUI.TableCell colSpan={5} className="bg-white text-destructive">
                           Produkte konnten nicht geladen werden.
                         </TableUI.TableCell>
                       </tr>
                     ) : visibleProducts.length === 0 ? (
                       <tr>
-                        <TableUI.TableCell colSpan={6} className="bg-white text-muted-foreground">
+                        <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
                           Keine Produkte in dieser Kategorie.
                         </TableUI.TableCell>
                       </tr>
                     ) : (
-                      visibleProducts.map((product) => {
+                      visibleProducts.map((product, productIndex) => {
                           const isExpanded = expandedRowId === product.id;
+                          const isFirstInCategory = productIndex === 0;
+                          const isLastInCategory = productIndex === visibleProducts.length - 1;
                           const isNearMinimum = isNearMinimumStock(product.quantityOnHand, product.minimumQuantity);
                           const isBelowMinimum = (() => {
                             const minimum = toNumber(product.minimumQuantity);
@@ -1202,31 +1207,51 @@ export function ProductsAdminPanel() {
                         : isNearMinimum
                           ? "rounded-md outline outline-2 outline-offset-[-4px] outline-accent-orange"
                           : ""
-                    }`}
+                    } ${isCategoryExpanded ? "bg-muted/15" : ""}`}
                   >
-                    <TableUI.TableCell className="min-w-0 max-w-0">
-                      <div className="relative inline-block max-w-full">
-                        <span className="break-words">{product.name}</span>
-                        {isHoverPreviewVisible ? (
-                          <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 rounded-md bg-card/90 p-1">
-                            <img
-                              src={previewImage.url}
-                              alt={previewImage.altText || `${product.name} Produktbild`}
-                              className="h-20 w-20 rounded object-cover"
-                              onError={(event) => {
-                                event.currentTarget.onerror = null;
-                                event.currentTarget.src = "/pictures/placeholder.jpg";
-                              }}
-                            />
-                          </div>
-                        ) : null}
+                    <TableUI.TableCell className="relative min-w-0 max-w-0">
+                      <span
+                        aria-hidden
+                        className={`pointer-events-none absolute left-5 z-0 w-[2px] bg-muted-foreground ${
+                          isLastInCategory ? "top-0 bottom-[calc(50%-2px)]" : "top-0 bottom-0"
+                        } ${isFirstInCategory ? "-top-3 rounded-t-full" : ""} ${isLastInCategory ? "rounded-b-full" : ""}`}
+                      />
+                      <svg
+                        aria-hidden
+                        viewBox="0 0 12 12"
+                        className="pointer-events-none absolute left-5 top-1/2 z-10 h-3 w-3 -translate-y-1/2 translate-x-[1px]"
+                      >
+                        <path
+                          d="M0 0 V6 A2 2 0 0 0 2 8 H12"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-muted-foreground"
+                        />
+                      </svg>
+                      <div className="relative max-w-full pl-8">
+                        <div className="relative inline-block max-w-full">
+                          <span className="break-words">{product.name}</span>
+                          {isHoverPreviewVisible ? (
+                            <div className="pointer-events-none absolute left-0 top-full z-50 mt-2 rounded-md bg-card/90 p-1">
+                              <img
+                                src={previewImage.url}
+                                alt={previewImage.altText || `${product.name} Produktbild`}
+                                className="h-20 w-20 rounded object-cover"
+                                onError={(event) => {
+                                  event.currentTarget.onerror = null;
+                                  event.currentTarget.src = "/pictures/placeholder.jpg";
+                                }}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     </TableUI.TableCell>
                     <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {product.sku}
-                    </TableUI.TableCell>
-                    <TableUI.TableCell className="min-w-0 max-w-0 break-words">
-                      {categoryGroup.name}
                     </TableUI.TableCell>
                     <TableUI.TableCell className="min-w-0 max-w-0 break-words">
                       {locationText}
@@ -1240,7 +1265,7 @@ export function ProductsAdminPanel() {
                   </TableUI.TableRow>
                   <TableUI.TableExpandableRow
                     open={isExpanded}
-                    colSpan={6}
+                    colSpan={5}
                     rowClassName="bg-muted/30"
                     cellClassName="min-w-0 align-top px-1 py-5"
                     contentClassName="!p-0"
