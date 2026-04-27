@@ -1084,7 +1084,7 @@ export function ProductsAdminPanel() {
           <TableUI.TableBody>
             {categoryCountsQuery.isLoading ? (
               <tr>
-                <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                   Kategorien werden geladen...
                 </TableUI.TableCell>
               </tr>
@@ -1092,7 +1092,7 @@ export function ProductsAdminPanel() {
 
             {categoryCountsQuery.error ? (
               <tr>
-                <TableUI.TableCell colSpan={5} className="bg-white text-destructive">
+                <TableUI.TableCell colSpan={5} className="text-destructive">
                   Kategorien konnten nicht geladen werden.
                 </TableUI.TableCell>
               </tr>
@@ -1100,7 +1100,7 @@ export function ProductsAdminPanel() {
 
             {!categoryCountsQuery.isLoading && !categoryCountsQuery.error && categoryRows.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                   Keine Kategorien gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -1138,19 +1138,19 @@ export function ProductsAdminPanel() {
                   {isCategoryExpanded ? (
                     productsQuery.isLoading || isPreparingNearMinimumList ? (
                       <tr>
-                        <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
+                        <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                           Produkte werden geladen...
                         </TableUI.TableCell>
                       </tr>
                     ) : productsQuery.error ? (
                       <tr>
-                        <TableUI.TableCell colSpan={5} className="bg-white text-destructive">
+                        <TableUI.TableCell colSpan={5} className="text-destructive">
                           Produkte konnten nicht geladen werden.
                         </TableUI.TableCell>
                       </tr>
                     ) : visibleProducts.length === 0 ? (
                       <tr>
-                        <TableUI.TableCell colSpan={5} className="bg-white text-muted-foreground">
+                        <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                           Keine Produkte in dieser Kategorie.
                         </TableUI.TableCell>
                       </tr>
