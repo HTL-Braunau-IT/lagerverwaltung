@@ -1,9 +1,9 @@
-import { SystemAdminPanel } from "~/components/backend/system-admin-panel";
+import { InfoAdminPanel } from "~/components/backend/info-admin-panel";
 
 export default function BackendInfoPage() {
   return (
     <section>
-      <SystemAdminPanel />
+      <InfoAdminPanel />
     </section>
   );
 }
