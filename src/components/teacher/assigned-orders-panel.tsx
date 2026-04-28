@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/toast";
+import { DetailCard, DetailText } from "../ui/detail-card";
+import { Badge } from "~/components/ui/badge"
+import * as TableUI from "~/components/ui/table";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -29,10 +32,10 @@ function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED") {
   return "Abgelehnt";
 }
 
-function requestStatusBadgeClass(status: "PENDING" | "APPROVED" | "REJECTED") {
-  if (status === "PENDING") return "bg-amber-100 text-amber-900";
-  if (status === "APPROVED") return "bg-emerald-100 text-emerald-900";
-  return "bg-rose-100 text-rose-900";
+function requestStatusBadgeVariant(status: "PENDING" | "APPROVED" | "REJECTED") {
+  if (status === "PENDING") return "orderSecond";
+  if (status === "APPROVED") return "orderThird";
+  return "orderFirst";
 }
 
 function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
@@ -190,11 +193,11 @@ export function AssignedOrdersPanel() {
                 <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm text-slate-500">{studentLabel(request.student)}</h3>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${requestStatusBadgeClass(request.status)}`}
+                    <Badge
+                      variant={requestStatusBadgeVariant(request.status)}
                     >
                       {requestStatusLabel(request.status)}
-                    </span>
+                    </Badge>
                   </div>
 
                   <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
@@ -436,99 +439,94 @@ export function AssignedOrdersPanel() {
         )}
 
         {completedRequests.length > 0 && (
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h2 className="text-sm font-semibold text-slate-900">Abgeschlossene Freigaben</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Bereits bearbeitete Anfragen inklusive Freigabe-Ergebnis.
-              </p>
-            </div>
-
+          <div className="space-y-3 mt-6 ">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {completedRequests.map((request) => {
                 const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
                 return (
-                  <article
+                  <DetailCard
                     key={request.id}
-                    className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    className="relative min-w-0 overflow-visible !bg-card/40 hover:!bg-card/40"
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="text-sm text-slate-500">
-                          Bestellnummer
-                        </h3>
-                        <p className="text-lg font-semibold text-slate-900">{request.approvedOrder?.orderNumber}</p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${requestStatusBadgeClass(request.status)}`}
-                      >
-                        {requestStatusLabel(request.status)}
-                      </span>
-                    </div>
-
-                    <div className="my-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
-
                     {request.status === "APPROVED" && request.approvedOrder ? (
-                        <div className="grid grid-cols-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
-                          <p className="font-semibold">Freigabe als Bestellung übernommen.</p>
-                          <p className="text-emerald-900 text-right">
-                           Status: {" "}
+                      <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 ">
+                        <div className="flex flex-col items-center gap-0.5 text-center">
+                          <div className="relative">
+                            <div
+                              aria-hidden="true"
+                              className="absolute left-1/2 top-0 z-0 h-8 w-[190px] -translate-x-1/2 rounded-b-md border border-violet-200 bg-violet-100 shadow-sm"
+                            />
+                            <Badge
+                              variant="default"
+                              className="relative z-10 mt-1.5 rounded-none border-0 bg-transparent p-4 leading-none text-violet-800 shadow-none"
+                            >
+                              Als Bestellung übernommen
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-600">
+                            Status:{" "}
                             <span className="font-medium">
                               {approvedOrderStatusLabel(request.approvedOrder.status)}
                             </span>
                           </p>
                         </div>
-                      ) : null}
+                      </div>
+                    ) : null}
 
-                    <div className="mt-5 grid gap-4">
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                        <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-[max-content_max-content_max-content_minmax(0,1fr)] sm:gap-6">
-                          <p className="flex min-w-0 flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              Eingang {" "}
-                            </span>
-                            <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
-                              {formatDate(request.createdAt).split(",")[0]}
-                            </span>
-                          </p>
-                          <p className="flex min-w-0 flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              Bearbeitet {" "}
-                            </span>
-                            <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
-                              {formatDate(request.updatedAt).split(",")[0]}
-                            </span>
-                          </p>
-                          <p className="flex min-w-0 flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              Produkte
-                            </span>
-                            <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
-                              {itemCount}
-                            </span>
-                          </p>
+                    <div className="flex items-center justify-between gap-3 pt-1 pl-1">
+                      <div className="min-w-0">
+                        <DetailText variant="kicker">
+                          Bestellnummer
+                        </DetailText>
+                        <DetailText variant="value">
+                          {request.approvedOrder?.orderNumber}
+                        </DetailText>
+                      </div>
+                      <Badge variant={requestStatusBadgeVariant(request.status)}>
+                          {requestStatusLabel(request.status)}
+                      </Badge>
+                    </div>
+
+                    <div className="my-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
+
+                    <div className="mt-5 grid grid-cols-4 gap-4">
+                      <DetailCard>
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Eingang</DetailText>
+                          <DetailText variant="value">{formatDate(request.createdAt).split(",")[0]}</DetailText>
+                        </div>
+                      </DetailCard>
+
+                      <DetailCard>
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Bearbeitet</DetailText>
+                          <DetailText variant="value">{formatDate(request.updatedAt).split(",")[0]}</DetailText>
+                        </div>
+                      </DetailCard>
+
+                      <DetailCard>
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Produkte</DetailText>
+                          <DetailText variant="value">{itemCount}</DetailText>
+                        </div>
+                      </DetailCard>
+
+                      <DetailCard>
+                        <div className="flex min-w-0 flex-col gap-1">
                           {request.status === "APPROVED" && request.approvedOrder ? (
-                            <p className="flex min-w-0 flex-col gap-1 sm:text-right">
-                              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                Lehrperson
-                              </span>
-                              <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
-                                {request.teacherDisplayName}
-                              </span>
-                            </p>
+                            <>
+                              <DetailText variant="kicker">Lehrperson</DetailText>
+                              <DetailText variant="value">{request.teacherDisplayName}</DetailText>
+                            </>
                           ) : (
-                            <p className="flex min-w-0 flex-col gap-1 sm:text-right">
-                              <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                Bestellnummer
-                              </span>
-                              <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
-                                -
-                              </span>
-                            </p>
+                            <>
+                              <DetailText variant="kicker">Bestellnummer</DetailText>
+                              <DetailText variant="value">-</DetailText>
+                            </>
                           )}
                         </div>
-                      </div>
+                      </DetailCard>
 
 
 
@@ -538,8 +536,8 @@ export function AssignedOrdersPanel() {
                         </div>
                       ) : null}
 
-                      <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none">
+                      <details className="group col-span-4 !rounded-sm bg-card/40 hover:bg-card/60">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">
                           <div className="flex items-baseline gap-2">
                             <p className="text-base font-semibold text-slate-900">Positionen</p>
                           </div>
@@ -549,39 +547,42 @@ export function AssignedOrdersPanel() {
                           </span>
                         </summary>
 
-                        <div className="mt-6">
+                        <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
                           {request.items.length === 0 ? (
                             <p className="text-sm text-slate-600">Keine Positionen vorhanden.</p>
                           ) : (
-                            <>
-                              <div className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                                <span className="min-w-0 truncate">Name</span>
-                                <span className="shrink-0 text-right">Menge</span>
-                              </div>
-                              <ul className="mt-2 divide-y divide-slate-200/70">
+                            <TableUI.Subtable className="rounded-sm">
+                              <TableUI.SubtableHeader>
+                                <tr>
+                                  <TableUI.SubtableHead scope="col">Name</TableUI.SubtableHead>
+                                  <TableUI.SubtableHead scope="col" className="text-right">
+                                    Menge
+                                  </TableUI.SubtableHead>
+                                </tr>
+                              </TableUI.SubtableHeader>
+                              <TableUI.SubtableBody>
                                 {request.items.map((item) => (
-                                  <li
-                                    key={item.id}
-                                    className="grid grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 py-2.5 text-sm text-slate-700 first:pt-3 last:pb-3"
-                                  >
-                                    <span className="min-w-0 truncate text-[15px] font-medium text-slate-900">
-                                      {item.product.name}
-                                    </span>
-                                    <span className="justify-self-end whitespace-nowrap text-right text-[15px] font-semibold tabular-nums text-slate-900">
+                                  <TableUI.SubtableRow key={item.id}>
+                                    <TableUI.SubtableCell className="min-w-0">
+                                      <span className="block min-w-0 truncate font-medium">
+                                        {item.product.name}
+                                      </span>
+                                    </TableUI.SubtableCell>
+                                    <TableUI.SubtableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
                                       {decimalToNumber(item.quantity)}{" "}
-                                      <span className="font-medium text-slate-600">
+                                      <span className="font-medium text-muted-foreground">
                                         {item.product.baseUnit.toLowerCase()}
                                       </span>
-                                    </span>
-                                  </li>
+                                    </TableUI.SubtableCell>
+                                  </TableUI.SubtableRow>
                                 ))}
-                              </ul>
-                            </>
+                              </TableUI.SubtableBody>
+                            </TableUI.Subtable>
                           )}
                         </div>
                       </details>
                     </div>
-                  </article>
+                  </DetailCard>
                 );
               })}
             </div>
