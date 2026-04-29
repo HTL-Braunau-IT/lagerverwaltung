@@ -137,7 +137,7 @@ export function AssignedOrdersPanel() {
 
       <section className="space-y-4">
         {requestsQuery.isLoading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
+          <div className="rounded-md bg-card/40 p-5 text-slate-600">
             Anfragen werden geladen...
           </div>
         )}
@@ -340,7 +340,7 @@ export function AssignedOrdersPanel() {
         )}
 
         {loanRequestsQuery.isLoading && pendingLoanRequests.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
+          <div className="rounded-md bg-card/40 p-5 text-slate-600">
             Ausleihanfragen werden geladen...
           </div>
         ) : null}
