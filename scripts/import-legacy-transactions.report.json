@@ -1,0 +1,261 @@
+{
+  "dryRun": false,
+  "strict": false,
+  "dumpPath": "C:\\Users\\michel.roegl-brunner\\Desktop\\Projects\\lagerverwaltung\\dump-lager.sql",
+  "counts": {
+    "costCentersCreated": 79,
+    "costCentersUpdated": 0,
+    "productsCreated": 0,
+    "productsUpdated": 36,
+    "ordersCreated": 7916,
+    "orderItemsCreated": 81,
+    "stockBookingsCreated": 1473
+  },
+  "unresolved": [
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEMVLFKST104311"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BMKABPOSW045360"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BMKABPOSW035200"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BMBB------25098"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BMKABPOSW045360"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JB-------CR2032"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JB----------6LR"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "GGW----PINSEL38"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "GGW----PINSEL25"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JB-------CR2032"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEPRF4510060M01"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIAO----TL081"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO---40060"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO---40060"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEPRF2100060M05"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "LCS--PATCHAWG26"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "IBGSTE-RJ45SCHI"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "IBGTASTW00BUUPJ"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "QEESLSPUL002815"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9CKFSSTVE000412"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO---40042"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDBI-74LS221"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO---40097"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDBI-74LS221"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDBI-74LS221"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDBI-74LS221"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO---40001"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMOAM29C841"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMOCMOS4012"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMO14024BCP"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDM74HCT74B1"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9DORGNBR60X5NBR"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEICSCHEF4002BP"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMC14541BAL"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAIDMC14012BCP"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEIC00L298N0MBZ"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEAICLMC555CNNO"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEICLMC555CM/NO"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BE00TYRiTIC126M"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JBLIAINR1865035"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JBLIAINR1865035"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEPRF3100025K05"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "JBLIAINR1865035"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEWM000390R06W1"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9SLKSSTVATX1616"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9MSKMSTVA000016"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "BEMPFI264694NMW"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9SSSKSTA2000310"
+    },
+    {
+      "entity": "stock-booking",
+      "reason": "missing-product",
+      "sku": "9SSSKSTA2000310"
+    }
+  ]
+}

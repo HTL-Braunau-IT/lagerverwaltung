@@ -1,0 +1,34 @@
+{
+  "source": "dump-lager.sql",
+  "legacyTables": {
+    "products": [
+      "fs2xc_virtuemart_products",
+      "fs2xc_virtuemart_products_de_de",
+      "fs2xc_virtuemart_product_prices",
+      "fs2xc_virtuemart_product_categories",
+      "fs2xc_virtuemart_categories_de_de"
+    ],
+    "orders": [
+      "fs2xc_virtuemart_orders",
+      "fs2xc_virtuemart_order_items",
+      "fs2xc_virtuemart_order_userinfos",
+      "fs2xc_virtuemart_order_histories"
+    ],
+    "costCenters": [
+      "fs2xc_virtuemart_paymentmethods_de_de"
+    ],
+    "stockBookings": [
+      "custom_einbuchen"
+    ]
+  },
+  "statusMap": {
+    "P": "OPEN",
+    "C": "PREPARING",
+    "S": "READY_FOR_PICKUP"
+  },
+  "notes": [
+    "Cost center code is taken from payment_desc, fallback to payment_name.",
+    "Order user mapping prefers order_userinfos.email -> User.email.",
+    "Order number falls back to legacy vm order id if empty."
+  ]
+}
