@@ -94,7 +94,7 @@ export default async function RootLayout({
                     icon={<OrdersIcon />}
                   />
                   <HeaderNavLink
-                    href="/ausleihe"
+                    href="/loans"
                     label="Ausleihen"
                     hoverClassName="hover:text-black"
                     icon={<LendingIcon />}

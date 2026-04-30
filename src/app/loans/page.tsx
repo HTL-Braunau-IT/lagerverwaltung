@@ -11,6 +11,8 @@ import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
 import { useToast } from "~/components/ui/toast";
 import { PackageIcon } from "~/components/layout/icon-renders";
+import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import * as TableUI from "~/components/ui/table";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -53,8 +55,8 @@ function loanStatusBadgeVariant(
   status: "PENDING" | "APPROVED" | "REJECTED" | "CLOSED",
   { isActive }: { isActive: boolean },
 ): Parameters<typeof Badge>[0]["variant"] {
-  if (status === "PENDING") return "secondary";
-  if (status === "APPROVED") return isActive ? "default" : "success";
+  if (status === "PENDING") return "orderThird";
+  if (status === "APPROVED") return isActive ? "orderSecond" : "orderFirst";
   if (status === "REJECTED") return "destructive";
   return "secondary";
 }
@@ -117,7 +119,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
   return (
 
 
-    <Card className={`rounded-xl border ${dueBorderClass} bg-card/60 p-4 shadow-sm transition hover:border-primary/40`}>
+    <DetailCard className={`!bg-card/40 hover:!bg-card/40 rounded-sm border ${dueBorderClass}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-slate-500">
@@ -133,21 +135,36 @@ function LoanRequestCard({ loan }: { loan: any }) {
           </Badge>
         </div>
       </div>
-      <div className="mt-2 space-y-2"> 
-        {loan.items.map((item: any) => {
-          return (
-            <div key={item.id} className="rounded-lg border border-border bg-muted/30 p-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
-                  {item.lendableItem?.name ?? "Unbekannt"}
-                </p>
-                <div className="pt-0.5 text-[11px] font-medium text-muted-foreground">
-                 {item.quantityRequested} Stk
-                </div>
-              </div>
-            </div>            
-          );
-        })}
+      <div className="mt-2">
+        {loan.items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Keine Positionen vorhanden.</p>
+        ) : (
+          <TableUI.Subtable className="rounded-sm">
+            <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+              <tr className="hover:bg-transparent">
+                <TableUI.SubtableHead scope="col">Artikel</TableUI.SubtableHead>
+                <TableUI.SubtableHead scope="col" className="text-right">
+                  Menge
+                </TableUI.SubtableHead>
+              </tr>
+            </TableUI.SubtableHeader>
+            <TableUI.SubtableBody>
+              {loan.items.map((item: any) => (
+                <TableUI.SubtableRow key={item.id}>
+                  <TableUI.SubtableCell className="min-w-0">
+                    <span className="block min-w-0 truncate font-medium text-foreground">
+                      {item.lendableItem?.name ?? "Unbekannt"}
+                    </span>
+                  </TableUI.SubtableCell>
+                  <TableUI.SubtableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                    {decimalToNumber(item.quantityRequested)}{" "}
+                    <span className="font-medium text-muted-foreground">Stk</span>
+                  </TableUI.SubtableCell>
+                </TableUI.SubtableRow>
+              ))}
+            </TableUI.SubtableBody>
+          </TableUI.Subtable>
+        )}
       </div>
       <div className="grid grid-cols-2">
         <p className="mt-2 text-xs tracking-wide text-muted-foreground">
@@ -179,7 +196,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
           </p>
         ) : (" ")}
       </div>
-    </Card>
+    </DetailCard>
   );
 }
 
@@ -408,8 +425,8 @@ export default function AusleihePage() {
           </Dialog>
         </section>
 
-        <section className="order-1 space-y-4 lg:order-1 lg:sticky lg:top-6">
-          <Card className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <section className="order-1 space-y-4 lg:order-1 lg:sticky lg:top-6 mt-6">
+          <DetailCard className="p-4 !bg-card/40 hover:!bg-card/40">
             <div className="mb-2">
               <h2 className="text-xl font-semibold text-foreground">Meine ausgeliehenen Werkzeuge</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -428,7 +445,7 @@ export default function AusleihePage() {
                 <LoanRequestCard key={loan.id} loan={loan} />
               ))}
             </div>
-          </Card>
+          </DetailCard>
         </section>
       </div>
     </main>
