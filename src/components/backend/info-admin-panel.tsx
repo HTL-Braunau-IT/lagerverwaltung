@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DetailCard, DetailText } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 import * as TableUI from "~/components/ui/table";
 import { api } from "~/trpc/react";
 
@@ -39,7 +39,7 @@ export function InfoAdminPanel() {
       </header>
 
 
-      <DetailCard className="!w-190 !bg-card/40 hover:!bg-card/40">
+      <Card variant="detail" className="!w-190 !bg-card/40 hover:!bg-card/40">
         <div className="grid grid-cols-2 gap-3 items-center">
           <DetailText variant="kicker">
             Datenbank          
@@ -127,7 +127,7 @@ export function InfoAdminPanel() {
           ) : null}
         </div>
         
-      </DetailCard>
+      </Card>
     </div>
   );
 }

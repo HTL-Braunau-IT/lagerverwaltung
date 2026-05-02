@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { NumberStepper } from "~/components/ui/number-stepper";
 import { Select } from "~/components/ui/select";
 import { useToast } from "~/components/ui/toast";
 import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
-import { DetailText, DetailCard } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -207,7 +207,7 @@ export function NewProductPage() {
   };
 
   return (
-    <Card className="bg-transparent">
+    <ShellCard className="bg-transparent">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Neues Produkt</h2>
@@ -254,7 +254,7 @@ export function NewProductPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4">
-              <DetailCard className="space-y-3 rounded-sm !bg-card/40 !hover:bg-card/40">
+              <Card variant="product" className="space-y-3 rounded-sm !bg-card/40 !hover:bg-card/40">
                 <div>
                   <DetailText variant="title">Lager</DetailText>
                   <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
@@ -307,9 +307,9 @@ export function NewProductPage() {
                     className="mt-1 w-full rounded-sm px-2.5 py-2 text-sm text-slate-900"
                   />
                 </label>
-              </DetailCard>
+              </Card>
 
-              <DetailCard className="space-y-3 !bg-card/40 !hover:bg-card/40">
+              <Card variant="product" className="space-y-3 !bg-card/40 !hover:bg-card/40">
                 <div>
                   <DetailText variant="title">Mengen & Einheiten</DetailText>
                   <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
@@ -393,9 +393,9 @@ export function NewProductPage() {
                     />
                   </label>
                 </div>
-              </DetailCard>
+              </Card>
 
-              <DetailCard className="space-y-3 !bg-card/40 !hover:bg-card/40">
+              <Card variant="product" className="space-y-3 !bg-card/40 !hover:bg-card/40">
                 <div>
                   <DetailText variant="title">Sichtbarkeit & Preis</DetailText>
                   <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
@@ -442,12 +442,12 @@ export function NewProductPage() {
                     </span>
                   </div>
                 </label>
-              </DetailCard>
+              </Card>
             </div>
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
-            <DetailCard className="flex min-h-0 flex-1 flex-col gap-3 md:min-h-0 md:overflow-hidden !bg-card/40 !hover:bg-card/40">
+            <Card variant="product" className="flex min-h-0 flex-1 flex-col gap-3 md:min-h-0 md:overflow-hidden !bg-card/40 !hover:bg-card/40">
               <div className="shrink-0 space-y-3">
                 <DetailText variant="title">Kategorien</DetailText>
                 <div className="h-px w-full bg-slate-300/70" aria-hidden="true" />
@@ -528,11 +528,11 @@ export function NewProductPage() {
                   </div>
                 </div>
               </div>
-            </DetailCard>
+            </Card>
           </div>
         </div>
 
-        <DetailCard className="min-w-0 !bg-card/40 !hover:bg-card/40">
+        <Card variant="product" className="min-w-0 !bg-card/40 !hover:bg-card/40">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <DetailText variant="title">Bilder & Dokumente</DetailText>
@@ -583,7 +583,7 @@ export function NewProductPage() {
               <p className="mt-2 text-xs text-muted-foreground">Unterstützt PNG, JPEG, WebP und GIF, Max 8MB.</p>
             </div>
           </div>
-        </DetailCard>
+        </Card>
       </div>
 
       <div className="flex justify-between mt-4">
@@ -609,7 +609,7 @@ export function NewProductPage() {
           {createMutation.isPending || uploadPending ? "Erstellt..." : "Produkt erstellen"}
         </Button>
       </div>
-    </Card>
+    </ShellCard>
   );
 }
 

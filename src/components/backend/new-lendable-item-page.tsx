@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Select } from "~/components/ui/select";
 import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon } from "~/components/layout/icon-renders";
-import { DetailCard } from "../ui/detail-card";
+import { Card } from "../ui/detail-card";
 
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -124,7 +124,7 @@ export function NewLendableItemPage() {
   };
 
   return (
-    <Card className="rounded-2xl bg-transparent">
+    <ShellCard className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Neues Leihgerät</h2>
@@ -205,7 +205,7 @@ export function NewLendableItemPage() {
         </button>
       </div>
 
-      <DetailCard className="mt-4 !bg-card/40 !hover:bg-card/40">
+      <Card variant="detail" className="mt-4 !bg-card/40 !hover:bg-card/40">
         <div className="space-y-3">
           <div>
             <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
@@ -256,7 +256,7 @@ export function NewLendableItemPage() {
             </div>
           </div>
         </div>
-      </DetailCard>
+      </Card>
 
       <div className="flex justify-between mt-4">
         <Button
@@ -285,7 +285,7 @@ export function NewLendableItemPage() {
 
 
       </div>
-    </Card>
+    </ShellCard>
   );
 }
 

@@ -10,7 +10,6 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
 import { PlusIcon } from "~/components/layout/icon-renders";
-import { DetailCard, DetailText } from "~/components/ui/detail-card";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 import { useConfirmClick } from "~/components/backend/use-confirm-click";

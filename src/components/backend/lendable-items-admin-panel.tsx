@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
@@ -14,7 +14,7 @@ import {
   WarningTriangleIcon,
   WastebinIcon,
 } from "~/components/layout/icon-renders";
-import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { Card, DetailText } from "~/components/ui/detail-card";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 import { useConfirmClick } from "~/components/backend/use-confirm-click";
@@ -174,7 +174,7 @@ export function LendableItemsAdminPanel() {
   };
 
   return (
-    <Card className="rounded-2xl bg-transparent">
+    <ShellCard className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
@@ -331,7 +331,7 @@ export function LendableItemsAdminPanel() {
                               </button>
                             </div>
                           </div>
-                          <DetailCard className="hover:!bg-card/40">
+                          <Card variant="detail" className="hover:!bg-card/40">
                             <div className="flex items-center justify-between gap-3">
                               <DetailText variant="title">Bilder & Dokumente</DetailText>
                             </div>
@@ -505,7 +505,7 @@ export function LendableItemsAdminPanel() {
                                     </div>
                               </div>
                             </div>
-                          </DetailCard>
+                          </Card>
                         </div>
                         <div className="flex items-center justify-end gap-2">
                           <Button
@@ -564,7 +564,7 @@ export function LendableItemsAdminPanel() {
         resetDisabled={updateMutation.isPending}
         saveLabel={updateMutation.isPending ? "Speichert..." : "Speichern"}
       />
-    </Card>
+    </ShellCard>
   );
 }
 

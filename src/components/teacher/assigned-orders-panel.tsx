@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/toast";
-import { DetailCard, DetailText } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 import { Badge } from "~/components/ui/badge"
 import * as TableUI from "~/components/ui/table";
 
@@ -445,7 +445,8 @@ export function AssignedOrdersPanel() {
                 const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
                 return (
-                  <DetailCard
+                  <Card
+                    variant="detail"
                     key={request.id}
                     className="relative min-w-0 overflow-visible !bg-card/40 hover:!bg-card/40"
                   >
@@ -491,28 +492,28 @@ export function AssignedOrdersPanel() {
                     <div className="my-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
 
                     <div className="mt-5 grid grid-cols-4 gap-4">
-                      <DetailCard>
+                      <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           <DetailText variant="kicker">Eingang</DetailText>
                           <DetailText variant="value">{formatDate(request.createdAt).split(",")[0]}</DetailText>
                         </div>
-                      </DetailCard>
+                      </Card>
 
-                      <DetailCard>
+                      <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           <DetailText variant="kicker">Bearbeitet</DetailText>
                           <DetailText variant="value">{formatDate(request.updatedAt).split(",")[0]}</DetailText>
                         </div>
-                      </DetailCard>
+                      </Card>
 
-                      <DetailCard>
+                      <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           <DetailText variant="kicker">Produkte</DetailText>
                           <DetailText variant="value">{itemCount}</DetailText>
                         </div>
-                      </DetailCard>
+                      </Card>
 
-                      <DetailCard>
+                      <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           {request.status === "APPROVED" && request.approvedOrder ? (
                             <>
@@ -526,7 +527,7 @@ export function AssignedOrdersPanel() {
                             </>
                           )}
                         </div>
-                      </DetailCard>
+                      </Card>
 
 
 
@@ -582,7 +583,7 @@ export function AssignedOrdersPanel() {
                         </div>
                       </details>
                     </div>
-                  </DetailCard>
+                  </Card>
                 );
               })}
             </div>

@@ -7,11 +7,10 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
 import { Dialog } from "~/components/ui/dialog";
 import { useToast } from "~/components/ui/toast";
 import { PackageIcon } from "~/components/layout/icon-renders";
-import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { Card, DetailText } from "~/components/ui/detail-card";
 import * as TableUI from "~/components/ui/table";
 
 function decimalToNumber(value: unknown) {
@@ -119,7 +118,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
   return (
 
 
-    <DetailCard className={`!bg-card/40 hover:!bg-card/40 rounded-sm border ${dueBorderClass}`}>
+    <Card variant="detail" className={`!bg-card/40 hover:!bg-card/40 rounded-sm border ${dueBorderClass}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm text-slate-500">
@@ -196,7 +195,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
           </p>
         ) : (" ")}
       </div>
-    </DetailCard>
+    </Card>
   );
 }
 
@@ -256,7 +255,7 @@ export default function AusleihePage() {
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <div className="grid gap-6 lg:grid-cols-[minmax(340px,420px)_minmax(0,1fr)] lg:items-start">
         <section className="order-2 space-y-4 lg:order-2">
-          <Card className="rounded-2xl p-5">
+          <div className="pt-6">
             <div className="space-y-4">
               {lendableItemsQuery.isLoading ? (
                 <p className="text-sm text-slate-600">Artikel werden geladen...</p>
@@ -426,7 +425,7 @@ export default function AusleihePage() {
         </section>
 
         <section className="order-1 space-y-4 lg:order-1 lg:sticky lg:top-6 mt-6">
-          <DetailCard className="p-4 !bg-card/40 hover:!bg-card/40">
+          <Card variant="detail" className="p-4 !bg-card/40 hover:!bg-card/40">
             <div className="mb-2">
               <h2 className="text-xl font-semibold text-foreground">Meine ausgeliehenen Werkzeuge</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -445,7 +444,7 @@ export default function AusleihePage() {
                 <LoanRequestCard key={loan.id} loan={loan} />
               ))}
             </div>
-          </DetailCard>
+          </Card>
         </section>
       </div>
     </main>

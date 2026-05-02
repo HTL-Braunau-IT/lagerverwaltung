@@ -10,7 +10,9 @@
 
 /generated/*
 
-/public/data/uploads/pictures/*
+# user uploads (product images, documents, lendable-item images, parts-list assets, etc.)
+/public/data/uploads/
+
 # database
 /prisma/db.sqlite
 /prisma/db.sqlite-journal

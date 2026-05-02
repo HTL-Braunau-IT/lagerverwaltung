@@ -7,9 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button, buttonClassName, type ButtonVariant } from "~/components/ui/button";
-import { DetailCard, DetailText } from "~/components/ui/detail-card";
+import { Card, DetailText } from "~/components/ui/detail-card";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { ChevronDownIcon } from "~/components/layout/icon-renders";
@@ -217,7 +217,7 @@ export function OrdersAdminPanel() {
   }, [menuOpenOrderId]);
 
   return (
-    <Card className="rounded-2xl bg-transparent">
+    <ShellCard className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="">
           <h2 className="text-xl font-semibold text-foreground">Bestellungen</h2>
@@ -408,11 +408,11 @@ export function OrdersAdminPanel() {
                     expandedOrderQuery.data.id === order.id ? (
                       <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
-                          <DetailCard>
+                          <Card variant="detail">
                             <DetailText variant="kicker">Bestellnummer</DetailText>
                             <DetailText variant="value">{expandedOrderQuery.data.orderNumber}</DetailText>
-                          </DetailCard>
-                          <DetailCard>
+                          </Card>
+                          <Card variant="detail">
                             <DetailText variant="kicker">Lehrer</DetailText>
                             <DetailText variant="value">{userLabel(expandedOrderQuery.data.user)}</DetailText>
                             <DetailText variant="subvalue">
@@ -423,35 +423,35 @@ export function OrdersAdminPanel() {
                                 Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
                               </p>
                             ) : null}
-                          </DetailCard>
-                          <DetailCard>
+                          </Card>
+                          <Card variant="detail">
                             <DetailText variant="kicker">Kostenstelle</DetailText>
                             <DetailText variant="value">
                               {order.costCenter.code} - {order.costCenter.name}
                             </DetailText>
-                          </DetailCard>
-                          <DetailCard>
+                          </Card>
+                          <Card variant="detail">
                             <DetailText variant="kicker">Erstellt</DetailText>
                             <DetailText variant="value">{formatDate(expandedOrderQuery.data.createdAt)}</DetailText>
-                          </DetailCard>
-                          <DetailCard>
+                          </Card>
+                          <Card variant="detail">
                             <DetailText variant="kicker">Zuletzt aktualisiert</DetailText>
                             <DetailText variant="value">{formatDate(expandedOrderQuery.data.updatedAt)}</DetailText>
-                          </DetailCard>
+                          </Card>
                         </div>
 
                         {expandedOrderQuery.data.workerNote ? (
-                          <DetailCard>
+                          <Card variant="detail">
                             <DetailText variant="noteTitle">
                               Hinweis für Lager
                             </DetailText>
                             <DetailText variant="note">
                               {expandedOrderQuery.data.workerNote}
                             </DetailText>
-                          </DetailCard>
+                          </Card>
                         ) : null}
 
-                        <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                        <Card variant="detail" className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
                           <TableUI.Subtable className="mt-3">
                             <TableUI.SubtableHeader>
                               <tr>
@@ -492,7 +492,7 @@ export function OrdersAdminPanel() {
                               ))}
                             </TableUI.SubtableBody>
                           </TableUI.Subtable>
-                        </DetailCard>
+                        </Card>
                       </div>
                     ) : null}
                   </TableUI.TableExpandableRow>
@@ -562,6 +562,6 @@ export function OrdersAdminPanel() {
           )
         ) : null;
       })()}
-    </Card>
+    </ShellCard>
   );
 }

@@ -4,13 +4,13 @@ import { Fragment, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
-import { DetailCard, DetailText } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 
 
 type UserAccessForm = {
@@ -79,7 +79,7 @@ export function UsersAdminPanel() {
   }, [baselineByUserId, expandedUserId, formsByUserId, users]);
 
   return (
-    <Card className="bg-transparent">
+    <ShellCard className="bg-transparent">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Benutzer</h2>
@@ -154,18 +154,18 @@ export function UsersAdminPanel() {
                   >
                     <div className="grid grid-cols-1 gap-3 p-1 md:grid-cols-2 ">
                       <div className="space-y-3">
-                        <DetailCard>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Name</DetailText>
                           <DetailText variant="value">{user.name ?? "-"}</DetailText>
-                        </DetailCard>
-                        <DetailCard>
+                        </Card>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Email</DetailText>
                           <DetailText variant="value">{user.email ?? "keine E-Mail"}</DetailText>
-                        </DetailCard>
-                        <DetailCard>
+                        </Card>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Rollen</DetailText>
                           <DetailText variant="value">{user.role}</DetailText>
-                        </DetailCard>
+                        </Card>
                       </div>
 
                       <div className="w-full space-y-4 md:max-w-sm">
@@ -296,6 +296,6 @@ export function UsersAdminPanel() {
         saveLabel={updateAccessMutation.isPending ? "Speichert..." : "Speichern"}
       />
 
-    </Card>
+    </ShellCard>
   );
 }

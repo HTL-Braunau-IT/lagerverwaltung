@@ -11,16 +11,24 @@ const textVariantClasses: Record<DetailTextVariant, string> = {
   note:"",
 };
 
-export function DetailCard({
+export type CardVariant = "detail" | "product" | "static";
+
+const cardVariantClasses: Record<CardVariant, string> = {
+  detail:
+    "rounded-md bg-card/40 p-3 transition-colors duration-200 ease-in-out hover:bg-card/60",
+  product:
+    "rounded-md border border-border/50 bg-card/40 p-3 shadow-sm transition-colors duration-200 ease-in-out hover:bg-card/60 hover:border-border/80",
+  static: "rounded-md bg-card/40 p-3",
+};
+
+export function Card({
   className = "",
+  variant,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={`rounded-md bg-card/40 hover:bg-card/60 p-3 ${className}`.trim()}
-      {...props}
-    />
-  );
+}: React.HTMLAttributes<HTMLDivElement> & { variant: CardVariant }) {
+  const variantClass = cardVariantClasses[variant];
+
+  return <div className={`${variantClass} ${className}`.trim()} {...props} />;
 }
 
 export function DetailText({

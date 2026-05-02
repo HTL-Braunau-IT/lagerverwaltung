@@ -6,12 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { FilterPillButton } from "../ui/filter-pill-button";
-import { DetailCard, DetailText } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -101,7 +101,7 @@ export function LoansAdminPanel() {
   );
 
   return (
-    <Card className="rounded-2xl bg-transparent">
+    <ShellCard className="rounded-2xl bg-transparent">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
@@ -215,21 +215,21 @@ export function LoansAdminPanel() {
                   >
                     <div className="space-y-4">
                       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-3">
-                        <DetailCard>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Referenznummer</DetailText>
                           <DetailText variant="value">{loan.id.slice(0, 8)}</DetailText>
-                        </DetailCard>
-                        <DetailCard>
+                        </Card>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Person</DetailText>
                           <DetailText variant="value">{loan.borrower.name ?? loan.borrower.email ?? "-"}</DetailText>
-                        </DetailCard>
-                        <DetailCard>
+                        </Card>
+                        <Card variant="detail">
                           <DetailText variant="kicker">Erstellt</DetailText>
                           <DetailText variant="value">{formatDate(loan.createdAt)}</DetailText>
-                        </DetailCard>
+                        </Card>
                       </div>
 
-                      <DetailCard className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+                      <Card variant="detail" className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
                         <TableUI.Subtable tableClassName="table-fixed">
                           <TableUI.SubtableHeader>
                             <tr>
@@ -303,7 +303,7 @@ export function LoansAdminPanel() {
                             })}
                           </TableUI.SubtableBody>
                         </TableUI.Subtable>
-                      </DetailCard>
+                      </Card>
                     </div>
                   </TableUI.TableExpandableRow>
                 </Fragment>
@@ -312,7 +312,7 @@ export function LoansAdminPanel() {
           </TableUI.TableBody>
         </TableUI.Table>
       </div>
-    </Card>
+    </ShellCard>
   );
 }
 

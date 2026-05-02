@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card as ShellCard } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import { ArrowLeftIcon, WastebinIcon } from "~/components/layout/icon-renders";
 import * as TableUI from "~/components/ui/table";
-import { DetailCard, DetailText } from "../ui/detail-card";
+import { Card, DetailText } from "../ui/detail-card";
 
 type PartListItemForm = {
   productId: string;
@@ -353,7 +353,7 @@ export function NewPartsListPage() {
   };
 
   return (
-    <Card className="rounded-2xl bg-transparent">
+    <ShellCard className="rounded-2xl bg-transparent">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Neue Teileliste</h2>
@@ -528,7 +528,7 @@ export function NewPartsListPage() {
         </Button>
       </div>
 
-      <DetailCard className="mt-4 !bg-card/40 !hover:bg-card/40">
+      <Card variant="detail" className="mt-4 !bg-card/40 !hover:bg-card/40">
         <div className="space-y-3">
           <div>
             <p className="text-lg font-semibold text-slate-900">Bilder & Dokumente</p>
@@ -625,7 +625,7 @@ export function NewPartsListPage() {
             </div>
           </div>
         </div>
-      </DetailCard>
+      </Card>
 
       <div className="mt-4 flex justify-between">
         <Button
@@ -742,7 +742,7 @@ export function NewPartsListPage() {
             document.body,
           )
         : null}
-    </Card>
+    </ShellCard>
   );
 }
 
