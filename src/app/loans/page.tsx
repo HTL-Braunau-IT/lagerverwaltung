@@ -352,22 +352,29 @@ export default function AusleihePage() {
             open={dueInfoOpen}
             onClose={() => setDueInfoOpen(false)}
             title={selectedItem ? `Ausleihen: ${selectedItem.name}` : "Ausleihen"}
-            description="Wähle die Menge (und fuer Schueler eine Lehrperson) und sende die Anfrage ans Lager."
+            description="Wähle die Menge (und für Schüler eine Lehrperson) und sende die Anfrage ans Lager."
           >
             {selectedItem ? (
               <div className="mt-1 space-y-4">
                 {createLoanMutation.error ? (
-                  <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                  <p className="">
                     Fehler: {createLoanMutation.error.message}
                   </p>
                 ) : null}
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setDueInfoOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="glass"
+                    onClick={() => setDueInfoOpen(false)}
+                    className="!w-fit"                    
+                    >
                     Abbrechen
                   </Button>
                   <Button
                     type="button"
+                    variant="solid"
+                    className="!w-fit"
                     onClick={() => {
                       if (!selectedItem) return;
                       const quantity = Math.floor(Number(quantityDraft));
