@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { DetailText } from "./detail-card";
 
 type DialogProps = {
   open: boolean;
@@ -41,12 +42,14 @@ export function Dialog({ open, onClose, title, description, headerRight, childre
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 text-card-foreground shadow-xl"
+        className="w-full max-w-2xl rounded-md bg-card p-5 text-card-foreground"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+            <DetailText variant="title">
+              {title}
+            </DetailText>
             {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
           </div>
           {headerRight ? <div className="shrink-0">{headerRight}</div> : null}

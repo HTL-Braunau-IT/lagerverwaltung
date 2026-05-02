@@ -14,6 +14,7 @@ export function NumberStepper({
   increaseAriaLabel,
   inputAriaLabel,
   stopPropagation = false,
+  disabled = false,
   className = "",
 }: {
   value: string;
@@ -25,6 +26,7 @@ export function NumberStepper({
   increaseAriaLabel: string;
   inputAriaLabel: string;
   stopPropagation?: boolean;
+  disabled?: boolean;
   className?: string;
 }) {
   const decimals = useMemo(() => {
@@ -55,6 +57,7 @@ export function NumberStepper({
     >
       <Button
         type="button"
+        disabled={disabled}
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
           const current = Math.max(Number(value) || min, min);
@@ -74,6 +77,7 @@ export function NumberStepper({
         max={inputMax}
         step={step}
         value={value}
+        disabled={disabled}
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
         }}
@@ -83,6 +87,7 @@ export function NumberStepper({
       />
       <Button
         type="button"
+        disabled={disabled}
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
           const current = Math.max(Number(value) || min, min);

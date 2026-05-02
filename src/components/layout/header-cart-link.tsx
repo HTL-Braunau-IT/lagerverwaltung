@@ -74,7 +74,7 @@ export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkPr
       <span className="relative flex h-10 w-10 items-center justify-center">
         {icon}
         <span
-          className="absolute -right-1.5 -top-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
+          className="absolute -right-1.5 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
           aria-label={`${badgeLabel} Produkte im Warenkorb`}
         >
           {badgeLabel}

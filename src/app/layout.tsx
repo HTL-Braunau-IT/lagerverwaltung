@@ -81,7 +81,7 @@ export default async function RootLayout({
                 <div className="px-8">
                   <Search />
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mt-0.5 -mb-0.5">
                   <HeaderCartLink
                     label="Warenkorb"
                     hoverClassName="hover:text-black"

@@ -139,6 +139,15 @@ export function ArrowLeftIcon({ className = "h-4 w-4" }: { className?: string } 
   );
 }
 
+export function ArrowRightIcon({ className = "h-4 w-4" }: { className?: string } = {}) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="m13 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function UsersIcon({ className = "h-4 w-4" }: { className?: string } = {}) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>

@@ -3,17 +3,47 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
-import { WastebinIcon } from "~/components/layout/icon-renders";
-import { Button } from "~/components/ui/button";
+import { ArrowRightIcon, WastebinIcon } from "~/components/layout/icon-renders";
+import { Button, buttonClassName } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
-import { api } from "~/trpc/react";
-import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
+import { useConfirmClick } from "~/components/backend/use-confirm-click";
+import { api, type RouterOutputs } from "~/trpc/react";
+import {
+  getQuantityDecimalsForStep,
+  getQuantityStepForBaseUnit,
+  isQuantityAlignedToStep,
+} from "~/lib/quantity-rules";
+import { NumberStepper } from "~/components/ui/number-stepper";
 import { CartPdfDocument } from "~/components/shop/pdf/cart-pdf-document";
 import { ShopExportPdfButton } from "~/components/shop/shop-quantity-add-to-cart";
+import { Card, DetailText } from "~/components/ui/detail-card";
+import { Input } from "~/components/ui/input";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
+
+function formatCartQtyString(quantity: unknown, step: number): string {
+  const n = decimalToNumber(quantity);
+  const decimals = getQuantityDecimalsForStep(step);
+  return decimals > 0 ? String(Number(n.toFixed(decimals))) : String(Math.round(n));
+}
+
+function snapCartQuantityToStep(value: number, min: number, step: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(step) || step <= 0) return min;
+  const decimals = getQuantityDecimalsForStep(step);
+  const coarse = decimals > 0 ? Number(value.toFixed(decimals)) : Math.round(value);
+  const snapped = Math.round(coarse / step) * step;
+  const out = decimals > 0 ? Number(snapped.toFixed(decimals)) : snapped;
+  return Math.max(min, out);
+}
+
+function commitCartLineQuantity(raw: string, step: number, apply: (quantity: number) => void) {
+  if (raw.trim() === "") return;
+  const num = Number(raw);
+  if (!Number.isFinite(num)) return;
+  apply(snapCartQuantityToStep(num, 0, step));
+}
 
 function getOrCreateSessionId() {
   if (typeof window === "undefined") return "";
@@ -40,7 +70,99 @@ function formatPrice(value: unknown) {
   }).format(amount);
 }
 
+type SavedCart = RouterOutputs["cart"]["listSavedCarts"][number];
 
+function SavedCartRow(props: {
+  savedCart: SavedCart;
+  sessionId: string;
+  onPreview: (cart: SavedCart) => void;
+  deleteMutation: { mutate: (input: { savedCartId: string }) => void; isPending: boolean };
+  loadMutation: {
+    mutate: (input: { sessionId: string; savedCartId: string }) => void;
+    isPending: boolean;
+  };
+}) {
+  const { savedCart, sessionId, onPreview, deleteMutation, loadMutation } = props;
+  const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
+    resetKey: savedCart.id,
+  });
+
+  const total = savedCart.items.reduce((sum, item) => {
+    return sum + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
+  }, 0);
+  const itemCount = savedCart.items.reduce((sum, item) => {
+    return sum + decimalToNumber(item.quantity);
+  }, 0);
+
+  return (
+    <Card
+      className="group cursor-pointer p-3"
+      role="button"
+      tabIndex={0}
+      variant="detail"
+      onClick={() => onPreview(savedCart)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onPreview(savedCart);
+        }
+      }}
+      aria-label={`Gespeicherten Warenkorb "${savedCart.name}" anzeigen`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        <p className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-sky-900">
+          {savedCart.name}
+        </p>
+        <p className="mt-0.5 whitespace-nowrap text-xs text-slate-500 transition-colors group-hover:text-slate-600">
+          {itemCount} Artikel · {formatPrice(total)}
+        </p>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (deleteMutation.isPending) return;
+            confirmOrRunDelete(() =>
+              deleteMutation.mutate({
+                savedCartId: savedCart.id,
+              }),
+            );
+          }}
+          disabled={deleteMutation.isPending}
+          variant="destructive"
+          className="!h-8 !w-fit"
+          aria-label={
+            isConfirmingDelete
+              ? `Zum Löschen von "${savedCart.name}" erneut klicken`
+              : `Gespeicherten Warenkorb "${savedCart.name}" löschen`
+          }
+        >
+          {deleteMutation.isPending
+            ? "Löscht..."
+            : isConfirmingDelete
+              ? "Nochmal klicken"
+              : "Löschen"}
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          onClick={(event) => {
+            event.stopPropagation();
+            loadMutation.mutate({
+              sessionId,
+              savedCartId: savedCart.id,
+            });
+          }}
+          disabled={sessionId.length === 0 || loadMutation.isPending}
+          className="!h-8 !w-full"
+        >
+          Laden
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 export default function CartsPage() {
   const utils = api.useUtils();
@@ -61,7 +183,6 @@ export default function CartsPage() {
     },
   );
   const savedCartsQuery = api.cart.listSavedCarts.useQuery();
-  type SavedCart = NonNullable<typeof savedCartsQuery.data>[number];
   const [savedCartPreview, setSavedCartPreview] = useState<SavedCart | null>(null);
 
   const setQuantityMutation = api.cart.setItemQuantity.useMutation({
@@ -304,48 +425,48 @@ export default function CartsPage() {
             : undefined
         }
         headerRight={
-          <Button type="button" variant="outline" size="sm" onClick={() => setSavedCartPreview(null)}>
+          <Button type="button" variant="glass" size="sm" onClick={() => setSavedCartPreview(null)}>
             Schließen
           </Button>
         }
       >
         {savedCartPreview ? (
           <div className="space-y-0">
-            <Table className="min-w-[520px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produkt</TableHead>
-                  <TableHead className="w-[100px] text-right">Menge</TableHead>
-                  <TableHead className="w-[110px] text-right">Einheit</TableHead>
-                  <TableHead className="w-[140px] text-right">Stückpreis</TableHead>
-                  <TableHead className="w-[160px] text-right">Summe</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <TableUI.Table className="min-w-[520px]">
+              <TableUI.TableHeader>
+                <tr>
+                  <TableUI.TableHead>Produkt</TableUI.TableHead>
+                  <TableUI.TableHead className="w-[100px] text-right">Menge</TableUI.TableHead>
+                  <TableUI.TableHead className="w-[110px] text-right">Einheit</TableUI.TableHead>
+                  <TableUI.TableHead className="w-[140px] text-right">Stückpreis</TableUI.TableHead>
+                  <TableUI.TableHead className="w-[160px] text-right">Summe</TableUI.TableHead>
+                </tr>
+              </TableUI.TableHeader>
+              <TableUI.TableBody>
                 {savedCartPreview.items.map((item, idx) => {
                   const qty = decimalToNumber(item.quantity);
                   const price = decimalToNumber(item.product.price);
                   return (
-                    <TableRow key={`${item.productId}:${idx}`}>
-                      <TableCell className="min-w-[260px]">
+                    <TableUI.TableRow key={`${item.productId}:${idx}`}>
+                      <TableUI.TableCell className="min-w-[260px]">
                         <div className="flex flex-col">
                           <span className="font-medium text-slate-900">{item.product.name}</span>
                           <span className="text-xs text-slate-500">{item.product.sku || item.productId}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{qty}</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      </TableUI.TableCell>
+                      <TableUI.TableCell className="text-right tabular-nums">{qty}</TableUI.TableCell>
+                      <TableUI.TableCell className="text-right tabular-nums">
                         {String(item.product.baseUnit).toLowerCase()}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatPrice(price)}</TableCell>
-                      <TableCell className="text-right font-semibold text-sky-800 tabular-nums">
+                      </TableUI.TableCell>
+                      <TableUI.TableCell className="text-right tabular-nums">{formatPrice(price)}</TableUI.TableCell>
+                      <TableUI.TableCell className="text-right font-semibold text-sky-800 tabular-nums">
                         {formatPrice(qty * price)}
-                      </TableCell>
-                    </TableRow>
+                      </TableUI.TableCell>
+                    </TableUI.TableRow>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </TableUI.TableBody>
+            </TableUI.Table>
             <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-3 pr-3">
               <span className="text-sm text-slate-500">Gesamt</span>
               <span className="text-sm font-bold text-sky-800 tabular-nums">
@@ -356,18 +477,22 @@ export default function CartsPage() {
         ) : null}
       </Dialog>
 
-      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_1fr]">
-        <aside className="space-y-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Aktuellen Warenkorb speichern</h2>
-            <p className="mt-1 text-xs text-slate-500">Name für späteres Laden vergeben</p>
-            <input
+      <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[300px_1fr] mt-6">
+        <aside className="space-y-6">
+          <Card variant="detail" className="!bg-card/40 hover:!bg-card/40">
+            <DetailText variant="title">
+              Warenkorb speichern            
+            </DetailText>
+            <DetailText variant="subvalue">
+              Name für späteres Laden vergeben
+            </DetailText>
+            <Input
               value={cartName}
               onChange={(event) => setCartName(event.target.value)}
               placeholder="z. B. Elektronik Klasse 3BHELS"
-              className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+              className="mt-3"
             />
-            <button
+            <Button
               onClick={() =>
                 saveCurrentCartMutation.mutate({
                   sessionId,
@@ -380,20 +505,23 @@ export default function CartsPage() {
                 activeItems.length === 0 ||
                 saveCurrentCartMutation.isPending
               }
-              className="mt-3 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="solid"
+              className="mt-3 !h-10"
             >
               {saveCurrentCartMutation.isPending ? "Wird gespeichert..." : "Warenkorb speichern"}
-            </button>
+            </Button>
             {saveCurrentCartMutation.error && (
               <p className="mt-2 text-xs text-rose-700">Speichern fehlgeschlagen. Bitte erneut versuchen.</p>
             )}
-          </section>
+          </Card>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Gespeicherte Warenkörbe</h2>
+          <Card variant="detail" className="!bg-card/40 hover:!bg-card/40">
+            <DetailText variant="title">
+              Gespeicherte Warenkörbe
+            </DetailText>
             {loadSavedCartMutation.error?.message === "MIXED_STORAGE_ROOMS" ? (
               <p className="mt-2 text-sm text-rose-700">
-                Dieser Warenkorb enthaelt Produkte aus mehreren Lagerraeumen und kann nicht geladen werden.
+                Dieser Warenkorb enthält Produkte aus mehreren Lagerräumen und kann nicht geladen werden.
               </p>
             ) : null}
             <div className="mt-3 space-y-3">
@@ -401,145 +529,96 @@ export default function CartsPage() {
               {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (
                 <p className="text-sm text-slate-500">Noch keine gespeicherten Warenkoerbe.</p>
               )}
-              {savedCartsQuery.data?.map((savedCart) => {
-                const total = savedCart.items.reduce((sum, item) => {
-                  return sum + decimalToNumber(item.quantity) * decimalToNumber(item.product.price);
-                }, 0);
-                const itemCount = savedCart.items.reduce((sum, item) => {
-                  return sum + decimalToNumber(item.quantity);
-                }, 0);
-
-                return (
-                  <div
-                    key={savedCart.id}
-                    className="group cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:border-slate-300 hover:bg-slate-100/70"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSavedCartPreview(savedCart)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setSavedCartPreview(savedCart);
-                      }
-                    }}
-                    aria-label={`Gespeicherten Warenkorb "${savedCart.name}" anzeigen`}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                      <p className="text-sm font-semibold text-slate-900 transition-colors group-hover:text-sky-900">
-                        {savedCart.name}
-                      </p>
-                      <p className="text-xs text-slate-500 whitespace-nowrap group-hover:text-slate-600">
-                        {itemCount} Artikel · {formatPrice(total)}
-                      </p>
-                    </div>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          deleteSavedCartMutation.mutate({
-                            savedCartId: savedCart.id,
-                          });
-                        }}
-                        disabled={deleteSavedCartMutation.isPending}
-                        className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
-                        aria-label={`Gespeicherten Warenkorb "${savedCart.name}" löschen`}
-                      >
-                        Löschen
-                      </button>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          loadSavedCartMutation.mutate({
-                            sessionId,
-                            savedCartId: savedCart.id,
-                          });
-                        }}
-                        disabled={sessionId.length === 0 || loadSavedCartMutation.isPending}
-                        className="flex-1 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Laden
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {savedCartsQuery.data?.map((savedCart) => (
+                <SavedCartRow
+                  key={savedCart.id}
+                  savedCart={savedCart}
+                  sessionId={sessionId}
+                  onPreview={setSavedCartPreview}
+                  deleteMutation={deleteSavedCartMutation}
+                  loadMutation={loadSavedCartMutation}
+                />
+              ))}
             </div>
-          </section>
+          </Card>
         </aside>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-          <div className="flex items-start justify-between gap-3">
+        <Card variant="detail" className="p-4 !bg-card/40 hover:!bg-card/40">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">Aktueller Warenkorb</h2>
-              <p className="text-xs text-slate-500">Artikel in dieser Browser-Sitzung</p>
+              <DetailText variant="title">
+                Aktueller Warenkorb
+              </DetailText>
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <ShopExportPdfButton
-                onClick={() => void exportCartPdf()}
-                disabled={activeItems.length === 0}
-              />
-              <button
+              <Button
                 onClick={onClearCartClick}
+                variant="destructive"
                 disabled={
                   sessionId.length === 0 ||
                   activeItems.length === 0 ||
                   isClearingCart ||
                   setQuantityMutation.isPending
                 }
-                className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="!w-fit !h-9"
               >
                 {isClearingCart
                   ? "Wird gelöscht..."
                   : confirmClearCart
                     ? "Nochmal klicken"
                     : "Alle Produkte löschen"}
-              </button>
+              </Button>
+              <ShopExportPdfButton
+                onClick={() => void exportCartPdf()}
+                disabled={activeItems.length === 0}
+                className="!h-9"
+              />
+
               <Link
                 href="/checkout"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary/90 px-3 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+                className={buttonClassName({
+                  variant: "solid",
+                  size: "sm",
+                  className: "!w-fit !h-9 gap-1.5 rounded-lg px-3 text-sm font-medium",
+                })}
               >
-                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                    <path d="M5 12h14" />
-                    <path d="m13 6 6 6-6 6" />
-                  </svg>
+                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+                  <ArrowRightIcon className="h-4 w-4" />
                 </span>
                 Bestellen
               </Link>
             </div>
           </div>
 
-          <section className="mt-3 w-full">
-            <form onSubmit={onExpressAddSubmit} className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 -mb-2">
-              <div className="flex items-baseline gap-2">
-                <p className="text-xs font-semibold text-slate-700">Schnellbestellung</p>
-              </div>
-              <label className="flex flex-1 items-center gap-2 min-w-[260px]">
-                <span className="text-xs text-slate-600 whitespace-nowrap">SKU</span>
-                <input
+          <section className="mt-3 w-fit">
+            <form onSubmit={onExpressAddSubmit} className="flex w-full flex-wrap items-center gap-x-4 gap-y-2">
+              <DetailText variant="subvalue" className="!mt-0 font-semibold">Schnellbestellung</DetailText>
+              <label className="flex flex-1 items-center gap-2">
+                <DetailText variant="subvalue" className="!mt-0">SKU</DetailText>
+                <Input
                   value={expressSku}
                   onChange={(e) => setExpressSku(e.target.value)}
                   placeholder="z.B. BESKO00047F055V"
-                  className="w-full rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+                  className="!h-6 !max-w-96"
                 />
               </label>
               <label className="flex items-center gap-2">
                 <span className="text-xs text-slate-600 whitespace-nowrap">Menge</span>
-                <input
+                <Input
                   value={expressQuantity}
                   onChange={(e) => setExpressQuantity(e.target.value)}
                   type="number"
                   step="0.001"
                   min="0.001"
-                  className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
+                  className="!h-6 !max-w-24"
                 />
               </label>
               <Button
                 type="submit"
                 disabled={addItemMutation.isPending || sessionId.length === 0}
-                variant="outline"
+                variant="solid"
                 size="sm"
-                className="h-8 shrink-0 whitespace-nowrap rounded-xl px-2.5 text-slate-700 hover:bg-slate-100"
+                className="!w-fit !h-6"
               >
                 {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
               </Button>
@@ -549,19 +628,28 @@ export default function CartsPage() {
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>}
             {!cartQuery.isLoading && activeItems.length === 0 && (
-              <p className="text-sm text-slate-500">Keine Artikel im Warenkorb.</p>
+              <DetailText variant="subvalue">Keine Produkte im Warenkorb.</DetailText>
             )}
             {groupedCartItems.partLists.map((group) => (
-              <div key={group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
-                <p className="text-sm font-semibold text-slate-900"> Stückliste - {group.name}</p>
-                <div className="mt-2 space-y-2">
+              <div
+                key={group.id}
+                className="overflow-hidden rounded-md border border-card/80 hover:!border-card transition"
+              >
+                <div className="border-b border-border/40 bg-card/80 px-2 py-2">
+                  <p className="text-sm font-semibold text-slate-900"> Stückliste - {group.name}</p>
+                </div>
+                <div className="space-y-2 p-2">
                   {group.items.map((item) => (
-                    <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-1.5">
+                    <Card
+                      key={item.id}
+                      variant="detail"
+                      className="rounded-md p-1.5 ring-1 ring-inset ring-border/35 "
+                    >
                       <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-start gap-3">
                         <div>
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
-                            <button
+                            <Button
                               onClick={() =>
                                 setQuantityMutation.mutate({
                                   sessionId,
@@ -573,58 +661,46 @@ export default function CartsPage() {
                                 })
                               }
                               disabled={setQuantityMutation.isPending}
-                              className="rounded-lg translate-y-1 translate-x-1 p-1 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                              variant="ghost"
+                              className="mt-1 !h-8 !w-8 shrink-0 p-0 rounded-sm !text-destructive hover:!text-white transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
                               aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
                             >
-                              <WastebinIcon size={14} />
-                            </button>
+                              <WastebinIcon size={16} className="opacity-90" />
+                            </Button>
                           </div>
-                          <p className="mt-2 text-xs text-slate-500">{item.product.sku}</p>
+                          <p className="mt-1 text-xs text-slate-500">{item.product.sku}</p>
                         </div>
                         <div className="flex flex-col items-center">
-                          <div className="flex items-start gap-1">
+                          <div className="flex justify-center">
                             {(() => {
                               const itemStep = getQuantityStepForBaseUnit(item.product.baseUnit);
                               return (
-                                <>
-                            <button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: Math.max(0, decimalToNumber(item.quantity) - itemStep),
-                                })
-                              }
-                              className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
-                            >
-                              -
-                            </button>
-                            <span className="min-w-8 pt-1 text-center text-sm text-slate-900">
-                              {decimalToNumber(item.quantity)}
-                            </span>
-                            <button
-                              onClick={() =>
-                                setQuantityMutation.mutate({
-                                  sessionId,
-                                  line: {
-                                    productId: item.productId,
-                                    sourcePartListId: item.sourcePartListId,
-                                  },
-                                  quantity: decimalToNumber(item.quantity) + itemStep,
-                                })
-                              }
-                              className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
-                            >
-                              +
-                            </button>
-                                </>
+                                <NumberStepper
+                                  value={formatCartQtyString(item.quantity, itemStep)}
+                                  onChange={(next) =>
+                                    commitCartLineQuantity(next, itemStep, (quantity) =>
+                                      setQuantityMutation.mutate({
+                                        sessionId,
+                                        line: {
+                                          productId: item.productId,
+                                          sourcePartListId: item.sourcePartListId,
+                                        },
+                                        quantity,
+                                      }),
+                                    )
+                                  }
+                                  min={0}
+                                  step={itemStep}
+                                  disabled={setQuantityMutation.isPending}
+                                  decreaseAriaLabel={`Menge fuer ${item.product.name} verringern`}
+                                  increaseAriaLabel={`Menge fuer ${item.product.name} erhoehen`}
+                                  inputAriaLabel={`Menge fuer ${item.product.name}`}
+                                  className="shrink-0 bg-card/40 !h-9"
+                                />
                               );
                             })()}
                           </div>
-                          <p className="text-center text-[11px] text-slate-500">
+                          <p className="text-center text-[11px] text-slate-500 mt-1">
                             Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
                             {item.product.baseUnit.toLowerCase()}
                           </p>
@@ -638,18 +714,21 @@ export default function CartsPage() {
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
             ))}
             {groupedCartItems.standalone.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <Card key={item.id} variant="detail" className="px-4 py-3">
                 <div className="grid grid-cols-[minmax(0,1fr)_110px_120px] items-start gap-3">
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium text-slate-900">{item.product.name}</p>
-                      <button
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
                         onClick={() =>
                           setQuantityMutation.mutate({
                             sessionId,
@@ -661,58 +740,45 @@ export default function CartsPage() {
                           })
                         }
                         disabled={setQuantityMutation.isPending}
-                        className="rounded-lg translate-y-1 translate-x-1 p-1 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-0.5 h-8 w-8 shrink-0 p-0 rounded-sm !text-destructive hover:!text-white transition-colors hover:bg-destructive hover:text-white focus-visible:ring-2 focus-visible:ring-destructive/30 focus-visible:ring-offset-1"
                         aria-label={`${item.product.name} aus dem Warenkorb entfernen`}
                       >
-                        <WastebinIcon size={14} />
-                      </button>
+                        <WastebinIcon size={16} className="opacity-90" />
+                      </Button>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">{item.product.sku}</p>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1">
+                    <div className="flex justify-center">
                       {(() => {
                         const itemStep = getQuantityStepForBaseUnit(item.product.baseUnit);
                         return (
-                          <>
-                      <button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: Math.max(0, decimalToNumber(item.quantity) - itemStep),
-                          })
-                        }
-                        className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
-                      >
-                        -
-                      </button>
-                      <span className="min-w-8 text-center text-sm text-slate-900">
-                        {decimalToNumber(item.quantity)}
-                      </span>
-                      <button
-                        onClick={() =>
-                          setQuantityMutation.mutate({
-                            sessionId,
-                            line: {
-                              productId: item.productId,
-                              sourcePartListId: item.sourcePartListId,
-                            },
-                            quantity: decimalToNumber(item.quantity) + itemStep,
-                          })
-                        }
-                        className="rounded-lg border border-slate-300 bg-white px-1 h-7 w-7 text-slate-700"
-                      >
-                        +
-                      </button>
-                          </>
+                          <NumberStepper
+                            value={formatCartQtyString(item.quantity, itemStep)}
+                            onChange={(next) =>
+                              commitCartLineQuantity(next, itemStep, (quantity) =>
+                                setQuantityMutation.mutate({
+                                  sessionId,
+                                  line: {
+                                    productId: item.productId,
+                                    sourcePartListId: item.sourcePartListId,
+                                  },
+                                  quantity,
+                                }),
+                              )
+                            }
+                            min={0}
+                            step={itemStep}
+                            disabled={setQuantityMutation.isPending}
+                            decreaseAriaLabel={`Menge fuer ${item.product.name} verringern`}
+                            increaseAriaLabel={`Menge fuer ${item.product.name} erhoehen`}
+                            inputAriaLabel={`Menge fuer ${item.product.name}`}
+                            className="shrink-0 bg-card/40"
+                          />
                         );
                       })()}
                     </div>
-                    <p className="text-center text-[11px] text-slate-500">
+                    <p className="text-center text-[11px] text-slate-500 mt-1">
                       Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
                       {item.product.baseUnit.toLowerCase()}
                     </p>
@@ -726,17 +792,17 @@ export default function CartsPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
-          <div className="mt-4 border-t border-slate-200 pt-3">
+          <div className="mt-4 border-t border-slate-300 pt-3">
             <div className="flex items-center justify-end text-sm">
               <span className="text-slate-500">Zwischensumme</span>
               <span className="font-bold text-sky-800 px-4">{formatPrice(cartTotal)}</span>
             </div>
           </div>
-        </article>
+        </Card>
       </section>
     </main>
   );

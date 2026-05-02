@@ -195,7 +195,7 @@ export default function OrdersPage() {
         {showOwnOrders ? (
           <>
             {ordersQuery.isLoading && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-600 shadow-sm">
+              <div className="p-5 text-slate-600">
                 Bestellungen werden geladen...
               </div>
             )}
