@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-
+import { Card, DetailText } from "~/components/ui/detail-card";
+import * as TableUI from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { CheckIcon, ClipboardCopyIcon } from "~/components/layout/icon-renders";
@@ -28,10 +29,12 @@ function formatStatus(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
   return "Abholbereit";
 }
 
-function orderStatusBadgeVariant(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP"): Parameters<typeof Badge>[0]["variant"] {
-  if (status === "OPEN") return "destructive";
-  if (status === "PREPARING") return "secondary";
-  return "success";
+function orderStatusBadgeVariant(
+  status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP",
+): "orderFirst" | "orderSecond" | "orderThird" {
+  if (status === "READY_FOR_PICKUP") return "orderThird";
+  if (status === "OPEN") return "orderFirst";
+  return "orderSecond";
 }
 
 function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
@@ -59,7 +62,7 @@ function SkuCopyButton({ sku }: { sku: string }) {
   return (
     <button
       type="button"
-      className="inline-flex shrink-0 items-center justify-center rounded-full px-2 text-slate-500 transition hover:bg-slate-200/60 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+      className="inline-flex shrink-0 items-center justify-center rounded-full px-2 text-slate-500 transition hover:bg-primary/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
       title={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
       aria-label={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
       onClick={async () => {
@@ -84,7 +87,7 @@ function SkuCopyButton({ sku }: { sku: string }) {
           ].join(" ")}
           aria-hidden
         >
-          <ClipboardCopyIcon size={14} />
+          <ClipboardCopyIcon size={14} /> 
         </span>
         <span
           className={[
@@ -219,22 +222,27 @@ export default function OrdersPage() {
             )}
 
             {(ordersQuery.data?.length ?? 0) > 0 ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mt-6">
                 {ordersQuery.data!.map((order) => {
                   const itemCount = order.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
 
                   return (
-                    <article
+                    <Card
+                      variant="detail"
                       key={order.id}
-                      className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                      className="relative min-w-0 overflow-visible !bg-card/40 hover:!bg-card/40"
                     >
-                  <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-3 pt-1 pl-1">
                     <div className="justify-self-start">
-                      <p className="text-sm text-slate-500">Bestellnummer</p>
-                      <h2 className="text-lg font-semibold text-slate-900">{order.orderNumber}</h2>
+                      <DetailText variant="kicker">
+                        Bestellnummer
+                      </DetailText>
+                      <DetailText variant="value">
+                        {order.orderNumber}
+                      </DetailText>
                     </div>
 
-                    <div className="justify-self-center self-start -mt-5">
+                    <div className="justify-self-center self-start -mt-4">
                       {order.sourceRequest ? (
                         <div className="flex flex-col items-center gap-0.5 text-center">
                           <div className="relative">
@@ -264,40 +272,30 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 h-px w-full bg-slate-200/70" aria-hidden="true" />
+                  <div className="mt-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
 
-                  <div className="mt-7 grid gap-6">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                      <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-3 sm:gap-6">
-                        <p className="flex min-w-0 flex-col gap-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Datum
-                          </span>
-                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
-                            {formatOrderDate(order.createdAt)}
-                          </span>
-                        </p>
-                        <p className="flex min-w-0 flex-col gap-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Kostenstelle
-                          </span>
-                          <span className="min-w-0 truncate text-base font-semibold leading-tight text-slate-900">
-                            {order.costCenter.code} - {order.costCenter.name}
-                          </span>
-                        </p>
-                        <p className="flex min-w-0 flex-col gap-1 sm:text-right">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                            Artikel gesamt
-                          </span>
-                          <span className="min-w-0 truncate text-base font-semibold tabular-nums leading-tight text-slate-900">
-                            {itemCount}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
+                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4">
+                    <Card variant="detail" className="min-w-0">
+                      <DetailText variant="kicker">Datum</DetailText>
+                      <DetailText variant="value" className="min-w-0 truncate">
+                        {formatOrderDate(order.createdAt)}
+                      </DetailText>
+                    </Card>
+                    <Card variant="detail" className="min-w-0">
+                      <DetailText variant="kicker">Kostenstelle</DetailText>
+                      <DetailText variant="value" className="min-w-0 truncate">
+                        {order.costCenter.code} - {order.costCenter.name}
+                      </DetailText>
+                    </Card>
+                    <Card variant="detail" className="min-w-0">
+                      <DetailText variant="kicker">Produkte</DetailText>
+                      <DetailText variant="value" className="min-w-0 truncate tabular-nums">
+                        {itemCount}
+                      </DetailText>
+                    </Card>
 
-                    <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none">
+                    <details className="group sm:col-span-3 rounded-md bg-card/40 hover:bg-card/60">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">
                         <div className="flex items-baseline gap-2">
                           <p className="text-base font-semibold text-slate-900">Positionen</p>
                         </div>
@@ -309,41 +307,47 @@ export default function OrdersPage() {
                         </span>
                       </summary>
 
-                      <div className="mt-8">
-                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(max-content,26ch)_max-content] items-center gap-x-4 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          <span className="min-w-0 truncate">Name</span>
-                          <div className="justify-self-center text-center">SKU</div>
-                          <span className="shrink-0 text-right">Menge</span>
-                        </div>
-
-                        <ul className="mt-2 divide-y divide-slate-200/70">
-                          {order.items.map((item) => (
-                            <li
-                              key={item.id}
-                              className="grid grid-cols-[minmax(0,1fr)_minmax(max-content,22ch)_max-content] items-center gap-x-4 py-2.5 text-sm text-slate-700 first:pt-3 last:pb-3"
-                            >
-                              <span className="min-w-0 truncate text-[15px] font-medium text-slate-900">
-                                {item.product.name}
-                              </span>
-                              <span className="justify-self-center">
-                                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-slate-700 shadow-sm">
-                                  <span className="whitespace-nowrap">{item.product.sku}</span>
-                                  <SkuCopyButton sku={item.product.sku} />
-                                </span>
-                              </span>
-                              <span className="justify-self-end whitespace-nowrap text-right text-[15px] font-semibold tabular-nums text-slate-900">
-                                {decimalToNumber(item.quantity)}{" "}
-                                <span className="font-medium text-slate-600">
-                                  {item.product.baseUnit.toLowerCase()}
-                                </span>
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
+                      <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
+                        <TableUI.Subtable className="rounded-sm" tableClassName="table-fixed">
+                          <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                            <tr>
+                              <TableUI.SubtableHead scope="col" className="min-w-0">
+                                Name
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead scope="col" className="w-[9rem] text-center">
+                                SKU
+                              </TableUI.SubtableHead>
+                              <TableUI.SubtableHead scope="col" className="w-32 whitespace-nowrap text-right">
+                                Menge
+                              </TableUI.SubtableHead>
+                            </tr>
+                          </TableUI.SubtableHeader>
+                          <TableUI.SubtableBody>
+                            {order.items.map((item) => (
+                              <TableUI.SubtableRow key={item.id}>
+                                <TableUI.SubtableCell className="min-w-0 max-w-0 text-sm font-medium text-foreground">
+                                  <span className="block truncate">{item.product.name}</span>
+                                </TableUI.SubtableCell>
+                                <TableUI.SubtableCell className="text-center">
+                                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-foreground shadow-sm">
+                                    <span className="whitespace-nowrap">{item.product.sku}</span>
+                                    <SkuCopyButton sku={item.product.sku} />
+                                  </span>
+                                </TableUI.SubtableCell>
+                                <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
+                                  {decimalToNumber(item.quantity)}{" "}
+                                  <span className="font-medium text-muted-foreground">
+                                    {item.product.baseUnit.toLowerCase()}
+                                  </span>
+                                </TableUI.SubtableCell>
+                              </TableUI.SubtableRow>
+                            ))}
+                          </TableUI.SubtableBody>
+                        </TableUI.Subtable>
                       </div>
                     </details>
                   </div>
-                    </article>
+                  </Card>
                   );
                 })}
               </div>
