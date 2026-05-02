@@ -70,6 +70,18 @@
   /* reserved accents (for later UI elements) */
   --accent-blue: #003264;
   --accent-orange: #ff8000;
+
+  /* Header nav: hue tied to meaning (still readable on glass next to HTL blue) */
+  /* Warenkorb — shopping / checkout (near brand orange) */
+  --nav-cart: oklch(0.63 0.2 54);
+  /* Bestellhistorie — receipts / order log (indigo, off corporate navy) */
+  --nav-orders: oklch(0.44 0.11 283);
+  /* Ausleihen — lending, circulation, “borrow & return” green */
+  --nav-loans: oklch(0.47 0.12 152);
+  /* Freigaben — teacher review queue, “needs a decision” amber */
+  --nav-approvals: oklch(0.64 0.18 71);
+  /* Administration — backend / settings console */
+  --nav-admin: oklch(0.46 0.14 294);
 }
 
 @layer base {

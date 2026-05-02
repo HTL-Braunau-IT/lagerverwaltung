@@ -69,41 +69,37 @@ export default async function RootLayout({
               data-app-shell-header="true"
               className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-visible glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
             >
-              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-2 px-6">
+              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-1.5 px-6">
                 <Link
                   href="/"
                   prefetch={false}
                   className="flex flex-col items-center text-center text-foreground transition-colors hover:text-primary"
                 >
-                  <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">HTL LAGER</span>
-                  <span className="text-xl font-semibold">Schulshop</span>
+                  <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">htl braunau</span>
+                  <span className="text-xl font-semibold tracking-wide">Lagershop</span>
                 </Link>
-                <div className="px-8">
+                <div className="pl-8 pr-4">
                   <Search />
                 </div>
-                <div className="flex items-center gap-3 mt-0.5 -mb-0.5">
-                  <HeaderCartLink
-                    label="Warenkorb"
-                    hoverClassName="hover:text-black"
-                    icon={<CartIcon />}
-                  />
+                <div className="flex items-center gap-2">
+                  <HeaderCartLink label="Warenkorb" icon={<CartIcon />} />
                   <HeaderNavLink
                     href="/orders"
                     label="Bestellhistorie"
-                    hoverClassName="hover:text-black"
+                    accent="orders"
                     icon={<OrdersIcon />}
                   />
                   <HeaderNavLink
                     href="/loans"
                     label="Ausleihen"
-                    hoverClassName="hover:text-black"
-                    icon={<LendingIcon />}
+                    accent="loans"
+                    icon={<LendingIcon className="h-7 w-7 pl-1" />}
                   />
                   {session.user.role === "ADMIN" || session.user.role === "TEACHER" ? (
                     <HeaderNavLink
                       href="/teacher/orders"
                       label="Freigaben"
-                      hoverClassName="hover:text-black"
+                      accent="approvals"
                       icon={<ApprovalsIcon />}
                       badgeLabel={openApprovalsCount > 0 ? openApprovalsLabel : undefined}
                     />
@@ -112,13 +108,13 @@ export default async function RootLayout({
                     <HeaderNavLink
                       href="/backend"
                       label="Administration"
-                      hoverClassName="hover:text-black"
+                      accent="admin"
                       icon={<AdministrationIcon />}
                     />
                   ) : null}
                   <div className="relative z-[60]">
-                    <div className="group relative inline-flex min-w-24 flex-col items-center text-muted-foreground transition-colors hover:text-primary">
-                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border text-xs font-semibold text-foreground">
+                    <div className="group relative inline-flex min-w-24 flex-col items-center gap-0.5 text-muted-foreground transition-colors hover:text-primary">
+                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border text-xs font-semibold text-foreground">
                         {session.user.image ? (
                           // Use Entra profile image if available.
                           <img
@@ -132,7 +128,7 @@ export default async function RootLayout({
                             .toUpperCase()
                         )}
                       </span>
-                      <p className="pt-1 text-sm font-medium text-muted-foreground">Mein Benutzer</p>
+                      <p className="text-sm font-medium leading-tight text-muted-foreground">Mein Benutzer</p>
                       <div className="pointer-events-none absolute top-full z-[70] mt-1 w-72 rounded-lg border border-border bg-card p-3 opacity-0 shadow-md transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
                         <p className="text-sm font-medium text-center text-foreground">
                           {session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}

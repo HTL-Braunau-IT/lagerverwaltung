@@ -8,7 +8,6 @@ import { api } from "~/trpc/react";
 
 export type HeaderCartLinkProps = {
   label: string;
-  hoverClassName: string;
   icon: ReactNode;
 };
 
@@ -39,7 +38,7 @@ function getOrCreateSessionId() {
   return created;
 }
 
-export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkProps) {
+export function HeaderCartLink({ label, icon }: HeaderCartLinkProps) {
   const [sessionId, setSessionId] = useState("");
   const pathname = usePathname();
   const isActive = pathname === "/carts" || pathname.startsWith("/carts/");
@@ -67,11 +66,13 @@ export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkPr
     <Link
       href="/carts"
       aria-current={isActive ? "page" : undefined}
-      className={`group inline-flex min-w-24 flex-col items-center gap-1 transition-colors ${
-        isActive ? "text-foreground" : `text-muted-foreground ${hoverClassName}`
+      className={`group inline-flex min-w-24 flex-col items-center gap-0.5 [&_svg]:text-inherit ${
+        isActive
+          ? "relative border-b-2 border-b-[var(--nav-cart)] px-1 py-0.5 font-medium text-[var(--nav-cart)] transition-[color,border-color] duration-60 delay-60 hover:delay-0"
+          : "relative border-b-2 border-b-transparent px-1 py-0.5 font-medium text-muted-foreground/85 transition-[color,border-color] duration-60 delay-60 hover:delay-0 hover:border-b-[color-mix(in_srgb,var(--nav-cart)_42%,transparent)] hover:text-[color-mix(in_srgb,var(--nav-cart)_55%,var(--muted-foreground))]"
       }`}
     >
-      <span className="relative flex h-10 w-10 items-center justify-center">
+      <span className="relative flex h-9 w-9 items-center justify-center text-inherit">
         {icon}
         <span
           className="absolute -right-1.5 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent-orange px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white"
@@ -80,7 +81,7 @@ export function HeaderCartLink({ label, hoverClassName, icon }: HeaderCartLinkPr
           {badgeLabel}
         </span>
       </span>
-      <span className={`text-sm font-medium ${isActive ? "underline underline-offset-4" : ""}`}>{label}</span>
+      <span className="text-sm leading-tight">{label}</span>
     </Link>
   );
 }
