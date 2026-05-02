@@ -42,7 +42,7 @@ export function Dialog({ open, onClose, title, description, headerRight, childre
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-2xl rounded-md bg-card p-5 text-card-foreground"
+        className="w-full max-w-2xl rounded-md bg-card/95 backdrop-blur-md backdrop-saturate-150 bg-blur-2xl p-5 text-card-foreground"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -50,7 +50,9 @@ export function Dialog({ open, onClose, title, description, headerRight, childre
             <DetailText variant="title">
               {title}
             </DetailText>
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+            {description ? (
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            ) : null}
           </div>
           {headerRight ? <div className="shrink-0">{headerRight}</div> : null}
         </div>

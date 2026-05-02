@@ -7,18 +7,21 @@ const textVariantClasses: Record<DetailTextVariant, string> = {
   kicker: "text-xs uppercase tracking-wide text-muted-foreground",
   subvalue: "mt-1 text-xs normal-case text-muted-foreground",
   value: "mt-1 text-sm font-semibold text-foreground",
-  noteTitle:"uppercase tracking-wide font-semibold text-accent-orange",
+  noteTitle:"tracking-wide font-semibold text-accent-orange",
   note:"",
 };
 
-export type CardVariant = "detail" | "product" | "static";
+export type CardVariant = "detail" | "product" | "static" | "warning";
 
 const cardVariantClasses: Record<CardVariant, string> = {
   detail:
     "rounded-md bg-card/40 p-3 transition-colors duration-200 ease-in-out hover:bg-card/60",
   product:
     "rounded-md bg-card/40 p-3 transition-colors duration-200 ease-in-out hover:bg-card/60",
-  static: "rounded-md bg-card/40 p-3",
+  static:
+    "rounded-md bg-card/40 p-3",
+  warning:
+    "p-3 rounded-md transition-colors duration-200 ease-in-out bg-accent-orange/20 border border-accent-orange/20",
 };
 
 export function Card({

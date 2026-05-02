@@ -27,3 +27,21 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
     />
   );
 });
+
+const textareaBaseClassName =
+  "box-border min-h-20 w-full bg-card/60 max-w-full resize-none rounded-md px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { className = "", ...props },
+  ref,
+) {
+  return (
+    <textarea
+      ref={ref}
+      className={`${textareaBaseClassName} ${className}`.trim()}
+      {...props}
+    />
+  );
+});

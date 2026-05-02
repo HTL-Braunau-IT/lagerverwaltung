@@ -17,6 +17,8 @@ type SelectProps = {
   disabled?: boolean;
   className?: string;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
+  /** For <label htmlFor="…"> association with the combobox trigger. */
+  id?: string;
 };
 
 function cx(...parts: Array<string | undefined | null | false>) {
@@ -31,6 +33,7 @@ export function Select({
   disabled = false,
   className = "",
   onClick,
+  id,
 }: SelectProps) {
   const listboxId = React.useId();
   const rootRef = React.useRef<HTMLDivElement | null>(null);
@@ -92,6 +95,7 @@ export function Select({
   return (
     <div ref={rootRef} className="relative" onClick={onClick}>
       <button
+        id={id}
         ref={triggerRef}
         type="button"
         role="combobox"
@@ -125,7 +129,8 @@ export function Select({
         className={cx(
           "mt-1 w-full rounded-md bg-card/40 px-2.5 py-2 text-sm text-slate-900",
           "inline-flex items-center justify-between gap-2",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
+          "aria-expanded:ring-1 aria-expanded:ring-inset aria-expanded:ring-ring",
           "disabled:cursor-not-allowed",
           className
         )}

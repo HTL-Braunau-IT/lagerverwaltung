@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import { pdf } from "@react-pdf/renderer";
 import { ArrowRightIcon, WastebinIcon } from "~/components/layout/icon-renders";
-import { Button, buttonClassName } from "~/components/ui/button";
+import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
@@ -12,6 +12,7 @@ import { useConfirmClick } from "~/components/backend/use-confirm-click";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { getQuantityDecimalsForStep, getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 import { NumberStepper } from "~/components/ui/number-stepper";
+import { CheckoutPanel, getCheckoutIntro } from "~/components/shop/checkout-panel";
 import { CartPdfDocument } from "~/components/shop/pdf/cart-pdf-document";
 import { ShopExportPdfButton } from "~/components/shop/shop-quantity-add-to-cart";
 import { Card, DetailText } from "~/components/ui/detail-card";
@@ -161,6 +162,7 @@ function SavedCartRow(props: {
 }
 
 export default function CartsPage() {
+  const { data: session } = useSession();
   const utils = api.useUtils();
   const toast = useToast();
   const [sessionId] = useState(() =>
@@ -178,6 +180,7 @@ export default function CartsPage() {
   );
   const savedCartsQuery = api.cart.listSavedCarts.useQuery();
   const [savedCartPreview, setSavedCartPreview] = useState<SavedCart | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const setQuantityMutation = api.cart.setItemQuantity.useMutation({
     onSuccess: async () => {
@@ -352,6 +355,25 @@ export default function CartsPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <Dialog
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        title="Bestellung abschließen"
+        description={getCheckoutIntro(session?.user.role)}
+        headerRight={
+          <Button type="button" variant="glass" size="sm" onClick={() => setCheckoutOpen(false)}>
+            X
+          </Button>
+        }
+      >
+        <div className="max-h-[min(85vh,720px)] overflow-y-auto px-1">
+          <CheckoutPanel
+            sessionId={sessionId}
+            onSuccessfulSubmit={() => setCheckoutOpen(false)}
+          />
+        </div>
+      </Dialog>
+
+      <Dialog
         open={savedCartPreview !== null}
         onClose={() => setSavedCartPreview(null)}
         title={savedCartPreview?.name ?? "Gespeicherter Warenkorb"}
@@ -362,7 +384,7 @@ export default function CartsPage() {
         }
         headerRight={
           <Button type="button" variant="glass" size="sm" onClick={() => setSavedCartPreview(null)}>
-            Schließen
+            X
           </Button>
         }
       >
@@ -514,19 +536,19 @@ export default function CartsPage() {
                   disabled={activeItems.length === 0}
                   className="!h-9 !w-fit"
                 />
-                <Link
-                  href="/checkout"
-                  className={buttonClassName({
-                    variant: "solid",
-                    size: "sm",
-                    className: "!h-9 !w-fit gap-1.5 rounded-lg px-3 text-sm font-medium",
-                  })}
+                <Button
+                  type="button"
+                  variant="solid"
+                  size="sm"
+                  onClick={() => setCheckoutOpen(true)}
+                  disabled={activeItems.length === 0}
+                  className="!h-9 !w-fit gap-1.5 rounded-lg px-3 text-sm font-medium"
                 >
                   <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
                     <ArrowRightIcon className="h-4 w-4" />
                   </span>
                   Bestellen
-                </Link>
+                </Button>
               </div>
             </div>
           </div>
