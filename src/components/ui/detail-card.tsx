@@ -1,11 +1,12 @@
 import * as React from "react";
 
-type DetailTextVariant = "title" | "kicker" | "value" | "subvalue" | "noteTitle" | "note";
+type DetailTextVariant = "title" | "kicker" | "value" | "subvalue" | "novalue" | "noteTitle" | "note";
 
 const textVariantClasses: Record<DetailTextVariant, string> = {
   title: "text-lg font-semibold text-slate-900",
   kicker: "text-xs uppercase tracking-wide text-muted-foreground",
   subvalue: "mt-1 text-xs normal-case text-muted-foreground",
+  novalue: "mt-1 text-xs normal-case italic text-muted-foreground",
   value: "mt-1 text-sm font-semibold text-foreground",
   noteTitle:"tracking-wide font-semibold text-accent-orange",
   note:"",

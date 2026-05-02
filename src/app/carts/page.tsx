@@ -485,7 +485,7 @@ export default function CartsPage() {
             <div className="mt-3 space-y-3">
               {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkoerbe werden geladen...</p>}
               {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (
-                <p className="text-sm text-slate-500">Noch keine gespeicherten Warenkoerbe.</p>
+                <DetailText variant="novalue">Noch keine gespeicherten Warenkörbe.</DetailText>
               )}
               {savedCartsQuery.data?.map((savedCart) => (
                 <SavedCartRow
