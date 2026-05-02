@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "~/components/ui/button";
+import { Button, type ButtonVariant } from "~/components/ui/button";
 import { CartIcon } from "~/components/layout/icon-renders";
 
 export function ShopQuantityStepper({
@@ -103,15 +103,18 @@ export function ShopExportPdfButton({
   disabled,
   pending,
   className,
+  variant = "default",
 }: {
   onClick: () => void;
   disabled?: boolean;
   pending?: boolean;
   className?: string;
+  variant?: ButtonVariant;
 }) {
   return (
     <Button
       type="button"
+      variant={variant}
       size="sm"
       onClick={onClick}
       disabled={disabled}

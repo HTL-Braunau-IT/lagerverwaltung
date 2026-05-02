@@ -10,11 +10,7 @@ import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { useConfirmClick } from "~/components/backend/use-confirm-click";
 import { api, type RouterOutputs } from "~/trpc/react";
-import {
-  getQuantityDecimalsForStep,
-  getQuantityStepForBaseUnit,
-  isQuantityAlignedToStep,
-} from "~/lib/quantity-rules";
+import { getQuantityDecimalsForStep, getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 import { NumberStepper } from "~/components/ui/number-stepper";
 import { CartPdfDocument } from "~/components/shop/pdf/cart-pdf-document";
 import { ShopExportPdfButton } from "~/components/shop/shop-quantity-add-to-cart";
@@ -173,8 +169,6 @@ export default function CartsPage() {
   const [cartName, setCartName] = useState("");
   const [isClearingCart, setIsClearingCart] = useState(false);
   const [confirmClearCart, setConfirmClearCart] = useState(false);
-  const [expressSku, setExpressSku] = useState("");
-  const [expressQuantity, setExpressQuantity] = useState("1");
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -210,13 +204,6 @@ export default function CartsPage() {
     onSuccess: async () => {
       await utils.cart.listSavedCarts.invalidate();
       toast.success("Warenkorb geloescht.");
-    },
-  });
-
-  const addItemMutation = api.cart.addItem.useMutation({
-    meta: { silent: true },
-    onSuccess: async () => {
-      await utils.cart.get.invalidate({ sessionId });
     },
   });
 
@@ -310,57 +297,6 @@ export default function CartsPage() {
     }
     setConfirmClearCart(false);
     void clearCart();
-  };
-
-  const onExpressAddSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    const sku = expressSku.trim();
-    if (sku.length === 0) {
-      toast.error("Bitte SKU eingeben.");
-      return;
-    }
-
-    const quantity = Number(expressQuantity);
-    if (!Number.isFinite(quantity) || quantity <= 0) {
-      toast.error("Bitte eine gueltige Menge eingeben.");
-      return;
-    }
-
-    if (sessionId.length === 0) {
-      toast.error("Session nicht verfuegbar. Bitte Seite neu laden.");
-      return;
-    }
-
-    try {
-      const result = await utils.product.list.fetch({ search: sku, limit: 5 });
-      const match =
-        result.items.find((item) => item.sku.toLowerCase() === sku.toLowerCase()) ?? result.items[0];
-      if (!match) {
-        toast.error("Kein Produkt mit dieser SKU gefunden.");
-        return;
-      }
-      const quantityStep = getQuantityStepForBaseUnit(match.baseUnit);
-      if (!isQuantityAlignedToStep(quantity, quantityStep)) {
-        toast.error(
-          `Fuer ${match.baseUnit.toLowerCase()} ist nur eine Menge in ${quantityStep.toLocaleString("de-AT")}er-Schritten erlaubt.`,
-        );
-        return;
-      }
-
-      await addItemMutation.mutateAsync({
-        sessionId,
-        productId: match.id,
-        quantity,
-      });
-
-      setExpressSku("");
-      setExpressQuantity("1");
-      toast.success("Produkt hinzugefuegt.");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unbekannter Fehler";
-      toast.error(message);
-    }
   };
 
   const exportCartPdf = async () => {
@@ -544,86 +480,56 @@ export default function CartsPage() {
         </aside>
 
         <Card variant="detail" className="p-4 !bg-card/40 hover:!bg-card/40">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <DetailText variant="title">
+          <div className="space-y-3 border-b border-border/40">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <DetailText variant="title" className="!mt-0">
                 Aktueller Warenkorb
               </DetailText>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <Button
-                onClick={onClearCartClick}
-                variant="destructive"
-                disabled={
-                  sessionId.length === 0 ||
-                  activeItems.length === 0 ||
-                  isClearingCart ||
-                  setQuantityMutation.isPending
-                }
-                className="!w-fit !h-9"
+              <div
+                className="flex flex-wrap items-center gap-1.5 sm:justify-end"
+                role="toolbar"
+                aria-label="Warenkorb-Aktionen"
               >
-                {isClearingCart
-                  ? "Wird gelöscht..."
-                  : confirmClearCart
-                    ? "Nochmal klicken"
-                    : "Alle Produkte löschen"}
-              </Button>
-              <ShopExportPdfButton
-                onClick={() => void exportCartPdf()}
-                disabled={activeItems.length === 0}
-                className="!h-9"
-              />
-
-              <Link
-                href="/checkout"
-                className={buttonClassName({
-                  variant: "solid",
-                  size: "sm",
-                  className: "!w-fit !h-9 gap-1.5 rounded-lg px-3 text-sm font-medium",
-                })}
-              >
-                <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
-                  <ArrowRightIcon className="h-4 w-4" />
-                </span>
-                Bestellen
-              </Link>
+                <Button
+                  onClick={onClearCartClick}
+                  variant="destructive"
+                  disabled={
+                    sessionId.length === 0 ||
+                    activeItems.length === 0 ||
+                    isClearingCart ||
+                    setQuantityMutation.isPending
+                  }
+                  size="sm"
+                  className="!h-9 !w-fit"
+                >
+                  {isClearingCart
+                    ? "Wird gelöscht..."
+                    : confirmClearCart
+                      ? "Nochmal klicken"
+                      : "Alle Produkte löschen"}
+                </Button>
+                <ShopExportPdfButton
+                  variant="glass"
+                  onClick={() => void exportCartPdf()}
+                  disabled={activeItems.length === 0}
+                  className="!h-9 !w-fit"
+                />
+                <Link
+                  href="/checkout"
+                  className={buttonClassName({
+                    variant: "solid",
+                    size: "sm",
+                    className: "!h-9 !w-fit gap-1.5 rounded-lg px-3 text-sm font-medium",
+                  })}
+                >
+                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </span>
+                  Bestellen
+                </Link>
+              </div>
             </div>
           </div>
-
-          <section className="mt-3 w-fit">
-            <form onSubmit={onExpressAddSubmit} className="flex w-full flex-wrap items-center gap-x-4 gap-y-2">
-              <DetailText variant="subvalue" className="!mt-0 font-semibold">Schnellbestellung</DetailText>
-              <label className="flex flex-1 items-center gap-2">
-                <DetailText variant="subvalue" className="!mt-0">SKU</DetailText>
-                <Input
-                  value={expressSku}
-                  onChange={(e) => setExpressSku(e.target.value)}
-                  placeholder="z.B. BESKO00047F055V"
-                  className="!h-6 !max-w-96"
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="text-xs text-slate-600 whitespace-nowrap">Menge</span>
-                <Input
-                  value={expressQuantity}
-                  onChange={(e) => setExpressQuantity(e.target.value)}
-                  type="number"
-                  step="0.001"
-                  min="0.001"
-                  className="!h-6 !max-w-24"
-                />
-              </label>
-              <Button
-                type="submit"
-                disabled={addItemMutation.isPending || sessionId.length === 0}
-                variant="solid"
-                size="sm"
-                className="!w-fit !h-6"
-              >
-                {addItemMutation.isPending ? "Wird hinzugefuegt..." : "In den Warenkorb"}
-              </Button>
-            </form>
-          </section>
 
           <div className="mt-4 space-y-3">
             {cartQuery.isLoading && <p className="text-sm text-slate-600">Warenkorb wird geladen...</p>}
