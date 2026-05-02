@@ -17,7 +17,7 @@ const cardVariantClasses: Record<CardVariant, string> = {
   detail:
     "rounded-md bg-card/40 p-3 transition-colors duration-200 ease-in-out hover:bg-card/60",
   product:
-    "rounded-md border border-border/50 bg-card/40 p-3 shadow-sm transition-colors duration-200 ease-in-out hover:bg-card/60 hover:border-border/80",
+    "rounded-md bg-card/40 p-3 transition-colors duration-200 ease-in-out hover:bg-card/60",
   static: "rounded-md bg-card/40 p-3",
 };
 

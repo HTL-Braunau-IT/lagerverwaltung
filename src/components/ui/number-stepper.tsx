@@ -63,7 +63,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
+        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40 hover:!bg-card/60"
         aria-label={decreaseAriaLabel}
       >
         <span className="block leading-none">-</span>
@@ -78,7 +78,7 @@ export function NumberStepper({
           if (stopPropagation) event.stopPropagation();
         }}
         onChange={(event) => onChange(event.target.value)}
-        className="!w-14 !h-full min-w-0 shrink !rounded-none !bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="!w-11 !h-full min-w-0 shrink !rounded-none !bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         aria-label={inputAriaLabel}
       />
       <Button
@@ -91,7 +91,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40"
+        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40 hover:!bg-card/60"
         aria-label={increaseAriaLabel}
       >
         <span className="block leading-none">+</span>

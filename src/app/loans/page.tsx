@@ -11,6 +11,7 @@ import { Dialog } from "~/components/ui/dialog";
 import { useToast } from "~/components/ui/toast";
 import { PackageIcon } from "~/components/layout/icon-renders";
 import { Card, DetailText } from "~/components/ui/detail-card";
+import { NumberStepper } from "~/components/ui/number-stepper";
 import * as TableUI from "~/components/ui/table";
 
 function decimalToNumber(value: unknown) {
@@ -264,16 +265,19 @@ export default function AusleihePage() {
                 <p className="text-sm text-slate-600">Aktuell keine ausleihbaren Artikel gefunden.</p>
               ) : null}
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {(lendableItemsQuery.data ?? []).map((item: any) => (
+              <div className="grid gap-6 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+              {(lendableItemsQuery.data ?? []).map((item: any) => {
+                const maxAvailable = Math.floor(decimalToNumber(item.effectiveAvailable));
+                const quantityInput = quantitiesByItem[item.id] ?? "1";
+                return (
                 <div key={item.id}>
-                  <Card className="rounded-xl p-4 shadow-sm">
+                  <Card variant="product" className="p-4 hover:!bg-card/40">
                     {item.image?.url ? (
-                      <div className="mb-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                      <div className="mb-3 flex h-40 w-full items-center justify-center overflow-hidden !rounded-sm border border-slate-200 bg-card/40">
                         <img
                           src={item.image.url}
                           alt={item.image.altText || `${item.name} Bild`}
-                          className="h-40 w-full object-cover"
+                          className="h-full w-full object-contain"
                           onError={(event) => {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = "/pictures/placeholder.jpg";
@@ -282,10 +286,16 @@ export default function AusleihePage() {
                       </div>
                     ) : null}
                     <div className="min-w-0">
-                      <h3 className="mt-1 line-clamp-2 text-base font-semibold text-slate-900">{item.name}</h3>
-                      {item.description ? (
-                        <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p>
-                      ) : null}
+                      <DetailText variant="title">
+                        {item.name}
+                      </DetailText>
+
+                      <DetailText
+                        variant="subvalue"
+                        className={`line-clamp-1 ${item.description?.trim() ? "" : "italic text-muted-foreground/80"}`}
+                      >
+                        {item.description?.trim() || "Keine Beschreibung"}
+                      </DetailText>
                     </div>
 
                     <div className="mt-3 flex items-center gap-1.5 text-sm">
@@ -297,90 +307,46 @@ export default function AusleihePage() {
                       <span className="text-muted-foreground">verfügbar</span>
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      {(() => {
-                        const max = Math.floor(decimalToNumber(item.effectiveAvailable));
-                        const quantityInput = quantitiesByItem[item.id] ?? "1";
-                        const parsedQuantity = Number(quantityInput);
-                        const selectedQuantity =
-                          Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
-                        const clampedQuantity = max > 0 ? Math.min(max, Math.max(1, selectedQuantity)) : 1;
-
-                        return (
-                          <div className="flex h-8 overflow-hidden rounded-lg border border-border bg-background shadow-sm">
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                const nextQuantity = max > 0 ? Math.max(1, clampedQuantity - 1) : 1;
-                                setQuantitiesByItem((prev) => ({
-                                  ...prev,
-                                  [item.id]: nextQuantity.toString(),
-                                }));
-                              }}
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground"
-                              aria-label={`Menge fuer ${item.name} reduzieren`}
-                              disabled={max <= 1}
-                            >
-                              <span className="block leading-none">-</span>
-                            </Button>
-                            <input
-                              type="number"
-                              min={1}
-                              max={max > 0 ? max : undefined}
-                              step={1}
-                              value={quantityInput}
-                              onChange={(event) => {
-                                setQuantitiesByItem((prev) => ({
-                                  ...prev,
-                                  [item.id]: event.target.value,
-                                }));
-                              }}
-                              className="h-8 w-10 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                              aria-label={`Menge fuer ${item.name}`}
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                const nextQuantity = max > 0 ? Math.min(max, clampedQuantity + 1) : 1;
-                                setQuantitiesByItem((prev) => ({
-                                  ...prev,
-                                  [item.id]: nextQuantity.toString(),
-                                }));
-                              }}
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground"
-                              aria-label={`Menge fuer ${item.name} erhoehen`}
-                              disabled={max <= 1}
-                            >
-                              <span className="block leading-none">+</span>
-                            </Button>
-                          </div>
-                        );
-                      })()}
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={!(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")}
-                        className="h-8 min-h-8 shrink-0 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none"
-                        onClick={() => {
-                          const quantityInput = quantitiesByItem[item.id] ?? "1";
-                          setSelectedItemId(item.id);
-                          setQuantityDraft(quantityInput);
-                          setDueInfoOpen(true);
-                        }}
-                      >
-                        Ausleihen
-                      </Button>
+                    <div className="border-t border-border/50 pt-4">
+                      <div className="flex items-stretch gap-2.5 sm:gap-3">
+                        <NumberStepper
+                          value={quantityInput}
+                          onChange={(next) =>
+                            setQuantitiesByItem((prev) => ({ ...prev, [item.id]: next }))
+                          }
+                          min={1}
+                          step={1}
+                          max={maxAvailable > 0 ? maxAvailable : 1}
+                          decreaseAriaLabel={`Menge fuer ${item.name} reduzieren`}
+                          increaseAriaLabel={`Menge fuer ${item.name} erhoehen`}
+                          inputAriaLabel={`Menge fuer ${item.name}`}
+                          className="shrink-0 bg-card/40 "
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="solid"
+                          disabled={
+                            !(userRole === "ADMIN" || userRole === "TEACHER" || userRole === "STUDENT")
+                          }
+                          className="h-9 min-h-9 min-w-0 flex-1 rounded-sm px-3 text-sm font-semibold leading-none"
+                          onClick={() => {
+                            setSelectedItemId(item.id);
+                            setQuantityDraft(quantityInput);
+                            setDueInfoOpen(true);
+                          }}
+                        >
+                          Ausleihen
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 </div>
-              ))}
+                );
+              })}
               </div>
             </div>
-          </Card>
+          </div>
 
           <Dialog
             open={dueInfoOpen}
@@ -428,9 +394,6 @@ export default function AusleihePage() {
           <Card variant="detail" className="p-4 !bg-card/40 hover:!bg-card/40">
             <div className="mb-2">
               <h2 className="text-xl font-semibold text-foreground">Meine ausgeliehenen Werkzeuge</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Hier siehst du offene, freigegebene und erledigte Anfragen.
-              </p>
             </div>
 
             {myLoansQuery.isLoading ? <p className="text-sm text-muted-foreground">Werkzeuge werden geladen...</p> : null}
