@@ -12,7 +12,8 @@ import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
-import { CheckIcon, ClipboardCopyIcon, PackageIcon } from "~/components/layout/icon-renders";
+import { StockOnHandLine } from "~/components/shop/stock-on-hand-line";
+import { CheckIcon, ClipboardCopyIcon } from "~/components/layout/icon-renders";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
@@ -41,10 +42,6 @@ function formatPrice(value: unknown) {
   );
 }
 
-function formatBaseUnitLabel(baseUnit: string) {
-  return baseUnit.toLowerCase().replace("2", "²");
-}
-
 function toMixedStorageRoomWarning(message: string | null | undefined): string | null {
   if (!message) return null;
   if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
@@ -63,72 +60,10 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
   return null;
 }
 
-/** Rot: Bestand ≤ Mindestbestand. Gelb: darüber bis einschließlich 110 % des Mindestbestands. Grün: über 110 %. */
-function stockAvailabilityDotClass(minimum: number, onHand: number): string {
-  if (minimum <= 0) return "bg-muted-foreground/45";
-  if (onHand <= minimum) return "bg-red-500";
-  if (onHand <= minimum * 1.1) return "bg-amber-400";
-  return "bg-emerald-500";
-}
-
-function stockAvailabilityTitle(minimum: number, onHand: number): string {
-  if (minimum <= 0) return "Bestandslage (kein Mindestbestand hinterlegt)";
-  if (onHand <= minimum) return "Kritisch: Bestand am oder unter dem Mindestbestand";
-  if (onHand <= minimum * 1.1) return "Niedrig: Bestand nahe am Mindestbestand";
-  return "Ausreichend: Bestand über dem Warnbereich";
-}
-
-function StockOnHandLine({
-  quantityOnHand,
-  minimumQuantity,
-  baseUnit,
-  align = "start",
-}: {
-  quantityOnHand: unknown;
-  minimumQuantity: unknown;
-  baseUnit: string;
-  align?: "start" | "center";
-}) {
-  const onHand = decimalToNumber(quantityOnHand);
-  const minimum = decimalToNumber(minimumQuantity);
-  const dotClass = stockAvailabilityDotClass(minimum, onHand);
-  const title = stockAvailabilityTitle(minimum, onHand);
-  const unitLabel = formatBaseUnitLabel(baseUnit);
-
-  const srSummary = `Bestand ${formatInventoryQuantity(onHand)} ${unitLabel}. ${title}`;
-
-  return (
-    <div
-      className={[
-        "-mt-1 mb-2 flex items-center gap-1.5 text-sm",
-        align === "center" ? "justify-center" : "justify-start",
-      ].join(" ")}
-    >
-      <p className="sr-only">{srSummary}</p>
-      <span
-        className={["h-2 w-2 shrink-0 rounded-full", dotClass].join(" ")}
-        title={title}
-        aria-hidden
-      />
-      <PackageIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="font-semibold tabular-nums text-foreground">{formatInventoryQuantity(onHand)}</span>
-      <span className="text-muted-foreground">{unitLabel}</span>
-      <span className="text-muted-foreground">verfügbar</span>
-    </div>
-  );
-}
-
 function formatDecimal(value: number, fractionDigits = 3) {
   return new Intl.NumberFormat("de-AT", {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
-  }).format(value);
-}
-
-function formatInventoryQuantity(value: number) {
-  return new Intl.NumberFormat("de-AT", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
   }).format(value);
 }
 

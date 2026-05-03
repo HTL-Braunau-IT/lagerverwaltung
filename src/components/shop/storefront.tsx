@@ -7,11 +7,14 @@ import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card } from "~/components/ui/detail-card";
 import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ProductImageCarousel } from "~/components/shop/product-image-carousel";
+import { StockOnHandLine } from "~/components/shop/stock-on-hand-line";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { ShopAddToCartButton } from "~/components/shop/shop-quantity-add-to-cart";
+import { NumberStepper } from "~/components/ui/number-stepper";
 import { useShopProductCountPublisher } from "~/components/shop/shop-product-count-context";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
@@ -48,10 +51,6 @@ function formatPrice(value: unknown) {
     style: "currency",
     currency: "EUR",
   }).format(amount);
-}
-
-function formatStock(value: unknown, baseUnit: string) {
-  return `${decimalToNumber(value)} ${baseUnit.toLowerCase()}`;
 }
 
 function toMixedStorageRoomWarning(message: string | null | undefined): string | null {
@@ -222,9 +221,9 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid auto-rows-max content-start gap-4 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
+        <div className="grid auto-rows-max content-start gap-6 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
           {productQuery.isLoading && (
-            <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
+            <div className="col-span-full p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
               <p className="mt-1 text-sm">Bitte kurz warten.</p>
             </div>
@@ -291,6 +290,7 @@ export function Storefront() {
               <Card
                 key={product.id}
                 role="button"
+                variant="product"
                 tabIndex={0}
                 onClick={() => router.push(`/products/${product.id}`)}
                 onKeyDown={(event) => {
@@ -319,9 +319,9 @@ export function Storefront() {
                   </div>
                 )}
 
-                <div className="flex flex-col p-3">
-                  <div className="space-y-2">
-                    <div className="overflow-hidden rounded-xl border border-border bg-muted">
+                <div className="flex flex-col">
+                  <div className="space-y-3">
+                    <div className="overflow-hidden rounded-sm bg-muted">
                       <ProductImageCarousel images={product.images} productName={product.name} />
                     </div>
 
@@ -329,96 +329,48 @@ export function Storefront() {
                       <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
                         {product.name}
                       </h2>
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1">
-                          {formatPrice(product.price)} 
-                        </p>
-                      </div>
                     </div>
                   </div>
+                  <div className="m-2 flex min-w-0 items-center justify-between gap-x-2 gap-y-0.5 text-right">
+                     <StockOnHandLine
+                      quantityOnHand={product.quantityOnHand}
+                      minimumQuantity={product.minimumQuantity}
+                      baseUnit={product.baseUnit}
+                      align="end"
+                      className="!mt-0 !mb-0 shrink-0"
+                    />
+                    <div className="flex shrink-0 items-baseline gap-1">
+                      <p className="shrink-0 text-base font-semibold tabular-nums text-primary">
+                        {formatPrice(product.price)}
+                      </p>
+                      <p className="shrink-0 text-xs font-semibold tabular-nums text-primary">
+                        / {product.baseUnit}
+                      </p>
+                    </div>
 
-                  <div className="pt-2">
+                  </div>
+
+                  <div className="pt-0">
                     <div
-                      className="flex w-full items-start gap-2 bg-white"
+                      className="flex w-full min-w-0 items-stretch overflow-hidden rounded-sm bg-card/40 ring-offset-background focus-within:ring-2 focus-within:ring-ring/25"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <div className="flex min-w-0 flex-col items-center gap-1">
-                        <div className="flex h-8 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const currentQuantity =
-                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                                  ? parsedQuantity
-                                  : unitStep;
-                              const nextQuantity = Math.max(unitStep, currentQuantity - unitStep);
-                              setQuantitiesByProduct((prev) => ({
-                                ...prev,
-                                [product.id]: nextQuantity.toString(),
-                              }));
-                            }}
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 min-w-6 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                            aria-label={`Menge fuer ${product.name} reduzieren`}
-                          >
-                            <span
-                            className="block leading-none">
-                              -
-                            </span>
-                          </Button>
-                          <input
-                            type="number"
-                            min={unitStep}
-                            max={stockOnHand}
-                            step={unitStep}
-                            value={quantityInput}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) => {
-                              setQuantitiesByProduct((prev) => ({
-                                ...prev,
-                                [product.id]: event.target.value,
-                              }));
-                            }}
-                            className="w-8 border-none bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                            aria-label={`Menge fuer ${product.name}`}
-                          />
-                          <Button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              const currentQuantity =
-                                Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                                  ? parsedQuantity
-                                  : unitStep;
-                              const nextQuantity =
-                                stockOnHand > 0
-                                  ? Math.min(stockOnHand, currentQuantity + unitStep)
-                                  : unitStep;
-                              setQuantitiesByProduct((prev) => ({
-                                ...prev,
-                                [product.id]: nextQuantity.toString(),
-                              }));
-                            }}
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 min-w-6 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground -translate-y-[1px]"
-                            aria-label={`Menge fuer ${product.name} erhoehen`}
-                          >
-                            <span
-                            className="block leading-none">
-                              +
-                            </span>
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground text-center whitespace-nowrap">
-                          Bestand: {formatStock(product.quantityOnHand, product.baseUnit)}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={(event) => {
-                          event.stopPropagation();
+                      <NumberStepper
+                        value={quantityInput}
+                        onChange={(value) =>
+                          setQuantitiesByProduct((prev) => ({ ...prev, [product.id]: value }))
+                        }
+                        min={unitStep}
+                        step={unitStep}
+                        max={stockOnHand > 0 ? stockOnHand : undefined}
+                        decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
+                        increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
+                        inputAriaLabel={`Menge fuer ${product.name}`}
+                        stopPropagation
+                        className="shrink-0 !rounded-none !border-0 !bg-transparent !shadow-none"
+                      />
+                      <ShopAddToCartButton
+                        onClick={() => {
                           const quantity =
                             Number.isFinite(parsedQuantity) && parsedQuantity > 0
                               ? parsedQuantity
@@ -433,13 +385,14 @@ export function Storefront() {
                             quantity,
                           });
                         }}
-                        disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
-                        className="h-8 flex-1 whitespace-nowrap rounded-xl px-3"
-                      >
-                        {addItemMutation.isPending && activeAddProductId === product.id
-                          ? "Hinzufügen..."
-                          : "In den Warenkorb"}
-                      </Button>
+                        disabled={
+                          sessionId.length === 0 || addItemMutation.isPending || !canAddToCart
+                        }
+                        pending={
+                          addItemMutation.isPending && activeAddProductId === product.id
+                        }
+                        className="min-w-0 flex-1 !h-9 !min-h-9 !rounded-none border-l border-border/70 !shadow-none px-3"
+                      />
                     </div>
                   </div>
                 </div>
