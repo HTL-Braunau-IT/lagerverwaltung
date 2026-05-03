@@ -12,12 +12,14 @@ import {
   AdministrationIcon,
   ApprovalsIcon,
   CartIcon,
+  HeaderBrandPackageIcon,
   LendingIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { TRPCReactProvider } from "~/trpc/react";
+import { DetailText } from "~/components/ui/detail-card";
 
 export const metadata: Metadata = {
   title: "Lagerverwaltung HTL",
@@ -69,16 +71,25 @@ export default async function RootLayout({
               data-app-shell-header="true"
               className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-visible glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
             >
-              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 py-1.5 px-6">
+              <div className="grid w-full grid-cols-[max-content_minmax(0,1fr)_auto] items-center gap-4 px-6">
                 <Link
                   href="/"
                   prefetch={false}
-                  className="flex flex-col items-center text-center text-foreground transition-colors hover:text-primary"
+                  className="group flex items-center gap-2 rounded-lg text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
-                  <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground">htl braunau</span>
-                  <span className="text-xl font-semibold tracking-wide">Lagershop</span>
+                  <span className="inline-flex text-primary/85 transition-colors group-hover:text-primary">
+                    <HeaderBrandPackageIcon className="h-8 w-8 shrink-0 transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:scale-100" />
+                  </span>
+                  <span className="flex min-w-0 flex-col items-center text-center leading-tight">
+                    <span className="w-full text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
+                      HTL Braunau
+                    </span>
+                    <span className="w-full text-center text-lg font-bold tracking-tight text-foreground transition-colors sm:text-xl group-hover:text-primary">
+                      Lagershop
+                    </span>
+                  </span>
                 </Link>
-                <div className="pl-8 pr-4">
+                <div className="p-4">
                   <Search />
                 </div>
                 <div className="flex items-center gap-2">
@@ -113,35 +124,33 @@ export default async function RootLayout({
                     />
                   ) : null}
                   <div className="relative z-[60]">
-                    <div className="group relative inline-flex min-w-24 flex-col items-center gap-0.5 text-muted-foreground transition-colors hover:text-primary">
-                      <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border text-xs font-semibold text-foreground">
-                        {session.user.image ? (
-                          // Use Entra profile image if available.
-                          <img
-                            src={session.user.image}
-                            alt={session.user.name ? `${session.user.name} Profilbild` : "Profilbild"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          (session.user.name ?? session.user.email?.split("@")[0] ?? "B")
-                            .slice(0, 2)
-                            .toUpperCase()
-                        )}
-                      </span>
-                      <p className="text-sm font-medium leading-tight text-muted-foreground">Mein Benutzer</p>
-                      <div className="pointer-events-none absolute top-full z-[70] mt-1 w-72 rounded-lg border border-border bg-card p-3 opacity-0 shadow-md transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                        <p className="text-sm font-medium text-center text-foreground">
-                          {session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}
-                        </p>
-                        <p className="text-xs text-center text-muted-foreground">
-                          {session.user.email ?? "vorname.nachname@htl-braunau.at"}
-                        </p>
+                    <div className="group relative w-max">
+                      <div className="inline-flex min-w-24 cursor-default flex-col items-center gap-0.5 border-b-2 border-b-transparent px-1 py-0.5 font-medium text-muted-foreground/85 transition-colors group-hover:text-primary/80">
+                        <span className="relative flex h-9 w-9 items-center justify-center text-inherit">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border-[0.5px] border-border text-[11px] font-semibold text-foreground transition-[color,border-color] group-hover:border-primary/45">
+                            {session.user.image ? (
+                              // Use Entra profile image if available.
+                              <img
+                                src={session.user.image}
+                                alt={session.user.name ? `${session.user.name} Profilbild` : "Profilbild"}
+                                className="block h-full w-full object-cover"
+                              />
+                            ) : (
+                              (session.user.name ?? session.user.email?.split("@")[0] ?? "B")
+                                .slice(0, 2)
+                                .toUpperCase()
+                            )}
+                          </span>
+                        </span>
+                        <span className="text-sm leading-tight">Mein Benutzer</span>
+                      </div>
+                      <div className="pointer-events-none absolute right-0 top-full z-[70] mt-1 w-72 max-w-[min(18rem,calc(100vw-1.25rem))] -translate-x-2 rounded-md bg-card/95 backdrop-blur-md backdrop-saturate-150 bg-blur-2xl p-3 opacity-0 transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 text-center">
+                        <DetailText variant="value">{session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}</DetailText>
+                        <DetailText variant="subvalue">{session.user.email ?? "vorname.nachname@htl-braunau.at"}</DetailText>
                         <div className="mt-2 flex justify-center">
                           <div className="inline-flex items-center gap-2 px-2 text-muted-foreground">
-                            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground/75">
-                              Rollen
-                            </span>
-                            <span className="inline-flex rounded-full border border-border/80 bg-background px-2.5 py-0.5 text-[11px] font-medium leading-none text-foreground">
+                            <DetailText variant="kicker" className="!text-muted-foreground/60">Rollen</DetailText>
+                            <span className="inline-flex rounded-full bg-primary/80 px-2.5 py-0.5 text-[11px] font-medium leading-none text-white">
                               {roleLabels[session.user.role]}
                             </span>
                           </div>
@@ -149,7 +158,7 @@ export default async function RootLayout({
                         <div className="flex justify-center mt-2 flex gap-3 border-t border-border/70 pt-2.5">
                           <Link
                             href="/api/auth/signout"
-                            className="inline-flex items-center justify-center rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700 transition-colors hover:border-rose-300 hover:bg-rose-100 hover:text-rose-800"
+                            className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors bg-destructive text-card"
                           >
                             Abmelden
                           </Link>

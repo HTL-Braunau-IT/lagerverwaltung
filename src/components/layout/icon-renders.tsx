@@ -457,24 +457,64 @@ export function ClockIcon({ className = "h-3.5 w-3.5 shrink-0" }: { className?: 
 /** Kleines Paket-/Lager-Symbol (Bestandszeile). */
 export function PackageIcon({ className = "" }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={className}
-    >
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none">
       <path
         d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeOpacity={1}
+        strokeWidth="1.8"
         strokeLinejoin="round"
       />
       <path
         d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"
+        fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeOpacity={1}
+        strokeWidth="1.8"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+
+const HEADER_BRAND_PACKAGE_D =
+  "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z";
+
+export function HeaderBrandPackageIcon({ className = "" }: { className?: string }) {
+  const strokeOuter = 1.9;
+  const innerScale = 0.64;
+  const cx = 12;
+  const cy = 12.25;
+  const innerStroke = strokeOuter / innerScale;
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none">
+      <path
+        d={HEADER_BRAND_PACKAGE_D}
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity={1}
+        strokeWidth={strokeOuter}
+        strokeLinejoin="round"
+      />
+      <g transform={`translate(${cx} ${cy}) scale(${innerScale}) translate(${-cx} ${-cy})`}>
+        <g className="text-[var(--accent-orange)] transition-[filter] duration-300 ease-out group-hover:brightness-115">
+          <g
+            className="[transform-box:fill-box] [transform-origin:center] [transform:rotate(0deg)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:[transform:rotate(60deg)] motion-reduce:transition-none motion-reduce:group-hover:[transform:rotate(0deg)]"
+          >
+            <path
+              d={HEADER_BRAND_PACKAGE_D}
+              fill="none"
+              stroke="currentColor"
+              strokeOpacity={1}
+              strokeWidth={innerStroke}
+              strokeLinejoin="round"
+            />
+          </g>
+        </g>
+      </g>
     </svg>
   );
 }

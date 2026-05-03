@@ -12,6 +12,7 @@ type HeaderSearchMode =
   | "userOrdersReadonly"
   | "teacherOrdersReadonly"
   | "cartsReadonly"
+  | "loansReadonly"
   | "backend";
 
 function headerSearchMode(pathname: string): HeaderSearchMode | null {
@@ -33,6 +34,9 @@ function headerSearchMode(pathname: string): HeaderSearchMode | null {
   if (pathname === "/carts" || pathname.startsWith("/carts/")) {
     return "cartsReadonly";
   }
+  if (pathname === "/loans" || pathname.startsWith("/loans/")) {
+    return "loansReadonly";
+  }
   if (pathname === "/backend" || pathname.startsWith("/backend/")) {
     return "backend";
   }
@@ -43,7 +47,8 @@ function isReadonlySearchMode(mode: HeaderSearchMode): boolean {
   return (
     mode === "userOrdersReadonly" ||
     mode === "teacherOrdersReadonly" ||
-    mode === "cartsReadonly"
+    mode === "cartsReadonly" ||
+    mode === "loansReadonly"
   );
 }
 
@@ -86,7 +91,11 @@ export function Search() {
   }, [mode, pathname, router, searchParams, value]);
 
   if (!mode) {
-    return null;
+    return (
+      <div>
+        <div className="h-10 w-full" aria-hidden />
+      </div>
+    );
   }
 
   const placeholder = (() => {
@@ -95,7 +104,8 @@ export function Search() {
     if (
       mode === "userOrdersReadonly" ||
       mode === "teacherOrdersReadonly" ||
-      mode === "cartsReadonly"
+      mode === "cartsReadonly" ||
+      mode === "loansReadonly"
     ) {
       return "Suche auf dieser Seite nicht verfügbar";
     }
@@ -116,7 +126,9 @@ export function Search() {
               ? "header-teacher-orders-search-readonly"
               : mode === "cartsReadonly"
                 ? "header-carts-search-readonly"
-                : "global-product-search";
+                : mode === "loansReadonly"
+                  ? "header-loans-search-readonly"
+                  : "global-product-search";
 
   const readonly = mode ? isReadonlySearchMode(mode) : false;
 
