@@ -10,6 +10,7 @@ import { Dialog } from "~/components/ui/dialog";
 import { useToast } from "~/components/ui/toast";
 import { PinIcon } from "~/components/layout/icon-renders";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
+import { Card, DetailText } from "../ui/detail-card";
 
 type StickySizing = {
   appHeaderOffset: number;
@@ -76,44 +77,56 @@ export function ShopCategoriesAside({
   const setSelected = onSelectedCategoryIdChange ?? setUncontrolledSelected;
 
   return (
-    <aside
-      className={`self-start rounded-2xl border border-border bg-card p-3 shadow-sm lg:sticky lg:overflow-auto ${className}`}
+    <div
+      className={`flex min-h-0 w-full flex-col self-start overflow-hidden rounded-md border border-border lg:sticky ${className}`}
       style={stickyStyle({ appHeaderOffset, stickyTopOffset })}
     >
-      <p className="px-2 pb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">Kategorien</p>
-      <nav className="space-y-1">
-        <Button
-          onClick={() => {
-            setSelected(undefined);
-            onCategoryPicked?.(undefined);
-          }}
-          variant={currentSelected === undefined ? "secondary" : "ghost"}
-          size="lg"
-          className={`h-7 w-full justify-between rounded-lg px-3 text-left text-sm ${
-            currentSelected === undefined ? "" : "text-muted-foreground"
-          }`}
+      <div className="shrink-0 overflow-hidden border-b border-border bg-card/60 px-3 py-2">
+        <DetailText
+          variant="title"
+          className="pl-2 text-center text-base leading-tight"
         >
-          <span>Alle Kategorien</span>
-        </Button>
-        {categoryQuery.data?.map((category) => (
+          Kategorien
+        </DetailText>
+      </div>
+      <Card
+        variant="detail"
+        className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 lg:overflow-auto"
+      >
+        <nav className="space-y-1 py-3 px-2">
           <Button
-            key={category.id}
             onClick={() => {
-              setSelected(category.id);
-              onCategoryPicked?.(category.id);
+              setSelected(undefined);
+              onCategoryPicked?.(undefined);
             }}
-            variant={currentSelected === category.id ? "secondary" : "ghost"}
+            variant={currentSelected === undefined ? "solid" : "catInactive"}
             size="lg"
-            className={`h-7 w-full justify-between rounded-lg px-3 text-left text-sm ${
-              currentSelected === category.id ? "" : "text-muted-foreground"
+            className={`h-7 w-full justify-between rounded-lg px-3 text-left !font-medium text-sm ${
+              currentSelected === undefined ? "" : "text-muted-foreground/85"
             }`}
           >
-            <span className="truncate">{category.name}</span>
-            <span className="text-xs">({category._count.products})</span>
+            <span>Alle Kategorien</span>
           </Button>
-        ))}
-      </nav>
-    </aside>
+          {categoryQuery.data?.map((category) => (
+            <Button
+              key={category.id}
+              onClick={() => {
+                setSelected(category.id);
+                onCategoryPicked?.(category.id);
+              }}
+              variant={currentSelected === category.id ? "solid" : "catInactive"}
+              size="lg"
+              className={`h-7 w-full justify-between rounded-md px-3 text-left !font-medium text-sm ${
+                currentSelected === category.id ? "" : "text-muted-foreground/85"
+              }`}
+            >
+              <span className="truncate">{category.name}</span>
+              <span className="text-xs">({category._count.products})</span>
+            </Button>
+          ))}
+        </nav>
+      </Card>
+    </div>
   );
 }
 

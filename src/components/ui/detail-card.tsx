@@ -32,7 +32,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement> & { variant: CardVariant }) {
   const variantClass = cardVariantClasses[variant];
 
-  return <div className={`${variantClass} ${className}`.trim()} {...props} />;
+  return <div className={`${variantClass} ${className} [scrollbar-width:thin] [scrollbar-color:color-mix(in_oklch,var(--muted-foreground)_40%,transparent)_transparent]`.trim() }  {...props} />;
 }
 
 export function DetailText({

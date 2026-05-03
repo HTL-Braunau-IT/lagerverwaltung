@@ -214,7 +214,7 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
-      <section className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+      <section className="mt-2 mx-2 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr_340px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}

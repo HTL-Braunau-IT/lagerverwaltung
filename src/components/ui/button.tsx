@@ -10,6 +10,7 @@ export type ButtonVariant =
   | "ghost"
   | "solid"
   | "glass"
+  | "catInactive"
   | "notify"
   | "category-pill"
   | "new"
@@ -33,6 +34,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost: "text-foreground hover:bg-accent",
   solid: `${pillTableActionLayout} bg-primary/90 text-primary-foreground transition-[opacity] hover:opacity-95`,
   glass: `${pillTableActionLayout} bg-card/60 text-primary backdrop-blur-sm transition-[background-color,color] duration-200 hover:bg-card/90 hover:text-primary`,
+  catInactive: `${pillTableActionLayout} bg-transparent text-muted-foreground backdrop-blur-none transition-[color,background-color] duration-60 delay-60 hover:delay-0 hover:text-primary hover:bg-card/60`,
   notify: `${pillTableActionLayout} bg-accent-orange/80 text-white backdrop-blur-sm transition-[background-color,color] duration-200 hover:opacity-95`,
   "category-pill":
     "!h-auto !min-h-0 !rounded-full bg-card/40 px-3 py-1 text-sm font-medium text-slate-900 transition hover:bg-card/90 focus-visible:ring-slate-400 focus-visible:ring-offset-1",
