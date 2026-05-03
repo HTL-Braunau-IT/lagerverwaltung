@@ -428,11 +428,11 @@ export default function ProductDetailPage() {
         </Card>
 
         <section
-          className="overflow-hidden rounded-2xl border border-border bg-muted/30 shadow-sm"
+          className="overflow-hidden rounded-md bg-card/40"
           aria-label="Produktdetails"
         >
           <div
-            className="flex flex-wrap gap-0 border-b border-border bg-card/50"
+            className="flex flex-wrap gap-0 border-b border-border bg-card/40"
             role="tablist"
             aria-orientation="horizontal"
           >
@@ -471,7 +471,7 @@ export default function ProductDetailPage() {
                 className="space-y-2"
               >
                 {product.description?.trim() ? (
-                  <div className="rounded-lg border border-border bg-card p-3 shadow-sm transition hover:border-primary/40">
+                  <div className="rounded-sm bg-card/40 p-3">
                     <p className="truncate text-sm font-medium text-primary">Beschreibung</p>
                     <div className="mt-2 border-t border-border/60 pt-3">
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
@@ -481,7 +481,7 @@ export default function ProductDetailPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-lg border border-border bg-white p-3 shadow-sm dark:bg-card">
+                <div className="rounded-sm bg-card/40 p-3">
                   <p className="truncate text-sm font-medium text-primary">Kategorien</p>
                   <div className="mt-2 border-t border-border/60 pt-2.5">
                     {categoryEntries.length > 0 ? (
@@ -490,7 +490,7 @@ export default function ProductDetailPage() {
                           <Link
                             key={cat.id}
                             href={`/?categoryId=${encodeURIComponent(cat.id)}`}
-                            className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full bg-card/40 px-3 py-1 text-sm text-foreground transition hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             title="Alle Produkte in dieser Kategorie anzeigen"
                           >
                             <span className="truncate font-medium">{cat.name}</span>
@@ -523,7 +523,7 @@ export default function ProductDetailPage() {
                       href={document.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-lg border border-border bg-card p-3 transition hover:border-primary/50"
+                      className="block rounded-sm bg-card/40 p-3 transition hover:bg-card/80"
                     >
                       <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
