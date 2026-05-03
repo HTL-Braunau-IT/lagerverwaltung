@@ -49,7 +49,7 @@ export function NumberStepper({
 
   return (
     <div
-      className={`flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm border border-primary/10 bg-card/30 ${className}`.trim()}
+      className={`flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm bg-card/30 ${className}`.trim()}
       onClick={(event) => {
         if (!stopPropagation) return;
         event.stopPropagation();

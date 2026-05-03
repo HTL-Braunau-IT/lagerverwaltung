@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card } from "~/components/ui/detail-card";
 import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
@@ -16,6 +16,7 @@ import { StockOnHandLine } from "~/components/shop/stock-on-hand-line";
 import { CheckIcon, ClipboardCopyIcon } from "~/components/layout/icon-renders";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
+import { NumberStepper } from "~/components/ui/number-stepper";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
@@ -90,7 +91,7 @@ function SkuCopyButton({ sku }: { sku: string }) {
   return (
     <button
       type="button"
-      className="inline-flex shrink-0 items-center justify-center border-l border-border px-2 text-muted-foreground transition hover:bg-muted/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      className="inline-flex shrink-0 items-center justify-center border-l border-border px-2 text-muted-foreground transition hover:bg-card/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       title={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
       aria-label={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
       onClick={async () => {
@@ -197,7 +198,7 @@ export default function ProductDetailPage() {
   if (productQuery.isLoading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="p-6">
           <p className="text-sm font-medium text-foreground">Produkt wird geladen...</p>
           <p className="mt-1 text-sm text-muted-foreground">Bitte kurz warten.</p>
         </div>
@@ -208,7 +209,7 @@ export default function ProductDetailPage() {
   if (productQuery.error) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
-        <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-destructive shadow-sm">
+        <div className="bg-destructive/10 p-6 text-destructive">
           <p className="text-sm font-semibold">Produkt konnte nicht geladen werden.</p>
           <p className="mt-1 text-sm">
             Bitte pruefe deine Verbindung und versuche es erneut.
@@ -224,7 +225,7 @@ export default function ProductDetailPage() {
   if (!productQuery.data) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="p-6">
           <p className="text-sm font-semibold text-foreground">Produkt nicht gefunden.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Das Produkt wurde eventuell entfernt oder die URL ist nicht mehr gueltig.
@@ -300,7 +301,7 @@ export default function ProductDetailPage() {
         />
 
         <div className="flex min-w-0 flex-col gap-6">
-        <Card className="self-start rounded-2xl p-6 shadow-sm">
+        <Card variant="detail" className="p-6 !bg-card/40 hover:!bg-card/40">
           <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80">
             <span aria-hidden="true">←</span>
             Zurück zur Produktliste
@@ -310,10 +311,10 @@ export default function ProductDetailPage() {
             <div>
               <h1 className="text-2xl font-semibold text-foreground">{product.name}</h1>
               <div className="mt-4 flex flex-wrap gap-2">
-                <div className="inline-flex max-w-full min-h-0 items-stretch overflow-hidden rounded-full border border-border bg-muted/50 text-sm text-foreground shadow-sm">
+                <div className="inline-flex max-w-full min-h-0 items-stretch overflow-hidden rounded-full bg-card/40 text-sm text-foreground">
                   <Link
                     href={`/?search=${encodeURIComponent(product.sku)}`}
-                    className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1.5 px-3 py-1 transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="inline-flex min-w-0 max-w-full flex-1 items-center gap-1.5 px-3 py-1 transition hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     title={`Alle Produkte mit dieser SKU anzeigen`}
                   >
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -326,7 +327,7 @@ export default function ProductDetailPage() {
                 {product.storageLocation ? (
                   <Link
                     href={`/?storageLocationId=${encodeURIComponent(product.storageLocation.id)}`}
-                    className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-foreground shadow-sm transition hover:border-primary/45 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex max-w-full min-h-0 items-center gap-1.5 rounded-full bg-card/40 px-3 py-1 text-sm text-foreground transition hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     title={`Alle Produkte an diesem Lagerplatz anzeigen`}
                   >
                     <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -345,7 +346,7 @@ export default function ProductDetailPage() {
                     / {product.baseUnit}
                   </p>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 ml-0.5">
                   <StockOnHandLine
                     quantityOnHand={product.quantityOnHand}
                     minimumQuantity={product.minimumQuantity}
@@ -395,7 +396,7 @@ export default function ProductDetailPage() {
                     </p>
                   </div>
                 ) : (
-                  <ShopQuantityStepper
+                  <NumberStepper
                     value={quantityInput}
                     onChange={setQuantityInput}
                     min={unitStep}
@@ -404,6 +405,7 @@ export default function ProductDetailPage() {
                     decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
                     increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
                     inputAriaLabel={`Menge fuer ${product.name}`}
+                    className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
                   />
                 )}
                 <ShopAddToCartButton
@@ -418,6 +420,7 @@ export default function ProductDetailPage() {
                   }}
                   disabled={sessionId.length === 0 || addItemMutation.isPending || !canAddToCart}
                   pending={addItemMutation.isPending}
+                  className="!h-9 !min-h-9 min-w-0 !w-fit !rounded-sm px-4 text-sm font-semibold"
                 />
               </div>
             </div>
