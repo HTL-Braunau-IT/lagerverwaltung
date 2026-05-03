@@ -49,7 +49,7 @@ export function NumberStepper({
 
   return (
     <div
-      className={`flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm ${className}`.trim()}
+      className={`flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm border border-primary/10 bg-card/30 ${className}`.trim()}
       onClick={(event) => {
         if (!stopPropagation) return;
         event.stopPropagation();
@@ -66,7 +66,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40 hover:!bg-card/60"
+        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
         aria-label={decreaseAriaLabel}
       >
         <span className="block leading-none">-</span>
@@ -96,7 +96,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-card/40 hover:!bg-card/60"
+        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
         aria-label={increaseAriaLabel}
       >
         <span className="block leading-none">+</span>

@@ -9,8 +9,10 @@ import { Button } from "~/components/ui/button";
 import { Dialog } from "~/components/ui/dialog";
 import { useToast } from "~/components/ui/toast";
 import { PinIcon } from "~/components/layout/icon-renders";
-import { ShopAddToCartButton, ShopQuantityStepper } from "~/components/shop/shop-quantity-add-to-cart";
+import { ShopAddToCartButton } from "~/components/shop/shop-quantity-add-to-cart";
 import { Card, DetailText } from "../ui/detail-card";
+import { NumberStepper } from "~/components/ui/number-stepper";
+import { Input } from "../ui/input";
 
 type StickySizing = {
   appHeaderOffset: number;
@@ -221,130 +223,142 @@ export function ShopPartListsAside({
         style={stickyStyle({ appHeaderOffset, stickyTopOffset })}
       >
         {canSeePartListProductCount ? (
-          <aside className="min-h-0 rounded-2xl border border-border bg-card p-3 shadow-sm lg:overflow-auto">
-            <div className="flex items-center justify-between gap-2 px-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Teilelisten</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => {
-                  setPartListModalSearch("");
-                  setShowAllPartListsModal(true);
-                }}
-                disabled={partListsQuery.isLoading || Boolean(partListsQuery.error)}
-              >
-                Alle anzeigen ({allPartLists.length})
-              </Button>
+          <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-md border border-border lg:overflow-auto">
+            <div className="shrink-0 overflow-hidden bg-card/80 px-3 py-2">
+              <DetailText variant="title" className="pl-2 text-center text-base leading-tight">
+                Teilelisten
+              </DetailText>
             </div>
+            <Card
+              variant="detail"
+              className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 lg:overflow-auto"
+            >
+              <div className="min-h-0 flex-1 space-y-2 py-2 px-2">
+                {partListsQuery.isLoading ? (
+                  <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
+                ) : null}
+                {partListsQuery.error ? (
+                  <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
+                ) : null}
 
-            {partListsQuery.isLoading ? (
-              <p className="px-2 text-xs text-muted-foreground">Teilelisten werden geladen...</p>
-            ) : null}
-            {partListsQuery.error ? (
-              <p className="px-2 text-xs text-destructive">Teilelisten konnten nicht geladen werden.</p>
-            ) : null}
-
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Gepinnt
-            </p>
-            {pinnedPartLists.length === 0 ? (
-              <p className="px-2 py-2 text-xs text-muted-foreground">
-                Noch keine gepinnten Teilelisten. Du kannst Teilelisten in der Übersicht pinnen.
-              </p>
-            ) : (
-              <div className="mt-2 space-y-2">
-                {pinnedPartLists.map((partList) => {
-                  const quantityInput = quantitiesByPartList[partList.id] ?? "1";
-                  const maxOrderable = partList.maxOrderable;
-                  const canAdd = canAddPartListQuantity(quantityInput, maxOrderable);
-                  return (
-                    <div
-                      key={partList.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => router.push(`/parts-list/${partList.id}`)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          router.push(`/parts-list/${partList.id}`);
-                        }
-                      }}
-                      className="cursor-pointer rounded-lg border border-border bg-muted/40 p-2 transition hover:border-primary/50"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
-                          style={{
-                            display: "-webkit-box",
-                            WebkitBoxOrient: "vertical",
-                            WebkitLineClamp: 3,
-                            overflow: "hidden",
+                <div className="flex items-center justify-between gap-2 p-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Gepinnt
+                  </p>
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    className="!w-fit !h-7 shrink-0 px-2 text-xs"
+                    onClick={() => {
+                      setPartListModalSearch("");
+                      setShowAllPartListsModal(true);
+                    }}
+                    disabled={partListsQuery.isLoading || Boolean(partListsQuery.error)}
+                  >
+                    Alle anzeigen ({allPartLists.length})
+                  </Button>
+                </div>
+                {pinnedPartLists.length === 0 ? (
+                  <p className="px-2 py-2 text-xs text-muted-foreground">
+                    Noch keine gepinnten Teilelisten. Du kannst Teilelisten in der Übersicht pinnen.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {pinnedPartLists.map((partList) => {
+                      const quantityInput = quantitiesByPartList[partList.id] ?? "1";
+                      const maxOrderable = partList.maxOrderable;
+                      const canAdd = canAddPartListQuantity(quantityInput, maxOrderable);
+                      return (
+                        <div
+                          key={partList.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => router.push(`/parts-list/${partList.id}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/parts-list/${partList.id}`);
+                            }
                           }}
+                          className="cursor-pointer rounded-md bg-card/40 p-2 transition hover:bg-card/80"
                         >
-                          {partList.name}{" "}
-                          <span className="text-[11px] font-normal text-muted-foreground">
-                            | {partList.items.length} Produkte
-                          </span>
-                        </p>
-                        <button
-                          type="button"
-                          className="grid h-5 w-5 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            togglePinnedPartListMutation.mutate({ partListId: partList.id });
-                          }}
-                          aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
-                        >
-                          <span className="pt-1 pr-1">
-                            <PinIcon size={12} className="text-primary" filled />
-                          </span>
-                        </button>
-                      </div>
-                      <div
-                        className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <ShopQuantityStepper
-                          value={quantityInput}
-                          onChange={(next) =>
-                            setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
-                          }
-                          min={1}
-                          max={maxOrderable > 0 ? maxOrderable : undefined}
-                          step={1}
-                          decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
-                          increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
-                          inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
-                        />
-                        <ShopAddToCartButton
-                          className="min-w-0 flex-1 text-xs"
-                          onClick={() => {
-                            const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
-                            const requestedQuantity =
-                              maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
-                            setActiveAddPartListId(partList.id);
-                            addPartListMutation.mutate({
-                              sessionId,
-                              partListId: partList.id,
-                              quantity: requestedQuantity,
-                            });
-                          }}
-                          disabled={
-                            sessionId.length === 0 ||
-                            addPartListMutation.isPending ||
-                            !canAdd
-                          }
-                          pending={
-                            addPartListMutation.isPending && activeAddPartListId === partList.id
-                          }
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                          <div className="flex items-start justify-between gap-2">
+                            <p
+                              className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
+                              style={{
+                                display: "-webkit-box",
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: 3,
+                                overflow: "hidden",
+                              }}
+                            >
+                              {partList.name}{" "}
+                              <span className="text-[11px] font-normal text-muted-foreground">
+                                | {partList.items.length} Produkte
+                              </span>
+                            </p>
+                            <button
+                              type="button"
+                              className="grid h-5 w-5 place-items-start justify-items-end rounded-md text-primary hover:bg-accent"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                togglePinnedPartListMutation.mutate({ partListId: partList.id });
+                              }}
+                              aria-label={`Teileliste ${partList.name} pinnen oder entpinnen`}
+                            >
+                              <span className="pt-1 pr-1">
+                                <PinIcon size={12} className="text-primary" filled />
+                              </span>
+                            </button>
+                          </div>
+                          <div
+                            className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <NumberStepper
+                              value={quantityInput}
+                              onChange={(next) =>
+                                setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
+                              }
+                              min={1}
+                              max={maxOrderable > 0 ? maxOrderable : undefined}
+                              step={1}
+                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
+                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              stopPropagation
+                              className="!h-7 min-h-7 [&_button]:!h-7"
+                            />
+                            <ShopAddToCartButton
+                              className="min-w-0 flex-1 text-xs !h-7"
+                              onClick={() => {
+                                const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
+                                const requestedQuantity =
+                                  maxOrderable > 0 ? Math.min(raw, maxOrderable) : raw;
+                                setActiveAddPartListId(partList.id);
+                                addPartListMutation.mutate({
+                                  sessionId,
+                                  partListId: partList.id,
+                                  quantity: requestedQuantity,
+                                });
+                              }}
+                              disabled={
+                                sessionId.length === 0 ||
+                                addPartListMutation.isPending ||
+                                !canAdd
+                              }
+                              pending={
+                                addPartListMutation.isPending && activeAddPartListId === partList.id
+                              }
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+            </Card>
           </aside>
         ) : null}
       </div>
@@ -357,12 +371,12 @@ export function ShopPartListsAside({
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="text"
               value={partListModalSearch}
               onChange={(event) => setPartListModalSearch(event.target.value)}
               placeholder="Teilelisten suchen..."
-              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground"
+              className="h-10 w-full border border-primary/10"
               aria-label="Teilelisten suchen"
             />
           </div>
@@ -408,11 +422,11 @@ export function ShopPartListsAside({
                               router.push(`/parts-list/${partList.id}`);
                             }
                           }}
-                          className="cursor-pointer rounded-xl border border-border bg-muted/40 p-3 transition hover:border-primary/50"
+                          className="cursor-pointer rounded-md bg-card/40 p-2 transition hover:bg-card/80 border border-primary/10"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <p
-                              className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
+                              className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
                               style={{
                                 display: "-webkit-box",
                                 WebkitBoxOrient: "vertical",
@@ -421,7 +435,7 @@ export function ShopPartListsAside({
                               }}
                             >
                               {partList.name}{" "}
-                              <span className="text-xs font-normal text-muted-foreground">
+                              <span className="text-[11px] font-normal text-muted-foreground">
                                 | {partList.items.length} Produkte
                               </span>
                             </p>
@@ -440,10 +454,10 @@ export function ShopPartListsAside({
                             </button>
                           </div>
                           <div
-                            className="mt-3 flex min-w-0 flex-wrap items-center gap-2"
+                            className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            <ShopQuantityStepper
+                            <NumberStepper
                               value={quantityInput}
                               onChange={(next) =>
                                 setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
@@ -454,9 +468,11 @@ export function ShopPartListsAside({
                               decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
                               increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
                               inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              stopPropagation
+                              className="!h-7 min-h-7 [&_button]:!h-7"
                             />
                             <ShopAddToCartButton
-                              className="min-w-0 flex-1"
+                              className="min-w-0 flex-1 text-xs !h-7"
                               onClick={() => {
                                 const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                                 const requestedQuantity =
@@ -514,11 +530,11 @@ export function ShopPartListsAside({
                               router.push(`/parts-list/${partList.id}`);
                             }
                           }}
-                          className="cursor-pointer rounded-xl border border-border bg-card p-3 transition hover:border-primary/50"
+                          className="cursor-pointer rounded-md bg-card/40 p-2 transition hover:bg-card/80 border border-primary/10"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <p
-                              className="min-w-0 flex-1 break-all text-sm font-semibold text-foreground"
+                              className="min-w-0 flex-1 break-all text-xs font-semibold leading-snug text-foreground"
                               style={{
                                 display: "-webkit-box",
                                 WebkitBoxOrient: "vertical",
@@ -527,7 +543,7 @@ export function ShopPartListsAside({
                               }}
                             >
                               {partList.name}{" "}
-                              <span className="text-xs font-normal text-muted-foreground">
+                              <span className="text-[11px] font-normal text-muted-foreground">
                                 | {partList.items.length} Produkte
                               </span>
                             </p>
@@ -552,10 +568,10 @@ export function ShopPartListsAside({
                             </button>
                           </div>
                           <div
-                            className="mt-3 flex min-w-0 flex-wrap items-center gap-2"
+                            className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5"
                             onClick={(event) => event.stopPropagation()}
                           >
-                            <ShopQuantityStepper
+                            <NumberStepper
                               value={quantityInput}
                               onChange={(next) =>
                                 setQuantitiesByPartList((prev) => ({ ...prev, [partList.id]: next }))
@@ -566,9 +582,11 @@ export function ShopPartListsAside({
                               decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
                               increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
                               inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              stopPropagation
+                              className="!h-7 min-h-7 [&_button]:!h-7"
                             />
                             <ShopAddToCartButton
-                              className="min-w-0 flex-1"
+                              className="min-w-0 flex-1 text-xs !h-7"
                               onClick={() => {
                                 const raw = Math.max(1, Math.floor(Number(quantityInput) || 1));
                                 const requestedQuantity =

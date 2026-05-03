@@ -86,7 +86,7 @@ export function ShopAddToCartButton({
       onClick={onClick}
       disabled={disabled}
       className={[
-        "h-8 min-h-8 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none",
+        "h-7 min-h-7 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm leading-none",
         className ?? "",
       ].join(" ")}
     >

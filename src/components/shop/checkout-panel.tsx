@@ -185,7 +185,7 @@ export function CheckoutPanel(props: {
                 label: `${center.code} - ${center.name}`,
               })) ?? []),
             ]}
-            className="!m-0 w-full !bg-card/80 rounded-sm px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100 ring-1 ring-inset ring-border/50"
+            className="!m-0 w-full !bg-card/80 rounded-sm px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100 border border-primary/10"
           />
         </div>
       )}
@@ -206,7 +206,7 @@ export function CheckoutPanel(props: {
             onChange={(event) => setWorkerNote(event.target.value)}
             maxLength={500}
             rows={4}
-            className="ring-1 ring-inset ring-border/50 pb-8"
+            className="border border-primary/10 pb-8"
             placeholder={
               isStudentCheckout
                 ? "Bitte gib relevante Infos für das Lager ein (z. B. Klasse, Projekt, Dringlichkeit)."
