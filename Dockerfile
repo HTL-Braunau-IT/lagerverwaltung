@@ -43,8 +43,9 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public/pictures/placeholder.jpg /opt/default-assets/placeholder.jpg
 
-# Persist files written to /public (e.g. uploads)
-VOLUME ["/app/public"]
+# Persist only uploads under public/data. A volume on all of /app/public replaces the
+# image COPY and hides favicon.svg, favicon.ico, etc. until you manually add them.
+VOLUME ["/app/public/data"]
 
 RUN mkdir -p /app/public/data \
   && chown -R nextjs:nodejs /app \
