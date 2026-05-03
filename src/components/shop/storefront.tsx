@@ -299,7 +299,7 @@ export function Storefront() {
                     router.push(`/products/${product.id}`);
                   }
                 }}
-                className="relative cursor-pointer overflow-hidden rounded-2xl !p-0 transition hover:border-primary/50"
+                className="!bg-card/60 relative cursor-pointer overflow-hidden rounded-2xl !p-0 transition hover:border-primary/50"
               >
                 {storageRoomBadgeLetter && (
                   <div
@@ -320,10 +320,14 @@ export function Storefront() {
                 )}
 
                 <div className="flex flex-col">
-                  <div className="overflow-hidden bg-muted">
+                  <div className="relative overflow-hidden bg-muted">
                     <ProductImageCarousel
                       images={product.images}
                       productName={product.name}
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-9 bg-gradient-to-t from-card/20 to-transparent"
+                      aria-hidden
                     />
                   </div>
 

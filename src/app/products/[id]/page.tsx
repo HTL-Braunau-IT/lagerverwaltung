@@ -150,7 +150,9 @@ export default function ProductDetailPage() {
   const [areaWidthInput, setAreaWidthInput] = useState("1");
   const [areaHeightInput, setAreaHeightInput] = useState("1");
   const [productDetailTab, setProductDetailTab] = useState<ProductDetailTab>("details");
-  const stickyTopOffset = 24;
+  // Match space below the header to the grid: main `pt-10` (40px) + section `mt-2` (8px).
+  // Header uses `sticky top-5`; gap is accounted for in aside `stickyStyle` via measured height.
+  const stickyTopOffset = 48;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
   const productQuery = api.product.byId.useQuery({ id: productId }, { enabled: Boolean(productId) });
   const categoriesQuery = api.category.list.useQuery();
@@ -190,6 +192,7 @@ export default function ProductDetailPage() {
       setAreaHeightInput("1");
     });
   }, [productQuery.data?.id, productQuery.data?.unitStep]);
+  
 
   if (productQuery.isLoading) {
     return (
@@ -280,8 +283,8 @@ export default function ProductDetailPage() {
       : product.images;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
+      <section className="mt-2 mx-2 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr_340px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
