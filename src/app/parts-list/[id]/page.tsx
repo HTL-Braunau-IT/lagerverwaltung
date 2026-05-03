@@ -7,15 +7,15 @@ import { useEffect, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
 
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { Card } from "~/components/ui/detail-card";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import {
   ShopAddToCartButton,
   ShopExportPdfButton,
-  ShopQuantityStepper,
 } from "~/components/shop/shop-quantity-add-to-cart";
+import { NumberStepper } from "~/components/ui/number-stepper";
 import { PackageIcon } from "~/components/layout/icon-renders";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 import { PartListPdfDocument } from "~/components/shop/pdf/part-list-pdf-document";
@@ -106,7 +106,9 @@ export default function PartListDetailPage() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [quantityInput, setQuantityInput] = useState("1");
   const [lastAddedPartListQuantity, setLastAddedPartListQuantity] = useState<number | null>(null);
-  const stickyTopOffset = 24;
+  // Match space below the header to the grid: main `pt-10` (40px) + section `mt-2` (8px).
+  // Header uses `sticky top-5`; gap is accounted for in aside `stickyStyle` via measured height.
+  const stickyTopOffset = 48;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   const utils = api.useUtils();
@@ -161,7 +163,7 @@ export default function PartListDetailPage() {
 
   if (selectedPartListQuery.isLoading) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
+      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 pt-10 pb-6 sm:px-4 lg:px-6">
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-sm font-medium text-foreground">Teileliste wird geladen...</p>
           <p className="mt-1 text-sm text-muted-foreground">Bitte kurz warten.</p>
@@ -172,7 +174,7 @@ export default function PartListDetailPage() {
 
   if (selectedPartListQuery.error) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
+      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 pt-10 pb-6 sm:px-4 lg:px-6">
         <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-destructive shadow-sm">
           <p className="text-sm font-semibold">Teileliste konnte nicht geladen werden.</p>
           <p className="mt-1 text-sm">Bitte pruefe deine Verbindung und versuche es erneut.</p>
@@ -186,7 +188,7 @@ export default function PartListDetailPage() {
 
   if (!selectedPartListQuery.data) {
     return (
-      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 py-6 sm:px-4 lg:px-6">
+      <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 pt-10 pb-6 sm:px-4 lg:px-6">
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-sm font-semibold text-foreground">Teileliste nicht gefunden.</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -245,8 +247,8 @@ export default function PartListDetailPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-6 px-2 py-6 sm:px-4 lg:px-6">
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
+    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
+      <section className="mt-2 mx-2 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr_340px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
@@ -261,14 +263,15 @@ export default function PartListDetailPage() {
           }}
         />
 
-        <Card className="self-start rounded-2xl p-6 shadow-sm">
+        <div className="flex min-w-0 flex-col gap-6">
+        <Card variant="detail" className="p-6 !bg-card/40 hover:!bg-card/40">
           <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:opacity-80">
             <span aria-hidden="true">←</span>
             Zurück zur Produktliste
           </Link>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="overflow-hidden rounded-xl border border-border bg-muted">
+            <div className="overflow-hidden rounded-md">
               <img
                 src={selectedImageUrl}
                 alt={`${selectedPartList.name} Bild`}
@@ -283,8 +286,14 @@ export default function PartListDetailPage() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Teileliste</p>
               <h1 className="mt-1 text-2xl font-semibold text-foreground">{selectedPartList.name}</h1>
-              <p className="mt-4 text-sm text-foreground">
-                {selectedPartList.description ?? "Keine Beschreibung verfuegbar."}
+              <p
+                className={
+                  selectedPartList.description?.trim()
+                    ? "mt-4 text-sm text-foreground"
+                    : "mt-4 text-sm italic text-muted-foreground/80"
+                }
+              >
+                {selectedPartList.description?.trim() || "Keine Beschreibung verfügbar."}
               </p>
               <div className="mt-5">
                 <div className="mt-2">
@@ -293,9 +302,10 @@ export default function PartListDetailPage() {
                     partListName={selectedPartList.name}
                   />
                 </div>
+                
+                <ShopExportPdfButton onClick={() => void exportPartListPdf()} className="!w-fit"/>
                 <div className="mt-3 flex w-full flex-nowrap items-center gap-2">
-                  <ShopExportPdfButton onClick={() => void exportPartListPdf()} />
-                  <ShopQuantityStepper
+                  <NumberStepper
                     value={quantityInput}
                     onChange={setQuantityInput}
                     min={1}
@@ -304,6 +314,7 @@ export default function PartListDetailPage() {
                     decreaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} reduzieren`}
                     increaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} erhoehen`}
                     inputAriaLabel={`Menge fuer Teileliste ${selectedPartList.name}`}
+                    className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
                   />
                   <ShopAddToCartButton
                     onClick={() => {
@@ -323,6 +334,7 @@ export default function PartListDetailPage() {
                       !canAddPartListToCart
                     }
                     pending={addPartListMutation.isPending}
+                    className="!h-9 !min-h-9 min-w-0 !w-fit !rounded-sm px-4 text-sm font-semibold"
                   />
                 </div>
               </div>
@@ -330,14 +342,11 @@ export default function PartListDetailPage() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
-                <h2 className="text-sm text-muted-foreground">
-                  Enthaltene Produkte:{" "}
-                  <span className="font-semibold text-foreground">{selectedPartList.items.length}</span>
-                </h2>
+            <div className="rounded-md bg-card/40 p-4">
+              <h2 className="text-sm font-semibold text-foreground">Produkte</h2>
               <div className="mt-3 space-y-2">
                 {selectedPartList.items.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Keine Produkte in dieser Teileliste.</p>
+                  <p className="mt-4 text-sm italic text-muted-foreground/80">Keine Produkte in dieser Teileliste.</p>
                 ) : (
                   selectedPartList.items.map((item) => {
                     const previewImage = item.product.images[0]?.url ?? "/pictures/placeholder.jpg";
@@ -346,12 +355,12 @@ export default function PartListDetailPage() {
                       <Link
                         key={item.id}
                         href={`/products/${item.product.id}`}
-                        className="flex items-center gap-3 rounded-lg border border-border bg-card p-2 transition hover:border-primary/50"
+                        className="flex items-center gap-3 rounded-md bg-card/40 p-2 hover:bg-card/80"
                       >
                         <img
                           src={previewImage}
                           alt={previewAlt}
-                          className="h-14 w-14 rounded-md border border-border object-cover"
+                          className="h-14 w-14 rounded-sm object-cover"
                           onError={(event) => {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = "/pictures/placeholder.jpg";
@@ -374,11 +383,11 @@ export default function PartListDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="rounded-md bg-card/40 p-4">
               <h2 className="text-sm font-semibold text-foreground">Dokumente</h2>
               <div className="mt-3 space-y-2">
                 {selectedPartList.documents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
+                  <p className="text-sm italic text-muted-foreground/80">Keine Dokumente vorhanden.</p>
                 ) : (
                   selectedPartList.documents.map((document) => (
                     <a
@@ -399,6 +408,7 @@ export default function PartListDetailPage() {
             </div>
           </div>
         </Card>
+        </div>
 
         <ShopPartListsAside
           appHeaderOffset={appHeaderOffset}

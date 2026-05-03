@@ -100,7 +100,6 @@ export function ShopExportPdfButton({
   disabled,
   pending,
   className,
-  variant = "default",
 }: {
   onClick: () => void;
   disabled?: boolean;
@@ -111,7 +110,7 @@ export function ShopExportPdfButton({
   return (
     <Button
       type="button"
-      variant={variant}
+      variant="glass"
       size="sm"
       onClick={onClick}
       disabled={disabled}
