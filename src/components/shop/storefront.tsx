@@ -12,6 +12,7 @@ import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ProductImageCarousel } from "~/components/shop/product-image-carousel";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
+import { useShopProductCountPublisher } from "~/components/shop/shop-product-count-context";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -93,6 +94,7 @@ export function Storefront() {
   const [lastAddedProductName, setLastAddedProductName] = useState<string | null>(null);
   const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const publishShopProductCount = useShopProductCountPublisher();
   const canSeePartListProductCount =
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
   // Match the natural top spacing of the content (main has `py-6` => 24px),
@@ -173,6 +175,20 @@ export function Storefront() {
     Boolean(searchTerm) || Boolean(selectedCategoryId) || Boolean(selectedStorageLocationId);
 
   useEffect(() => {
+    publishShopProductCount({
+      filtered: filteredProductCount,
+      total: totalProductCount,
+      isLoading: productQuery.isLoading,
+    });
+    return () => publishShopProductCount(null);
+  }, [
+    publishShopProductCount,
+    filteredProductCount,
+    totalProductCount,
+    productQuery.isLoading,
+  ]);
+
+  useEffect(() => {
     const target = loadMoreRef.current;
     if (!target) return;
     if (!productQuery.hasNextPage) return;
@@ -198,10 +214,6 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
-      <div className="mt-0 inline-flex w-fit self-start rounded-lg border border-border/70 bg-card/70 px-3 py-1.5 text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">Produkte: </span>{" "}
-        {productQuery.isLoading ? "..." : `${filteredProductCount} von ${totalProductCount}`}
-      </div>
       <section className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[340px_1fr_340px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}

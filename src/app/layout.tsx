@@ -8,6 +8,7 @@ import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-butto
 import { HeaderCartLink } from "~/components/layout/header-cart-link";
 import { HeaderNavLink } from "~/components/layout/header-nav-link";
 import { Search } from "~/components/layout/search";
+import { ShopProductCountProvider } from "~/components/shop/shop-product-count-context";
 import {
   AdministrationIcon,
   ApprovalsIcon,
@@ -67,6 +68,7 @@ export default async function RootLayout({
       <body className="bg-background text-foreground antialiased">
         {session?.user ? (
           <TRPCReactProvider session={session}>
+            <ShopProductCountProvider>
             <header
               data-app-shell-header="true"
               className="sticky top-5 z-50 mx-auto w-[calc(90%-2rem)] overflow-visible glass sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]"
@@ -89,8 +91,10 @@ export default async function RootLayout({
                     </span>
                   </span>
                 </Link>
-                <div className="p-4">
-                  <Search />
+                <div className="flex min-w-0 w-full items-center justify-center p-4">
+                  <div className="w-full min-w-0 max-w-[3840px]">
+                    <Search />
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <HeaderCartLink label="Warenkorb" icon={<CartIcon />} />
@@ -170,6 +174,7 @@ export default async function RootLayout({
               </div>
             </header>
             {children}
+            </ShopProductCountProvider>
           </TRPCReactProvider>
         ) : (
           <main className="flex min-h-screen items-center justify-center p-6">

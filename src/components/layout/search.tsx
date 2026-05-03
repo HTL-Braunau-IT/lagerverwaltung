@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { SearchField } from "~/components/layout/search-field";
+import { useShopProductCountSnapshot } from "~/components/shop/shop-product-count-context";
 
 type HeaderSearchMode =
   | "shop"
