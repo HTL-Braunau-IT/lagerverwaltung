@@ -25,7 +25,7 @@ import { DetailText } from "~/components/ui/detail-card";
 export const metadata: Metadata = {
   title: "HTL Braunau Lagershop",
   description: "Lagershop für die HTL",
-  icons: [{ rel: "icon", url: "/favicon.svg" }],
+  icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
 const inter = Inter({
