@@ -97,9 +97,9 @@ export function Storefront() {
   const publishShopProductCount = useShopProductCountPublisher();
   const canSeePartListProductCount =
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
-  // Match the natural top spacing of the content (main has `py-6` => 24px),
-  // so the asides align with the product grid initially and keep that gap when sticky.
-  const stickyTopOffset = 24;
+  // Match space below the header to the grid: main `pt-10` (40px) + section `mt-2` (8px).
+  // Header uses `sticky top-5`; gap is accounted for in `stickyStyle` via `APP_HEADER_STICKY_TOP_PX`.
+  const stickyTopOffset = 48;
   const [appHeaderOffset, setAppHeaderOffset] = useState(0);
 
   useEffect(() => {

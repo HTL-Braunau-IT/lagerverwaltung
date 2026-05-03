@@ -14,14 +14,18 @@ import { Card, DetailText } from "../ui/detail-card";
 
 type StickySizing = {
   appHeaderOffset: number;
+  /** Visual gap from the bottom of the *stuck* header to the top of the aside; match main top padding + section margin (e.g. `pt-10` + `mt-2`). */
   stickyTopOffset: number;
 };
 
+/** Matches `header` in `layout.tsx`: `sticky top-5` (1.25rem). Keep in sync if the header inset changes. */
+const APP_HEADER_STICKY_TOP_PX = 0;
+
 function stickyStyle({ appHeaderOffset, stickyTopOffset }: StickySizing) {
-  const top = appHeaderOffset + stickyTopOffset;
+  const top = APP_HEADER_STICKY_TOP_PX + appHeaderOffset + stickyTopOffset;
   return {
     top: `${top}px`,
-    maxHeight: `calc(100vh - ${top + 16}px)`,
+    maxHeight: `calc(100dvh - ${top + 24}px)`,
   } as const;
 }
 
@@ -81,7 +85,7 @@ export function ShopCategoriesAside({
       className={`flex min-h-0 w-full flex-col self-start overflow-hidden rounded-md border border-border lg:sticky ${className}`}
       style={stickyStyle({ appHeaderOffset, stickyTopOffset })}
     >
-      <div className="shrink-0 overflow-hidden border-b border-border bg-card/60 px-3 py-2">
+      <div className="shrink-0 overflow-hidden bg-card/80 px-3 py-2">
         <DetailText
           variant="title"
           className="pl-2 text-center text-base leading-tight"
