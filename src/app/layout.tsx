@@ -23,9 +23,9 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { DetailText } from "~/components/ui/detail-card";
 
 export const metadata: Metadata = {
-  title: "Lagerverwaltung HTL",
-  description: "Lagerverwaltung für die HTL",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  title: "HTL Braunau Lagershop",
+  description: "Lagershop für die HTL",
+  icons: [{ rel: "icon", url: "/favicon.svg" }],
 };
 
 const inter = Inter({
