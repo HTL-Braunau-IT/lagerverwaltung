@@ -66,7 +66,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-r border-border px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
+        className="h-9 min-w-6 shrink-0 rounded-none px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
         aria-label={decreaseAriaLabel}
       >
         <span className="block leading-none">-</span>
@@ -78,6 +78,7 @@ export function NumberStepper({
         step={step}
         value={value}
         disabled={disabled}
+        autoComplete="off"
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
         }}
@@ -96,7 +97,7 @@ export function NumberStepper({
         }}
         size="sm"
         variant="quant"
-        className="h-9 min-w-6 shrink-0 rounded-none border-l border-border px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
+        className="h-9 min-w-6 shrink-0 rounded-none px-1.5 leading-none text-sm text-muted-foreground bg-transparent hover:!bg-primary/10 hover:!text-accent-foreground"
         aria-label={increaseAriaLabel}
       >
         <span className="block leading-none">+</span>

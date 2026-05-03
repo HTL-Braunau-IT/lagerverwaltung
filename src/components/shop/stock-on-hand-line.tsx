@@ -1,5 +1,3 @@
-import { PackageIcon } from "~/components/layout/icon-renders";
-
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value);
@@ -37,12 +35,14 @@ export function StockOnHandLine({
   minimumQuantity,
   baseUnit,
   align = "start",
+  size = "default",
   className = "",
 }: {
   quantityOnHand: unknown;
   minimumQuantity: unknown;
   baseUnit: string;
   align?: "start" | "center" | "end";
+  size?: "default" | "compact";
   className?: string;
 }) {
   const onHand = decimalToNumber(quantityOnHand);
@@ -56,19 +56,29 @@ export function StockOnHandLine({
   const justify =
     align === "center" ? "justify-center" : align === "end" ? "justify-end" : "justify-start";
 
+  const density =
+    size === "compact"
+      ? "my-0 flex items-center gap-1 text-xs text-muted-foreground"
+      : "-mt-1 mb-2 flex items-center gap-1.5 text-sm";
+
+  const dotSize = size === "compact" ? "h-1.5 w-1.5 mr-0.5" : "h-2 w-2 mr-1";
+
+  const quantityClass =
+    size === "compact"
+      ? "font-medium tabular-nums text-foreground/90"
+      : "font-semibold tabular-nums text-foreground";
+
   return (
-    <div
-      className={["-mt-1 mb-2 flex items-center gap-1.5 text-sm", justify, className].join(" ")}
-    >
+    <div className={[density, justify, className].join(" ")}>
       <p className="sr-only">{srSummary}</p>
       <span
-        className={["h-1.5 w-1.5 shrink-0 rounded-full", dotClass].join(" ")}
+        className={["shrink-0 rounded-full", dotSize, dotClass].join(" ")}
         title={title}
         aria-hidden
       />
-      <span className="font-semibold tabular-nums text-foreground">{formatInventoryQuantity(onHand)}</span>
-      <span className="text-muted-foreground">{unitLabel}</span>
-      <span className="text-muted-foreground">verf.</span>
+      <span className={quantityClass  }>{formatInventoryQuantity(onHand)}</span>
+      <span className={size === "compact" ? "" : "text-muted-foreground"}>{unitLabel}</span>
+      <span className={size === "compact" ? "" : "text-muted-foreground"}>verfügbar</span>
     </div>
   );
 }

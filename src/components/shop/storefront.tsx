@@ -299,18 +299,18 @@ export function Storefront() {
                     router.push(`/products/${product.id}`);
                   }
                 }}
-                className="relative cursor-pointer overflow-hidden rounded-2xl transition hover:border-primary/50"
+                className="relative cursor-pointer overflow-hidden rounded-2xl !p-0 transition hover:border-primary/50"
               >
                 {storageRoomBadgeLetter && (
                   <div
-                    className="absolute -right-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-bl-md text-[10px] font-semibold leading-none backdrop-blur-sm border-4 border-white"
+                    className="absolute right-0 top-0 z-10 flex h-6 w-6 items-center justify-center rounded-bl-md text-[10px] font-semibold leading-none [background-clip:padding-box]"
                     title={`Lagerraum: ${storageRoomName}`}
                     aria-label={`Lagerraum: ${storageRoomName}`}
                     style={
                       storageRoomHue === null
                         ? undefined
                         : {
-                            backgroundColor: `hsla(${storageRoomHue} 70% 85% / 0.9)`,
+                            backgroundColor: `hsl(${storageRoomHue} 70% 85%)`,
                             color: `hsl(${storageRoomHue} 40% 22%)`,
                           }
                     }
@@ -320,79 +320,79 @@ export function Storefront() {
                 )}
 
                 <div className="flex flex-col">
-                  <div className="space-y-3">
-                    <div className="overflow-hidden rounded-sm bg-muted">
-                      <ProductImageCarousel images={product.images} productName={product.name} />
-                    </div>
+                  <div className="overflow-hidden bg-muted">
+                    <ProductImageCarousel
+                      images={product.images}
+                      productName={product.name}
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-1 gap-1.5">
-                      <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug text-foreground">
+                  <div className="flex min-w-0 flex-col px-3 pb-3 pt-3">
+                    <div className="space-y-2">
+                      <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug  text-foreground">
                         {product.name}
                       </h2>
-                    </div>
-                  </div>
-                  <div className="m-2 flex min-w-0 items-center justify-between gap-x-2 gap-y-0.5 text-right">
-                     <StockOnHandLine
-                      quantityOnHand={product.quantityOnHand}
-                      minimumQuantity={product.minimumQuantity}
-                      baseUnit={product.baseUnit}
-                      align="end"
-                      className="!mt-0 !mb-0 shrink-0"
-                    />
-                    <div className="flex shrink-0 items-baseline gap-1">
-                      <p className="shrink-0 text-base font-semibold tabular-nums text-primary">
-                        {formatPrice(product.price)}
-                      </p>
-                      <p className="shrink-0 text-xs font-semibold tabular-nums text-primary">
-                        / {product.baseUnit}
-                      </p>
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-baseline gap-x-2">
+                          <p className="text-lg font-semibold tabular-nums tracking-tight text-primary">
+                            {formatPrice(product.price)}
+                          </p>
+                          <p className="text-xs font-medium tabular-nums text-muted-foreground">
+                            / {product.baseUnit}
+                          </p>
+                        </div>
+                        <StockOnHandLine
+                          quantityOnHand={product.quantityOnHand}
+                          minimumQuantity={product.minimumQuantity}
+                          baseUnit={product.baseUnit}
+                          align="start"
+                          size="compact"
+                        />
+                      </div>
                     </div>
 
-                  </div>
-
-                  <div className="pt-0">
                     <div
-                      className="flex w-full min-w-0 items-stretch overflow-hidden rounded-sm bg-card/40 ring-offset-background focus-within:ring-2 focus-within:ring-ring/25"
+                      className="mt-2 flex min-w-0 flex-col gap-3 border-t border-black/5 pt-2"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <NumberStepper
-                        value={quantityInput}
-                        onChange={(value) =>
-                          setQuantitiesByProduct((prev) => ({ ...prev, [product.id]: value }))
-                        }
-                        min={unitStep}
-                        step={unitStep}
-                        max={stockOnHand > 0 ? stockOnHand : undefined}
-                        decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
-                        increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
-                        inputAriaLabel={`Menge fuer ${product.name}`}
-                        stopPropagation
-                        className="shrink-0 !rounded-none !border-0 !bg-transparent !shadow-none"
-                      />
-                      <ShopAddToCartButton
-                        onClick={() => {
-                          const quantity =
-                            Number.isFinite(parsedQuantity) && parsedQuantity > 0
-                              ? parsedQuantity
-                              : unitStep;
-                          if (stockOnHand <= 0 || quantity > stockOnHand) return;
-                          setActiveAddProductId(product.id);
-                          setLastAddedProductName(product.name);
-                          setLastAddedProductQuantity(quantity);
-                          addItemMutation.mutate({
-                            sessionId,
-                            productId: product.id,
-                            quantity,
-                          });
-                        }}
-                        disabled={
-                          sessionId.length === 0 || addItemMutation.isPending || !canAddToCart
-                        }
-                        pending={
-                          addItemMutation.isPending && activeAddProductId === product.id
-                        }
-                        className="min-w-0 flex-1 !h-9 !min-h-9 !rounded-none border-l border-border/70 !shadow-none px-3"
-                      />
+                      <div className="flex min-w-0 w-full justify-between gap-3">
+                        <NumberStepper
+                          value={quantityInput}
+                          onChange={(value) =>
+                            setQuantitiesByProduct((prev) => ({ ...prev, [product.id]: value }))
+                          }
+                          min={unitStep}
+                          step={unitStep}
+                          max={stockOnHand > 0 ? stockOnHand : undefined}
+                          decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
+                          increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
+                          inputAriaLabel={`Menge fuer ${product.name}`}
+                          stopPropagation
+                          className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
+                        />
+                        <ShopAddToCartButton
+                          onClick={() => {
+                            const quantity =
+                              Number.isFinite(parsedQuantity) && parsedQuantity > 0
+                                ? parsedQuantity
+                                : unitStep;
+                            if (stockOnHand <= 0 || quantity > stockOnHand) return;
+                            setActiveAddProductId(product.id);
+                            setLastAddedProductName(product.name);
+                            setLastAddedProductQuantity(quantity);
+                            addItemMutation.mutate({
+                              sessionId,
+                              productId: product.id,
+                              quantity,
+                            });
+                          }}
+                          disabled={
+                            sessionId.length === 0 || addItemMutation.isPending || !canAddToCart
+                          }
+                          pending={addItemMutation.isPending && activeAddProductId === product.id}
+                          className="!h-9 !min-h-9 min-w-0 flex-1 !rounded-sm px-4 text-sm font-semibold"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
