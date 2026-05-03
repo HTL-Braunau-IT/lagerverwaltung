@@ -14,11 +14,15 @@ type HeaderSearchMode =
   | "teacherOrdersReadonly"
   | "cartsReadonly"
   | "loansReadonly"
-  | "partsListReadonly"
   | "backend";
 
 function headerSearchMode(pathname: string): HeaderSearchMode | null {
-  if (pathname === "/" || pathname.startsWith("/products/")) {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/products/") ||
+    pathname === "/parts-list" ||
+    pathname.startsWith("/parts-list/")
+  ) {
     return "shop";
   }
   if (pathname === "/ausleihe" || pathname.startsWith("/ausleihe/")) {
@@ -39,9 +43,6 @@ function headerSearchMode(pathname: string): HeaderSearchMode | null {
   if (pathname === "/loans" || pathname.startsWith("/loans/")) {
     return "loansReadonly";
   }
-  if (pathname === "/parts-list" || pathname.startsWith("/parts-list/")) {
-    return "partsListReadonly";
-  }
   if (pathname === "/backend" || pathname.startsWith("/backend/")) {
     return "backend";
   }
@@ -53,8 +54,7 @@ function isReadonlySearchMode(mode: HeaderSearchMode): boolean {
     mode === "userOrdersReadonly" ||
     mode === "teacherOrdersReadonly" ||
     mode === "cartsReadonly" ||
-    mode === "loansReadonly" ||
-    mode === "partsListReadonly"
+    mode === "loansReadonly"
   );
 }
 
@@ -70,7 +70,6 @@ const HEADER_SEARCH_FIELD_IDS: Record<HeaderSearchMode, string> = {
   teacherOrdersReadonly: "header-teacher-orders-search-readonly",
   cartsReadonly: "header-carts-search-readonly",
   loansReadonly: "header-loans-search-readonly",
-  partsListReadonly: "header-parts-list-search-readonly",
 };
 
 export function Search() {
@@ -147,8 +146,7 @@ export function Search() {
       mode === "userOrdersReadonly" ||
       mode === "teacherOrdersReadonly" ||
       mode === "cartsReadonly" ||
-      mode === "loansReadonly" ||
-      mode === "partsListReadonly"
+      mode === "loansReadonly"
     ) {
       return "Suche auf dieser Seite nicht verfügbar";
     }
