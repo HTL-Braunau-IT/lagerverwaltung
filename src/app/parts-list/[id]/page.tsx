@@ -355,7 +355,7 @@ export default function PartListDetailPage() {
                       <Link
                         key={item.id}
                         href={`/products/${item.product.id}`}
-                        className="flex items-center gap-3 rounded-md bg-card/40 p-2 hover:bg-card/80"
+                        className="flex items-center gap-3 rounded-md bg-card/40 p-2 hover:bg-card/80 transition"
                       >
                         <img
                           src={previewImage}
@@ -395,7 +395,7 @@ export default function PartListDetailPage() {
                       href={document.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block rounded-lg border border-border bg-card p-2 transition hover:border-primary/50"
+                      className="block rounded-md bg-card/40 hover:bg-card/80 p-2 transition"
                     >
                       <p className="truncate text-sm font-medium text-primary">{document.originalName}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
