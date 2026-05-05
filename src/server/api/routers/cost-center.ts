@@ -20,6 +20,7 @@ const backendCreateInput = z.object({
 
 const backendUpdateInput = backendCreateInput.extend({
   id: z.string().min(1),
+  isActive: z.boolean().optional(),
 });
 
 const backendDeleteInput = z.object({
@@ -50,6 +51,7 @@ export const costCenterRouter = createTRPCRouter({
         id: true,
         code: true,
         name: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -79,6 +81,7 @@ export const costCenterRouter = createTRPCRouter({
         id: true,
         code: true,
         name: true,
+        isActive: true,
         createdAt: true,
         updatedAt: true,
         _count: {
@@ -165,6 +168,7 @@ export const costCenterRouter = createTRPCRouter({
       data: {
         code: input.code,
         name: input.name,
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
       },
       select: {
         id: true,

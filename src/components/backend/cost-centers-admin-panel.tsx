@@ -16,11 +16,13 @@ import { useConfirmClick } from "~/components/backend/use-confirm-click";
 
 type CostCenterForm = {
   name: string;
+  isActive: boolean;
 };
 
 function createEmptyForm(): CostCenterForm {
   return {
     name: "",
+    isActive: true,
   };
 }
 
@@ -96,7 +98,7 @@ export function CostCentersAdminPanel() {
 
   const isExpandedDirty = useMemo(() => {
     if (!expandedCostCenterId) return false;
-    const normalize = (f: CostCenterForm) => ({ name: f.name.trim() });
+    const normalize = (f: CostCenterForm) => ({ name: f.name.trim(), isActive: f.isActive });
     return isDirty(form, baselineForm, normalize);
   }, [baselineForm, expandedCostCenterId, form]);
 
@@ -158,8 +160,12 @@ export function CostCentersAdminPanel() {
                     onClick={() => {
                       setExpandedCostCenterId((current) => {
                         const next = current === center.id ? null : center.id;
-                        setForm((prev) => (next ? { name: center.name } : prev));
-                        setBaselineForm(next ? { name: center.name } : createEmptyForm());
+                        setForm((prev) =>
+                          next ? { name: center.name, isActive: center.isActive } : prev,
+                        );
+                        setBaselineForm(
+                          next ? { name: center.name, isActive: center.isActive } : createEmptyForm(),
+                        );
                         return next;
                       });
                     }}
@@ -198,6 +204,32 @@ export function CostCentersAdminPanel() {
                               variant="subtitle"
                             />
                           </label>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setForm((prev) => ({ ...prev, isActive: !prev.isActive }));
+                            }}
+                            className={`flex w-full max-w-sm items-center justify-between gap-3 rounded-sm border-2 bg-card/40 mt-1 px-3 py-2 text-left transition col-span-2 ${
+                              form.isActive ? "border-emerald-500/60" : "border-red-500/60"
+                            }`}
+                            aria-label="Kostenstellen-Sichtbarkeit umschalten"
+                            aria-pressed={form.isActive}
+                          >
+                            <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
+                            <span
+                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                form.isActive ? "bg-emerald-500/60" : "bg-red-500/60"
+                              }`}
+                              aria-hidden="true"
+                            >
+                              <span
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                  form.isActive ? "translate-x-5" : "translate-x-1"
+                                }`}
+                              />
+                            </span>
+                          </button>
                           <Button
                             type="button"
                             variant="destructive"
@@ -261,10 +293,11 @@ export function CostCentersAdminPanel() {
               id: center.id,
               code: toCostCenterCode(form.name.trim()),
               name: form.name.trim(),
+              isActive: form.isActive,
             },
             {
               onSuccess: () => {
-                setBaselineForm({ name: form.name });
+                setBaselineForm({ name: form.name, isActive: form.isActive });
               },
             },
           );

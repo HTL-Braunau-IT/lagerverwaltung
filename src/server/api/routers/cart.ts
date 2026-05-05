@@ -205,6 +205,7 @@ export const cartRouter = createTRPCRouter({
 
   listCostCenters: publicProcedure.query(async ({ ctx }) => {
     return ctx.db.costCenter.findMany({
+      where: { isActive: true },
       orderBy: [{ code: "asc" }, { name: "asc" }],
       select: {
         id: true,
@@ -634,10 +635,10 @@ export const cartRouter = createTRPCRouter({
 
         const costCenter = await tx.costCenter.findUnique({
           where: { id: input.costCenterId },
-          select: { id: true },
+          select: { id: true, isActive: true },
         });
 
-        if (!costCenter) {
+        if (!costCenter || !costCenter.isActive) {
           return { ok: false as const, reason: "INVALID_COST_CENTER" as const };
         }
 
