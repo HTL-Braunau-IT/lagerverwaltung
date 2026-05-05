@@ -32,13 +32,6 @@ type TeacherRequestApprovedInput = {
   items: OrderLineItem[];
 };
 
-type OrderCreatedInput = {
-  orderNumber: string;
-  owner: MaybeUser;
-  selfOrderByTeacher: boolean;
-  items: OrderLineItem[];
-};
-
 type OrderStatusChangedInput = {
   orderNumber: string;
   status: OrderStatusEmail;
@@ -197,39 +190,8 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
   return { skipped: false as const };
 }
 
-export async function notifyOrderCreated(input: OrderCreatedInput) {
-  const owner = recipientFromUser(input.owner);
-  if (!owner) return { skipped: true as const };
-
-  const subject = input.selfOrderByTeacher
-    ? `Ihre Bestellung ${input.orderNumber} wurde erstellt`
-    : `Bestellung ${input.orderNumber} wurde erstellt`;
-  const mail = buildOrderEmail({
-    title: `Bestellung ${input.orderNumber} erstellt`,
-    intro: [
-      makeGreeting(input.owner.name),
-      input.selfOrderByTeacher
-        ? "deine eigene Lehrer-Bestellung wurde erfolgreich angelegt."
-        : "deine Bestellung wurde erfolgreich angelegt.",
-    ],
-    metaRows: [{ label: "Bestellnummer", value: input.orderNumber }],
-    itemsTitle: "Bestellte Artikel",
-    items: formatLineItems(input.items),
-    footer: ["Du bekommst weitere Updates, wenn sich der Status aendert."],
-  });
-
-  await sendGraphMail({
-    to: [owner],
-    bcc: opsBccRecipient(),
-    subject,
-    htmlBody: mail.htmlBody,
-    textFallback: mail.textFallback,
-  });
-  return { skipped: false as const };
-}
-
 export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
-  if (!["PREPARING", "READY_FOR_PICKUP"].includes(input.status)) {
+  if (input.status !== "READY_FOR_PICKUP") {
     return { skipped: true as const };
   }
 

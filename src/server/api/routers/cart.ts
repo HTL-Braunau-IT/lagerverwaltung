@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { listTeachersFromGraph } from "~/server/graph/teachers";
-import { notifyOrderCreated, notifyStudentRequestCreated } from "~/server/mail/order-events";
+import { notifyStudentRequestCreated } from "~/server/mail/order-events";
 import {
   aggregateProductRequirements,
   assertSufficientStock,
@@ -727,20 +727,6 @@ export const cartRouter = createTRPCRouter({
           })),
         };
       });
-
-      if (result.ok) {
-        notifyOrderCreated({
-          orderNumber: result.orderNumber,
-          owner: {
-            name: ctx.session.user.name,
-            email: ctx.session.user.email,
-          },
-          selfOrderByTeacher: ctx.session.user.role === "TEACHER",
-          items: result.items,
-        }).catch((error) => {
-          console.error("[mail.notifyOrderCreated] checkout notification failed", error);
-        });
-      }
 
       return result;
     }),
