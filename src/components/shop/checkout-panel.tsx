@@ -182,7 +182,7 @@ export function CheckoutPanel(props: {
               { value: "", label: "Bitte Kostenstelle wählen" },
               ...(costCentersQuery.data?.map((center) => ({
                 value: center.id,
-                label: `${center.code} - ${center.name}`,
+                label: center.name,
               })) ?? []),
             ]}
             className="!m-0 w-full !bg-card/80 rounded-sm px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100 border border-primary/10"
