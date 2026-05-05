@@ -486,7 +486,8 @@ export function OrdersAdminPanel() {
                                       : "-"}
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
-                                    {decimalToNumber(item.quantity)} {item.product.baseUnit.toLowerCase()}
+                                    {decimalToNumber(item.quantity)}{" "}
+                                    {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
                                   </TableUI.SubtableCell>
                                 </TableUI.SubtableRow>
                               ))}
