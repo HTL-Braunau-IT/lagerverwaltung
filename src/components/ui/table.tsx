@@ -204,7 +204,7 @@ export function SubtableBody({ className = "", ...props }: SectionProps) {
 export function SubtableHead({ className = "", ...props }: CellProps) {
   return (
     <th
-      className={`h-6 min-w-0 px-2 py-1.5 text-left align-middle text-[10px] font-semibold uppercase tracking-wide ${className}`.trim()}
+      className={`h-6 min-w-0 px-2 py-1.5 text-left align-middle text-xs font-semibold uppercase tracking-wide ${className}`.trim()}
       {...props}
     />
   );
@@ -213,7 +213,7 @@ export function SubtableHead({ className = "", ...props }: CellProps) {
 /** Compact `<td>` for use inside `<SubtableBody>`. */
 export function SubtableCell({ className = "", ...props }: DataCellProps) {
   return (
-    <td className={`px-2 py-1.5 align-middle text-xs leading-snug text-foreground ${className}`.trim()} {...props} />
+    <td className={`px-2 py-1.5 align-middle text-base leading-snug text-foreground ${className}`.trim()} {...props} />
   );
 }
 
