@@ -482,7 +482,7 @@ export function OrdersAdminPanel() {
                                   <TableUI.SubtableCell className="text-muted-foreground">{item.product.sku}</TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="text-muted-foreground">
                                     {item.product.storageLocation
-                                      ? `${item.product.storageLocation.code} - ${item.product.storageLocation.name}`
+                                      ? `${item.product.storageLocation.name}`
                                       : "-"}
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
