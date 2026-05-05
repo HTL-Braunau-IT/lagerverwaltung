@@ -140,12 +140,18 @@ export function OrdersAdminPanel() {
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
+      refetchInterval: 30_000,
+      refetchIntervalInBackground: true,
     },
   );
 
   const expandedOrderQuery = api.order.backendById.useQuery(
     { id: expandedOrderId ?? "" },
-    { enabled: Boolean(expandedOrderId) },
+    {
+      enabled: Boolean(expandedOrderId),
+      refetchInterval: expandedOrderId ? 30_000 : false,
+      refetchIntervalInBackground: true,
+    },
   );
 
   const updateStatusMutation = api.order.backendUpdateStatus.useMutation({
@@ -167,6 +173,14 @@ export function OrdersAdminPanel() {
       ),
     [ordersQuery.data],
   );
+
+  useEffect(() => {
+    if (!expandedOrderId) return;
+    const hasExpandedOrder = sortedOrders.some((order) => order.id === expandedOrderId);
+    if (!hasExpandedOrder) {
+      setExpandedOrderId(null);
+    }
+  }, [expandedOrderId, sortedOrders]);
 
   const closeStatusMenu = () => {
     setMenuOpenOrderId(null);
