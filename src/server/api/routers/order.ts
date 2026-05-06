@@ -27,6 +27,18 @@ const backendUpdateOrderStatusInput = z.object({
   nextStatus: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]),
 });
 
+const backendBookOrderReturnInput = z.object({
+  orderId: z.string().min(1),
+  items: z
+    .array(
+      z.object({
+        orderItemId: z.string().min(1),
+        returnQuantity: z.coerce.number().positive(),
+      }),
+    )
+    .min(1),
+});
+
 const teacherAssignedRequestByIdInput = z.object({
   requestId: z.string().min(1),
 });
@@ -105,6 +117,35 @@ function isTransitionAllowed(currentStatus: OrderStatus, nextStatus: OrderStatus
   if (currentStatus === nextStatus) return true;
   if (currentStatus === "READY_FOR_PICKUP" && nextStatus !== "READY_FOR_PICKUP") return false;
   return true;
+}
+
+const ORDER_RETURN_SUPPLIER = "Bestellrueckgabe";
+const ORDER_RETURN_NOTE_PREFIX = "ORDER_RETURN";
+
+function buildOrderReturnNote(orderId: string, orderItemId: string) {
+  return `${ORDER_RETURN_NOTE_PREFIX}:${orderId}:ITEM:${orderItemId}`;
+}
+
+function orderReturnPrefixForOrder(orderId: string) {
+  return `${ORDER_RETURN_NOTE_PREFIX}:${orderId}:ITEM:`;
+}
+
+function assertQuantityFitsStep(quantity: number, step: number, label: string) {
+  if (!Number.isFinite(quantity) || !Number.isFinite(step) || step <= 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${label} ist ungueltig.`,
+    });
+  }
+
+  const ratio = quantity / step;
+  const rounded = Math.round(ratio);
+  if (Math.abs(ratio - rounded) > 1e-9) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `${label} muss zur Mengeneinheit passen.`,
+    });
+  }
 }
 
 export const orderRouter = createTRPCRouter({
@@ -202,8 +243,7 @@ export const orderRouter = createTRPCRouter({
   backendById: adminProcedure.input(backendOrderByIdInput).query(async ({ ctx, input }) => {
     const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
     const roomWhere = orderRoomWhereForAccess(access);
-
-    return ctx.db.order.findFirst({
+    const order = await ctx.db.order.findFirst({
       where: {
         id: input.id,
         ...(roomWhere ?? {}),
@@ -253,6 +293,7 @@ export const orderRouter = createTRPCRouter({
                 name: true,
                 sku: true,
                 baseUnit: true,
+                unitStep: true,
                 storageLocation: {
                   select: {
                     code: true,
@@ -274,7 +315,192 @@ export const orderRouter = createTRPCRouter({
         },
       },
     });
+
+    if (!order) return null;
+
+    const returnBookings = await ctx.db.productStockBooking.findMany({
+      where: {
+        productId: { in: order.items.map((item) => item.product.id) },
+        supplier: ORDER_RETURN_SUPPLIER,
+        note: { startsWith: orderReturnPrefixForOrder(order.id) },
+      },
+      select: {
+        productId: true,
+        quantityDelta: true,
+      },
+    });
+
+    const returnedByProduct = new Map<string, number>();
+    for (const booking of returnBookings) {
+      const current = returnedByProduct.get(booking.productId) ?? 0;
+      returnedByProduct.set(booking.productId, current + Number(booking.quantityDelta));
+    }
+
+    return {
+      ...order,
+      items: order.items.map((item) => {
+        const quantity = Number(item.quantity);
+        const alreadyReturnedQuantity = Math.max(0, returnedByProduct.get(item.product.id) ?? 0);
+        const remainingReturnableQuantity = Math.max(0, quantity - alreadyReturnedQuantity);
+        return {
+          ...item,
+          alreadyReturnedQuantity,
+          remainingReturnableQuantity,
+        };
+      }),
+    };
   }),
+
+  backendBookReturn: adminProcedure
+    .input(backendBookOrderReturnInput)
+    .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      const userId = ctx.session.user.id;
+
+      return ctx.db.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: {
+            id: true,
+            status: true,
+            orderNumber: true,
+            storageRoomId: true,
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                productId: true,
+                quantity: true,
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    baseUnit: true,
+                    unitStep: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Bestellung wurde nicht gefunden.",
+          });
+        }
+
+        assertStorageRoomAllowed(access, order.storageRoomId);
+
+        if (order.status !== "READY_FOR_PICKUP") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Rueckbuchung ist nur bei 'Abholbereit' moeglich.",
+          });
+        }
+
+        const returnPrefix = orderReturnPrefixForOrder(order.id);
+        const existingReturns = await tx.productStockBooking.findMany({
+          where: {
+            productId: { in: order.items.map((item) => item.productId) },
+            supplier: ORDER_RETURN_SUPPLIER,
+            note: { startsWith: returnPrefix },
+          },
+          select: {
+            productId: true,
+            quantityDelta: true,
+          },
+        });
+
+        const returnedByProductId = new Map<string, number>();
+        for (const row of existingReturns) {
+          const current = returnedByProductId.get(row.productId) ?? 0;
+          returnedByProductId.set(row.productId, current + Number(row.quantityDelta));
+        }
+
+        const requestedByOrderItemId = new Map<string, number>();
+        for (const entry of input.items) {
+          const prev = requestedByOrderItemId.get(entry.orderItemId) ?? 0;
+          requestedByOrderItemId.set(entry.orderItemId, prev + entry.returnQuantity);
+        }
+
+        const updates = order.items
+          .map((item) => {
+            const returnQuantity = requestedByOrderItemId.get(item.id) ?? 0;
+            if (returnQuantity <= 0) return null;
+
+            assertQuantityFitsStep(returnQuantity, Number(item.product.unitStep), "Rueckgabemenge");
+
+            const orderedQuantity = Number(item.quantity);
+            const alreadyReturned = Math.max(0, returnedByProductId.get(item.productId) ?? 0);
+            const remaining = orderedQuantity - alreadyReturned;
+
+            if (returnQuantity > remaining) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Rueckgabemenge fuer '${item.product.name}' ist zu hoch.`,
+              });
+            }
+
+            return {
+              orderItemId: item.id,
+              productId: item.productId,
+              returnQuantity,
+              productName: item.product.name,
+            };
+          })
+          .filter((value): value is NonNullable<typeof value> => Boolean(value));
+
+        if (updates.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Keine gueltigen Rueckgabepositionen uebermittelt.",
+          });
+        }
+
+        await Promise.all(
+          updates.map((entry) =>
+            tx.product.update({
+              where: { id: entry.productId },
+              data: {
+                quantityOnHand: {
+                  increment: entry.returnQuantity,
+                },
+              },
+              select: { id: true },
+            }),
+          ),
+        );
+
+        await Promise.all(
+          updates.map((entry) =>
+            tx.productStockBooking.create({
+              data: {
+                productId: entry.productId,
+                userId,
+                quantityDelta: entry.returnQuantity,
+                supplier: ORDER_RETURN_SUPPLIER,
+                note: buildOrderReturnNote(order.id, entry.orderItemId),
+              },
+              select: { id: true },
+            }),
+          ),
+        );
+
+        return {
+          ok: true as const,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          returnedItems: updates.map((item) => ({
+            orderItemId: item.orderItemId,
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.returnQuantity,
+          })),
+        };
+      });
+    }),
 
   backendUpdateStatus: adminProcedure
     .input(backendUpdateOrderStatusInput)

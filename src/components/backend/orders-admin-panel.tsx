@@ -8,7 +8,9 @@ import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { Button, buttonClassName, type ButtonVariant } from "~/components/ui/button";
 import { Card, DetailText } from "~/components/ui/detail-card";
+import { Dialog } from "~/components/ui/dialog";
 import { FilterPillButton } from "~/components/ui/filter-pill-button";
+import { NumberStepper } from "~/components/ui/number-stepper";
 import { Card as ShellCard } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
@@ -129,6 +131,8 @@ export function OrdersAdminPanel() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [menuOpenOrderId, setMenuOpenOrderId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+  const [returnDialogOrderId, setReturnDialogOrderId] = useState<string | null>(null);
+  const [returnDraftByItemId, setReturnDraftByItemId] = useState<Record<string, string>>({});
   const menuButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -154,6 +158,14 @@ export function OrdersAdminPanel() {
     },
   );
 
+  const returnDialogQuery = api.order.backendById.useQuery(
+    { id: returnDialogOrderId ?? "" },
+    {
+      enabled: Boolean(returnDialogOrderId),
+      refetchInterval: false,
+    },
+  );
+
   const updateStatusMutation = api.order.backendUpdateStatus.useMutation({
     onSuccess: async (_data, variables) => {
       await Promise.all([
@@ -163,6 +175,22 @@ export function OrdersAdminPanel() {
       ]);
       const label = statusConfig[variables.nextStatus as OrderStatus]?.label ?? "Status aktualisiert";
       toast.success(`Bestellung: ${label}.`);
+    },
+  });
+
+  const bookReturnMutation = api.order.backendBookReturn.useMutation({
+    onSuccess: async (data) => {
+      await Promise.all([
+        utils.order.backendList.invalidate(),
+        utils.order.backendOpenCount.invalidate(),
+        utils.order.backendById.invalidate({ id: data.orderId }),
+      ]);
+      setReturnDialogOrderId(null);
+      setReturnDraftByItemId({});
+      toast.success("Rueckgabe erfolgreich rueckgebucht.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Rueckgabe konnte nicht gebucht werden.");
     },
   });
 
@@ -185,6 +213,12 @@ export function OrdersAdminPanel() {
   const closeStatusMenu = () => {
     setMenuOpenOrderId(null);
     setMenuPosition(null);
+  };
+
+  const openReturnDialog = (orderId: string) => {
+    closeStatusMenu();
+    setReturnDialogOrderId(orderId);
+    setReturnDraftByItemId({});
   };
 
   const updateMenuPosition = (orderId: string | null) => {
@@ -229,6 +263,23 @@ export function OrdersAdminPanel() {
       window.removeEventListener("keydown", onEscape);
     };
   }, [menuOpenOrderId]);
+
+  useEffect(() => {
+    const dialogData = returnDialogQuery.data;
+    if (!dialogData) return;
+    setReturnDraftByItemId((current) => {
+      const next: Record<string, string> = {};
+      for (const item of dialogData.items) {
+        const remaining = decimalToNumber((item as { remainingReturnableQuantity?: unknown }).remainingReturnableQuantity);
+        next[item.id] = remaining > 0 ? remaining.toString() : "0";
+      }
+      const currentKeys = Object.keys(current);
+      const nextKeys = Object.keys(next);
+      const isSameLength = currentKeys.length === nextKeys.length;
+      const isSameValues = isSameLength && nextKeys.every((key) => current[key] === next[key]);
+      return isSameValues ? current : next;
+    });
+  }, [returnDialogQuery.data]);
 
   return (
     <ShellCard className="rounded-2xl bg-transparent">
@@ -390,6 +441,32 @@ export function OrdersAdminPanel() {
                               });
                             }}
                           />
+                        ) : order.status === "READY_FOR_PICKUP" ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="glass"
+                            className="h-8 w-[13.5rem] max-w-[13.5rem] rounded-sm"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setMenuOpenOrderId((current) => {
+                                const next = current === order.id ? null : order.id;
+                                if (next) updateMenuPosition(next);
+                                else setMenuPosition(null);
+                                return next;
+                              });
+                            }}
+                            ref={(node) => {
+                              if (node) {
+                                menuButtonRefs.current.set(order.id, node);
+                              } else {
+                                menuButtonRefs.current.delete(order.id);
+                              }
+                            }}
+                          >
+                            Aktionen
+                            <ChevronDownIcon open={isMenuOpen} className="ml-1 h-4 w-4" />
+                          </Button>
                         ) : (
                           <span
                             className="inline-flex rounded-full py-1.5 text-center text-xs text-muted-foreground"
@@ -531,6 +608,7 @@ export function OrdersAdminPanel() {
       ) : null}
       {(() => {
         const activeOrderStatus = sortedOrders.find((order) => order.id === menuOpenOrderId)?.status;
+        const canBookReturn = activeOrderStatus === "READY_FOR_PICKUP";
         return menuOpenOrderId && menuPosition ? (
           createPortal(
             <div
@@ -572,11 +650,166 @@ export function OrdersAdminPanel() {
                   </button>
                 );
               })}
+              {canBookReturn ? (
+                <>
+                  <div className="my-1 h-px bg-border/70" />
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-left text-sm text-foreground transition hover:!bg-primary/10"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openReturnDialog(menuOpenOrderId);
+                    }}
+                  >
+                    <span>Rueckbuchung</span>
+                    <span className="text-xs text-muted-foreground">Menge</span>
+                  </button>
+                </>
+              ) : null}
             </div>,
             document.body,
           )
         ) : null;
       })()}
+      <Dialog
+        open={Boolean(returnDialogOrderId)}
+        onClose={() => {
+          if (bookReturnMutation.isPending) return;
+          setReturnDialogOrderId(null);
+          setReturnDraftByItemId({});
+        }}
+        title="Rueckgabe buchen"
+        description="Positionen koennen teilweise oder komplett zurueck ins Lager gebucht werden."
+      >
+        {returnDialogQuery.isLoading ? (
+          <p className="text-sm text-muted-foreground">Positionen werden geladen...</p>
+        ) : null}
+        {returnDialogQuery.error ? (
+          <p className="text-sm text-destructive">Rueckgabedaten konnten nicht geladen werden.</p>
+        ) : null}
+        {returnDialogQuery.data ? (
+          <div className="space-y-4">
+            <Card variant="detail" className="hover:!bg-card/40 !bg-card/0 !m-0 !p-0">
+              <TableUI.Subtable tableClassName="table-fixed">
+                <TableUI.SubtableHeader>
+                  <tr>
+                    <TableUI.SubtableHead>Produkt</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-24 whitespace-nowrap">Bestellt</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-24 whitespace-nowrap">Schon zurueck</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-24 whitespace-nowrap">Offen</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[12rem]">Rueckgabe</TableUI.SubtableHead>
+                  </tr>
+                </TableUI.SubtableHeader>
+                <TableUI.SubtableBody>
+                  {returnDialogQuery.data.items.map((item) => {
+                    const ordered = decimalToNumber(item.quantity);
+                    const returned = decimalToNumber((item as { alreadyReturnedQuantity?: unknown }).alreadyReturnedQuantity);
+                    const remaining = decimalToNumber(
+                      (item as { remainingReturnableQuantity?: unknown }).remainingReturnableQuantity,
+                    );
+                    const step = Math.max(decimalToNumber((item.product as { unitStep?: unknown }).unitStep), 0.001);
+                    const unitLabel = item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit;
+                    const value = returnDraftByItemId[item.id] ?? "0";
+
+                    return (
+                      <TableUI.SubtableRow key={item.id}>
+                        <TableUI.SubtableCell className="font-medium text-foreground">{item.product.name}</TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                          {ordered} {unitLabel}
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                          {returned} {unitLabel}
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
+                          {remaining} {unitLabel}
+                        </TableUI.SubtableCell>
+                        <TableUI.SubtableCell>
+                          <div className="flex items-center gap-2">
+                            <NumberStepper
+                              value={value}
+                              onChange={(next) => {
+                                setReturnDraftByItemId((current) => ({ ...current, [item.id]: next }));
+                              }}
+                              min={0}
+                              max={remaining}
+                              step={step}
+                              decreaseAriaLabel={`Rueckgabe ${item.product.name} verringern`}
+                              increaseAriaLabel={`Rueckgabe ${item.product.name} erhoehen`}
+                              inputAriaLabel={`Rueckgabe ${item.product.name}`}
+                              disabled={bookReturnMutation.isPending || remaining <= 0}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={bookReturnMutation.isPending || remaining <= 0}
+                              onClick={() => {
+                                setReturnDraftByItemId((current) => ({
+                                  ...current,
+                                  [item.id]: remaining.toString(),
+                                }));
+                              }}
+                            >
+                              Alles
+                            </Button>
+                          </div>
+                        </TableUI.SubtableCell>
+                      </TableUI.SubtableRow>
+                    );
+                  })}
+                </TableUI.SubtableBody>
+              </TableUI.Subtable>
+            </Card>
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setReturnDialogOrderId(null);
+                  setReturnDraftByItemId({});
+                }}
+                disabled={bookReturnMutation.isPending}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                disabled={bookReturnMutation.isPending}
+                onClick={() => {
+                  const dialogData = returnDialogQuery.data;
+                  if (!dialogData) return;
+                  const rows = dialogData.items;
+                  const payloadItems = rows
+                    .map((item) => {
+                      const remaining = decimalToNumber(
+                        (item as { remainingReturnableQuantity?: unknown }).remainingReturnableQuantity,
+                      );
+                      const requested = Math.max(0, decimalToNumber(returnDraftByItemId[item.id] ?? "0"));
+                      return {
+                        orderItemId: item.id,
+                        returnQuantity: Math.min(remaining, requested),
+                      };
+                    })
+                    .filter((item) => item.returnQuantity > 0);
+
+                  if (payloadItems.length === 0) {
+                    toast.error("Bitte mindestens eine Rueckgabemenge > 0 eintragen.");
+                    return;
+                  }
+
+                  bookReturnMutation.mutate({
+                    orderId: dialogData.id,
+                    items: payloadItems,
+                  });
+                }}
+              >
+                Rueckgabe buchen
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Dialog>
     </ShellCard>
   );
 }
