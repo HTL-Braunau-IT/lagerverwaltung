@@ -42,6 +42,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public/pictures/placeholder.jpg /opt/default-assets/placeholder.jpg
+COPY --from=builder /app/public/favicon.ico /opt/default-assets/favicon.ico
 
 # Persist files written to /public (e.g. uploads)
 VOLUME ["/app/public"]
@@ -52,4 +53,4 @@ RUN mkdir -p /app/public/data \
 USER nextjs
 
 EXPOSE 3000
-CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; npm run db:migrate && npx prisma generate && npm run start"]
+CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; [ -f /app/public/favicon.ico ] || cp /opt/default-assets/favicon.ico /app/public/favicon.ico; npm run db:migrate && npx prisma generate && npm run start"]
