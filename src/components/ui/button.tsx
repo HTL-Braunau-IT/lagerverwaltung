@@ -18,7 +18,7 @@ export type ButtonVariant =
 
 type ButtonSize = "default" | "sm" | "lg";
 
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = React.ComponentPropsWithRef<"button"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 };

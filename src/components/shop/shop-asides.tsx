@@ -84,7 +84,7 @@ export function ShopCategoriesAside({
 
   return (
     <div
-      className={`flex min-h-0 w-full flex-col self-start overflow-hidden rounded-md border border-border lg:sticky ${className}`}
+      className={`flex min-h-0 w-full flex-col self-start overflow-hidden rounded-md border border-border xl:sticky ${className}`}
       style={stickyStyle({ appHeaderOffset, stickyTopOffset })}
     >
       <div className="shrink-0 overflow-hidden bg-card/80 px-3 py-2">
@@ -97,7 +97,7 @@ export function ShopCategoriesAside({
       </div>
       <Card
         variant="detail"
-        className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 lg:overflow-auto"
+        className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 xl:overflow-auto"
       >
         <nav className="space-y-1 py-3 px-2">
           <Button
@@ -219,11 +219,11 @@ export function ShopPartListsAside({
   return (
     <>
       <div
-        className={`self-start flex flex-col gap-4 lg:sticky lg:overflow-hidden ${className}`}
+        className={`self-start flex flex-col gap-4 xl:sticky xl:overflow-hidden ${className}`}
         style={stickyStyle({ appHeaderOffset, stickyTopOffset })}
       >
         {canSeePartListProductCount ? (
-          <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-md border border-border lg:overflow-auto">
+          <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-md border border-border xl:overflow-auto">
             <div className="shrink-0 overflow-hidden bg-card/80 px-3 py-2">
               <DetailText variant="title" className="pl-2 text-center text-base leading-tight">
                 Teilelisten
@@ -231,7 +231,7 @@ export function ShopPartListsAside({
             </div>
             <Card
               variant="detail"
-              className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 lg:overflow-auto"
+              className="flex min-h-0 flex-1 flex-col !rounded-none !border-0 !bg-card/40 !p-0 hover:!bg-card/40 xl:overflow-auto"
             >
               <div className="min-h-0 flex-1 space-y-2 py-2 px-2">
                 {partListsQuery.isLoading ? (

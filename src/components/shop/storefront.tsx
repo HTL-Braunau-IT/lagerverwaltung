@@ -212,8 +212,8 @@ export function Storefront() {
   ]);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[90%] flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
-      <section className="mt-2 mx-2 grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr_340px]">
+    <main className="mx-auto flex min-h-screen w-full max-w-screen-2xl flex-col gap-0 px-2 pt-10 pb-6 sm:px-4 lg:px-6">
+      <section className="mt-2 mx-2 grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_280px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
@@ -221,7 +221,7 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid auto-rows-max content-start gap-6 grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))]">
+        <div className="grid auto-rows-max content-start gap-6 grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] md:grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))]">
           {productQuery.isLoading && (
             <div className="col-span-full p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -416,6 +416,7 @@ export function Storefront() {
         </div>
 
         <ShopPartListsAside
+          className="hidden 2xl:flex"
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
           sessionId={sessionId}
