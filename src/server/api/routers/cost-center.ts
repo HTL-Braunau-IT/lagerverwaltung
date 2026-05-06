@@ -14,8 +14,8 @@ const backendListInput = z.object({
 });
 
 const backendCreateInput = z.object({
-  code: z.string().trim().min(1).max(40),
-  name: z.string().trim().min(1).max(120),
+  code: z.string().trim().min(1).max(180),
+  name: z.string().trim().min(1).max(180),
 });
 
 const backendUpdateInput = backendCreateInput.extend({
