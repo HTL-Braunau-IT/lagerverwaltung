@@ -185,7 +185,7 @@ export function CostCentersAdminPanel() {
                   >
                     {isExpanded ? (
                       <div className="px-4 flex min-w-0 flex-col gap-4">
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mb-1">
+                        <div className="mb-1 grid grid-cols-1 items-end gap-3 md:grid-cols-3">
                           <label className="text-xs text-muted-foreground">
                             Name
                             <Input
@@ -204,36 +204,39 @@ export function CostCentersAdminPanel() {
                               variant="subtitle"
                             />
                           </label>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setForm((prev) => ({ ...prev, isActive: !prev.isActive }));
-                            }}
-                            className={`flex w-full max-w-sm items-center justify-between gap-3 rounded-sm border-2 bg-card/40 mt-1 px-3 py-2 text-left transition col-span-2 ${
-                              form.isActive ? "border-emerald-500/60" : "border-red-500/60"
-                            }`}
-                            aria-label="Kostenstellen-Sichtbarkeit umschalten"
-                            aria-pressed={form.isActive}
-                          >
-                            <span className="text-sm text-slate-900">Sichtbar in Shopfront</span>
-                            <span
-                              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
-                                form.isActive ? "bg-emerald-500/60" : "bg-red-500/60"
+                          <label className="text-xs text-muted-foreground">
+                            Sichtbar in Shopfront
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setForm((prev) => ({ ...prev, isActive: !prev.isActive }));
+                              }}
+                              className={`flex h-10 w-full items-center justify-between gap-3 rounded-sm border-2 bg-card/40 px-3 text-left transition ${
+                                form.isActive ? "border-emerald-500/60" : "border-red-500/60"
                               }`}
-                              aria-hidden="true"
+                              aria-label="Kostenstellen-Sichtbarkeit umschalten"
+                              aria-pressed={form.isActive}
                             >
+                              <span className="text-sm text-foreground">Sichtbar</span>
                               <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
-                                  form.isActive ? "translate-x-5" : "translate-x-1"
+                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition ${
+                                  form.isActive ? "bg-emerald-500/60" : "bg-red-500/60"
                                 }`}
-                              />
-                            </span>
-                          </button>
+                                aria-hidden="true"
+                              >
+                                <span
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                                    form.isActive ? "translate-x-5" : "translate-x-1"
+                                  }`}
+                                />
+                              </span>
+                            </button>
+                          </label>
                           <Button
                             type="button"
                             variant="destructive"
-                            className="!w-36 col-span-2 justify-self-end"
+                            className="!w-36 justify-self-end md:col-span-3"
                             onClick={(event) => {
                               event.stopPropagation();
                               if (deleteMutation.isPending) return;
