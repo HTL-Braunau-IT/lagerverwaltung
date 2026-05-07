@@ -5,6 +5,7 @@
 @theme {
   --font-sans: var(--font-sans-custom), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --breakpoint-3xl: 112rem;
 }
 
 @theme inline {
