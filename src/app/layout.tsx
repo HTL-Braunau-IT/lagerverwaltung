@@ -64,6 +64,30 @@ export default async function RootLayout({
     : 0;
   const openApprovalsLabel = openApprovalsCount > 99 ? "99+" : String(openApprovalsCount);
 
+  /** Same filters the shop already exposes anonymously via public TRPC routes — aggregates only. */
+  const guestShopStats = !session?.user
+    ? await Promise.all([
+        db.product.count({
+          where: { isVisible: true, quantityOnHand: { gt: 0 } },
+        }),
+        db.category.count({
+          where: {
+            OR: [
+              { products: { some: { isVisible: true } } },
+              { productLinks: { some: { product: { isVisible: true } } } },
+            ],
+          },
+        }),
+        db.partList.count({
+          where: { items: { some: {} } },
+        }),
+      ]).then(([availableProducts, categoriesWithVisibleProducts, partListsWithItems]) => ({
+        availableProducts,
+        categoriesWithVisibleProducts,
+        partListsWithItems,
+      }))
+    : null;
+
   return (
     <html lang="de" className={inter.variable}>
       <body className="bg-background text-foreground antialiased">
@@ -173,15 +197,90 @@ export default async function RootLayout({
             </ShopProductCountProvider>
           </TRPCReactProvider>
         ) : (
-          <main className="flex min-h-screen items-center justify-center p-6">
-            <section className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">HTL Lagerverwaltung</p>
-              <h1 className="mt-2 text-3xl font-semibold text-foreground">Willkommen zur Materialausgabe</h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Melde dich mit deinem Microsoft-Schulkonto an, um Produkte zu sehen und Bestellungen zu verwalten.
-              </p>
+          <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 sm:p-6">
+            <div
+              className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat transform-gpu"
+              style={{ backgroundImage: "url('/images/htl-login-background.jpg')" }}
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 backdrop-blur-[1px]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_35%,rgba(0,0,0,0.20)_100%)]"
+              aria-hidden
+            />
+            <section className="relative z-10 w-full max-w-4xl overflow-hidden rounded-md bg-card/60 shadow-xl backdrop-blur-md border border-card/20 select-none">
+              <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x lg:divide-card/50">
+                <div className="flex flex-col gap-2.5 p-6 text-center lg:text-left">
+                  <Link
+                    href="/"
+                    prefetch={false}
+                    className="group mx-auto flex w-full max-w-sm items-center justify-center gap-3 text-foreground outline-none lg:mx-0 lg:max-w-none lg:justify-center"
+                  >
+                    <span className="inline-flex shrink-0 text-primary/85 transition-colors group-hover:text-primary">
+                      <HeaderBrandPackageIcon className="h-11 w-11 transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:scale-100" />
+                    </span>
+                    <span className="flex min-w-0 flex-col items-center text-center leading-tight lg:items-center lg:text-center">
+                      <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
+                        HTL Braunau
+                      </span>
+                      <span className="mt-0.5 text-2xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
+                        Lagershop
+                      </span>
+                    </span>
+                  </Link>
+                  <span className="text-sm leading-snug text-muted-foreground text-center">
+                  Interne Plattform für Lagerverwaltung und Bestellung.
+                  </span>
 
-              <MicrosoftSignInButton />
+                  {guestShopStats ? (
+                    <div className="border-t border-black/5 pt-3">
+                      <dl className="grid grid-cols-3 gap-2.5">
+                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center lg:text-left hover:bg-card/80 transition">
+                          <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
+                            Produkte
+                          </dt>
+                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                            {guestShopStats.availableProducts.toLocaleString("de-AT")}
+                          </dd>
+                        </div>
+                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center lg:text-left hover:bg-card/80 transition">
+                          <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
+                            Kategorien
+                          </dt>
+                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                            {guestShopStats.categoriesWithVisibleProducts.toLocaleString("de-AT")}
+                          </dd>
+                        </div>
+                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center lg:text-left hover:bg-card/80 transition">
+                          <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
+                            Teilelisten
+                          </dt>
+                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                            {guestShopStats.partListsWithItems.toLocaleString("de-AT")}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-col justify-center gap-6 bg-card/40 p-8">
+                  <div className="mx-auto max-w-sm text-center">
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
+                      Zugang mit Schulkonto
+                    </h2>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    Melde dich mit deinem Microsoft-Schulkonto an, um Produkte einzusehen und Bestellungen zu verwalten.
+                    </p>
+                  </div>
+                  <div className="flex justify-center lg:justify-start">
+                    <MicrosoftSignInButton />
+                  </div>
+                </div>
+              </div>
             </section>
           </main>
         )}
