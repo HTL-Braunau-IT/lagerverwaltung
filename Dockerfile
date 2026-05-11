@@ -43,6 +43,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public/pictures/placeholder.jpg /opt/default-assets/placeholder.jpg
 COPY --from=builder /app/public/favicon.ico /opt/default-assets/favicon.ico
+COPY --from=builder /app/public/icons/microsoft-icon.png /opt/default-assets/microsoft-icon.png
+COPY --from=builder /app/public/images/htl-login-background.jpg /opt/default-assets/htl-login-background.jpg
 
 # Persist files written to /public (e.g. uploads)
 VOLUME ["/app/public"]
@@ -53,4 +55,4 @@ RUN mkdir -p /app/public/data \
 USER nextjs
 
 EXPOSE 3000
-CMD ["sh", "-c", "mkdir -p /app/public/pictures && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; [ -f /app/public/favicon.ico ] || cp /opt/default-assets/favicon.ico /app/public/favicon.ico; npm run db:migrate && npx prisma generate && npm run start"]
+CMD ["sh", "-c", "mkdir -p /app/public/pictures /app/public/icons /app/public/images && [ -f /app/public/pictures/placeholder.jpg ] || cp /opt/default-assets/placeholder.jpg /app/public/pictures/placeholder.jpg; [ -f /app/public/favicon.ico ] || cp /opt/default-assets/favicon.ico /app/public/favicon.ico; [ -f /app/public/icons/microsoft-icon.png ] || cp /opt/default-assets/microsoft-icon.png /app/public/icons/microsoft-icon.png; [ -f /app/public/images/htl-login-background.jpg ] || cp /opt/default-assets/htl-login-background.jpg /app/public/images/htl-login-background.jpg; npm run db:migrate && npx prisma generate && npm run start"]
