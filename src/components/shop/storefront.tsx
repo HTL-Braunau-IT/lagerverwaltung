@@ -213,7 +213,7 @@ export function Storefront() {
 
   return (
     <main className="mx-auto flex min-h-screen w-[calc(90%-2rem)] flex-col gap-0 pt-10 pb-6 sm:w-[calc(90%-3rem)] lg:w-[calc(90%-4rem)]">
-      <section className="mt-2 grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)] 3xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+      <section className="mt-2 grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)] 2xl:grid-cols-[260px_minmax(0,1fr)] 3xl:grid-cols-[280px_minmax(0,1fr)_280px]">
         <ShopCategoriesAside
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
@@ -221,7 +221,7 @@ export function Storefront() {
           onSelectedCategoryIdChange={setSelectedCategoryId}
         />
 
-        <div className="grid auto-rows-max content-start gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 [@media(min-width:2200px)]:grid-cols-5">
+        <div className="grid auto-rows-max content-start gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-3 [@media(min-width:2200px)]:grid-cols-5">
           {productQuery.isLoading && (
             <div className="col-span-full p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
