@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Inter } from "next/font/google";
 
 import { MicrosoftSignInButton } from "~/components/auth/microsoft-sign-in-button";
+import { SignOutButton } from "~/components/auth/sign-out-button";
 import { HeaderCartLink } from "~/components/layout/header-cart-link";
 import { HeaderNavLink } from "~/components/layout/header-nav-link";
 import { Search } from "~/components/layout/search";
@@ -160,12 +161,7 @@ export default async function RootLayout({
                           </div>
                         </div>
                         <div className="flex justify-center mt-2 flex gap-3 border-t border-border/70 pt-2.5">
-                          <Link
-                            href="/api/auth/signout"
-                            className="inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors bg-destructive text-card"
-                          >
-                            Abmelden
-                          </Link>
+                          <SignOutButton />
                         </div>
                       </div>
                     </div>
