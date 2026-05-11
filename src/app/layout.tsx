@@ -212,9 +212,9 @@ export default async function RootLayout({
               className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_35%,rgba(0,0,0,0.20)_100%)]"
               aria-hidden
             />
-            <section className="relative z-10 w-full max-w-4xl overflow-hidden rounded-md bg-card/60 hover:bg-card/65 transition shadow-xl backdrop-blur-md border border-card/20 select-none">
-              <div className="grid grid-cols-1 lg:grid-cols-2 lg:divide-x lg:divide-card/50">
-                <div className="flex flex-col gap-2.5 p-6 text-center lg:text-left">
+            <section className="relative z-10 w-full max-w-md overflow-hidden rounded-md bg-card/60 hover:bg-card/65 transition shadow-xl backdrop-blur-md border border-card/20 select-none">
+              <div>
+                <div className="flex flex-col gap-3 p-6 text-center lg:text-left">
                   <Link
                     href="/"
                     prefetch={false}
@@ -238,48 +238,37 @@ export default async function RootLayout({
 
                   {guestShopStats ? (
                     <div className="border-t border-black/5 pt-3">
-                      <dl className="grid grid-cols-3 gap-2.5">
-                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center hover:bg-card/80 transition">
+                      <dl className="grid grid-cols-3 gap-3">
+                        <div className="rounded-sm bg-card/60 px-2 py-2 text-center hover:bg-card/80 transition">
                           <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
                             Produkte
                           </dt>
-                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                          <dd className="text-lg font-semibold tabular-nums tracking-tight text-foreground">
                             <CountUp value={guestShopStats.availableProducts} />
                           </dd>
                         </div>
-                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center hover:bg-card/80 transition">
+                        <div className="rounded-sm bg-card/60 px-2 py-2 text-center hover:bg-card/80 transition">
                           <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
                             Kategorien
                           </dt>
-                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                          <dd className="text-lg font-semibold tabular-nums tracking-tight text-foreground">
                             <CountUp value={guestShopStats.categoriesWithVisibleProducts} />
                           </dd>
                         </div>
-                        <div className="rounded-sm bg-card/60 px-3.5 py-3 text-center hover:bg-card/80 transition">
+                        <div className="rounded-sm bg-card/60 px-2 py-2 text-center hover:bg-card/80 transition">
                           <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/75">
                             Teilelisten
                           </dt>
-                          <dd className="mt-1 text-lg font-semibold tabular-nums tracking-tight text-foreground">
+                          <dd className="text-lg font-semibold tabular-nums tracking-tight text-foreground">
                             <CountUp value={guestShopStats.partListsWithItems} />
                           </dd>
                         </div>
                       </dl>
+                      <div className="mt-3 flex justify-center lg:justify-start">
+                        <MicrosoftSignInButton />
+                      </div>
                     </div>
                   ) : null}
-                </div>
-
-                <div className="flex flex-col justify-center gap-6 bg-card/45 p-8">
-                  <div className="mx-auto max-w-sm text-center">
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">
-                      Zugang mit Schulkonto
-                    </h2>
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    Melde dich mit deinem Microsoft-Schulkonto an, um Produkte einzusehen und Bestellungen zu verwalten.
-                    </p>
-                  </div>
-                  <div className="flex justify-center lg:justify-start">
-                    <MicrosoftSignInButton />
-                  </div>
                 </div>
               </div>
             </section>
