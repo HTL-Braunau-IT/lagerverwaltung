@@ -31,7 +31,7 @@ const baseUnits = [
   { value: "MM", label: "mm" },
   { value: "CM", label: "cm" },
   { value: "M", label: "m" },
-  { value: "CM2", label: "cm2" },
+  { value: "DM2", label: "dm2" },
   { value: "MM2", label: "mm2" },
   { value: "M2", label: "m2" },
   { value: "G", label: "g" },

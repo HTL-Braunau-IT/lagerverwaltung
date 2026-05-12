@@ -1,4 +1,4 @@
-const INTEGER_STEP_BASE_UNITS = new Set(["PCS", "MM", "CM", "CM2", "MM2"]);
+const INTEGER_STEP_BASE_UNITS = new Set(["PCS", "MM", "CM", "CM2", "DM2", "MM2"]);
 
 export function getQuantityStepForBaseUnit(baseUnit: string): number {
   return INTEGER_STEP_BASE_UNITS.has(baseUnit) ? 1 : 0.001;

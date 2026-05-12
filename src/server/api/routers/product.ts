@@ -66,6 +66,12 @@ const backendCategoryCountsInput = z.object({
   storageLocationId: z.string().min(1).optional(),
 });
 
+const baseUnitSchema = z.enum(["PCS", "MM", "CM", "M", "CM2", "DM2", "MM2", "M2", "G", "KG", "ML", "L"]);
+
+function normalizeBaseUnit(baseUnit: string): string {
+  return baseUnit === "CM2" ? "DM2" : baseUnit;
+}
+
 const updateProductInput = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1),
@@ -74,7 +80,7 @@ const updateProductInput = z.object({
   price: z.coerce.number().min(0),
   minimumQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
-  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "MM2", "M2", "G", "KG", "ML", "L"]),
+  baseUnit: baseUnitSchema,
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean(),
   categoryIds: z.array(z.string().min(1)).default([]),
@@ -95,7 +101,7 @@ const createProductInput = z.object({
   minimumQuantity: z.coerce.number().min(0),
   startingQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
-  baseUnit: z.enum(["PCS", "MM", "CM", "M", "CM2", "MM2", "M2", "G", "KG", "ML", "L"]),
+  baseUnit: baseUnitSchema,
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean().default(true),
   categoryIds: z.array(z.string().min(1)).default([]),
@@ -129,16 +135,17 @@ function assertProductQuantitiesAreValid(input: {
   minimumQuantity: number;
   startingQuantity?: number;
 }) {
-  const expectedStep = getQuantityStepForBaseUnit(input.baseUnit);
+  const normalizedBaseUnit = normalizeBaseUnit(input.baseUnit);
+  const expectedStep = getQuantityStepForBaseUnit(normalizedBaseUnit);
   if (input.unitStep !== expectedStep) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `Schrittweite fuer ${input.baseUnit} muss ${expectedStep.toLocaleString("de-AT")} sein.`,
+      message: `Schrittweite fuer ${normalizedBaseUnit} muss ${expectedStep.toLocaleString("de-AT")} sein.`,
     });
   }
-  assertQuantityOnStep(input.minimumQuantity, input.baseUnit, "Mindestbestand");
+  assertQuantityOnStep(input.minimumQuantity, normalizedBaseUnit, "Mindestbestand");
   if (input.startingQuantity !== undefined) {
-    assertQuantityOnStep(input.startingQuantity, input.baseUnit, "Startbestand");
+    assertQuantityOnStep(input.startingQuantity, normalizedBaseUnit, "Startbestand");
   }
 }
 
@@ -236,7 +243,12 @@ export const productRouter = createTRPCRouter({
       nextCursor = next?.id;
     }
 
-    return { items, nextCursor, filteredAvailableCount, totalAvailableCount };
+    return {
+      items: items.map((item) => ({ ...item, baseUnit: normalizeBaseUnit(item.baseUnit) })),
+      nextCursor,
+      filteredAvailableCount,
+      totalAvailableCount,
+    };
   }),
 
   byId: publicProcedure
@@ -299,6 +311,7 @@ export const productRouter = createTRPCRouter({
       if (!product) return null;
       return {
         ...product,
+        baseUnit: normalizeBaseUnit(product.baseUnit),
         documents: product.documents.map((document) => ({
           ...document,
           url: normalizeProductDocumentUrl(document.id),
@@ -411,6 +424,7 @@ export const productRouter = createTRPCRouter({
       const enrichedItems = await Promise.all(
         items.map(async (item) => ({
           ...item,
+          baseUnit: normalizeBaseUnit(item.baseUnit),
           images: await Promise.all(
             item.images.map(async (image) => ({
               ...image,
@@ -506,8 +520,9 @@ export const productRouter = createTRPCRouter({
   backendUpdate: adminProcedure
     .input(updateProductInput)
     .mutation(async ({ ctx, input }) => {
+      const normalizedBaseUnit = normalizeBaseUnit(input.baseUnit);
       assertProductQuantitiesAreValid({
-        baseUnit: input.baseUnit,
+        baseUnit: normalizedBaseUnit,
         unitStep: input.unitStep,
         minimumQuantity: input.minimumQuantity,
       });
@@ -545,7 +560,7 @@ export const productRouter = createTRPCRouter({
             price: input.price,
             minimumQuantity: input.minimumQuantity,
             unitKind: input.unitKind,
-            baseUnit: input.baseUnit,
+            baseUnit: normalizedBaseUnit,
             unitStep: input.unitStep,
             isVisible: input.isVisible,
             categoryId: input.categoryIds[0] ?? null,
@@ -597,8 +612,9 @@ export const productRouter = createTRPCRouter({
   backendCreate: adminProcedure
     .input(createProductInput)
     .mutation(async ({ ctx, input }) => {
+      const normalizedBaseUnit = normalizeBaseUnit(input.baseUnit);
       assertProductQuantitiesAreValid({
-        baseUnit: input.baseUnit,
+        baseUnit: normalizedBaseUnit,
         unitStep: input.unitStep,
         minimumQuantity: input.minimumQuantity,
         startingQuantity: input.startingQuantity,
@@ -636,7 +652,7 @@ export const productRouter = createTRPCRouter({
             minimumQuantity: input.minimumQuantity,
             quantityOnHand: input.startingQuantity,
             unitKind: input.unitKind,
-            baseUnit: input.baseUnit,
+            baseUnit: normalizedBaseUnit,
             unitStep: input.unitStep,
             isVisible: input.isVisible,
             categoryId: input.categoryIds[0] ?? null,

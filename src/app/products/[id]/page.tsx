@@ -253,8 +253,8 @@ export default function ProductDetailPage() {
       ? areaWidth * areaHeight
       : 0;
   const computedAreaQuantity =
-    product.baseUnit === "CM2"
-      ? areaInSquareMillimeters / 100
+    product.baseUnit === "DM2" || product.baseUnit === "CM2"
+      ? areaInSquareMillimeters / 10_000
       : product.baseUnit === "M2"
         ? areaInSquareMillimeters / 1_000_000
         : areaInSquareMillimeters;

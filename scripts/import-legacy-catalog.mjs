@@ -150,7 +150,7 @@ function normalizeLegacyUnit(rawUnit) {
     .replace(/\./g, "")
     .replace(/²/g, "2")
     .replace("qm", "m2")
-    .replace("qcm", "cm2")
+    .replace("qcm", "dm2")
     .replace("qdm", "dm2");
 }
 
@@ -173,8 +173,8 @@ function mapLegacyUnit(rawUnit) {
     cm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.CM },
     dm: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.CM, baseStep: 10 },
     m: { unitKind: UnitKind.LENGTH, baseUnit: BaseUnit.M },
-    cm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2 },
-    dm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.CM2, baseStep: 100 },
+    cm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.DM2 },
+    dm2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.DM2 },
     m2: { unitKind: UnitKind.AREA, baseUnit: BaseUnit.M2 },
     g: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.G },
     dag: { unitKind: UnitKind.WEIGHT, baseUnit: BaseUnit.G, baseStep: 10 },
