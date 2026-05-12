@@ -67,8 +67,9 @@ const backendCategoryCountsInput = z.object({
 });
 
 const baseUnitSchema = z.enum(["PCS", "MM", "CM", "M", "CM2", "DM2", "MM2", "M2", "G", "KG", "ML", "L"]);
+type BaseUnitValue = z.infer<typeof baseUnitSchema>;
 
-function normalizeBaseUnit(baseUnit: string): string {
+function normalizeBaseUnit(baseUnit: BaseUnitValue): BaseUnitValue {
   return baseUnit === "CM2" ? "DM2" : baseUnit;
 }
 
@@ -130,7 +131,7 @@ function assertQuantityOnStep(quantity: number, baseUnit: string, label: string)
 }
 
 function assertProductQuantitiesAreValid(input: {
-  baseUnit: string;
+  baseUnit: BaseUnitValue;
   unitStep: number;
   minimumQuantity: number;
   startingQuantity?: number;

@@ -125,7 +125,7 @@ function createInitialForm(product: {
   price: unknown;
   minimumQuantity: unknown;
   unitKind: ProductFormState["unitKind"];
-  baseUnit: ProductFormState["baseUnit"];
+  baseUnit: ProductFormState["baseUnit"] | "CM2";
   unitStep: unknown;
   isVisible: boolean;
   categoryId: string | null;
@@ -141,6 +141,9 @@ function createInitialForm(product: {
     altText: string | null;
   }>;
 }): ProductFormState {
+  const normalizedBaseUnit: ProductFormState["baseUnit"] =
+    product.baseUnit === "CM2" ? "DM2" : product.baseUnit;
+
   return {
     name: product.name,
     sku: product.sku,
@@ -148,7 +151,7 @@ function createInitialForm(product: {
     price: formatMoneyDeAt(toNumber(product.price)),
     minimumQuantity: String(toNumber(product.minimumQuantity)),
     unitKind: product.unitKind,
-    baseUnit: product.baseUnit,
+    baseUnit: normalizedBaseUnit,
     unitStep: String(toNumber(product.unitStep)),
     isVisible: product.isVisible,
     categoryIds: Array.from(
