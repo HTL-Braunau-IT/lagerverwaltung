@@ -387,8 +387,10 @@ export function OrdersAdminPanel() {
                         </p>
                       ) : null}
                     </TableUI.TableCell>
-                    <TableUI.TableCell>
-                      {order.costCenter.code} - {order.costCenter.name}
+                    <TableUI.TableCell className="min-w-0">
+                      <div className="line-clamp-1">
+                        {order.costCenter.code} - {order.costCenter.name}
+                      </div>
                     </TableUI.TableCell>
                     <TableUI.TableCell className="w-[7rem] min-w-[7rem] max-w-[7rem] tabular-nums">
                       {order.items.length}
