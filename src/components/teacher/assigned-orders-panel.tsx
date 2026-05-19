@@ -35,7 +35,8 @@ function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED") {
 function requestStatusBadgeVariant(status: "PENDING" | "APPROVED" | "REJECTED") {
   if (status === "PENDING") return "orderSecond";
   if (status === "APPROVED") return "orderThird";
-  return "orderFirst";
+  if (status === "REJECTED") return "destructive";
+  return "default";
 }
 
 function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
@@ -475,13 +476,13 @@ export function AssignedOrdersPanel() {
                       </div>
                     ) : null}
 
-                    <div className="flex items-center justify-between gap-3 pt-1 pl-1">
+                    <div className="flex items-start justify-between gap-3 pt-1 pl-1">
                       <div className="min-w-0">
                         <DetailText variant="kicker">
                           Bestellnummer
                         </DetailText>
                         <DetailText variant="value">
-                          {request.approvedOrder?.orderNumber}
+                          {request.approvedOrder?.orderNumber ?? "-"}
                         </DetailText>
                       </div>
                       <Badge variant={requestStatusBadgeVariant(request.status)}>
@@ -495,14 +496,14 @@ export function AssignedOrdersPanel() {
                       <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           <DetailText variant="kicker">Eingang</DetailText>
-                          <DetailText variant="value">{formatDate(request.createdAt).split(",")[0]}</DetailText>
+                          <DetailText variant="value">{formatDate(request.createdAt)}</DetailText>
                         </div>
                       </Card>
 
                       <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
                           <DetailText variant="kicker">Bearbeitet</DetailText>
-                          <DetailText variant="value">{formatDate(request.updatedAt).split(",")[0]}</DetailText>
+                          <DetailText variant="value">{formatDate(request.updatedAt)}</DetailText>
                         </div>
                       </Card>
 
@@ -515,27 +516,12 @@ export function AssignedOrdersPanel() {
 
                       <Card variant="detail">
                         <div className="flex min-w-0 flex-col gap-1">
-                          {request.status === "APPROVED" && request.approvedOrder ? (
-                            <>
-                              <DetailText variant="kicker">Lehrperson</DetailText>
-                              <DetailText variant="value">{request.teacherDisplayName}</DetailText>
-                            </>
-                          ) : (
-                            <>
-                              <DetailText variant="kicker">Bestellnummer</DetailText>
-                              <DetailText variant="value">-</DetailText>
-                            </>
-                          )}
+                          <DetailText variant="kicker">Schüler</DetailText>
+                          <DetailText variant="value" className="min-w-0 truncate">
+                            {studentLabel(request.student)}
+                          </DetailText>
                         </div>
                       </Card>
-
-
-
-                      {request.status === "REJECTED" ? (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-950">
-                          <p className="font-semibold">Anfrage abgelehnt.</p>
-                        </div>
-                      ) : null}
 
                       <details className="group col-span-4 !rounded-sm bg-card/40 hover:bg-card/60">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">

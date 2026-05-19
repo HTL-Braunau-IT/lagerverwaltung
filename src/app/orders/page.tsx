@@ -43,6 +43,15 @@ function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
   return "Abgelehnt";
 }
 
+function requestStatusBadgeVariant(
+  status: "PENDING" | "APPROVED" | "REJECTED",
+): "orderSecond" | "orderThird" | "destructive" | "default" {
+  if (status === "PENDING") return "orderSecond";
+  if (status === "APPROVED") return "orderThird";
+  if (status === "REJECTED") return "destructive";
+  return "default";
+}
+
 function userLabel(user: { name: string | null; email: string | null }) {
   return user.name?.trim() || user.email?.trim() || "Unbekannt";
 }
@@ -117,11 +126,7 @@ export default function OrdersPage() {
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <section className="space-y-4">
         {session?.user.role === "STUDENT" && (
-          <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Meine Freigabeanfragen</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Hier siehst du den Status deiner an Lehrpersonen gesendeten Anfragen.
-            </p>
+          <article className="mt-6">
 
             {submittedRequestsQuery.isLoading && (
               <p className="mt-3 text-sm text-slate-600">Anfragen werden geladen...</p>
@@ -137,7 +142,7 @@ export default function OrdersPage() {
                 <p className="mt-3 text-sm text-slate-500">Noch keine Freigabeanfragen vorhanden.</p>
               )}
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
               {submittedRequestsQuery.data?.map((request) => {
                 const requestItemCount = request.items.reduce(
                   (sum, item) => sum + decimalToNumber(item.quantity),
@@ -145,47 +150,141 @@ export default function OrdersPage() {
                 );
 
                 return (
-                  <div key={request.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          An Lehrperson: {request.teacherDisplayName}
-                        </p>
-                        <p className="text-xs text-slate-500">{request.teacherEmail}</p>
+                  <Card
+                    variant="detail"
+                    key={request.id}
+                    className="relative min-w-0 overflow-visible !bg-card/40 hover:!bg-card/40"
+                  >
+                    {request.status === "APPROVED" && request.approvedOrder ? (
+                      <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
+                        <div className="flex flex-col items-center gap-0.5 text-center">
+                          <div className="relative">
+                            <div
+                              aria-hidden="true"
+                              className="absolute left-1/2 top-0 z-0 h-8 w-[190px] -translate-x-1/2 rounded-b-md border border-violet-200 bg-violet-100 shadow-sm"
+                            />
+                            <Badge
+                              variant="default"
+                              className="relative z-10 mt-1.5 rounded-none border-0 bg-transparent p-4 leading-none text-violet-800 shadow-none"
+                            >
+                              Als Bestellung übernommen
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-xs text-slate-600">
+                            Status:{" "}
+                            <span className="font-medium">
+                              {formatStatus(request.approvedOrder.status)}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <span className="rounded-full bg-slate-200 px-3 py-1   text-xs font-medium text-slate-800">
+                    ) : null}
+
+                    <div className="flex items-start justify-between gap-3 pt-1 pl-1">
+                      <div className="min-w-0">
+                        <DetailText variant="kicker">Bestellnummer</DetailText>
+                        <DetailText variant="value">
+                          {request.approvedOrder?.orderNumber ?? "-"}
+                        </DetailText>
+                      </div>
+                      <Badge variant={requestStatusBadgeVariant(request.status)} className="shrink-0">
                         {formatRequestStatus(request.status)}
-                      </span>
+                      </Badge>
                     </div>
-                    <div className="mt-2 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                      <p>
-                        <span className="text-slate-500">Gesendet: </span>
-                        {formatOrderDate(request.createdAt)}
-                      </p>
-                      <p>
-                        <span className="text-slate-500">Artikel gesamt: </span>
-                        {requestItemCount}
-                      </p>
-                      <p>
-                        <span className="text-slate-500">Bestellung: </span>
-                        {request.approvedOrder?.orderNumber ?? "-"}
-                      </p>
+
+                    <div className="my-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
+
+                    <div className="mt-5 grid grid-cols-4 gap-4">
+                      <Card variant="detail">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Eingang</DetailText>
+                          <DetailText variant="value">
+                            {formatOrderDate(request.createdAt)}
+                          </DetailText>
+                        </div>
+                      </Card>
+
+                      <Card variant="detail">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Bearbeitet</DetailText>
+                          <DetailText variant="value">
+                            {formatOrderDate(request.updatedAt)}
+                          </DetailText>
+                        </div>
+                      </Card>
+
+                      <Card variant="detail">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Produkte</DetailText>
+                          <DetailText variant="value" className="tabular-nums">
+                            {requestItemCount}
+                          </DetailText>
+                        </div>
+                      </Card>
+
+                      <Card variant="detail">
+                        <div className="flex min-w-0 flex-col gap-1">
+                          <DetailText variant="kicker">Lehrperson</DetailText>
+                          <DetailText variant="value" className="min-w-0 truncate">
+                            {request.teacherDisplayName}
+                          </DetailText>
+                        </div>
+                      </Card>
+
+                      <details className="group col-span-4 !rounded-sm bg-card/40 hover:bg-card/60">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-base font-semibold text-slate-900">Positionen</p>
+                          </div>
+                          <span className="text-xs font-medium text-slate-600 group-open:hidden">
+                            Anzeigen
+                          </span>
+                          <span className="text-xs font-medium text-slate-600 hidden group-open:inline">
+                            Ausblenden
+                          </span>
+                        </summary>
+
+                        <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
+                          <TableUI.Subtable className="rounded-sm" tableClassName="table-fixed">
+                            <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
+                              <tr>
+                                <TableUI.SubtableHead scope="col" className="min-w-0">
+                                  Name
+                                </TableUI.SubtableHead>
+                                <TableUI.SubtableHead scope="col" className="w-[9rem] text-center">
+                                  SKU
+                                </TableUI.SubtableHead>
+                                <TableUI.SubtableHead scope="col" className="w-32 whitespace-nowrap text-right">
+                                  Menge
+                                </TableUI.SubtableHead>
+                              </tr>
+                            </TableUI.SubtableHeader>
+                            <TableUI.SubtableBody>
+                              {request.items.map((item) => (
+                                <TableUI.SubtableRow key={item.id}>
+                                  <TableUI.SubtableCell className="min-w-0 max-w-0 text-sm font-medium text-foreground">
+                                    <span className="block truncate">{item.product.name}</span>
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="text-center">
+                                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-foreground shadow-sm">
+                                      <span className="whitespace-nowrap">{item.product.sku}</span>
+                                      <SkuCopyButton sku={item.product.sku} />
+                                    </span>
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
+                                    {decimalToNumber(item.quantity)}{" "}
+                                    <span className="font-medium text-muted-foreground">
+                                      {item.product.baseUnit.toLowerCase()}
+                                    </span>
+                                  </TableUI.SubtableCell>
+                                </TableUI.SubtableRow>
+                              ))}
+                            </TableUI.SubtableBody>
+                          </TableUI.Subtable>
+                        </div>
+                      </details>
                     </div>
-                    {request.approvedOrder ? (
-                      <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-700">
-                        <span className="text-slate-500">Bestellstatus:</span>
-                        <Badge variant={orderStatusBadgeVariant(request.approvedOrder.status)}>
-                          {formatStatus(request.approvedOrder.status)}
-                        </Badge>
-                      </p>
-                    ) : null}
-                    {request.status === "REJECTED" ? (
-                      <p className="mt-2 text-xs text-rose-700">
-                        Die Lehrperson hat diese Anfrage abgelehnt. Bitte passe den Warenkorb an und sende eine neue
-                        Anfrage.
-                      </p>
-                    ) : null}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -255,7 +354,7 @@ export default function OrdersPage() {
                               variant="default"
                               className="relative z-10 rounded-none border-0 bg-transparent p-4 mt-1.5 text-violet-800 shadow-none leading-none"
                             >
-                              Aus Schuelerfreigabe
+                              Aus Schülerfreigabe
                             </Badge>
                           </div>
                           <p className="mt-2 text-xs text-slate-600">
