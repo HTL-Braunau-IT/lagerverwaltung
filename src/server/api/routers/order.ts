@@ -877,6 +877,7 @@ export const orderRouter = createTRPCRouter({
                 id: true,
                 name: true,
                 baseUnit: true,
+                quantityOnHand: true,
               },
             },
           },

@@ -5,7 +5,11 @@ import { useMemo, useState } from "react";
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/toast";
 import { Card, DetailText } from "../ui/detail-card";
-import { Badge } from "~/components/ui/badge"
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { NumberStepper } from "~/components/ui/number-stepper";
+import { Select } from "~/components/ui/select";
+import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 import * as TableUI from "~/components/ui/table";
 
 function decimalToNumber(value: unknown) {
@@ -33,7 +37,7 @@ function requestStatusLabel(status: "PENDING" | "APPROVED" | "REJECTED") {
 }
 
 function requestStatusBadgeVariant(status: "PENDING" | "APPROVED" | "REJECTED") {
-  if (status === "PENDING") return "orderSecond";
+  if (status === "PENDING") return "orderFirst";
   if (status === "APPROVED") return "orderThird";
   if (status === "REJECTED") return "destructive";
   return "default";
@@ -155,12 +159,6 @@ export function AssignedOrdersPanel() {
           </div>
         )}
 
-        {actionErrorMessage && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 shadow-sm">
-            Aktion fehlgeschlagen: {actionErrorMessage}
-          </div>
-        )}
-
         {!requestsQuery.isLoading &&
           !requestsQuery.error &&
           pendingRequests.length === 0 &&
@@ -173,13 +171,7 @@ export function AssignedOrdersPanel() {
         )}
 
         {pendingRequests.length > 0 && (
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-              <h2 className="text-sm font-semibold text-sky-900">Offene Freigaben</h2>
-              <p className="mt-1 text-sm text-sky-800">
-                Diese Anfragen warten auf deine finale Entscheidung.
-              </p>
-            </div>
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
             {pendingRequests.map((request) => {
               const selectedCostCenter = costCenterByRequestId[request.id] ?? "";
               const itemCount = request.items.reduce((sum, item) => sum + decimalToNumber(item.quantity), 0);
@@ -191,65 +183,93 @@ export function AssignedOrdersPanel() {
                 !costCentersQuery.isLoading;
 
               return (
-                <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <Card
+                  variant="detail"
+                  key={request.id}
+                  className="relative min-w-0 overflow-visible !bg-card/40 hover:!bg-card/40"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-sm text-slate-500">{studentLabel(request.student)}</h3>
-                    <Badge
-                      variant={requestStatusBadgeVariant(request.status)}
-                    >
+                    <DetailText variant="value">
+                      Offene Freigabe
+                      
+                    </DetailText>
+                    <Badge variant={requestStatusBadgeVariant(request.status)}>
                       {requestStatusLabel(request.status)}
                     </Badge>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
-                    <p>
-                      <span className="text-slate-500">Eingang: </span>
-                      {formatDate(request.createdAt)}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Lehrperson: </span>
-                      {request.teacherDisplayName}
-                    </p>
-                    <p>
-                      <span className="text-slate-500">Artikel gesamt: </span>
-                      {itemCount}
-                    </p>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <Card variant="detail">
+                      <DetailText variant="kicker">Schüler</DetailText>
+                      <DetailText variant="value" className="min-w-0 truncate">
+                        {studentLabel(request.student)}
+                      </DetailText>
+                    </Card>
+                    <Card variant="detail">
+                      <DetailText variant="kicker">Eingang</DetailText>
+                      <DetailText variant="value">{formatDate(request.createdAt)}</DetailText>
+                    </Card>
+                    <Card variant="detail">
+                      <DetailText variant="kicker">Artikel gesamt</DetailText>
+                      <DetailText variant="value">{itemCount}</DetailText>
+                    </Card>
                   </div>
 
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-sm font-medium text-slate-800">Positionen</p>
-                    {!hasItems ? (
-                      <p className="mt-2 text-sm text-slate-600">
-                        Keine Positionen mehr vorhanden. Bitte Anfrage ablehnen.
-                      </p>
-                    ) : null}
-                    <ul className="mt-2 space-y-3">
+                  <div className="my-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
+
+                  <details className="group mt-4 !rounded-md bg-card/40 transition hover:bg-card/60 open:hover:bg-card/40">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-base font-semibold text-slate-900">Positionen
+                          <span className="text-xs font-medium text-slate-600"> - unbedingt durschauen</span>
+                        </p>
+                      </div>
+                      <span className="text-xs font-medium text-slate-600 group-open:hidden">Anzeigen</span>
+                      <span className="hidden text-xs font-medium text-slate-600 group-open:inline">
+                        Ausblenden
+                      </span>
+                    </summary>
+
+                    <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
+                      {!hasItems ? (
+                        <p className="text-sm text-slate-600">
+                          Keine Positionen mehr vorhanden. Bitte Anfrage ablehnen.
+                        </p>
+                      ) : (
+                        <ul className="space-y-3">
                       {request.items.map((item) => (
-                        <li
-                          key={item.id}
-                          className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="font-medium text-slate-900">{item.product.name}</span>
-                            <span className="text-slate-600">{item.product.baseUnit.toLowerCase()}</span>
+                        <Card variant="detail" key={item.id}>
+                          <div className="flex flex-wrap items-center justify-start gap-3">
+                            <span className="font-medium text-slate-900">{item.product.name}</span>                            
                           </div>
 
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <input
-                              type="number"
-                              min="0.001"
-                              step="0.001"
-                              value={quantityDraftByItemId[item.id] ?? decimalToNumber(item.quantity).toString()}
-                              onChange={(event) =>
-                                setQuantityDraftByItemId((current) => ({
-                                  ...current,
-                                  [item.id]: event.target.value,
-                                }))
-                              }
-                              disabled={isAnyMutationPending}
-                              className="w-32 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60"
-                            />
-                            <button
+                          <div className="mt-3 flex flex-wrap items-start gap-2">
+                            <div className="flex flex-col items-center">
+                              <NumberStepper
+                                value={
+                                  quantityDraftByItemId[item.id] ?? decimalToNumber(item.quantity).toString()
+                                }
+                                onChange={(next) =>
+                                  setQuantityDraftByItemId((current) => ({
+                                    ...current,
+                                    [item.id]: next,
+                                  }))
+                                }
+                                min={getQuantityStepForBaseUnit(item.product.baseUnit)}
+                                step={getQuantityStepForBaseUnit(item.product.baseUnit)}
+                                disabled={isAnyMutationPending}
+                                decreaseAriaLabel={`Menge für ${item.product.name} verringern`}
+                                increaseAriaLabel={`Menge für ${item.product.name} erhöhen`}
+                                inputAriaLabel={`Menge für ${item.product.name}`}
+                                className="shadow-xs"
+                              />
+                              <p className="mt-1 text-center text-[11px] text-slate-500">
+                                Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
+                                {item.product.baseUnit.toLowerCase()}
+                              </p>
+                            </div>
+                            <Button
+                              variant="solid"
                               type="button"
                               onClick={() => {
                                 const draftValue = quantityDraftByItemId[item.id];
@@ -263,11 +283,12 @@ export function AssignedOrdersPanel() {
                                 });
                               }}
                               disabled={isAnyMutationPending}
-                              className="rounded-lg border border-sky-300 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-800 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="!h-9 !w-auto !max-w-[180px] shrink-0 transition text-xs"
                             >
                               Menge speichern
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="destructive"
                               type="button"
                               onClick={() =>
                                 removeItemMutation.mutate({
@@ -276,52 +297,54 @@ export function AssignedOrdersPanel() {
                                 })
                               }
                               disabled={isAnyMutationPending}
-                              className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="!h-9 !w-auto !max-w-[180px] shrink-0 transition text-xs"
                             >
                               Position entfernen
-                            </button>
+                            </Button>
                           </div>
-                        </li>
+                        </Card>
                       ))}
-                    </ul>
-                  </div>
+                        </ul>
+                      )}
+                    </div>
+                  </details>
 
-                  <div className="mt-4 space-y-2">
-                    <label htmlFor={`cc-${request.id}`} className="block text-sm font-medium text-slate-800">
-                      Kostenstelle
-                    </label>
-                    <select
-                      id={`cc-${request.id}`}
-                      value={selectedCostCenter}
-                      onChange={(event) =>
-                        setCostCenterByRequestId((current) => ({
-                          ...current,
-                          [request.id]: event.target.value,
-                        }))
-                      }
-                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-sky-300 transition focus:ring-2"
-                      disabled={costCentersQuery.isLoading || isAnyMutationPending}
-                    >
-                      <option value="">Bitte Kostenstelle waehlen</option>
-                      {costCentersQuery.data?.map((center) => (
-                        <option key={center.id} value={center.id}>
-                          {center.code} - {center.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <div className="mt-4 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-3">
+                    <div className="min-w-0">
+                      <Select
+                        id={`cc-${request.id}`}
+                        value={selectedCostCenter}
+                        onValueChange={(nextCostCenterId) =>
+                          setCostCenterByRequestId((current) => ({
+                            ...current,
+                            [request.id]: nextCostCenterId,
+                          }))
+                        }
+                        disabled={costCentersQuery.isLoading || isAnyMutationPending}
+                        placeholder="Kostenstelle wählen"
+                        options={[
+                          { value: "", label: "Kostenstelle wählen" },
+                          ...(costCentersQuery.data ?? []).map((center) => ({
+                            value: center.id,
+                            label: `${center.code} - ${center.name}`,
+                          })),
+                        ]}
+                        className="!mt-0 w-full px-2.5 py-2 text-sm text-slate-900"
+                      />
+                    </div>
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="destructive"
                       onClick={() => rejectMutation.mutate({ requestId: request.id })}
                       disabled={isAnyMutationPending}
-                      className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-800 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="!h-9"
                     >
                       {rejectMutation.isPending ? "Wird abgelehnt..." : "Anfrage ablehnen"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="solid"
                       onClick={() =>
                         approveMutation.mutate({
                           requestId: request.id,
@@ -329,12 +352,12 @@ export function AssignedOrdersPanel() {
                         })
                       }
                       disabled={!canApprove}
-                      className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="!h-9"
                     >
                       {approveMutation.isPending ? "Wird bestellt..." : "Bestellung final absenden"}
-                    </button>
+                    </Button>
                   </div>
-                </article>
+                </Card>
               );
             })}
           </div>
@@ -523,7 +546,7 @@ export function AssignedOrdersPanel() {
                         </div>
                       </Card>
 
-                      <details className="group col-span-4 !rounded-sm bg-card/40 hover:bg-card/60">
+                      <details className="group col-span-4 !rounded-sm bg-card/40 hover:bg-card/60 transition">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 select-none p-4 sm:p-5">
                           <div className="flex items-baseline gap-2">
                             <p className="text-base font-semibold text-slate-900">Positionen</p>
