@@ -20,6 +20,10 @@ import {
 } from "~/components/layout/icon-renders";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
+import {
+  getStorageRoomAccessForUser,
+  orderRoomWhereForAccess,
+} from "~/server/api/routers/utils/storage-access";
 import { TRPCReactProvider } from "~/trpc/react";
 import { DetailText } from "~/components/ui/detail-card";
 import { CountUp } from "~/components/ui/count-up";
@@ -64,6 +68,29 @@ export default async function RootLayout({
       })
     : 0;
   const openApprovalsLabel = openApprovalsCount > 99 ? "99+" : String(openApprovalsCount);
+
+  const isAdmin = session?.user.role === "ADMIN";
+  let openAdminLabel: string | undefined;
+  if (isAdmin && session?.user.id) {
+    const access = await getStorageRoomAccessForUser(db, session.user.id);
+    const roomWhere = orderRoomWhereForAccess(access);
+    const [openOrdersCount, openLoansCount] = await Promise.all([
+      db.order.count({
+        where: {
+          status: "OPEN",
+          ...(roomWhere ?? {}),
+        },
+      }),
+      db.loan.count({
+        where: {
+          status: { in: ["PENDING", "APPROVED"] },
+          ...(roomWhere ?? {}),
+        },
+      }),
+    ]);
+    const openAdminCount = openOrdersCount + openLoansCount;
+    openAdminLabel = openAdminCount > 99 ? "99+" : String(openAdminCount);
+  }
 
   /** Same filters the shop already exposes anonymously via public TRPC routes — aggregates only. */
   const guestShopStats = !session?.user
@@ -142,7 +169,7 @@ export default async function RootLayout({
                       label="Freigaben"
                       accent="approvals"
                       icon={<ApprovalsIcon />}
-                      badgeLabel={openApprovalsCount > 0 ? openApprovalsLabel : undefined}
+                      badgeLabel={openApprovalsLabel}
                     />
                   ) : null}
                   {session.user.role === "ADMIN" ? (
@@ -151,6 +178,7 @@ export default async function RootLayout({
                       label="Administration"
                       accent="admin"
                       icon={<AdministrationIcon />}
+                      badgeLabel={openAdminLabel}
                     />
                   ) : null}
                   <div className="relative z-[60]">
