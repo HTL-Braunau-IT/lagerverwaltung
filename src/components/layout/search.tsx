@@ -6,71 +6,37 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchField } from "~/components/layout/search-field";
 import { useShopProductCountSnapshot } from "~/components/shop/shop-product-count-context";
 
-type HeaderSearchMode =
-  | "shop"
-  | "ausleihe"
-  | "orders"
-  | "userOrdersReadonly"
-  | "teacherOrdersReadonly"
-  | "cartsReadonly"
-  | "loansReadonly"
-  | "backend";
+type SearchMode = "home" | "redirect" | "ausleihe" | "orders" | "backend" | null;
 
-function headerSearchMode(pathname: string): HeaderSearchMode | null {
+const PRODUCT_SEARCH_LAUNCHER_PATHS = [
+  "/carts",
+  "/orders",
+  "/loans",
+  "/teacher/orders",
+] as const;
+
+const SHOP_SEARCH_PLACEHOLDER =
+  "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
+
+const DEBOUNCE_MS = 300;
+
+function getSearchMode(pathname: string): SearchMode {
+  if (pathname === "/") return "home";
   if (
-    pathname === "/" ||
+    PRODUCT_SEARCH_LAUNCHER_PATHS.some(
+      (base) => pathname === base || pathname.startsWith(`${base}/`),
+    ) ||
     pathname.startsWith("/products/") ||
     pathname === "/parts-list" ||
     pathname.startsWith("/parts-list/")
   ) {
-    return "shop";
+    return "redirect";
   }
-  if (pathname === "/ausleihe" || pathname.startsWith("/ausleihe/")) {
-    return "ausleihe";
-  }
-  if (pathname === "/backend/orders" || pathname.startsWith("/backend/orders/")) {
-    return "orders";
-  }
-  if (pathname === "/orders" || pathname.startsWith("/orders/")) {
-    return "userOrdersReadonly";
-  }
-  if (pathname === "/teacher/orders" || pathname.startsWith("/teacher/orders/")) {
-    return "teacherOrdersReadonly";
-  }
-  if (pathname === "/carts" || pathname.startsWith("/carts/")) {
-    return "cartsReadonly";
-  }
-  if (pathname === "/loans" || pathname.startsWith("/loans/")) {
-    return "loansReadonly";
-  }
-  if (pathname === "/backend" || pathname.startsWith("/backend/")) {
-    return "backend";
-  }
+  if (pathname === "/ausleihe" || pathname.startsWith("/ausleihe/")) return "ausleihe";
+  if (pathname === "/backend/orders" || pathname.startsWith("/backend/orders/")) return "orders";
+  if (pathname === "/backend" || pathname.startsWith("/backend/")) return "backend";
   return null;
 }
-
-function isReadonlySearchMode(mode: HeaderSearchMode): boolean {
-  return (
-    mode === "userOrdersReadonly" ||
-    mode === "teacherOrdersReadonly" ||
-    mode === "cartsReadonly" ||
-    mode === "loansReadonly"
-  );
-}
-
-/** Delay before syncing typed text to the URL (avoids navigation on every keystroke). */
-const HEADER_SEARCH_DEBOUNCE_MS = 300;
-
-const HEADER_SEARCH_FIELD_IDS: Record<HeaderSearchMode, string> = {
-  shop: "global-product-search",
-  ausleihe: "header-ausleihe-search",
-  orders: "header-orders-search",
-  backend: "header-backend-search",
-  userOrdersReadonly: "header-user-orders-search-readonly",
-  teacherOrdersReadonly: "header-teacher-orders-search-readonly",
-  cartsReadonly: "header-carts-search-readonly",
-  loansReadonly: "header-loans-search-readonly",
-};
 
 export function Search() {
   const router = useRouter();
@@ -78,58 +44,85 @@ export function Search() {
   const searchParams = useSearchParams();
   const searchFromUrl = searchParams.get("search") ?? "";
   const queryString = searchParams.toString();
-  const mode = headerSearchMode(pathname);
-  const [value, setValue] = useState(searchFromUrl);
-  /** While focused, ignore `searchFromUrl` (it can lag behind keystrokes until debounced `replace`). */
-  const searchFocusedRef = useRef(false);
+  const mode = getSearchMode(pathname);
 
-  useEffect(() => {
-    const readSearch = () =>
-      new URLSearchParams(window.location.search).get("search") ?? "";
-    const onPopState = () => setValue(readSearch());
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  const [value, setValue] = useState("");
+  const redirectTimerRef = useRef<number | null>(null);
 
+  // Reset field on navigation; only pages that own `?search=` show the URL term.
   useEffect(() => {
-    if (searchFocusedRef.current) return;
-    setValue(searchFromUrl);
-  }, [searchFromUrl]);
+    if (redirectTimerRef.current) {
+      window.clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    if (mode === "home" || mode === "ausleihe" || mode === "orders" || mode === "backend") {
+      setValue(searchFromUrl);
+    } else {
+      setValue("");
+    }
+  }, [mode, pathname, searchFromUrl]);
 
+  // Storefront home: keep `?search=` in sync with the input.
   useEffect(() => {
-    if (!mode || isReadonlySearchMode(mode)) return;
+    if (mode !== "home") return;
 
     const timeout = window.setTimeout(() => {
-      const currentQuery = queryString;
-      const params = new URLSearchParams(currentQuery);
+      const params = new URLSearchParams(queryString);
       const trimmed = value.trim();
 
-      if (trimmed) {
-        params.set("search", trimmed);
-      } else {
-        params.delete("search");
-      }
+      if (trimmed) params.set("search", trimmed);
+      else params.delete("search");
 
       const nextQuery = params.toString();
-      if (nextQuery === currentQuery) {
-        return;
-      }
+      if (nextQuery === queryString) return;
 
-      const targetPath = mode === "shop" ? "/" : pathname;
-      router.replace(nextQuery ? `${targetPath}?${nextQuery}` : targetPath, { scroll: false });
-    }, HEADER_SEARCH_DEBOUNCE_MS);
+      router.replace(nextQuery ? `/?${nextQuery}` : "/", { scroll: false });
+    }, DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [mode, queryString, router, value]);
+
+  // Ausleihe / backend: sync search on the current page only.
+  useEffect(() => {
+    if (mode !== "ausleihe" && mode !== "orders" && mode !== "backend") return;
+
+    const timeout = window.setTimeout(() => {
+      const params = new URLSearchParams(queryString);
+      const trimmed = value.trim();
+
+      if (trimmed) params.set("search", trimmed);
+      else params.delete("search");
+
+      const nextQuery = params.toString();
+      if (nextQuery === queryString) return;
+
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    }, DEBOUNCE_MS);
 
     return () => window.clearTimeout(timeout);
   }, [mode, pathname, queryString, router, value]);
 
-  const searchFocusProps = {
-    onFocus: () => {
-      searchFocusedRef.current = true;
-    },
-    onBlur: () => {
-      searchFocusedRef.current = false;
-    },
-  } as const;
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
+
+  const handleChange = (next: string) => {
+    setValue(next);
+
+    if (mode !== "redirect") return;
+
+    if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+
+    const trimmed = next.trim();
+    if (!trimmed) return;
+
+    redirectTimerRef.current = window.setTimeout(() => {
+      redirectTimerRef.current = null;
+      router.push(`/?search=${encodeURIComponent(trimmed)}`);
+    }, DEBOUNCE_MS);
+  };
 
   if (!mode) {
     return (
@@ -139,39 +132,34 @@ export function Search() {
     );
   }
 
-  const placeholder = (() => {
-    if (mode === "ausleihe") return "Ausleihe: z. B. Bohrer, Leiter, Material...";
-    if (mode === "orders") return "Bestellungen: z. B. 2026000001, Mustermann, 4AH..., Kostenstelle...";
-    if (
-      mode === "userOrdersReadonly" ||
-      mode === "teacherOrdersReadonly" ||
-      mode === "cartsReadonly" ||
-      mode === "loansReadonly"
-    ) {
-      return "Suche auf dieser Seite nicht verfügbar";
-    }
-    if (mode === "backend") return "Backend: Suche...";
-    return "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
-  })();
+  const placeholder =
+    mode === "home" || mode === "redirect"
+      ? SHOP_SEARCH_PLACEHOLDER
+      : mode === "ausleihe"
+        ? "Ausleihe: z. B. Bohrer, Leiter, Material..."
+        : mode === "orders"
+          ? "Bestellungen: z. B. 2026000001, Mustermann, 4AH..., Kostenstelle..."
+          : "Backend: Suche...";
 
-  const id = HEADER_SEARCH_FIELD_IDS[mode];
+  const fieldId =
+    mode === "home" || mode === "redirect"
+      ? "global-product-search"
+      : `header-${mode}-search`;
 
-  const readonly = mode ? isReadonlySearchMode(mode) : false;
   const shopProductCount = useShopProductCountSnapshot();
-  const showShopProductCount = mode === "shop" && shopProductCount !== null;
+  const showShopProductCount = mode === "home" && shopProductCount !== null;
 
   return (
     <div>
       {showShopProductCount ? (
         <div className="relative w-full">
           <SearchField
-            id={id}
+            id={fieldId}
             value={value}
-            onChange={(event) => setValue(event.target.value)}
+            onChange={(event) => handleChange(event.target.value)}
             placeholder={placeholder}
             className="pe-[8.25rem] sm:pe-[9rem]"
             aria-describedby="shop-product-count-label"
-            {...searchFocusProps}
           />
           <span
             id="shop-product-count-label"
@@ -184,9 +172,7 @@ export function Search() {
               <>
                 <span
                   className={
-                    shopProductCount.filtered < shopProductCount.total
-                      ? "font-semibold"
-                      : ""
+                    shopProductCount.filtered < shopProductCount.total ? "font-semibold" : ""
                   }
                 >
                   {shopProductCount.filtered}
@@ -198,13 +184,10 @@ export function Search() {
         </div>
       ) : (
         <SearchField
-          id={id}
-          value={readonly ? "" : value}
-          onChange={(event) => setValue(event.target.value)}
+          id={fieldId}
+          value={value}
+          onChange={(event) => handleChange(event.target.value)}
           placeholder={placeholder}
-          disabled={readonly}
-          title={readonly ? "Suchfeld ist auf dieser Seite deaktiviert" : undefined}
-          {...searchFocusProps}
         />
       )}
     </div>
