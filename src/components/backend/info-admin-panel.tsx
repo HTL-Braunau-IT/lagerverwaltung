@@ -35,7 +35,7 @@ export function InfoAdminPanel() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-lg font-semibold">Info</h1>
+        <h2 className="text-xl font-semibold text-foreground">Info</h2>
       </header>
 
 
