@@ -553,6 +553,12 @@ export function OrdersAdminPanel() {
                                 <TableUI.SubtableHead className="w-[7rem]">SKU</TableUI.SubtableHead>
                                 <TableUI.SubtableHead>Lagerplatz</TableUI.SubtableHead>
                                 <TableUI.SubtableHead className="w-24 whitespace-nowrap">Menge</TableUI.SubtableHead>
+                                <TableUI.SubtableHead
+                                  className="w-20 whitespace-nowrap text-xs font-normal text-muted-foreground/60"
+                                  title="Aktueller Lagerbestand (nur Orientierung)"
+                                >
+                                  Lager
+                                </TableUI.SubtableHead>
                               </tr>
                             </TableUI.SubtableHeader>
                             <TableUI.SubtableBody>
@@ -578,8 +584,16 @@ export function OrdersAdminPanel() {
                                       ? `${item.product.storageLocation.name}`
                                       : "-"}
                                   </TableUI.SubtableCell>
-                                  <TableUI.SubtableCell className="text-muted-foreground tabular-nums">
-                                    {decimalToNumber(item.quantity)}{" "}
+                                  <TableUI.SubtableCell className="tabular-nums">
+                                    <span className="font-semibold text-foreground">
+                                      {decimalToNumber(item.quantity)}
+                                    </span>{" "}
+                                    <span className="text-sm text-muted-foreground">
+                                      {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
+                                    </span>
+                                  </TableUI.SubtableCell>
+                                  <TableUI.SubtableCell className="tabular-nums !text-[12px] text-muted-foreground/55">
+                                    {decimalToNumber(item.product.quantityOnHand)}{" "}
                                     {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
                                   </TableUI.SubtableCell>
                                 </TableUI.SubtableRow>

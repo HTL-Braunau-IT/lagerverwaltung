@@ -294,6 +294,7 @@ export const orderRouter = createTRPCRouter({
                 sku: true,
                 baseUnit: true,
                 unitStep: true,
+                quantityOnHand: true,
                 storageLocation: {
                   select: {
                     code: true,
