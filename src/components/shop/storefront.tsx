@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
-import { Card } from "~/components/ui/detail-card";
+import { Card, DetailText } from "~/components/ui/detail-card";
 import { useToast } from "~/components/ui/toast";
 import { CartAddedModal } from "~/components/shop/cart-added-modal";
 import { ProductImageCarousel } from "~/components/shop/product-image-carousel";
@@ -246,17 +246,17 @@ export function Storefront() {
           )}
 
           {!productQuery.isLoading && !productQuery.error && !hasProducts && (
-            <div className="col-span-full rounded-2xl border border-border bg-card p-5 text-muted-foreground">
-              <p className="text-sm font-semibold">
+            <Card variant="detail" className="col-span-full p-5 !text-center hover:!bg-card/40">
+              <DetailText variant="title" className="font-semibold">
                 {hasActiveFilters
-                  ? "Keine Treffer fuer deine Suche."
-                  : "Aktuell sind keine Produkte verfuegbar."}
-              </p>
-              <p className="mt-1 text-sm">
+                  ? "Keine Treffer für deine Suche."
+                  : "Aktuell sind keine Produkte verfügbar."}
+              </DetailText>
+              <DetailText variant="subvalue" className="mt-1">
                 {hasActiveFilters
                   ? "Passe Suche oder Kategorie an, um weitere Produkte zu sehen."
                   : "Sobald Produkte angelegt sind, erscheinen sie hier."}
-              </p>
+              </DetailText>
               {hasActiveFilters && (
                 <Button
                   onClick={() => {
@@ -266,13 +266,13 @@ export function Storefront() {
                     setSelectedStorageLocationId(undefined);
                     router.replace("/");
                   }}
-                  variant="outline"
-                  className="mt-3"
+                  variant="solid"
+                  className="mt-3 max-w-sm"
                 >
-                  Filter zuruecksetzen
+                  Filter zurücksetzen
                 </Button>
               )}
-            </div>
+            </Card>
           )}
 
           {products.map((product) => {
