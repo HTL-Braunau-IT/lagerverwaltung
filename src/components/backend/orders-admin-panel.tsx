@@ -548,13 +548,13 @@ export function OrdersAdminPanel() {
                           <TableUI.Subtable className="mt-3">
                             <TableUI.SubtableHeader>
                               <tr>
-                                <TableUI.SubtableHead className="w-14">Bild</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-20">Bild</TableUI.SubtableHead>
                                 <TableUI.SubtableHead>Produkt</TableUI.SubtableHead>
                                 <TableUI.SubtableHead className="w-[7rem]">SKU</TableUI.SubtableHead>
                                 <TableUI.SubtableHead>Lagerplatz</TableUI.SubtableHead>
-                                <TableUI.SubtableHead className="w-24 whitespace-nowrap">Menge</TableUI.SubtableHead>
+                                <TableUI.SubtableHead className="w-0 whitespace-nowrap">Menge</TableUI.SubtableHead>
                                 <TableUI.SubtableHead
-                                  className="w-20 whitespace-nowrap text-xs font-normal text-muted-foreground/60"
+                                  className="w-0 whitespace-nowrap text-xs font-normal text-muted-foreground/60"
                                   title="Aktueller Lagerbestand (nur Orientierung)"
                                 >
                                   Lager
@@ -568,7 +568,7 @@ export function OrdersAdminPanel() {
                                     <img
                                       src={item.product.images[0]?.url ?? "/pictures/placeholder.jpg"}
                                       alt={item.product.images[0]?.altText ?? `${item.product.name} Bild`}
-                                      className="h-12 w-12 rounded object-cover"
+                                      className="h-16 w-16 rounded object-cover"
                                       onError={(event) => {
                                         event.currentTarget.onerror = null;
                                         event.currentTarget.src = "/pictures/placeholder.jpg";
@@ -584,17 +584,21 @@ export function OrdersAdminPanel() {
                                       ? `${item.product.storageLocation.name}`
                                       : "-"}
                                   </TableUI.SubtableCell>
-                                  <TableUI.SubtableCell className="tabular-nums">
-                                    <span className="font-semibold text-foreground">
-                                      {decimalToNumber(item.quantity)}
-                                    </span>{" "}
-                                    <span className="text-sm text-muted-foreground">
-                                      {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
+                                  <TableUI.SubtableCell className="w-0 whitespace-nowrap tabular-nums">
+                                    <span className="inline-flex items-baseline gap-1">
+                                      <span className="font-semibold text-foreground">
+                                        {decimalToNumber(item.quantity)}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
+                                      </span>
                                     </span>
                                   </TableUI.SubtableCell>
-                                  <TableUI.SubtableCell className="tabular-nums !text-[12px] text-muted-foreground/55">
-                                    {decimalToNumber(item.product.quantityOnHand)}{" "}
-                                    {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
+                                  <TableUI.SubtableCell className="w-0 whitespace-nowrap tabular-nums text-xs text-muted-foreground/55">
+                                    <span className="inline-flex items-baseline gap-1">
+                                      <span>{decimalToNumber(item.product.quantityOnHand)}</span>
+                                      <span>{item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}</span>
+                                    </span>
                                   </TableUI.SubtableCell>
                                 </TableUI.SubtableRow>
                               ))}
