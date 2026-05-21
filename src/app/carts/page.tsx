@@ -20,6 +20,10 @@ import { Input } from "~/components/ui/input";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
 
+function formatCartBaseUnitLabel(baseUnit: string) {
+  return baseUnit === "PCS" ? "Stk" : String(baseUnit).toLowerCase();
+}
+
 function formatCartQtyString(quantity: unknown, step: number): string {
   const n = decimalToNumber(quantity);
   const decimals = getQuantityDecimalsForStep(step);
@@ -414,7 +418,7 @@ export default function CartsPage() {
                       </TableUI.TableCell>
                       <TableUI.TableCell className="text-right tabular-nums">{qty}</TableUI.TableCell>
                       <TableUI.TableCell className="text-right tabular-nums">
-                        {String(item.product.baseUnit).toLowerCase()}
+                        {formatCartBaseUnitLabel(item.product.baseUnit)}
                       </TableUI.TableCell>
                       <TableUI.TableCell className="text-right tabular-nums">{formatPrice(price)}</TableUI.TableCell>
                       <TableUI.TableCell className="text-right font-semibold text-sky-800 tabular-nums">
@@ -630,7 +634,7 @@ export default function CartsPage() {
                           </div>
                           <p className="text-center text-[11px] text-slate-500 mt-1">
                             Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
-                            {item.product.baseUnit.toLowerCase()}
+                            {formatCartBaseUnitLabel(item.product.baseUnit)}
                           </p>
                         </div>
                         <div className="justify-self-end">
@@ -638,7 +642,7 @@ export default function CartsPage() {
                             {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
                           </p>
                           <p className="mt-2 text-xs text-right text-slate-500">
-                            {formatPrice(item.product.price)} pro {item.product.baseUnit.toLowerCase()}
+                            {formatPrice(item.product.price)} pro {formatCartBaseUnitLabel(item.product.baseUnit)}
                           </p>
                         </div>
                       </div>
@@ -708,7 +712,7 @@ export default function CartsPage() {
                     </div>
                     <p className="text-center text-[11px] text-slate-500 mt-1">
                       Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
-                      {item.product.baseUnit.toLowerCase()}
+                      {formatCartBaseUnitLabel(item.product.baseUnit)}
                     </p>
                   </div>
                   <div className="justify-self-end">
@@ -716,7 +720,7 @@ export default function CartsPage() {
                       {formatPrice(decimalToNumber(item.quantity) * decimalToNumber(item.product.price))}
                     </p>
                     <p className="mt-2 text-xs text-right text-slate-500">
-                      {formatPrice(item.product.price)} pro {item.product.baseUnit.toLowerCase()}
+                      {formatPrice(item.product.price)} pro {formatCartBaseUnitLabel(item.product.baseUnit)}
                     </p>
                   </div>
                 </div>

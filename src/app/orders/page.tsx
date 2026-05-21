@@ -274,7 +274,7 @@ export default function OrdersPage() {
                                   <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
                                     {decimalToNumber(item.quantity)}{" "}
                                     <span className="font-medium text-muted-foreground">
-                                      {item.product.baseUnit.toLowerCase()}
+                                      {item.product.baseUnit === "PCS" ? "Stk" : item.product.baseUnit}
                                     </span>
                                   </TableUI.SubtableCell>
                                 </TableUI.SubtableRow>
@@ -436,7 +436,7 @@ export default function OrdersPage() {
                                 <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
                                   {decimalToNumber(item.quantity)}{" "}
                                   <span className="font-medium text-muted-foreground">
-                                    {item.product.baseUnit.toLowerCase()}
+                                    {item.product.baseUnit === "PCS" ? "Stk" : item.product.baseUnit}
                                   </span>
                                 </TableUI.SubtableCell>
                               </TableUI.SubtableRow>

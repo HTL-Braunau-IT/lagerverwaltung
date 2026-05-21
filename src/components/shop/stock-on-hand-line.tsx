@@ -5,6 +5,7 @@ function decimalToNumber(value: unknown) {
 }
 
 function formatBaseUnitLabel(baseUnit: string) {
+  if (baseUnit === "PCS") return "Stk";
   return baseUnit.toLowerCase().replace("2", "²");
 }
 

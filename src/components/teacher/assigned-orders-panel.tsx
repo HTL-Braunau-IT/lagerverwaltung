@@ -265,7 +265,7 @@ export function AssignedOrdersPanel() {
                               />
                               <p className="mt-1 text-center text-[11px] text-slate-500">
                                 Verfügbar: {decimalToNumber(item.product.quantityOnHand)}{" "}
-                                {item.product.baseUnit.toLowerCase()}
+                                {item.product.baseUnit === "PCS" ? "Stk" : item.product.baseUnit}
                               </p>
                             </div>
                             <Button

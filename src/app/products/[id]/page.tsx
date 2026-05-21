@@ -342,8 +342,8 @@ export default function ProductDetailPage() {
                   <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xl">
                     {formatPrice(product.price)} 
                   </p>
-                  <p className="shrink-0 text-base font-semibold tabular-nums text-primary pr-1 text-xs">
-                    / {product.baseUnit}
+                  <p className="text-xs font-medium tabular-nums text-muted-foreground">
+                    / {product.baseUnit === "PCS" ? "STK" : product.baseUnit}
                   </p>
                 </div>
                 <div className="mt-2 ml-0.5">

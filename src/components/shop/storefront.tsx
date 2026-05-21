@@ -351,7 +351,7 @@ export function Storefront() {
 
                   <div className="flex min-w-0 flex-col px-3 pb-3 pt-3">
                     <div className="space-y-2">
-                      <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug  text-foreground">
+                      <h2 className="line-clamp-2 min-h-[2lh] text-[15px] font-semibold leading-snug text-foreground">
                         {product.name}
                       </h2>
                       <div className="space-y-1">
@@ -360,7 +360,7 @@ export function Storefront() {
                             {formatPrice(product.price)}
                           </p>
                           <p className="text-xs font-medium tabular-nums text-muted-foreground">
-                            / {product.baseUnit}
+                            / {product.baseUnit === "PCS" ? "STK" : product.baseUnit}
                           </p>
                         </div>
                         <StockOnHandLine
