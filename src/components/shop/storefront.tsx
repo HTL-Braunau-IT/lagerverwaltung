@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -15,7 +15,10 @@ import { StockOnHandLine } from "~/components/shop/stock-on-hand-line";
 import { ShopCategoriesAside, ShopPartListsAside } from "~/components/shop/shop-asides";
 import { ShopAddToCartButton } from "~/components/shop/shop-quantity-add-to-cart";
 import { NumberStepper } from "~/components/ui/number-stepper";
-import { useShopProductCountPublisher } from "~/components/shop/shop-product-count-context";
+import {
+  useShopFiltersPublisher,
+  useShopProductCountPublisher,
+} from "~/components/shop/shop-product-count-context";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -94,6 +97,7 @@ export function Storefront() {
   const [lastAddedProductQuantity, setLastAddedProductQuantity] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const publishShopProductCount = useShopProductCountPublisher();
+  const { setHasActiveFilters, resetFiltersRef } = useShopFiltersPublisher();
   const canSeePartListProductCount =
     session?.user.role === "ADMIN" || session?.user.role === "TEACHER";
   // Match space below the header to the grid: main `pt-10` (40px) + section `mt-2` (8px).
@@ -172,6 +176,26 @@ export function Storefront() {
   const totalProductCount = firstPage?.totalAvailableCount ?? filteredProductCount;
   const hasActiveFilters =
     Boolean(searchTerm) || Boolean(selectedCategoryId) || Boolean(selectedStorageLocationId);
+
+  const resetShopFilters = useCallback(() => {
+    setSearchInput("");
+    setSearchTerm("");
+    setSelectedCategoryId(undefined);
+    setSelectedStorageLocationId(undefined);
+    router.replace("/");
+  }, [router]);
+
+  useEffect(() => {
+    resetFiltersRef.current = resetShopFilters;
+    return () => {
+      resetFiltersRef.current = null;
+    };
+  }, [resetFiltersRef, resetShopFilters]);
+
+  useEffect(() => {
+    setHasActiveFilters(hasActiveFilters);
+    return () => setHasActiveFilters(false);
+  }, [hasActiveFilters, setHasActiveFilters]);
 
   useEffect(() => {
     publishShopProductCount({
@@ -259,13 +283,7 @@ export function Storefront() {
               </DetailText>
               {hasActiveFilters && (
                 <Button
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearchTerm("");
-                    setSelectedCategoryId(undefined);
-                    setSelectedStorageLocationId(undefined);
-                    router.replace("/");
-                  }}
+                  onClick={resetShopFilters}
                   variant="solid"
                   className="mt-3 max-w-sm"
                 >

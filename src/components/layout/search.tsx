@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { SearchField } from "~/components/layout/search-field";
-import { useShopProductCountSnapshot } from "~/components/shop/shop-product-count-context";
+import {
+  useShopFiltersReset,
+  useShopHasActiveFilters,
+  useShopProductCountSnapshot,
+} from "~/components/shop/shop-product-count-context";
 
 type SearchMode = "home" | "redirect" | "ausleihe" | "orders" | "backend" | null;
 
@@ -19,6 +23,36 @@ const SHOP_SEARCH_PLACEHOLDER =
   "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
 
 const DEBOUNCE_MS = 300;
+
+function SearchFieldClearButton({
+  onClear,
+  className = "",
+  layout = "overlay",
+}: {
+  onClear: () => void;
+  className?: string;
+  layout?: "overlay" | "inline";
+}) {
+  const positionClass =
+    layout === "overlay"
+      ? "absolute top-1/2 z-10 -translate-y-1/2 translate-x-3"
+      : "relative z-10 shrink-0 translate-x-1";
+
+  return (
+    <button
+      type="button"
+      className={`${positionClass} flex h-6 w-6 items-center justify-center rounded-xs text-destructive/80 transition-colors hover:bg-destructive/10 hover:text-destructive ${className}`.trim()}
+      aria-label="Filter zurücksetzen"
+      title="Filter zurücksetzen"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClear}
+    >
+      <span aria-hidden className="relative -top-px text-sm leading-none font-semibold">
+        ×
+      </span>
+    </button>
+  );
+}
 
 function getSearchMode(pathname: string): SearchMode {
   if (pathname === "/") return "home";
@@ -148,6 +182,15 @@ export function Search() {
 
   const shopProductCount = useShopProductCountSnapshot();
   const showShopProductCount = mode === "home" && shopProductCount !== null;
+  const hasActiveShopFilters = useShopHasActiveFilters();
+  const resetShopFilters = useShopFiltersReset();
+  const showShopClearButton =
+    mode === "home" && (value.trim() !== "" || hasActiveShopFilters);
+
+  const clearShopFilters = () => {
+    setValue("");
+    resetShopFilters();
+  };
 
   return (
     <div>
@@ -158,37 +201,57 @@ export function Search() {
             value={value}
             onChange={(event) => handleChange(event.target.value)}
             placeholder={placeholder}
-            className="pe-[8.25rem] sm:pe-[9rem]"
+            className={
+              showShopClearButton
+                ? "pe-[10.5rem] sm:pe-[11.25rem]"
+                : "pe-[8.25rem] sm:pe-[9rem]"
+            }
             aria-describedby="shop-product-count-label"
           />
-          <span
-            id="shop-product-count-label"
-            className="pointer-events-none absolute end-3 top-1/2 max-w-[min(8rem,calc(100%-2rem))] -translate-y-1/2 truncate text-right text-xs text-muted-foreground/70"
-            aria-live="polite"
-          >
-            {shopProductCount.isLoading ? (
-              "…"
-            ) : (
-              <>
-                <span
-                  className={
-                    shopProductCount.filtered < shopProductCount.total ? "font-semibold" : ""
-                  }
-                >
-                  {shopProductCount.filtered}
-                </span>
-                {` von ${shopProductCount.total}`}
-              </>
-            )}
-          </span>
+          <div className="pointer-events-none absolute end-3 top-1/2 flex max-w-[min(12rem,calc(100%-2rem))] -translate-y-1/2 items-center justify-end">
+            {showShopClearButton ? (
+              <SearchFieldClearButton
+                onClear={clearShopFilters}
+                layout="inline"
+                className="pointer-events-auto"
+              />
+            ) : null}
+            <span
+              id="shop-product-count-label"
+              className="truncate text-right text-xs text-muted-foreground/70"
+              aria-live="polite"
+            >
+              <span className="text-slate-300/70 mx-3">|</span>
+              {shopProductCount.isLoading ? (
+                "…"
+              ) : (
+                <>
+                  <span
+                    className={
+                      shopProductCount.filtered < shopProductCount.total ? "font-semibold" : ""
+                    }
+                  >
+                    {shopProductCount.filtered}
+                  </span>
+                  {` von ${shopProductCount.total}`}
+                </>
+              )}
+            </span>
+          </div>
         </div>
       ) : (
-        <SearchField
-          id={fieldId}
-          value={value}
-          onChange={(event) => handleChange(event.target.value)}
-          placeholder={placeholder}
-        />
+        <div className="relative w-full">
+          <SearchField
+            id={fieldId}
+            value={value}
+            onChange={(event) => handleChange(event.target.value)}
+            placeholder={placeholder}
+            className={showShopClearButton ? "pe-9" : undefined}
+          />
+          {showShopClearButton ? (
+            <SearchFieldClearButton onClear={clearShopFilters} className="end-2" />
+          ) : null}
+        </div>
       )}
     </div>
   );
