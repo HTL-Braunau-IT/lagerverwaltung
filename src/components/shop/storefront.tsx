@@ -342,6 +342,7 @@ export function Storefront() {
                     <ProductImageCarousel
                       images={product.images}
                       productName={product.name}
+                      href={`/products/${product.id}`}
                     />
                     <div
                       className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-9 bg-gradient-to-t from-card/20 to-transparent"

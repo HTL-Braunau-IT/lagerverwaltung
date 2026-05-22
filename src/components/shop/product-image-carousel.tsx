@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
@@ -11,9 +12,10 @@ type ProductImage = {
 type ProductImageCarouselProps = {
   images: ProductImage[];
   productName: string;
+  href?: string;
 };
 
-export function ProductImageCarousel({ images, productName }: ProductImageCarouselProps) {
+export function ProductImageCarousel({ images, productName, href }: ProductImageCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
@@ -33,7 +35,7 @@ export function ProductImageCarousel({ images, productName }: ProductImageCarous
   }, [emblaApi, onSelect]);
 
   if (images.length === 0) {
-    return (
+    const placeholder = (
       <div
         className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
         aria-label={`${productName} Platzhalterbild`}
@@ -41,48 +43,79 @@ export function ProductImageCarousel({ images, productName }: ProductImageCarous
         Kein Produktbild
       </div>
     );
+
+    if (!href) return placeholder;
+
+    return (
+      <Link
+        href={href}
+        className="block cursor-pointer"
+        aria-label={`${productName} ansehen`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {placeholder}
+      </Link>
+    );
   }
 
   const canScrollPrev = emblaApi?.canScrollPrev() ?? false;
   const canScrollNext = emblaApi?.canScrollNext() ?? false;
   const hasMultipleImages = images.length > 1;
 
-  return (
-    <div className="relative" onClick={(event) => event.stopPropagation()}>
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex">
-          {images.map((image, index) => {
-            const hasImageError = failedIndexes.has(index);
-            return (
-              <div className="min-w-0 shrink-0 grow-0 basis-full" key={`${image.url}-${index}`}>
-                {hasImageError ? (
-                  <div
-                    className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
-                    aria-label={`${productName} Platzhalterbild`}
-                  >
-                    Kein Produktbild
-                  </div>
-                ) : (
-                  <img
-                    src={image.url}
-                    alt={image.altText ?? `${productName} Produktbild`}
-                    className="h-40 w-full object-cover"
-                    loading="lazy"
-                    onError={() => {
-                      setFailedIndexes((prev) => {
-                        if (prev.has(index)) return prev;
-                        const next = new Set(prev);
-                        next.add(index);
-                        return next;
-                      });
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
+  const carouselViewport = (
+    <div className="overflow-hidden" ref={emblaRef}>
+      <div className="flex">
+        {images.map((image, index) => {
+          const hasImageError = failedIndexes.has(index);
+          return (
+            <div className="min-w-0 shrink-0 grow-0 basis-full" key={`${image.url}-${index}`}>
+              {hasImageError ? (
+                <div
+                  className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
+                  aria-label={`${productName} Platzhalterbild`}
+                >
+                  Kein Produktbild
+                </div>
+              ) : (
+                <img
+                  src={image.url}
+                  alt={image.altText ?? `${productName} Produktbild`}
+                  className="h-40 w-full object-cover"
+                  loading="lazy"
+                  onError={() => {
+                    setFailedIndexes((prev) => {
+                      if (prev.has(index)) return prev;
+                      const next = new Set(prev);
+                      next.add(index);
+                      return next;
+                    });
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+
+  return (
+    <div
+      className="relative"
+      onClick={href ? undefined : (event) => event.stopPropagation()}
+    >
+      {href ? (
+        <Link
+          href={href}
+          className="block cursor-pointer"
+          aria-label={`${productName} ansehen`}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {carouselViewport}
+        </Link>
+      ) : (
+        carouselViewport
+      )}
 
       {hasMultipleImages && (
         <>
