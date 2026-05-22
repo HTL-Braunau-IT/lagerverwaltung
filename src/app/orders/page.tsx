@@ -353,11 +353,11 @@ export default function OrdersPage() {
 
                       <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
                         <TableUI.Subtable className="rounded-sm" tableClassName="table-fixed">
-                          <colgroup>
-                            <col className="w-[38%]" />
-                            <col className="w-[47%]" />
-                            <col className="w-[15%]" />
-                          </colgroup>
+                        <colgroup>
+                          <col className="w-[60%]" />
+                          <col className="w-[25%]" />
+                          <col className="w-[15%]" />
+                        </colgroup>
                           <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
                             <tr>
                               <TableUI.SubtableHead scope="col" className="min-w-0">
