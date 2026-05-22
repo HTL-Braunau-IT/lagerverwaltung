@@ -355,7 +355,7 @@ export function NewPartsListPage() {
 
   return (
     <ShellCard className="rounded-2xl bg-transparent">
-      <div className="my-3 flex items-start justify-between gap-3">
+      <div className="mb-3 mt-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Neue Teileliste</h2>
         </div>

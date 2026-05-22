@@ -102,7 +102,7 @@ export function LoansAdminPanel() {
 
   return (
     <ShellCard className="rounded-2xl bg-transparent">
-      <div className="my-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 mt-1 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Leihgeräte</h2>
         </div>

@@ -541,7 +541,7 @@ export function PartsListAdminPanel() {
 
   return (
     <Card className="rounded-2xl bg-transparent">
-      <div className="mt-2 mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Teilelisten</h2>
         </div>
