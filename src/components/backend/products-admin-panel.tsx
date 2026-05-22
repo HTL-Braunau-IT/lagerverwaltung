@@ -368,8 +368,8 @@ export function ProductsAdminPanel() {
     storageLocationId: storageLocationFilter || undefined,
   });
   const categoriesQuery = api.category.list.useQuery();
-  const storageRoomsQuery = api.storageRoom.list.useQuery();
-  const storageLocationsQuery = api.storageLocation.list.useQuery();
+  const storageRoomsQuery = api.storageRoom.listAccessible.useQuery();
+  const storageLocationsQuery = api.storageLocation.listAccessible.useQuery();
 
   const updateMutation = api.product.backendUpdate.useMutation({
     onSuccess: async () => {
@@ -558,6 +558,18 @@ export function ProductsAdminPanel() {
   useEffect(() => {
     setEditCategorySearch("");
   }, [expandedRowId]);
+
+  useEffect(() => {
+    if (!storageRoomFilter || !storageRoomsQuery.data) return;
+    const allowed = storageRoomsQuery.data.some((room) => room.id === storageRoomFilter);
+    if (!allowed) setStorageRoomFilter("");
+  }, [storageRoomFilter, storageRoomsQuery.data]);
+
+  useEffect(() => {
+    if (!storageLocationFilter || !storageLocationsQuery.data) return;
+    const allowed = storageLocationsQuery.data.some((location) => location.id === storageLocationFilter);
+    if (!allowed) setStorageLocationFilter("");
+  }, [storageLocationFilter, storageLocationsQuery.data]);
 
   useEffect(() => {
     if (!storageRoomFilter || !storageLocationFilter) return;

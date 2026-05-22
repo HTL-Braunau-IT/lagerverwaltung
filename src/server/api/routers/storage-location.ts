@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { getStorageRoomAccessForUser, orderRoomWhereForAccess } from "~/server/api/routers/utils/storage-access";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 
 const storageLocationByIdInput = z.object({
@@ -32,6 +33,33 @@ const backendDeleteStorageLocationInput = z.object({
 export const storageLocationRouter = createTRPCRouter({
   list: adminProcedure.query(async ({ ctx }) => {
     return ctx.db.storageLocation.findMany({
+      orderBy: [{ code: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        storageRoomId: true,
+        storageRoom: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
+    });
+  }),
+
+  listAccessible: adminProcedure.query(async ({ ctx }) => {
+    const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+    const roomWhere = orderRoomWhereForAccess(access);
+
+    return ctx.db.storageLocation.findMany({
+      where: roomWhere,
       orderBy: [{ code: "asc" }, { name: "asc" }],
       select: {
         id: true,
