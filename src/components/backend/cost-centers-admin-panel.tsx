@@ -155,26 +155,27 @@ export function CostCentersAdminPanel() {
               <TableUI.TableHead>Code</TableUI.TableHead>
               <TableUI.TableHead>Name</TableUI.TableHead>
               <TableUI.TableHead>Bestellungen</TableUI.TableHead>
+              <TableUI.TableHead>Sichtbarkeit</TableUI.TableHead>
             </tr>
           </TableUI.TableHeader>
           <TableUI.TableBody className="">
             {costCentersQuery.isLoading ? (
               <tr>
-                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Kostenstellen werden geladen...
                 </TableUI.TableCell>
               </tr>
             ) : null}
             {costCentersQuery.error ? (
               <tr>
-                <TableUI.TableCell colSpan={3} className="text-destructive">
+                <TableUI.TableCell colSpan={4} className="text-destructive">
                   Kostenstellen konnten nicht geladen werden.
                 </TableUI.TableCell>
               </tr>
             ) : null}
             {!costCentersQuery.isLoading && !costCentersQuery.error && items.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
                   Keine Kostenstellen gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -202,11 +203,14 @@ export function CostCentersAdminPanel() {
                     <TableUI.TableCell className="font-medium text-foreground">{center.code}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{center.name}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{center._count.orders}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">
+                      {center.isActive ? "Sichtbar" : "Ausgeblendet"}
+                    </TableUI.TableCell>
                   </TableUI.TableRow>
 
                   <TableUI.TableExpandableRow
                     open={isExpanded}
-                    colSpan={3}
+                    colSpan={4}
                     rowClassName="bg-muted/30"
                     cellClassName="min-w-0 align-top px-1 py-5"
                     contentClassName="!p-0"
