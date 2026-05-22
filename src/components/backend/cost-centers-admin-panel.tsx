@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
@@ -41,6 +42,7 @@ export function CostCentersAdminPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
+  const [visibilityFilter, setVisibilityFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
   const [baselineForm, setBaselineForm] = useState<CostCenterForm>(createEmptyForm);
@@ -51,6 +53,8 @@ export function CostCentersAdminPanel() {
   const costCentersQuery = api.costCenter.backendList.useInfiniteQuery(
     {
       search: searchTerm || undefined,
+      isActive:
+        visibilityFilter === "ALL" ? undefined : visibilityFilter === "ACTIVE",
       limit: 100,
     },
     {
@@ -118,6 +122,30 @@ export function CostCentersAdminPanel() {
           </span>
           Neue Kostenstelle
         </button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Sichtbarkeit:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "ALL" as const, label: "Alle" },
+              { value: "ACTIVE" as const, label: "Sichtbar" },
+              { value: "INACTIVE" as const, label: "Ausgeblendet" },
+            ] as const
+          ).map((opt) => {
+            const active = visibilityFilter === opt.value;
+            return (
+              <FilterPillButton
+                key={opt.value}
+                onClick={() => setVisibilityFilter(opt.value)}
+                active={active}
+              >
+                {opt.label}
+              </FilterPillButton>
+            );
+          })}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md">

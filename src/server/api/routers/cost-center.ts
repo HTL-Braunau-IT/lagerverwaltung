@@ -9,6 +9,7 @@ const byIdInput = z.object({
 
 const backendListInput = z.object({
   search: z.string().trim().optional(),
+  isActive: z.boolean().optional(),
   limit: z.number().int().min(1).max(300).default(100),
   cursor: z.string().min(1).optional(),
 });
@@ -66,14 +67,17 @@ export const costCenterRouter = createTRPCRouter({
   backendList: adminProcedure.input(backendListInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
     const items = await ctx.db.costCenter.findMany({
-      where: search
-        ? {
-            OR: [
-              { code: { contains: search, mode: "insensitive" } },
-              { name: { contains: search, mode: "insensitive" } },
-            ],
-          }
-        : undefined,
+      where: {
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+        ...(search
+          ? {
+              OR: [
+                { code: { contains: search, mode: "insensitive" } },
+                { name: { contains: search, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
       take: input.limit + 1,
       ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
       orderBy: [{ code: "asc" }, { id: "asc" }],
