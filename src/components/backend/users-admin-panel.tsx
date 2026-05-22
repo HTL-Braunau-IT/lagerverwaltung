@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 import { Button } from "~/components/ui/button";
 import { Card as ShellCard } from "~/components/ui/card";
+import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
 import { api } from "~/trpc/react";
@@ -33,6 +34,7 @@ export function UsersAdminPanel() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const searchTerm = (searchParams.get("search") ?? "").trim();
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "ADMIN" | "TEACHER">("ALL");
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [formsByUserId, setFormsByUserId] = useState<Record<string, UserAccessForm>>({});
   const [baselineByUserId, setBaselineByUserId] = useState<Record<string, UserAccessForm>>({});
@@ -40,6 +42,7 @@ export function UsersAdminPanel() {
   const usersQuery = api.user.backendList.useInfiniteQuery(
     {
       search: searchTerm || undefined,
+      role: roleFilter === "ALL" ? undefined : roleFilter,
       limit: 100,
     },
     {
@@ -83,6 +86,30 @@ export function UsersAdminPanel() {
       <div className="mb-3 mt-1 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Benutzer</h2>
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Rolle:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "ALL" as const, label: "Alle" },
+              { value: "ADMIN" as const, label: "Administrator" },
+              { value: "TEACHER" as const, label: "Lehrkraft" },
+            ] as const
+          ).map((opt) => {
+            const active = roleFilter === opt.value;
+            return (
+              <FilterPillButton
+                key={opt.value}
+                onClick={() => setRoleFilter(opt.value)}
+                active={active}
+              >
+                {opt.label}
+              </FilterPillButton>
+            );
+          })}
         </div>
       </div>
 
@@ -142,7 +169,7 @@ export function UsersAdminPanel() {
                     <TableUI.TableCell className="text-muted-foreground">{user.email ?? "-"}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{user.role}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">
-                      {user.hasAllStorageRoomAccess ? "Alle Lagerraeume" : `${user.storageRoomAccesses.length} Raeume`}
+                      {user.hasAllStorageRoomAccess ? "Alle Lagerräume" : `${user.storageRoomAccesses.length} Räume`}
                     </TableUI.TableCell>
                   </TableUI.TableRow>
 
@@ -196,7 +223,7 @@ export function UsersAdminPanel() {
                               </label>
                             ))}
                             {(storageRoomsQuery.data?.length ?? 0) === 0 ? (
-                              <p className="text-xs text-muted-foreground">Keine Lagerraeume vorhanden.</p>
+                              <p className="text-xs text-muted-foreground">Keine Lagerräume vorhanden.</p>
                             ) : null}
                           </div>
 
@@ -212,7 +239,7 @@ export function UsersAdminPanel() {
                             }))
                           }
                           className="w-full rounded-md bg-card/40 px-3 py-2 text-left transition"
-                          aria-label="Alle Lagerraeume umschalten"
+                          aria-label="Alle Lagerräume umschalten"
                           aria-pressed={form.hasAllStorageRoomAccess}
                         >
                           <div className="flex items-center justify-between gap-3">

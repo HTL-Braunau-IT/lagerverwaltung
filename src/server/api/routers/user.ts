@@ -5,6 +5,7 @@ import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 
 const backendListUsersInput = z.object({
   search: z.string().trim().optional(),
+  role: z.enum(["ADMIN", "TEACHER"]).optional(),
   limit: z.number().int().min(1).max(300).default(100),
   cursor: z.string().min(1).optional(),
 });
@@ -18,7 +19,9 @@ const backendUpdateStorageAccessInput = z.object({
 export const userRouter = createTRPCRouter({
   backendList: adminProcedure.input(backendListUsersInput).query(async ({ ctx, input }) => {
     const search = input.search?.trim();
-    const andFilters: Array<Record<string, unknown>> = [{ role: { in: ["ADMIN", "TEACHER"] } }];
+    const andFilters: Array<Record<string, unknown>> = [
+      { role: { in: input.role ? [input.role] : ["ADMIN", "TEACHER"] } },
+    ];
 
     if (search) {
       andFilters.push({
