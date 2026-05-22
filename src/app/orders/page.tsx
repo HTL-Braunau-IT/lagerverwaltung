@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useEffect, useRef, useState } from "react";
 import { Card, DetailText } from "~/components/ui/detail-card";
 import * as TableUI from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
-import { CheckIcon, ClipboardCopyIcon } from "~/components/layout/icon-renders";
+import { SkuPill } from "~/components/ui/sku-pill";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -54,62 +53,6 @@ function requestStatusBadgeVariant(
 
 function userLabel(user: { name: string | null; email: string | null }) {
   return user.name?.trim() || user.email?.trim() || "Unbekannt";
-}
-
-const SKU_COPY_FEEDBACK_MS = 1500;
-
-function SkuCopyButton({ sku }: { sku: string }) {
-  const [copied, setCopied] = useState(false);
-  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (resetRef.current) clearTimeout(resetRef.current);
-    };
-  }, []);
-
-  return (
-    <button
-      type="button"
-      className="inline-flex shrink-0 items-center justify-center rounded-full px-2 text-slate-500 transition hover:bg-primary/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
-      title={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
-      aria-label={copied ? "SKU kopiert" : "SKU in die Zwischenablage kopieren"}
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(sku);
-        } catch {
-          return;
-        }
-        setCopied(true);
-        if (resetRef.current) clearTimeout(resetRef.current);
-        resetRef.current = setTimeout(() => {
-          setCopied(false);
-          resetRef.current = null;
-        }, SKU_COPY_FEEDBACK_MS);
-      }}
-    >
-      <span className="relative inline-flex h-[14px] w-[14px] items-center justify-center">
-        <span
-          className={[
-            "transition-opacity duration-200 ease-out",
-            copied ? "pointer-events-none opacity-0" : "opacity-100",
-          ].join(" ")}
-          aria-hidden
-        >
-          <ClipboardCopyIcon size={14} /> 
-        </span>
-        <span
-          className={[
-            "absolute inset-0 flex items-center justify-center text-emerald-600 transition-opacity duration-200 ease-out",
-            copied ? "opacity-100" : "pointer-events-none opacity-0",
-          ].join(" ")}
-          aria-hidden
-        >
-          <CheckIcon size={14} />
-        </span>
-      </span>
-    </button>
-  );
 }
 
 export default function OrdersPage() {
@@ -246,15 +189,20 @@ export default function OrdersPage() {
 
                         <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
                           <TableUI.Subtable className="rounded-sm" tableClassName="table-fixed">
+                            <colgroup>
+                              <col className="w-[60%]" />
+                              <col className="w-[25%]" />
+                              <col className="w-[15%]" />
+                            </colgroup>
                             <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
                               <tr>
                                 <TableUI.SubtableHead scope="col" className="min-w-0">
                                   Name
                                 </TableUI.SubtableHead>
-                                <TableUI.SubtableHead scope="col" className="w-[9rem] text-center">
-                                  SKU
+                                <TableUI.SubtableHead scope="col" className="whitespace-nowrap px-2 text-left">
+                                  <span className="sr-only">SKU</span>
                                 </TableUI.SubtableHead>
-                                <TableUI.SubtableHead scope="col" className="w-32 whitespace-nowrap text-right">
+                                <TableUI.SubtableHead scope="col" className="whitespace-nowrap px-2 text-right">
                                   Menge
                                 </TableUI.SubtableHead>
                               </tr>
@@ -262,16 +210,13 @@ export default function OrdersPage() {
                             <TableUI.SubtableBody>
                               {request.items.map((item) => (
                                 <TableUI.SubtableRow key={item.id}>
-                                  <TableUI.SubtableCell className="min-w-0 max-w-0 text-sm font-medium text-foreground">
+                                  <TableUI.SubtableCell className="min-w-0 text-sm font-medium text-foreground">
                                     <span className="block truncate">{item.product.name}</span>
                                   </TableUI.SubtableCell>
-                                  <TableUI.SubtableCell className="text-center">
-                                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-foreground shadow-sm">
-                                      <span className="whitespace-nowrap">{item.product.sku}</span>
-                                      <SkuCopyButton sku={item.product.sku} />
-                                    </span>
+                                  <TableUI.SubtableCell className="whitespace-nowrap px-2 text-left">
+                                    <SkuPill sku={item.product.sku} />
                                   </TableUI.SubtableCell>
-                                  <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
+                                  <TableUI.SubtableCell className="whitespace-nowrap px-2 text-right text-sm font-semibold tabular-nums text-foreground">
                                     {decimalToNumber(item.quantity)}{" "}
                                     <span className="font-medium text-muted-foreground">
                                       {item.product.baseUnit === "PCS" ? "Stk" : item.product.baseUnit}
@@ -408,15 +353,20 @@ export default function OrdersPage() {
 
                       <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
                         <TableUI.Subtable className="rounded-sm" tableClassName="table-fixed">
+                          <colgroup>
+                            <col className="w-[38%]" />
+                            <col className="w-[47%]" />
+                            <col className="w-[15%]" />
+                          </colgroup>
                           <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">
                             <tr>
                               <TableUI.SubtableHead scope="col" className="min-w-0">
                                 Name
                               </TableUI.SubtableHead>
-                              <TableUI.SubtableHead scope="col" className="w-[9rem] text-center">
-                                SKU
+                              <TableUI.SubtableHead scope="col" className="whitespace-nowrap px-2 text-left">
+                                <span className="sr-only">SKU</span>
                               </TableUI.SubtableHead>
-                              <TableUI.SubtableHead scope="col" className="w-32 whitespace-nowrap text-right">
+                              <TableUI.SubtableHead scope="col" className="whitespace-nowrap px-2 text-right">
                                 Menge
                               </TableUI.SubtableHead>
                             </tr>
@@ -424,16 +374,13 @@ export default function OrdersPage() {
                           <TableUI.SubtableBody>
                             {order.items.map((item) => (
                               <TableUI.SubtableRow key={item.id}>
-                                <TableUI.SubtableCell className="min-w-0 max-w-0 text-sm font-medium text-foreground">
+                                <TableUI.SubtableCell className="min-w-0 text-sm font-medium text-foreground">
                                   <span className="block truncate">{item.product.name}</span>
                                 </TableUI.SubtableCell>
-                                <TableUI.SubtableCell className="text-center">
-                                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-background/80 pl-2 pr-1 py-1 font-mono text-[11px] tabular-nums text-foreground shadow-sm">
-                                    <span className="whitespace-nowrap">{item.product.sku}</span>
-                                    <SkuCopyButton sku={item.product.sku} />
-                                  </span>
+                                <TableUI.SubtableCell className="whitespace-nowrap px-2 text-left">
+                                  <SkuPill sku={item.product.sku} />
                                 </TableUI.SubtableCell>
-                                <TableUI.SubtableCell className="whitespace-nowrap text-right text-sm font-semibold tabular-nums text-foreground">
+                                <TableUI.SubtableCell className="whitespace-nowrap px-2 text-right text-sm font-semibold tabular-nums text-foreground">
                                   {decimalToNumber(item.quantity)}{" "}
                                   <span className="font-medium text-muted-foreground">
                                     {item.product.baseUnit === "PCS" ? "Stk" : item.product.baseUnit}
