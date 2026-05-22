@@ -131,7 +131,7 @@ export function StorageLocationsAdminPanel() {
 
   return (
     <Card className="rounded-2xl bg-transparent">
-      <div className="mb-4 flex gap-3 items-center justify-between">
+      <div className="mt-2 mb-3 flex gap-3 items-center justify-between">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Lagerplätze</h2>
         </div>

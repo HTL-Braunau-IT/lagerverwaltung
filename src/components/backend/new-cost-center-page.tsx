@@ -43,7 +43,7 @@ export function NewCostCenterPage() {
 
   return (
     <Card className="rounded-2xl bg-transparent">
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="my-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-xl font-semibold text-foreground">Neue Kostenstelle</h2>
         </div>

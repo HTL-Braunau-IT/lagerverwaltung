@@ -80,7 +80,7 @@ export function UsersAdminPanel() {
 
   return (
     <ShellCard className="bg-transparent">
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="my-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Benutzer</h2>
         </div>
