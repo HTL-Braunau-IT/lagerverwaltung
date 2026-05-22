@@ -22,6 +22,27 @@ const PRODUCT_SEARCH_LAUNCHER_PATHS = [
 const SHOP_SEARCH_PLACEHOLDER =
   "Suche nach Name oder Beschreibung, z. B. HDMI-Kabel, A4 Papier...";
 
+const BACKEND_SEARCH_PLACEHOLDERS: ReadonlyArray<readonly [prefix: string, area: string, examples: string]> =
+  [
+    ["/backend/orders", "Bestellungen", "2026000001, Mustermann, 4AH..., Kostenstelle..."],
+    ["/backend/loans", "Ausleihen", "Mustermann, Bohrmaschine, E-Mail..."],
+    ["/backend/products", "Produkte", "BEPCKF0033050DC, HDMI-Kabel, DIN Nummer..."],
+    ["/backend/categories", "Kategorien", "Elektronik, Metalle, Werkzeug..."],
+    ["/backend/parts-list", "Teilelisten", "Arduino-Kit, Kleinorgel, Piano..."],
+    ["/backend/cost-centers", "Kostenstellen", "Ausbildung, 4AH, Werkstätte..."],
+    ["/backend/storage", "Lager", "A-01, Bausatzkasten, Z/1/1..."],
+    ["/backend/lendable-items", "Leihgeräte", "Bohrer, Leiter, Gabelschlüssel..."],
+    ["/backend/users", "Benutzer", "Name, muster@htl..."],
+    ["/backend/info", "Info", "..."],
+  ];
+
+function pagePlaceholder(pathname: string): string | undefined {
+  const match = BACKEND_SEARCH_PLACEHOLDERS.find(
+    ([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  return match ? `Suche in ${match[1]}: z. B. ${match[2]}` : undefined;
+}
+
 const DEBOUNCE_MS = 300;
 
 function SearchFieldClearButton({
@@ -170,10 +191,8 @@ export function Search() {
     mode === "home" || mode === "redirect"
       ? SHOP_SEARCH_PLACEHOLDER
       : mode === "ausleihe"
-        ? "Ausleihe: z. B. Bohrer, Leiter, Material..."
-        : mode === "orders"
-          ? "Bestellungen: z. B. 2026000001, Mustermann, 4AH..., Kostenstelle..."
-          : "Backend: Suche...";
+        ? "Suche in Ausleihe: z. B. Bohrer, Leiter, Material..."
+        : (pagePlaceholder(pathname) ?? "Suche im Backend...");
 
   const fieldId =
     mode === "home" || mode === "redirect"
