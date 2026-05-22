@@ -107,11 +107,12 @@ export function ShopCategoriesAside({
             }}
             variant={currentSelected === undefined ? "solid" : "catInactive"}
             size="lg"
-            className={`h-7 w-full justify-between rounded-lg px-3 text-left !font-medium text-sm ${
+            className={`h-7 w-full gap-2 rounded-lg !px-3 text-left !font-medium text-sm ${
               currentSelected === undefined ? "" : "text-muted-foreground/85"
             }`}
           >
-            <span>Alle Kategorien</span>
+            <span className="min-w-0 flex-1 truncate">Alle Kategorien</span>
+            <span className="w-9 shrink-0" aria-hidden />
           </Button>
           {categoryQuery.data?.map((category) => (
             <Button
@@ -122,12 +123,21 @@ export function ShopCategoriesAside({
               }}
               variant={currentSelected === category.id ? "solid" : "catInactive"}
               size="lg"
-              className={`h-7 w-full justify-between rounded-md px-3 text-left !font-medium text-sm ${
+              className={`h-7 w-full gap-2 rounded-md !px-3 text-left !font-medium text-sm ${
                 currentSelected === category.id ? "" : "text-muted-foreground/85"
               }`}
             >
-              <span className="truncate">{category.name}</span>
-              <span className="text-xs">({category._count.products})</span>
+              <span className="min-w-0 flex-1 truncate">{category.name}</span>
+              <span
+                className={`flex w-fit shrink-0 items-center justify-end rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums ${
+                  currentSelected === category.id
+                    ? "bg-primary-foreground/15 text-primary-foreground/90"
+                    : "bg-white/40 text-muted-foreground"
+                }`}
+                title={`${category._count.products} Produkte`}
+              >
+                {category._count.products}
+              </span>
             </Button>
           ))}
         </nav>
