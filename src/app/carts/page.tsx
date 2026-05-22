@@ -518,7 +518,7 @@ export default function CartsPage() {
               >
                 <Button
                   onClick={onClearCartClick}
-                  variant="destructive"
+                  variant="destructiveTransparent"
                   disabled={
                     sessionId.length === 0 ||
                     activeItems.length === 0 ||

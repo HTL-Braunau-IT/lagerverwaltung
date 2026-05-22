@@ -7,6 +7,7 @@ export type ButtonVariant =
   | "outline"
   | "secondary"
   | "destructive"
+  | "destructiveTransparent"
   | "ghost"
   | "solid"
   | "glass"
@@ -31,6 +32,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   outline: "border border-input bg-background text-foreground hover:bg-accent",
   secondary: "bg-secondary text-secondary-foreground hover:opacity-90",
   destructive: "w-full max-w-full bg-destructive/90 text-destructive-foreground hover:opacity-90",
+  destructiveTransparent: "w-full max-w-full bg-transparent font-normal text-destructive transition hover:bg-destructive hover:text-white",
   ghost: "text-foreground hover:bg-accent",
   solid: `${pillTableActionLayout} bg-primary/90 text-primary-foreground transition-[opacity] hover:opacity-95`,
   glass: `${pillTableActionLayout} bg-card/60 text-primary backdrop-blur-sm transition-[background-color,color] duration-200 hover:bg-card/90 hover:text-primary`,
