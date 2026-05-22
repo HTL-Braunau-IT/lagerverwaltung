@@ -106,7 +106,7 @@ export function BackendSidebarNav() {
   return (
     <aside
       data-backend-sidebar="true"
-      className="glass sticky top-[128px] mt-1 max-h-[calc(100dvh-132px)] overflow-y-auto p-3"
+      className="glass sticky self-start mt-1 overflow-y-auto p-3"
     >
       <nav className="mt-1 space-y-5">
         {navSections.map((section) => (
