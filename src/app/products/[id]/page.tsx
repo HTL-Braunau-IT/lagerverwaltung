@@ -16,6 +16,7 @@ import { StockOnHandLine } from "~/components/shop/stock-on-hand-line";
 import { SkuPill } from "~/components/ui/sku-pill";
 import { ProductImageGallery } from "../../../components/shop/product-image-gallery";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "~/lib/product-placeholder";
 import { NumberStepper } from "~/components/ui/number-stepper";
 
 const SESSION_STORAGE_KEY = "lw_cart_session_id";
@@ -224,7 +225,7 @@ export default function ProductDetailPage() {
   const searchFromUrl = (searchParams.get("search") ?? "").trim();
   const images =
     product.images.length === 0
-      ? [{ id: "placeholder", url: "/pictures/placeholder.jpg", altText: null }]
+      ? [{ id: "placeholder", url: PRODUCT_PLACEHOLDER_IMAGE, altText: null }]
       : product.images;
 
   return (

@@ -338,7 +338,7 @@ export function Storefront() {
                 )}
 
                 <div className="flex flex-col">
-                  <div className="relative overflow-hidden bg-muted">
+                  <div className="relative overflow-hidden bg-primary/90">
                     <ProductImageCarousel
                       images={product.images}
                       productName={product.name}

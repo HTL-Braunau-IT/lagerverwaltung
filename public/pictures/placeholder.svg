@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Placeholder_Image" data-name="Placeholder Image" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3844.08 2164.08">
+  <defs>
+    <style>
+      .cls-1 {
+        opacity: .2;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #fff;
+      }
+
+      .cls-2 {
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+        font-size: 222px;
+        opacity: .4;
+      }
+
+      .cls-3 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-4 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-5 {
+        letter-spacing: 0em;
+      }
+    </style>
+  </defs>
+  <rect id="Border" class="cls-1" x="1151.63" y="382" width="1540.73" height="1199.48" rx="44" ry="44"/>
+  <circle class="cls-1" cx="1553.61" cy="670.55" r="166.5"/>
+  <text class="cls-2" transform="translate(1137.6832 1818.6485)"><tspan class="cls-4" x="0" y="0">P</tspan><tspan class="cls-5" x="114.55" y="0">r</tspan><tspan x="184.93" y="0">oduktbild </tspan><tspan class="cls-3" x="1134.85" y="0">f</tspan><tspan x="1196.79" y="0">olgt</tspan></text>
+  <path class="cls-1" d="M2392.58,1130.28c-83.71-137.09-246.54-137.09-330.26,0l-31.64,51.82,275.64,398.05h360.96l-274.7-449.87Z"/>
+  <path class="cls-1" d="M1178.36,1580.15l381.46-550.87c88.28-127.49,276.74-127.49,365.03,0l381.46,550.87h-1127.96Z"/>
+</svg>

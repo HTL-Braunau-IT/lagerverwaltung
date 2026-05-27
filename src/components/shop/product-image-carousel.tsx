@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
+import { PRODUCT_PLACEHOLDER_IMAGE } from "~/lib/product-placeholder";
+
 type ProductImage = {
   url: string;
   altText: string | null;
@@ -18,7 +20,6 @@ type ProductImageCarouselProps = {
 export function ProductImageCarousel({ images, productName, href }: ProductImageCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [failedIndexes, setFailedIndexes] = useState<Set<number>>(new Set());
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -36,12 +37,12 @@ export function ProductImageCarousel({ images, productName, href }: ProductImage
 
   if (images.length === 0) {
     const placeholder = (
-      <div
-        className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
-        aria-label={`${productName} Platzhalterbild`}
-      >
-        Kein Produktbild
-      </div>
+      <img
+        src={PRODUCT_PLACEHOLDER_IMAGE}
+        alt={`${productName} Platzhalterbild`}
+        className="h-40 w-full object-cover bg-transparent" 
+        loading="lazy"
+      />
     );
 
     if (!href) return placeholder;
@@ -65,36 +66,21 @@ export function ProductImageCarousel({ images, productName, href }: ProductImage
   const carouselViewport = (
     <div className="overflow-hidden" ref={emblaRef}>
       <div className="flex">
-        {images.map((image, index) => {
-          const hasImageError = failedIndexes.has(index);
-          return (
-            <div className="min-w-0 shrink-0 grow-0 basis-full" key={`${image.url}-${index}`}>
-              {hasImageError ? (
-                <div
-                  className="flex h-40 w-full items-center justify-center bg-slate-100 text-xs font-medium text-slate-500"
-                  aria-label={`${productName} Platzhalterbild`}
-                >
-                  Kein Produktbild
-                </div>
-              ) : (
-                <img
-                  src={image.url}
-                  alt={image.altText ?? `${productName} Produktbild`}
-                  className="h-40 w-full object-cover"
-                  loading="lazy"
-                  onError={() => {
-                    setFailedIndexes((prev) => {
-                      if (prev.has(index)) return prev;
-                      const next = new Set(prev);
-                      next.add(index);
-                      return next;
-                    });
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
+        {images.map((image, index) => (
+          <div className="min-w-0 shrink-0 grow-0 basis-full" key={`${image.url}-${index}`}>
+            <img
+              src={image.url}
+              alt={image.altText ?? `${productName} Produktbild`}
+              className="h-40 w-full object-cover bg-transparent"
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = PRODUCT_PLACEHOLDER_IMAGE;
+                event.currentTarget.className = "h-40 w-full object-cover bg-transparent";
+              }}
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

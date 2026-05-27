@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
+import { PRODUCT_PLACEHOLDER_IMAGE } from "~/lib/product-placeholder";
+
 type ProductImage = {
   id: string;
   url: string;
@@ -128,6 +130,7 @@ function paletteToFillStyle(palette: EdgePalette): CSSProperties {
 }
 
 const ZOOM_SCALE = 1.85;
+const GALLERY_HEIGHT_PX = 260;
 
 function GalleryImageFrame({
   image,
@@ -160,7 +163,7 @@ function GalleryImageFrame({
 
   return (
     <div
-      className="cursor-zoom-in overflow-hidden rounded-xl border border-border bg-muted"
+      className="flex h-full w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-md border border-border bg-primary/90"
       style={palette ? paletteToFillStyle(palette) : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -169,7 +172,7 @@ function GalleryImageFrame({
       <img
         src={image.url}
         alt={image.altText ?? `${productName} Produktbild`}
-        className="mx-auto max-h-64 w-full max-w-[min(100%,320px)] object-contain sm:max-h-64 will-change-transform"
+        className="block h-full w-full object-contain will-change-transform"
         loading="lazy"
         style={{
           transform: zoomActive ? `scale(${ZOOM_SCALE})` : "scale(1)",
@@ -185,7 +188,7 @@ function GalleryImageFrame({
         }}
         onError={(event) => {
           event.currentTarget.onerror = null;
-          event.currentTarget.src = "/pictures/placeholder.jpg";
+          event.currentTarget.src = PRODUCT_PLACEHOLDER_IMAGE;
         }}
       />
     </div>
@@ -230,13 +233,13 @@ export function ProductImageGallery({
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <div className="overflow-hidden" ref={emblaRef}>
-          <div className="flex">
+      <div className="relative w-full" style={{ height: GALLERY_HEIGHT_PX }}>
+        <div className="overflow-hidden" style={{ height: GALLERY_HEIGHT_PX }} ref={emblaRef}>
+          <div className="flex h-full">
             {images.map((image) => {
               const palette = paletteByImageId[image.id];
               return (
-                <div className="min-w-0 shrink-0 grow-0 basis-full" key={image.id}>
+                <div className="h-full min-w-0 shrink-0 grow-0 basis-full" key={image.id}>
                   <GalleryImageFrame
                     image={image}
                     productName={productName}
