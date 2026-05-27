@@ -42,7 +42,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/public/pictures/placeholder.svg /opt/default-assets/placeholder.svg
-COPY --from=builder /app/public/pictures/placeholder.jpg /opt/default-assets/placeholder.jpg
 COPY --from=builder /app/public/favicon.ico /opt/default-assets/favicon.ico
 COPY --from=builder /app/public/icons/microsoft-icon.png /opt/default-assets/microsoft-icon.png
 COPY --from=builder /app/public/images/htl-login-background.jpg /opt/default-assets/htl-login-background.jpg
