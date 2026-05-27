@@ -435,7 +435,7 @@ export function Storefront() {
         </div>
 
         <ShopPartListsAside
-          className="hidden 3xl:flex"
+          className="flex"
           appHeaderOffset={appHeaderOffset}
           stickyTopOffset={stickyTopOffset}
           sessionId={sessionId}
