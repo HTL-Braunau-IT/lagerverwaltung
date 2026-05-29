@@ -39,6 +39,12 @@ const backendBookOrderReturnInput = z.object({
     .min(1),
 });
 
+const backendUpdateOrderItemQuantityInput = z.object({
+  orderId: z.string().min(1),
+  orderItemId: z.string().min(1),
+  quantity: z.coerce.number().positive(),
+});
+
 const teacherAssignedRequestByIdInput = z.object({
   requestId: z.string().min(1),
 });
@@ -500,6 +506,99 @@ export const orderRouter = createTRPCRouter({
             quantity: item.returnQuantity,
           })),
         };
+      });
+    }),
+
+  backendUpdateItemQuantity: adminProcedure
+    .input(backendUpdateOrderItemQuantityInput)
+    .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+
+      return ctx.db.$transaction(async (tx) => {
+        const order = await tx.order.findUnique({
+          where: { id: input.orderId },
+          select: {
+            id: true,
+            status: true,
+            storageRoomId: true,
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                productId: true,
+                quantity: true,
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    unitStep: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (!order) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Bestellung wurde nicht gefunden.",
+          });
+        }
+
+        assertStorageRoomAllowed(access, order.storageRoomId);
+
+        if (order.status !== "OPEN") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Mengenänderung ist nur bei offenen Bestellungen möglich.",
+          });
+        }
+
+        const orderItem = order.items.find((item) => item.id === input.orderItemId);
+        if (!orderItem) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Position wurde nicht gefunden.",
+          });
+        }
+
+        assertQuantityFitsStep(input.quantity, Number(orderItem.product.unitStep), "Menge");
+
+        const oldQuantity = Number(orderItem.quantity);
+        if (oldQuantity === input.quantity) {
+          return { ok: true as const, orderId: order.id };
+        }
+
+        const nextItems = order.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.id === input.orderItemId ? input.quantity : item.quantity,
+        }));
+
+        try {
+          await assertSufficientStock(tx, aggregateProductRequirements(nextItems));
+        } catch (error) {
+          if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+            const parsed = parseInsufficientStockMessage(error.message);
+            if (parsed) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Nicht genug Lagerbestand fuer diese Menge.",
+              });
+            }
+          }
+          throw error;
+        }
+
+        await tx.orderItem.update({
+          where: { id: input.orderItemId },
+          data: {
+            quantity: input.quantity.toString(),
+          },
+          select: { id: true },
+        });
+
+        return { ok: true as const, orderId: order.id };
       });
     }),
 

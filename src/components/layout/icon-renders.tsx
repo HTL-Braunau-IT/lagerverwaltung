@@ -448,6 +448,22 @@ export function WarningTriangleIcon({
   );
 }
 
+/** Kleines Stift-Symbol (Wert bearbeiten). */
+export function PencilEditIcon({ className = "h-3 w-3 shrink-0" }: { className?: string } = {}) {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className={className}>
+      <path
+        d="M11.2 1.8l3 3L5.2 14H2.2v-3l9-9.2Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ClockIcon({ className = "h-3.5 w-3.5 shrink-0" }: { className?: string } = {}) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>

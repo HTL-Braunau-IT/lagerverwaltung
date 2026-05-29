@@ -14,7 +14,8 @@ import { NumberStepper } from "~/components/ui/number-stepper";
 import { Card as ShellCard } from "~/components/ui/card";
 import * as TableUI from "~/components/ui/table";
 import { useToast } from "~/components/ui/toast";
-import { ChevronDownIcon } from "~/components/layout/icon-renders";
+import { ChevronDownIcon, PencilEditIcon } from "~/components/layout/icon-renders";
+import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 const ORDER_STATUSES: OrderStatus[] = ["OPEN", "PREPARING", "READY_FOR_PICKUP"];
@@ -133,6 +134,11 @@ export function OrdersAdminPanel() {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [returnDialogOrderId, setReturnDialogOrderId] = useState<string | null>(null);
   const [returnDraftByItemId, setReturnDraftByItemId] = useState<Record<string, string>>({});
+  const [quantityEditTarget, setQuantityEditTarget] = useState<{
+    orderId: string;
+    itemId: string;
+  } | null>(null);
+  const [quantityEditDraft, setQuantityEditDraft] = useState("");
   const menuButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -175,6 +181,22 @@ export function OrdersAdminPanel() {
       ]);
       const label = statusConfig[variables.nextStatus as OrderStatus]?.label ?? "Status aktualisiert";
       toast.success(`Bestellung: ${label}.`);
+    },
+  });
+
+  const updateItemQuantityMutation = api.order.backendUpdateItemQuantity.useMutation({
+    onSuccess: async (data) => {
+      await Promise.all([
+        utils.order.backendList.invalidate(),
+        utils.order.backendOpenCount.invalidate(),
+        utils.order.backendById.invalidate({ id: data.orderId }),
+      ]);
+      setQuantityEditTarget(null);
+      setQuantityEditDraft("");
+      toast.success("Menge aktualisiert.");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Menge konnte nicht aktualisiert werden.");
     },
   });
 
@@ -280,6 +302,25 @@ export function OrdersAdminPanel() {
       return isSameValues ? current : next;
     });
   }, [returnDialogQuery.data]);
+
+  const quantityEditItem =
+    quantityEditTarget && expandedOrderQuery.data?.id === quantityEditTarget.orderId
+      ? expandedOrderQuery.data.items.find((item) => item.id === quantityEditTarget.itemId)
+      : null;
+
+  const openQuantityEditDialog = (orderId: string, item: { id: string; quantity: unknown }) => {
+    setQuantityEditTarget({ orderId, itemId: item.id });
+    setQuantityEditDraft(decimalToNumber(item.quantity).toString());
+  };
+
+  useEffect(() => {
+    if (!quantityEditTarget || !expandedOrderQuery.data) return;
+    if (expandedOrderQuery.data.id !== quantityEditTarget.orderId) return;
+    if (expandedOrderQuery.data.status !== "OPEN") {
+      setQuantityEditTarget(null);
+      setQuantityEditDraft("");
+    }
+  }, [quantityEditTarget, expandedOrderQuery.data]);
 
   return (
     <ShellCard className="rounded-2xl bg-transparent">
@@ -562,7 +603,12 @@ export function OrdersAdminPanel() {
                               </tr>
                             </TableUI.SubtableHeader>
                             <TableUI.SubtableBody>
-                              {expandedOrderQuery.data.items.map((item) => (
+                              {expandedOrderQuery.data.items.map((item) => {
+                                const canEditQuantity = order.status === "OPEN";
+                                const unitLabel =
+                                  item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit;
+
+                                return (
                                 <TableUI.SubtableRow key={item.id}>
                                   <TableUI.SubtableCell>
                                     <img
@@ -585,14 +631,31 @@ export function OrdersAdminPanel() {
                                       : "-"}
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="w-0 whitespace-nowrap tabular-nums">
-                                    <span className="inline-flex items-baseline gap-1">
-                                      <span className="font-semibold text-foreground">
-                                        {decimalToNumber(item.quantity)}
+                                    {canEditQuantity ? (
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          openQuantityEditDialog(order.id, item);
+                                        }}
+                                        className="group inline-flex cursor-pointer items-baseline gap-1 px-1 py-0.5 text-left"
+                                        aria-label={`Menge für ${item.product.name} bearbeiten`}
+                                        title="Menge bearbeiten"
+                                      >
+                                        <span className="font-semibold text-foreground">
+                                          {decimalToNumber(item.quantity)}
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">{unitLabel}</span>
+                                        <PencilEditIcon className="h-3 w-3 shrink-0 self-center text-muted-foreground/30 transition group-hover:text-muted-foreground/45" />
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-baseline gap-1">
+                                        <span className="font-semibold text-foreground">
+                                          {decimalToNumber(item.quantity)}
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">{unitLabel}</span>
                                       </span>
-                                      <span className="text-sm text-muted-foreground">
-                                        {item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit}
-                                      </span>
-                                    </span>
+                                    )}
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="w-0 whitespace-nowrap tabular-nums text-xs text-muted-foreground/55">
                                     <span className="inline-flex items-baseline gap-1">
@@ -601,7 +664,8 @@ export function OrdersAdminPanel() {
                                     </span>
                                   </TableUI.SubtableCell>
                                 </TableUI.SubtableRow>
-                              ))}
+                                );
+                              })}
                             </TableUI.SubtableBody>
                           </TableUI.Subtable>
                         </Card>
@@ -691,6 +755,79 @@ export function OrdersAdminPanel() {
           )
         ) : null;
       })()}
+      <Dialog
+        open={Boolean(quantityEditTarget)}
+        onClose={() => {
+          if (updateItemQuantityMutation.isPending) return;
+          setQuantityEditTarget(null);
+          setQuantityEditDraft("");
+        }}
+        title="Menge anpassen"
+        description={
+          quantityEditItem
+            ? `Position: ${quantityEditItem.product.name}`
+            : "Bestellposition wird geladen..."
+        }
+      >
+        {quantityEditItem ? (
+          <div className="grid grid-cols-2 items-center justify-between gap-4">
+            <div className="grid grid-cols-1 min-w-0 gap-1.5 items-center">
+              <NumberStepper
+                value={quantityEditDraft}
+                onChange={setQuantityEditDraft}
+                min={getQuantityStepForBaseUnit(quantityEditItem.product.baseUnit)}
+                step={Math.max(decimalToNumber(quantityEditItem.product.unitStep), 0.001)}
+                decreaseAriaLabel={`Menge ${quantityEditItem.product.name} verringern`}
+                increaseAriaLabel={`Menge ${quantityEditItem.product.name} erhöhen`}
+                inputAriaLabel={`Menge ${quantityEditItem.product.name}`}
+                disabled={updateItemQuantityMutation.isPending}
+                className="w-fit"
+              />
+              <p className="text-xs text-muted-foreground">
+                Verfügbar im Lager: {decimalToNumber(quantityEditItem.product.quantityOnHand)}{" "}
+                {quantityEditItem.product.baseUnit === "PCS" ? "STK" : quantityEditItem.product.baseUnit}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2.5">
+              <Button
+                type="button"
+                variant="glass"
+                className=" min-w-[6.5rem]"
+                onClick={() => {
+                  setQuantityEditTarget(null);
+                  setQuantityEditDraft("");
+                }}
+                disabled={updateItemQuantityMutation.isPending}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                className="min-w-[6.5rem]"
+                disabled={updateItemQuantityMutation.isPending}
+                  onClick={() => {
+                    if (!quantityEditTarget) return;
+                    const nextQuantity = decimalToNumber(quantityEditDraft);
+                    if (!Number.isFinite(nextQuantity) || nextQuantity <= 0) {
+                      toast.error("Bitte eine gueltige Menge eingeben.");
+                      return;
+                    }
+                    updateItemQuantityMutation.mutate({
+                      orderId: quantityEditTarget.orderId,
+                      orderItemId: quantityEditTarget.itemId,
+                      quantity: nextQuantity,
+                    });
+                  }}
+                >
+                  Speichern
+                </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Position wird geladen...</p>
+        )}
+      </Dialog>
       <Dialog
         open={Boolean(returnDialogOrderId)}
         onClose={() => {
