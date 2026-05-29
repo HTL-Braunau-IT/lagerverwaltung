@@ -231,7 +231,7 @@ export const costCenterRouter = createTRPCRouter({
         return {
           id: item.id,
           productName: item.product.name,
-          sku: item.product.sku ?? item.product.id,
+          sku: item.product.sku,
           quantity,
           unit: item.product.baseUnit,
           unitPrice,

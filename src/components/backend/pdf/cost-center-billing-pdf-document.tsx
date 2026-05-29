@@ -1,7 +1,6 @@
 import { Document, G, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import {
   ensureShopPdfFonts,
-  formatPdfCurrency,
   formatPdfNumber,
   shopPdfStyles,
 } from "~/components/shop/pdf/shop-pdf-theme";
@@ -9,7 +8,7 @@ import {
 type BillingPdfLine = {
   id: string;
   productName: string;
-  sku: string;
+  sku: string | null;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -104,15 +103,13 @@ const billingPdfStyles = StyleSheet.create({
     color: PDF_PRIMARY_MUTED,
   },
   colName: {
-    width: "22%",
+    width: "30%",
     paddingRight: 4,
   },
-  colSku: {
-    width: "12%",
-    paddingRight: 4,
-  },
-  colSkuValue: {
+  productSku: {
+    fontSize: 7,
     color: PDF_PRIMARY_MUTED,
+    marginTop: 1,
   },
   colQty: {
     width: "9%",
@@ -128,13 +125,15 @@ const billingPdfStyles = StyleSheet.create({
     color: PDF_PRIMARY_MUTED,
   },
   colPrice: {
-    width: "10%",
+    width: "13%",
     textAlign: "right",
     paddingRight: 4,
+    fontSize: 8,
   },
   colTotal: {
-    width: "9%",
+    width: "13%",
     textAlign: "right",
+    fontSize: 8,
   },
   emptyText: {
     fontSize: 10,
@@ -170,6 +169,15 @@ function formatOrderDate(value: Date) {
 function formatPdfUnit(unit: string) {
   const normalized = unit.trim().toUpperCase();
   return normalized === "PCS" ? "STK" : normalized;
+}
+
+function formatBillingPdfCurrency(value: number) {
+  return new Intl.NumberFormat("de-AT", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 5,
+    maximumFractionDigits: 5,
+  }).format(value);
 }
 
 function BillingPdfLogo() {
@@ -239,7 +247,6 @@ export function CostCenterBillingPdfDocument({
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colOrder]}>Bestellnr.</Text>
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colDate]}>Datum</Text>
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colName]}>Produkt</Text>
-              <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colSku]}>SKU</Text>
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colQty]}>Menge</Text>
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colUnit]}>Einheit</Text>
               <Text style={[billingPdfStyles.tableHeaderCell, billingPdfStyles.colPrice]}>Preis</Text>
@@ -259,14 +266,16 @@ export function CostCenterBillingPdfDocument({
                 <Text style={[billingPdfStyles.colDate, billingPdfStyles.colDateValue]} wrap={false}>
                   {row.isFirstInOrder ? row.orderDate : ""}
                 </Text>
-                <Text style={billingPdfStyles.colName}>{row.productName}</Text>
-                <Text style={[billingPdfStyles.colSku, billingPdfStyles.colSkuValue]}>{row.sku}</Text>
+                <View style={billingPdfStyles.colName}>
+                  <Text>{row.productName}</Text>
+                  {row.sku ? <Text style={billingPdfStyles.productSku}>{row.sku}</Text> : null}
+                </View>
                 <Text style={billingPdfStyles.colQty}>{formatPdfNumber(row.quantity)}</Text>
                 <Text style={[billingPdfStyles.colUnit, billingPdfStyles.colUnitValue]}>
                   {formatPdfUnit(row.unit)}
                 </Text>
-                <Text style={billingPdfStyles.colPrice}>{formatPdfCurrency(row.unitPrice)}</Text>
-                <Text style={billingPdfStyles.colTotal}>{formatPdfCurrency(row.lineTotal)}</Text>
+                <Text style={billingPdfStyles.colPrice}>{formatBillingPdfCurrency(row.unitPrice)}</Text>
+                <Text style={billingPdfStyles.colTotal}>{formatBillingPdfCurrency(row.lineTotal)}</Text>
               </View>
             ))}
           </View>
@@ -275,7 +284,7 @@ export function CostCenterBillingPdfDocument({
         {orders.length > 0 ? (
           <View style={shopPdfStyles.totalsRow}>
             <Text style={shopPdfStyles.muted}>Gesamt</Text>
-            <Text style={shopPdfStyles.strong}>{formatPdfCurrency(grandTotal)}</Text>
+            <Text style={shopPdfStyles.strong}>{formatBillingPdfCurrency(grandTotal)}</Text>
           </View>
         ) : null}
       </Page>
