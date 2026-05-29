@@ -11,7 +11,7 @@ import { FilterPillButton } from "~/components/ui/filter-pill-button";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/ui/toast";
 import * as TableUI from "~/components/ui/table";
-import { PlusIcon } from "~/components/layout/icon-renders";
+import { DownloadIcon, PlusIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 import { useConfirmClick } from "~/components/backend/use-confirm-click";
@@ -302,18 +302,21 @@ export function CostCentersAdminPanel() {
                             </button>
                           </label>
                           <div className="flex justify-end gap-3 md:col-span-3">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="!w-44"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void exportBillingPdf(center);
-                              }}
-                              disabled={exportingCostCenterId === center.id || deleteMutation.isPending}
-                            >
-                              {exportingCostCenterId === center.id ? "Wird exportiert..." : "Abrechnung exportieren"}
-                            </Button>
+                            <div className="w-48 shrink-0">
+                              <Button
+                                type="button"
+                                variant="glass"
+                                className="w-full gap-1.5 whitespace-nowrap px-2"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void exportBillingPdf(center);
+                                }}
+                                disabled={exportingCostCenterId === center.id || deleteMutation.isPending}
+                              >
+                                {exportingCostCenterId === center.id ? "Wird exportiert..." : "Abrechnung exportieren"}
+                                <DownloadIcon className="h-4 w-4 shrink-0" />
+                              </Button>
+                            </div>
                             <Button
                               type="button"
                               variant="destructive"
