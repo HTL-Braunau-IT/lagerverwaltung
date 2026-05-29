@@ -1,6 +1,7 @@
 import { Document, G, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import {
   ensureShopPdfFonts,
+  formatPdfCurrency,
   formatPdfNumber,
   shopPdfStyles,
 } from "~/components/shop/pdf/shop-pdf-theme";
@@ -171,15 +172,6 @@ function formatPdfUnit(unit: string) {
   return normalized === "PCS" ? "STK" : normalized;
 }
 
-function formatBillingPdfCurrency(value: number) {
-  return new Intl.NumberFormat("de-AT", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 5,
-    maximumFractionDigits: 5,
-  }).format(value);
-}
-
 function BillingPdfLogo() {
   const strokeOuter = 1.9;
   const innerStroke = strokeOuter / 0.64;
@@ -274,8 +266,8 @@ export function CostCenterBillingPdfDocument({
                 <Text style={[billingPdfStyles.colUnit, billingPdfStyles.colUnitValue]}>
                   {formatPdfUnit(row.unit)}
                 </Text>
-                <Text style={billingPdfStyles.colPrice}>{formatBillingPdfCurrency(row.unitPrice)}</Text>
-                <Text style={billingPdfStyles.colTotal}>{formatBillingPdfCurrency(row.lineTotal)}</Text>
+                <Text style={billingPdfStyles.colPrice}>{formatPdfCurrency(row.unitPrice)}</Text>
+                <Text style={billingPdfStyles.colTotal}>{formatPdfCurrency(row.lineTotal)}</Text>
               </View>
             ))}
           </View>
@@ -284,7 +276,7 @@ export function CostCenterBillingPdfDocument({
         {orders.length > 0 ? (
           <View style={shopPdfStyles.totalsRow}>
             <Text style={shopPdfStyles.muted}>Gesamt</Text>
-            <Text style={shopPdfStyles.strong}>{formatBillingPdfCurrency(grandTotal)}</Text>
+            <Text style={shopPdfStyles.strong}>{formatPdfCurrency(grandTotal)}</Text>
           </View>
         ) : null}
       </Page>
