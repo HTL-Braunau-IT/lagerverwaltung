@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { pdf } from "@react-pdf/renderer";
 
 import { api } from "~/trpc/react";
 import { Button } from "~/components/ui/button";
@@ -14,6 +15,7 @@ import { PlusIcon } from "~/components/layout/icon-renders";
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 import { useConfirmClick } from "~/components/backend/use-confirm-click";
+import { CostCenterBillingPdfDocument } from "~/components/backend/pdf/cost-center-billing-pdf-document";
 
 type CostCenterForm = {
   name: string;
@@ -44,6 +46,7 @@ export function CostCentersAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
   const [visibilityFilter, setVisibilityFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [expandedCostCenterId, setExpandedCostCenterId] = useState<string | null>(null);
+  const [exportingCostCenterId, setExportingCostCenterId] = useState<string | null>(null);
   const [form, setForm] = useState<CostCenterForm>(createEmptyForm);
   const [baselineForm, setBaselineForm] = useState<CostCenterForm>(createEmptyForm);
   const { isConfirming: isConfirmingDelete, confirmOrRun: confirmOrRunDelete } = useConfirmClick({
@@ -105,6 +108,39 @@ export function CostCentersAdminPanel() {
     const normalize = (f: CostCenterForm) => ({ name: f.name.trim(), isActive: f.isActive });
     return isDirty(form, baselineForm, normalize);
   }, [baselineForm, expandedCostCenterId, form]);
+
+  const exportBillingPdf = async (center: { id: string; code: string; createdAt: Date }) => {
+    if (exportingCostCenterId) return;
+
+    setExportingCostCenterId(center.id);
+    try {
+      const data = await utils.costCenter.backendBillingExport.fetch({ id: center.id });
+      const periodTo = new Date();
+      const blob = await pdf(
+        <CostCenterBillingPdfDocument
+          costCenterName={data.costCenter.name}
+          periodFrom={new Date(data.costCenter.createdAt)}
+          periodTo={periodTo}
+          orders={data.orders.map((order) => ({
+            ...order,
+            createdAt: new Date(order.createdAt),
+          }))}
+          grandTotal={data.grandTotal}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `abrechnung-${center.code}-${periodTo.toISOString().slice(0, 10)}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Abrechnung exportiert.");
+    } catch {
+      toast.error("PDF Export fehlgeschlagen.");
+    } finally {
+      setExportingCostCenterId(null);
+    }
+  };
 
   return (
     <Card className="rounded-2xl bg-transparent">
@@ -265,23 +301,37 @@ export function CostCentersAdminPanel() {
                               </span>
                             </button>
                           </label>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            className="!w-36 justify-self-end md:col-span-3"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              if (deleteMutation.isPending) return;
-                              confirmOrRunDelete(() => deleteMutation.mutate({ id: center.id }));
-                            }}
-                            disabled={deleteMutation.isPending}
-                          >
-                            {deleteMutation.isPending
-                              ? "Löscht..."
-                              : isConfirmingDelete
-                                ? "Nochmal klicken"
-                                : "Löschen"}
-                          </Button>  
+                          <div className="flex justify-end gap-3 md:col-span-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="!w-44"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void exportBillingPdf(center);
+                              }}
+                              disabled={exportingCostCenterId === center.id || deleteMutation.isPending}
+                            >
+                              {exportingCostCenterId === center.id ? "Wird exportiert..." : "Abrechnung exportieren"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              className="!w-36"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                if (deleteMutation.isPending) return;
+                                confirmOrRunDelete(() => deleteMutation.mutate({ id: center.id }));
+                              }}
+                              disabled={deleteMutation.isPending || exportingCostCenterId === center.id}
+                            >
+                              {deleteMutation.isPending
+                                ? "Löscht..."
+                                : isConfirmingDelete
+                                  ? "Nochmal klicken"
+                                  : "Löschen"}
+                            </Button>
+                          </div>
 
                         </div>
                       </div>  

@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
+import { decimalToNumber } from "~/server/api/routers/utils/stock";
 
 const byIdInput = z.object({
   id: z.string().min(1),
@@ -178,6 +179,84 @@ export const costCenterRouter = createTRPCRouter({
         id: true,
       },
     });
+  }),
+
+  backendBillingExport: adminProcedure.input(byIdInput).query(async ({ ctx, input }) => {
+    const costCenter = await ctx.db.costCenter.findUnique({
+      where: { id: input.id },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+      },
+    });
+    if (!costCenter) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Kostenstelle wurde nicht gefunden." });
+    }
+
+    const orders = await ctx.db.order.findMany({
+      where: { costCenterId: input.id },
+      orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
+      select: {
+        id: true,
+        orderNumber: true,
+        createdAt: true,
+        items: {
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            quantity: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                baseUnit: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    let grandTotal = 0;
+    const exportOrders = orders.map((order) => {
+      let orderTotal = 0;
+      const items = order.items.map((item) => {
+        const quantity = decimalToNumber(item.quantity);
+        const unitPrice = decimalToNumber(item.product.price);
+        const lineTotal = quantity * unitPrice;
+        orderTotal += lineTotal;
+        return {
+          id: item.id,
+          productName: item.product.name,
+          sku: item.product.sku ?? item.product.id,
+          quantity,
+          unit: item.product.baseUnit,
+          unitPrice,
+          lineTotal,
+        };
+      });
+      grandTotal += orderTotal;
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        items,
+        orderTotal,
+      };
+    });
+
+    return {
+      costCenter: {
+        id: costCenter.id,
+        name: costCenter.name,
+        createdAt: costCenter.createdAt,
+      },
+      orders: exportOrders,
+      grandTotal,
+    };
   }),
 
   backendDelete: adminProcedure.input(backendDeleteInput).mutation(async ({ ctx, input }) => {
