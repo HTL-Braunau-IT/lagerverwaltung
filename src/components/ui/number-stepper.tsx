@@ -49,7 +49,7 @@ export function NumberStepper({
 
   return (
     <div
-      className={`flex h-9 min-w-0 shrink-0 overflow-hidden rounded-sm bg-card/30 ${className}`.trim()}
+      className={`inline-flex h-9 shrink-0 self-start overflow-hidden rounded-sm bg-card/30 ${className}`.trim()}
       onClick={(event) => {
         if (!stopPropagation) return;
         event.stopPropagation();
@@ -71,21 +71,24 @@ export function NumberStepper({
       >
         <span className="block leading-none">-</span>
       </Button>
-      <Input
-        type="number"
-        min={min}
-        max={inputMax}
-        step={step}
-        value={value}
-        disabled={disabled}
-        autoComplete="off"
-        onClick={(event) => {
-          if (stopPropagation) event.stopPropagation();
-        }}
-        onChange={(event) => onChange(event.target.value)}
-        className="!w-11 !h-full min-w-0 shrink !rounded-none !bg-transparent text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-        aria-label={inputAriaLabel}
-      />
+      <div className="h-full w-[72px] min-w-[72px] max-w-[72px] flex-none shrink-0 overflow-hidden">
+        <Input
+          type="number"
+          min={min}
+          max={inputMax}
+          step={step}
+          value={value}
+          disabled={disabled}
+          autoComplete="off"
+          onClick={(event) => {
+            if (stopPropagation) event.stopPropagation();
+          }}
+          onChange={(event) => onChange(event.target.value)}
+          className="!box-border !h-full !w-full !min-w-0 !max-w-full !rounded-none !bg-transparent !px-1 text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          aria-label={inputAriaLabel}
+        />
+      </div>
+
       <Button
         type="button"
         disabled={disabled}
