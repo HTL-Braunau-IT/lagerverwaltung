@@ -103,6 +103,9 @@ export function Search() {
 
   const [value, setValue] = useState("");
   const redirectTimerRef = useRef<number | null>(null);
+  // Tracks the search term we just wrote to the URL so debounced updates do not
+  // clobber newer keystrokes when the router catches up with an older value.
+  const pendingUrlSearchRef = useRef<string | null>(null);
 
   // Reset field on navigation; only pages that own `?search=` show the URL term.
   useEffect(() => {
@@ -110,12 +113,28 @@ export function Search() {
       window.clearTimeout(redirectTimerRef.current);
       redirectTimerRef.current = null;
     }
+    pendingUrlSearchRef.current = null;
     if (mode === "home" || mode === "ausleihe" || mode === "orders" || mode === "backend") {
       setValue(searchFromUrl);
     } else {
       setValue("");
     }
-  }, [mode, pathname, searchFromUrl]);
+  }, [mode, pathname]); // only on route change, NOT on every URL tweak
+
+  // External URL changes (e.g. browser back/forward) — skip our own debounced writes.
+  useEffect(() => {
+    if (mode !== "home" && mode !== "ausleihe" && mode !== "orders" && mode !== "backend") {
+      return;
+    }
+
+    const pending = pendingUrlSearchRef.current;
+    if (pending !== null && searchFromUrl === pending) {
+      pendingUrlSearchRef.current = null;
+      return;
+    }
+
+    setValue(searchFromUrl);
+  }, [mode, searchFromUrl]);
 
   // Storefront home: keep `?search=` in sync with the input.
   useEffect(() => {
@@ -131,6 +150,7 @@ export function Search() {
       const nextQuery = params.toString();
       if (nextQuery === queryString) return;
 
+      pendingUrlSearchRef.current = trimmed;
       router.replace(nextQuery ? `/?${nextQuery}` : "/", { scroll: false });
     }, DEBOUNCE_MS);
 
@@ -151,6 +171,7 @@ export function Search() {
       const nextQuery = params.toString();
       if (nextQuery === queryString) return;
 
+      pendingUrlSearchRef.current = trimmed;
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     }, DEBOUNCE_MS);
 
