@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from "react";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
 
 export function NumberStepper({
   value,
@@ -46,6 +45,7 @@ export function NumberStepper({
 
   const inputMax = max !== undefined && max > 0 ? max : undefined;
   const incrementCap = inputMax ?? Number.POSITIVE_INFINITY;
+  const inputChars = Math.max((value.length > 0 ? value : String(min)).length, 2);
 
   return (
     <div
@@ -71,23 +71,20 @@ export function NumberStepper({
       >
         <span className="block leading-none">-</span>
       </Button>
-      <div className="h-full w-[72px] min-w-[72px] max-w-[72px] flex-none shrink-0 overflow-hidden">
-        <Input
-          type="number"
-          min={min}
-          max={inputMax}
-          step={step}
-          value={value}
-          disabled={disabled}
-          autoComplete="off"
-          onClick={(event) => {
-            if (stopPropagation) event.stopPropagation();
-          }}
-          onChange={(event) => onChange(event.target.value)}
-          className="!box-border !h-full !w-full !min-w-0 !max-w-full !rounded-none !bg-transparent !px-1 text-center text-sm font-medium tabular-nums text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          aria-label={inputAriaLabel}
-        />
-      </div>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        disabled={disabled}
+        autoComplete="off"
+        onClick={(event) => {
+          if (stopPropagation) event.stopPropagation();
+        }}
+        onChange={(event) => onChange(event.target.value)}
+        style={{ width: `calc(${inputChars}ch + 0.5rem)` }}
+        className="box-border h-full shrink-0 border-0 bg-transparent px-1 text-center text-sm font-medium tabular-nums text-foreground outline-none"
+        aria-label={inputAriaLabel}
+      />
 
       <Button
         type="button"
