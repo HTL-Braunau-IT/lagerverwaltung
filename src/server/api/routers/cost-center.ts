@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 import { decimalToNumber } from "~/server/api/routers/utils/stock";
+import { releasedOrderWhere } from "~/server/approval/service";
 
 const byIdInput = z.object({
   id: z.string().min(1),
@@ -195,7 +196,7 @@ export const costCenterRouter = createTRPCRouter({
     }
 
     const orders = await ctx.db.order.findMany({
-      where: { costCenterId: input.id },
+      where: { costCenterId: input.id, ...releasedOrderWhere },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
         id: true,

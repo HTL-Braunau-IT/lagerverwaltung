@@ -1,3 +1,4 @@
+import { approvalRouter } from "~/server/api/routers/approval";
 import { cartRouter } from "~/server/api/routers/cart";
 import { categoryRouter } from "~/server/api/routers/category";
 import { costCenterRouter } from "~/server/api/routers/cost-center";
@@ -18,6 +19,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
+  approval: approvalRouter,
   product: productRouter,
   category: categoryRouter,
   costCenter: costCenterRouter,

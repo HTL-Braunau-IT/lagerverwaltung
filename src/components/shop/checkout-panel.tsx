@@ -54,6 +54,9 @@ export function CheckoutPanel(props: {
     },
   );
   const costCentersQuery = api.cart.listCostCenters.useQuery();
+  const approvalInfoQuery = api.approval.myInfo.useQuery(undefined, {
+    enabled: sessionStatus === "authenticated" && session?.user.role !== "STUDENT",
+  });
   const teachersQuery = api.cart.listTeachersForCheckout.useQuery(undefined, {
     enabled: sessionStatus === "authenticated" && session?.user.role === "STUDENT",
   });
@@ -62,7 +65,12 @@ export function CheckoutPanel(props: {
     onSuccess: async (data) => {
       await utils.cart.get.invalidate({ sessionId });
       if (data.ok) {
-        toast.success(`Bestellung abgeschickt. Bestellnummer: ${data.orderNumber}`);
+        await utils.cart.listMyOrders.invalidate();
+        toast.success(
+          data.approvalStatus === "PENDING"
+            ? `Bestellung ${data.orderNumber} wurde zur Freigabe gesendet.`
+            : `Bestellung abgeschickt. Bestellnummer: ${data.orderNumber}`,
+        );
         onSuccessfulSubmit?.();
         return;
       }
@@ -189,6 +197,20 @@ export function CheckoutPanel(props: {
           />
         </div>
       )}
+
+      {!isStudentCheckout && approvalInfoQuery.data ? (
+        <Card variant="static" className="mt-4">
+          <DetailText variant="kicker">Freigabe erforderlich</DetailText>
+          <DetailText variant="value" className="!font-normal">
+            Deine Bestellung wird von{" "}
+            <span className="font-semibold">{approvalInfoQuery.data.approvers.join(" oder ")}</span> freigegeben,
+            bevor sie an das Lager geht.
+            {approvalInfoQuery.data.amountLimit !== null
+              ? ` Bestellungen bis ${new Intl.NumberFormat("de-AT", { style: "currency", currency: "EUR" }).format(approvalInfoQuery.data.amountLimit)} gehen direkt an das Lager.`
+              : null}
+          </DetailText>
+        </Card>
+      ) : null}
 
       <div className="mt-4 space-y-2">
         <DetailText variant="value">

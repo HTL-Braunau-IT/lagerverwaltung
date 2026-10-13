@@ -44,6 +44,14 @@ enum OrderStatus {
     READY_FOR_PICKUP
 }
 
+enum OrderApprovalStatus {
+    NOT_REQUIRED
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLED
+}
+
 enum RequestStatus {
     PENDING
     APPROVED
@@ -186,7 +194,16 @@ model Order {
     sourcePartListId String?
     workerNote   String?
     status       OrderStatus @default(OPEN)
-    user         User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+    approvalStatus OrderApprovalStatus @default(NOT_REQUIRED)
+    approvalGroupId String?
+    approvalDecidedById String?
+    approvalDecidedAt DateTime?
+    approvalNote String?
+    approvalSnapshot Json?
+    approvalReminderSentAt DateTime?
+    user         User        @relation("OrderOwner", fields: [userId], references: [id], onDelete: Restrict)
+    approvalGroup ApprovalGroup? @relation(fields: [approvalGroupId], references: [id], onDelete: SetNull)
+    approvalDecidedBy User? @relation("OrderApprovalDecidedBy", fields: [approvalDecidedById], references: [id], onDelete: SetNull)
     costCenter   CostCenter  @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
     storageRoom  StorageRoom @relation(fields: [storageRoomId], references: [id], onDelete: Restrict)
     sourcePartList PartList? @relation(fields: [sourcePartListId], references: [id], onDelete: SetNull)
@@ -200,7 +217,33 @@ model Order {
     @@index([storageRoomId])
     @@index([sourcePartListId])
     @@index([status])
+    @@index([approvalStatus])
+    @@index([approvalGroupId])
     @@index([createdAt])
+}
+
+model ApprovalGroup {
+    id          String   @id @default(cuid())
+    name        String   @unique
+    isActive    Boolean  @default(true)
+    approverId  String
+    deputyId    String?
+    amountLimit Decimal? @db.Decimal(12, 2)
+    approver    User     @relation("ApprovalGroupApprover", fields: [approverId], references: [id], onDelete: Restrict)
+    deputy      User?    @relation("ApprovalGroupDeputy", fields: [deputyId], references: [id], onDelete: SetNull)
+    members     User[]   @relation("ApprovalGroupMembers")
+    orders      Order[]
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([approverId])
+    @@index([deputyId])
+}
+
+model AppSetting {
+    key       String   @id
+    value     Json
+    updatedAt DateTime @updatedAt
 }
 
 model PartList {
@@ -495,11 +538,16 @@ model User {
     image         String?
     role          AppRole   @default(STUDENT)
     hasAllStorageRoomAccess Boolean @default(false)
+    approvalGroupId String?
+    approvalGroup ApprovalGroup? @relation("ApprovalGroupMembers", fields: [approvalGroupId], references: [id], onDelete: SetNull)
+    approverOfGroups ApprovalGroup[] @relation("ApprovalGroupApprover")
+    deputyOfGroups   ApprovalGroup[] @relation("ApprovalGroupDeputy")
     accounts      Account[]
     sessions      Session[]
     storageRoomAccesses UserStorageRoomAccess[]
     savedCarts    SavedCart[]
-    orders        Order[]
+    orders        Order[] @relation("OrderOwner")
+    approvalDecisions Order[] @relation("OrderApprovalDecidedBy")
     orderRequestsAsStudent OrderRequest[] @relation("OrderRequestsAsStudent")
     orderRequestsAsTeacher OrderRequest[] @relation("OrderRequestsAsTeacher")
     stockBookings ProductStockBooking[]
@@ -508,6 +556,8 @@ model User {
     loansAsTeacher  Loan[] @relation("LoansAsTeacher")
     createdAt     DateTime  @default(now())
     updatedAt     DateTime  @updatedAt
+
+    @@index([approvalGroupId])
 }
 
 model UserPinnedPartList {

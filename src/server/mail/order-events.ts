@@ -1,18 +1,19 @@
-import { env } from "~/env";
 import {
   buildEmailTemplate,
   emailItemList,
+  emailButton,
   emailMetaList,
   emailSection,
   emailSectionTitle,
   emailStatusBadge,
   htmlToText,
 } from "~/server/mail/email-template";
+import { resolveOpsBccRecipients } from "~/server/settings";
 import { sendGraphMail, type MailRecipient } from "~/server/mail/graph-mailer";
 
 type OrderStatusEmail = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
-type MaybeUser = {
+export type MaybeUser = {
   name?: string | null;
   email?: string | null;
 };
@@ -30,6 +31,8 @@ type TeacherRequestApprovedInput = {
   teacher: MaybeUser;
   student: MaybeUser;
   items: OrderLineItem[];
+  /** The teacher's group Freigeber still has to approve the resulting order. */
+  awaitingFinalApproval?: boolean;
 };
 
 type OrderStatusChangedInput = {
@@ -40,14 +43,14 @@ type OrderStatusChangedInput = {
   items: OrderLineItem[];
 };
 
-type OrderLineItem = {
+export type OrderLineItem = {
   name: string;
   quantity: unknown;
   unit?: string | null;
   price?: unknown;
 };
 
-function recipientFromUser(user: MaybeUser): MailRecipient | null {
+export function recipientFromUser(user: MaybeUser): MailRecipient | null {
   const email = user.email?.trim();
   if (!email) return null;
   return {
@@ -56,7 +59,7 @@ function recipientFromUser(user: MaybeUser): MailRecipient | null {
   };
 }
 
-function makeGreeting(name?: string | null) {
+export function makeGreeting(name?: string | null) {
   const clean = name?.trim();
   return clean ? `Hallo ${clean},` : "Hallo,";
 }
@@ -67,13 +70,11 @@ function statusLabel(status: OrderStatusEmail) {
   return "Offen";
 }
 
-function opsBccRecipient() {
-  const email = env.MAIL_OPS_BCC_ADDRESS?.trim();
-  if (!email) return [];
-  return [{ email }];
+export function opsBccRecipient() {
+  return resolveOpsBccRecipients();
 }
 
-function valueToText(value: unknown) {
+export function valueToText(value: unknown) {
   if (typeof value === "string") return value;
   if (typeof value === "number") return value.toString();
   if (value && typeof value === "object" && "toString" in value && typeof value.toString === "function") {
@@ -82,7 +83,7 @@ function valueToText(value: unknown) {
   return "";
 }
 
-function formatLineItems(items: OrderLineItem[]) {
+export function formatLineItems(items: OrderLineItem[]) {
   if (items.length === 0) return ["(keine Positionen uebergeben)"];
   return items.map((item) => {
     const quantity = valueToText(item.quantity) || "?";
@@ -93,16 +94,21 @@ function formatLineItems(items: OrderLineItem[]) {
   });
 }
 
-function buildOrderEmail(input: {
+export function buildOrderEmail(input: {
   title: string;
   intro: string[];
   metaRows?: Array<{ label: string; value: string }>;
   itemsTitle?: string;
   items?: string[];
+  extraLists?: Array<{ title: string; items: string[] }>;
   status?: { label: string; tone: "primary" | "success" | "destructive" };
+  action?: { label: string; href: string };
   footer?: string[];
 }) {
   const sections: string[] = [];
+  if (input.action) {
+    sections.push(emailButton(input.action.label, input.action.href));
+  }
   if (input.status) {
     sections.push(emailSection(`${emailSectionTitle("Status")}${emailStatusBadge(input.status.label, input.status.tone)}`));
   }
@@ -115,6 +121,10 @@ function buildOrderEmail(input: {
         `${emailSectionTitle(input.itemsTitle)}${emailItemList(input.items ?? [])}`,
       ),
     );
+  }
+  for (const list of input.extraLists ?? []) {
+    if (list.items.length === 0) continue;
+    sections.push(emailSection(`${emailSectionTitle(list.title)}${emailItemList(list.items)}`));
   }
 
   const htmlBody = buildEmailTemplate({
@@ -152,7 +162,7 @@ export async function notifyStudentRequestCreated(input: StudentRequestCreatedIn
   await sendGraphMail({
     to: [teacher],
     cc: student ? [student] : [],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -165,10 +175,19 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
   if (!student) return { skipped: true as const };
 
   const teacher = recipientFromUser(input.teacher);
-  const subject = `Bestellung ${input.orderNumber} wurde freigegeben`;
+  const subject = input.awaitingFinalApproval
+    ? `Bestellung ${input.orderNumber} wartet auf finale Freigabe`
+    : `Bestellung ${input.orderNumber} wurde freigegeben`;
   const mail = buildOrderEmail({
-    title: `Bestellung ${input.orderNumber} freigegeben`,
-    intro: [makeGreeting(input.student.name), "deine Bestellanfrage wurde von der Lehrperson freigegeben."],
+    title: input.awaitingFinalApproval
+      ? `Bestellung ${input.orderNumber} wartet auf finale Freigabe`
+      : `Bestellung ${input.orderNumber} freigegeben`,
+    intro: [
+      makeGreeting(input.student.name),
+      input.awaitingFinalApproval
+        ? "deine Bestellanfrage wurde von der Lehrperson bestaetigt und wartet nun noch auf die finale Freigabe."
+        : "deine Bestellanfrage wurde von der Lehrperson freigegeben.",
+    ],
     metaRows: [
       { label: "Lehrperson", value: `${input.teacher.name ?? "-"} (${input.teacher.email ?? "-"})` },
       { label: "Anfrage-ID", value: input.requestId },
@@ -182,7 +201,7 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
   await sendGraphMail({
     to: [student],
     cc: teacher ? [teacher] : [],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -225,7 +244,7 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
   await sendGraphMail({
     to: [owner],
     cc: ccRecipients,
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,

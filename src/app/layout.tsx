@@ -27,6 +27,7 @@ import {
 import { TRPCReactProvider } from "~/trpc/react";
 import { DetailText } from "~/components/ui/detail-card";
 import { CountUp } from "~/components/ui/count-up";
+import { pendingApprovalWhereForUser, releasedOrderWhere } from "~/server/approval/service";
 
 export const metadata: Metadata = {
   title: "HTL Braunau Lagershop",
@@ -62,11 +63,19 @@ export default async function RootLayout({
               : []),
           ],
         };
-  const openApprovalsCount = canSeeApprovals
-    ? await db.orderRequest.count({
-        where: assignedRequestsWhere,
-      })
-    : 0;
+  const pendingOrderApprovalsWhere =
+    canSeeApprovals && session?.user
+      ? await pendingApprovalWhereForUser(db, session.user)
+      : null;
+  const [openRequestsCount, openOrderApprovalsCount] = canSeeApprovals
+    ? await Promise.all([
+        db.orderRequest.count({
+          where: assignedRequestsWhere,
+        }),
+        pendingOrderApprovalsWhere ? db.order.count({ where: pendingOrderApprovalsWhere }) : 0,
+      ])
+    : [0, 0];
+  const openApprovalsCount = openRequestsCount + openOrderApprovalsCount;
   const openApprovalsLabel = openApprovalsCount > 99 ? "99+" : String(openApprovalsCount);
 
   const isAdmin = session?.user.role === "ADMIN";
@@ -78,6 +87,7 @@ export default async function RootLayout({
       db.order.count({
         where: {
           status: "OPEN",
+          ...releasedOrderWhere,
           ...(roomWhere ?? {}),
         },
       }),

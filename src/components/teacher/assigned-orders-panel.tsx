@@ -11,6 +11,7 @@ import { NumberStepper } from "~/components/ui/number-stepper";
 import { Select } from "~/components/ui/select";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 import * as TableUI from "~/components/ui/table";
+import { OrderApprovalsSection, useOrderApprovals } from "~/components/teacher/order-approvals-section";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -90,6 +91,8 @@ export function AssignedOrdersPanel() {
   });
 
   const loanRequestsQuery = api.loan.listPendingLoanRequests.useQuery();
+  const orderApprovalsQuery = useOrderApprovals();
+  const decidedApprovalsQuery = api.approval.listDecidedByMe.useQuery();
 
   const invalidateAfterLoanAction = async () => {
     await Promise.all([
@@ -140,6 +143,8 @@ export function AssignedOrdersPanel() {
   return (
     <main className="mx-auto flex min-h-screen w-[90%] max-w-none flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
 
+      <OrderApprovalsSection />
+
       <section className="space-y-4">
         {requestsQuery.isLoading && (
           <div className="rounded-md bg-card/40 p-5 text-slate-600">
@@ -164,7 +169,10 @@ export function AssignedOrdersPanel() {
           pendingRequests.length === 0 &&
           completedRequests.length === 0 &&
           !loanRequestsQuery.isLoading &&
-          pendingLoanRequests.length === 0 && (
+          pendingLoanRequests.length === 0 &&
+          !orderApprovalsQuery.isLoading &&
+          (orderApprovalsQuery.data?.length ?? 0) === 0 &&
+          (decidedApprovalsQuery.data?.length ?? 0) === 0 && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm">
             <p className="text-sm font-semibold">Aktuell keine Freigaben vorhanden.</p>
           </div>

@@ -43,6 +43,12 @@ export const userRouter = createTRPCRouter({
         email: true,
         role: true,
         hasAllStorageRoomAccess: true,
+        approvalGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         storageRoomAccesses: {
           select: {
             storageRoomId: true,

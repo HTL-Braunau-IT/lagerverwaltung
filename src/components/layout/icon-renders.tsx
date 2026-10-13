@@ -544,3 +544,40 @@ export function HeaderBrandPackageIcon({ className = "" }: { className?: string 
     </svg>
   );
 }
+export function SettingsIcon({ className = "h-4 w-4" }: { className?: string } = {}) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        d="M10.3 3.6a1.7 1.7 0 0 1 3.4 0l.2 1.1a7.2 7.2 0 0 1 1.7 1l1.1-.4a1.7 1.7 0 0 1 2.1.8l.3.5a1.7 1.7 0 0 1-.4 2.1l-.8.7a7.3 7.3 0 0 1 0 2l.8.7a1.7 1.7 0 0 1 .4 2.1l-.3.5a1.7 1.7 0 0 1-2.1.8l-1.1-.4a7.2 7.2 0 0 1-1.7 1l-.2 1.1a1.7 1.7 0 0 1-3.4 0l-.2-1.1a7.2 7.2 0 0 1-1.7-1l-1.1.4a1.7 1.7 0 0 1-2.1-.8l-.3-.5a1.7 1.7 0 0 1 .4-2.1l.8-.7a7.3 7.3 0 0 1 0-2l-.8-.7a1.7 1.7 0 0 1-.4-2.1l.3-.5a1.7 1.7 0 0 1 2.1-.8l1.1.4a7.2 7.2 0 0 1 1.7-1l.2-1.1Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+export function ApprovalGroupIcon({ className = "h-4 w-4" }: { className?: string } = {}) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20c0-3.3 2.9-6 6.5-6 1.4 0 2.7.4 3.7 1.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m15 18 2 2 4.5-4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

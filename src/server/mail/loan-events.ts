@@ -1,4 +1,3 @@
-import { env } from "~/env";
 import {
   buildEmailTemplate,
   emailItemList,
@@ -8,6 +7,7 @@ import {
   emailStatusBadge,
   htmlToText,
 } from "~/server/mail/email-template";
+import { resolveOpsBccRecipients } from "~/server/settings";
 import { sendGraphMail, type MailRecipient } from "~/server/mail/graph-mailer";
 
 type MaybeUser = {
@@ -65,9 +65,7 @@ function makeGreeting(name?: string | null) {
 }
 
 function opsBccRecipient() {
-  const email = env.MAIL_OPS_BCC_ADDRESS?.trim();
-  if (!email) return [];
-  return [{ email }];
+  return resolveOpsBccRecipients();
 }
 
 function valueToText(value: unknown) {
@@ -153,7 +151,7 @@ export async function notifyLoanApproved(input: LoanApprovedInput) {
   await sendGraphMail({
     to: [borrower],
     cc: teacher ? [teacher] : [],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -176,7 +174,7 @@ export async function notifyLoanRejected(input: LoanRejectedInput) {
 
   await sendGraphMail({
     to: [borrower],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -207,7 +205,7 @@ export async function notifyLoanHandoverConfirmed(input: LoanHandoverConfirmedIn
 
   await sendGraphMail({
     to: [borrower],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -232,7 +230,7 @@ export async function notifyLoanReturned(input: LoanReturnedInput) {
 
   await sendGraphMail({
     to: [borrower],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,
@@ -267,7 +265,7 @@ export async function sendLoanReminder(input: LoanReminderInput) {
 
   await sendGraphMail({
     to: [borrower],
-    bcc: opsBccRecipient(),
+    bcc: await opsBccRecipient(),
     subject,
     htmlBody: mail.htmlBody,
     textFallback: mail.textFallback,

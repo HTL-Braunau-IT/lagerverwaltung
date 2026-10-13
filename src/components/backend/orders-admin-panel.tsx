@@ -2,6 +2,7 @@
 
 import { Fragment, type MouseEvent as ReactMouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
@@ -118,6 +119,15 @@ function formatDate(value: Date | string) {
   }).format(date);
 }
 
+type ApprovalFilter = "RELEASED" | "PENDING" | "DECLINED";
+
+function approvalLabel(approvalStatus: string) {
+  if (approvalStatus === "PENDING") return "Wartet auf Freigabe";
+  if (approvalStatus === "REJECTED") return "Abgelehnt";
+  if (approvalStatus === "CANCELLED") return "Zurückgezogen";
+  return null;
+}
+
 function userLabel(user: { name: string | null; email: string | null }) {
   return user.name?.trim() || user.email?.trim() || "Unbekannt";
 }
@@ -129,6 +139,9 @@ export function OrdersAdminPanel() {
   const searchTerm = (searchParams.get("search") ?? "").trim();
 
   const [statusFilter, setStatusFilter] = useState<"ALL" | OrderStatus>("ALL");
+  const [approvalFilter, setApprovalFilter] = useState<ApprovalFilter>("RELEASED");
+  const openCountQuery = api.order.backendOpenCount.useQuery();
+  const pendingApprovalCount = openCountQuery.data?.pendingApprovalCount ?? 0;
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [menuOpenOrderId, setMenuOpenOrderId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -146,6 +159,7 @@ export function OrdersAdminPanel() {
     {
       search: searchTerm || undefined,
       status: statusFilter === "ALL" ? undefined : statusFilter,
+      approval: approvalFilter,
       limit: 100,
     },
     {
@@ -330,6 +344,33 @@ export function OrdersAdminPanel() {
         </div>
       </div>
 
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-muted-foreground">Freigabe:</p>
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { value: "RELEASED" as const, label: "Im Lager" },
+              {
+                value: "PENDING" as const,
+                label: pendingApprovalCount > 0 ? `Wartet auf Freigabe (${pendingApprovalCount})` : "Wartet auf Freigabe",
+              },
+              { value: "DECLINED" as const, label: "Abgelehnt / zurückgezogen" },
+            ] as const
+          ).map((opt) => (
+            <FilterPillButton
+              key={opt.value}
+              onClick={() => {
+                setApprovalFilter(opt.value);
+                setExpandedOrderId(null);
+              }}
+              active={approvalFilter === opt.value}
+            >
+              {opt.label}
+            </FilterPillButton>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <p className="text-sm text-muted-foreground">Status:</p>
         <div className="flex flex-wrap gap-2">
@@ -404,6 +445,7 @@ export function OrdersAdminPanel() {
               const status = statusConfig[order.status];
               const nextStatus = status.nextStatus;
               const isMenuOpen = menuOpenOrderId === order.id;
+              const pendingApprovalLabel = approvalLabel(order.approvalStatus);
 
               return (
                 <Fragment key={order.id}>
@@ -438,22 +480,44 @@ export function OrdersAdminPanel() {
                     </TableUI.TableCell>
                     <TableUI.TableCell>{formatDate(order.createdAt)}</TableUI.TableCell>
                     <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
-                      <Badge
-                        variant={
-                          order.status === "READY_FOR_PICKUP"
-                            ? "orderThird"
-                            : order.status === "OPEN"
-                              ? "orderFirst"
-                              : "orderSecond"
-                        }
-                        className={status.pillClassName}
-                      >
-                        {status.label}
-                      </Badge>
+                      {pendingApprovalLabel ? (
+                        <Badge variant={order.approvalStatus === "PENDING" ? "orderSecond" : "destructive"}>
+                          {pendingApprovalLabel}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant={
+                            order.status === "READY_FOR_PICKUP"
+                              ? "orderThird"
+                              : order.status === "OPEN"
+                                ? "orderFirst"
+                                : "orderSecond"
+                          }
+                          className={status.pillClassName}
+                        >
+                          {status.label}
+                        </Badge>
+                      )}
                     </TableUI.TableCell>
                     <TableUI.TableCell className="w-[14rem] min-w-[14rem] max-w-[14rem] whitespace-nowrap">
                       <div className="flex items-center justify-center gap-2 px-1">
-                        {nextStatus && status.advanceActionLabel && order.status !== "READY_FOR_PICKUP" ? (
+                        {order.approvalStatus === "PENDING" ? (
+                          <Link
+                            href={`/teacher/orders?freigabe=${encodeURIComponent(order.id)}`}
+                            onClick={(event) => event.stopPropagation()}
+                            className={buttonClassName({
+                              variant: "glass",
+                              size: "sm",
+                              className: "h-8 w-[13.5rem] max-w-[13.5rem] rounded-sm",
+                            })}
+                          >
+                            Zur Freigabe
+                          </Link>
+                        ) : pendingApprovalLabel ? (
+                          <span className="inline-flex rounded-full py-1.5 text-center text-xs text-muted-foreground">
+                            —
+                          </span>
+                        ) : nextStatus && status.advanceActionLabel && order.status !== "READY_FOR_PICKUP" ? (
                           <OrderStatusActionButton
                             variant={nextStatus === "READY_FOR_PICKUP" ? "solid" : "glass"}
                             actionLabel={status.advanceActionLabel}
@@ -574,6 +638,29 @@ export function OrdersAdminPanel() {
                           </Card>
                         </div>
 
+                        {expandedOrderQuery.data.approvalStatus !== "NOT_REQUIRED" ? (
+                          <Card variant="detail">
+                            <DetailText variant="kicker">Freigabe</DetailText>
+                            <DetailText variant="value">
+                              {approvalLabel(expandedOrderQuery.data.approvalStatus) ?? "Freigegeben"}
+                              {expandedOrderQuery.data.approvalGroup
+                                ? ` · Gruppe ${expandedOrderQuery.data.approvalGroup.name}`
+                                : ""}
+                              {expandedOrderQuery.data.approvalDecidedBy
+                                ? ` · durch ${userLabel(expandedOrderQuery.data.approvalDecidedBy)}`
+                                : ""}
+                              {expandedOrderQuery.data.approvalDecidedAt
+                                ? ` am ${formatDate(expandedOrderQuery.data.approvalDecidedAt)}`
+                                : ""}
+                            </DetailText>
+                            {expandedOrderQuery.data.approvalNote ? (
+                              <DetailText variant="subvalue" className="whitespace-pre-wrap">
+                                {expandedOrderQuery.data.approvalNote}
+                              </DetailText>
+                            ) : null}
+                          </Card>
+                        ) : null}
+
                         {expandedOrderQuery.data.workerNote ? (
                           <Card variant="detail">
                             <DetailText variant="noteTitle">
@@ -604,7 +691,9 @@ export function OrdersAdminPanel() {
                             </TableUI.SubtableHeader>
                             <TableUI.SubtableBody>
                               {expandedOrderQuery.data.items.map((item) => {
-                                const canEditQuantity = order.status === "OPEN";
+                                const canEditQuantity =
+                                  order.status === "OPEN" &&
+                                  (order.approvalStatus === "NOT_REQUIRED" || order.approvalStatus === "APPROVED");
                                 const unitLabel =
                                   item.product.baseUnit === "PCS" ? "STK" : item.product.baseUnit;
 

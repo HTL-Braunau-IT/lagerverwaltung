@@ -97,6 +97,10 @@ export function emailItemList(items: string[]) {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;margin:0;">${body}</table>`;
 }
 
+export function emailButton(label: string, href: string) {
+  return `<p style="margin:0 0 16px 0;"><a href="${emailText(href)}" style="display:inline-block;padding:10px 18px;border-radius:8px;background:${palette.primary};color:${palette.primaryText};font-size:14px;font-weight:700;text-decoration:none;">${emailText(label)}</a></p>`;
+}
+
 export function emailSection(innerHtml: string) {
   return `<div style="margin:0 0 16px 0;padding:14px;border:1px solid ${palette.border};border-radius:10px;background:${palette.card};">${innerHtml}</div>`;
 }

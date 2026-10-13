@@ -4,6 +4,13 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { listTeachersFromGraph } from "~/server/graph/teachers";
 import { notifyStudentRequestCreated } from "~/server/mail/order-events";
+import { dispatchOrderPlaced } from "~/server/approval/notifications";
+import { orderTotal } from "~/server/approval/rules";
+import {
+  buildApprovalSnapshot,
+  loadApproversForOrder,
+  resolveApprovalForOrderer,
+} from "~/server/approval/service";
 import {
   aggregateProductRequirements,
   assertSufficientStock,
@@ -635,7 +642,7 @@ export const cartRouter = createTRPCRouter({
 
         const costCenter = await tx.costCenter.findUnique({
           where: { id: input.costCenterId },
-          select: { id: true, isActive: true },
+          select: { id: true, code: true, name: true, isActive: true },
         });
 
         if (!costCenter || !costCenter.isActive) {
@@ -689,6 +696,12 @@ export const cartRouter = createTRPCRouter({
 
         const orderNumber = formatOrderNumber(year, counter.lastNumber);
 
+        const approval = await resolveApprovalForOrderer(
+          tx,
+          { id: ctx.session.user.id, role: ctx.session.user.role },
+          orderTotal(cart.items.map((item) => ({ quantity: item.quantity, price: item.product.price }))),
+        );
+
         const order = await tx.order.create({
           data: {
             orderNumber,
@@ -697,6 +710,13 @@ export const cartRouter = createTRPCRouter({
             storageRoomId: targetStorageRoom.id,
             workerNote,
             status: "OPEN",
+            ...(approval.required
+              ? {
+                  approvalStatus: "PENDING" as const,
+                  approvalGroupId: approval.approvalGroupId,
+                  approvalSnapshot: buildApprovalSnapshot({ costCenter, items: cart.items }),
+                }
+              : {}),
             items: {
               create: cart.items.map((item) => ({
                 productId: item.productId,
@@ -708,6 +728,7 @@ export const cartRouter = createTRPCRouter({
             id: true,
             orderNumber: true,
             status: true,
+            approvalStatus: true,
           },
         });
 
@@ -720,6 +741,7 @@ export const cartRouter = createTRPCRouter({
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
+          approvalStatus: order.approvalStatus,
           items: cart.items.map((item) => ({
             name: item.product.name,
             quantity: item.quantity,
@@ -728,6 +750,10 @@ export const cartRouter = createTRPCRouter({
           })),
         };
       });
+
+      if (result.ok) {
+        dispatchOrderPlaced(ctx.db, result.orderId);
+      }
 
       return result;
     }),
@@ -883,7 +909,7 @@ export const cartRouter = createTRPCRouter({
     }),
 
   listMyOrders: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.order.findMany({
+    const orders = await ctx.db.order.findMany({
       where: {
         userId: ctx.session.user.id,
       },
@@ -893,6 +919,16 @@ export const cartRouter = createTRPCRouter({
         orderNumber: true,
         status: true,
         createdAt: true,
+        approvalStatus: true,
+        approvalNote: true,
+        approvalDecidedAt: true,
+        approvalGroupId: true,
+        approvalDecidedBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
         sourceRequest: {
           select: {
             id: true,
@@ -930,6 +966,24 @@ export const cartRouter = createTRPCRouter({
         },
       },
     });
+
+    const pendingGroupIds = [
+      ...new Set(orders.filter((order) => order.approvalStatus === "PENDING").map((order) => order.approvalGroupId ?? "")),
+    ];
+    const approverNamesByGroup = new Map<string, string[]>();
+    for (const groupId of pendingGroupIds) {
+      const approvers = await loadApproversForOrder(ctx.db, groupId || null);
+      approverNamesByGroup.set(
+        groupId,
+        approvers.map((approver) => approver.name ?? approver.email ?? "-"),
+      );
+    }
+
+    return orders.map(({ approvalGroupId, ...order }) => ({
+      ...order,
+      pendingApprovers:
+        order.approvalStatus === "PENDING" ? (approverNamesByGroup.get(approvalGroupId ?? "") ?? []) : [],
+    }));
   }),
 
   listMySubmittedRequests: protectedProcedure.query(async ({ ctx }) => {
@@ -950,6 +1004,7 @@ export const cartRouter = createTRPCRouter({
             id: true,
             orderNumber: true,
             status: true,
+            approvalStatus: true,
             createdAt: true,
           },
         },

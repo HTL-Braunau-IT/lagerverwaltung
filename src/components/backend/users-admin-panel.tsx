@@ -120,27 +120,28 @@ export function UsersAdminPanel() {
               <TableUI.TableHead>Name</TableUI.TableHead>
               <TableUI.TableHead>E-Mail</TableUI.TableHead>
               <TableUI.TableHead>Rolle</TableUI.TableHead>
+              <TableUI.TableHead>Freigabegruppe</TableUI.TableHead>
               <TableUI.TableHead>Lagerraumzugriff</TableUI.TableHead>
             </tr>
           </TableUI.TableHeader>
           <TableUI.TableBody>
             {usersQuery.isLoading ? (
               <TableUI.TableRow className="cursor-default">
-                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                   Benutzer werden geladen...
                 </TableUI.TableCell>
               </TableUI.TableRow>
             ) : null}
             {usersQuery.error ? (
               <TableUI.TableRow className="cursor-default">
-                <TableUI.TableCell colSpan={4} className="text-destructive">
+                <TableUI.TableCell colSpan={5} className="text-destructive">
                   Benutzer konnten nicht geladen werden.
                 </TableUI.TableCell>
               </TableUI.TableRow>
             ) : null}
             {!usersQuery.isLoading && !usersQuery.error && users.length === 0 ? (
               <TableUI.TableRow className="cursor-default">
-                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
                   Keine Benutzer gefunden.
                 </TableUI.TableCell>
               </TableUI.TableRow>
@@ -168,6 +169,7 @@ export function UsersAdminPanel() {
                     <TableUI.TableCell className="font-medium text-foreground">{user.name ?? "-"}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{user.email ?? "-"}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">{user.role}</TableUI.TableCell>
+                    <TableUI.TableCell className="text-muted-foreground">{user.approvalGroup?.name ?? "-"}</TableUI.TableCell>
                     <TableUI.TableCell className="text-muted-foreground">
                       {user.hasAllStorageRoomAccess ? "Alle Lagerräume" : `${user.storageRoomAccesses.length} Räume`}
                     </TableUI.TableCell>
@@ -175,7 +177,7 @@ export function UsersAdminPanel() {
 
                   <TableUI.TableExpandableRow
                     open={isExpanded}
-                    colSpan={4}
+                    colSpan={5}
                     rowClassName="bg-muted/30"
                     cellClassName="p-3"
                   >

@@ -7,6 +7,8 @@ import * as TableUI from "~/components/ui/table";
 import { api } from "~/trpc/react";
 import { Badge } from "~/components/ui/badge";
 import { SkuPill } from "~/components/ui/sku-pill";
+import { Button } from "~/components/ui/button";
+import { useToast } from "~/components/ui/toast";
 
 function decimalToNumber(value: unknown) {
   if (typeof value === "number") return value;
@@ -36,6 +38,24 @@ function orderStatusBadgeVariant(
   return "orderSecond";
 }
 
+type ApprovalStatus = "NOT_REQUIRED" | "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+
+function formatOrderProgress(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP", approvalStatus: ApprovalStatus) {
+  if (approvalStatus === "PENDING") return "Wartet auf Freigabe";
+  if (approvalStatus === "REJECTED") return "Abgelehnt";
+  if (approvalStatus === "CANCELLED") return "Zurückgezogen";
+  return formatStatus(status);
+}
+
+function orderProgressBadgeVariant(
+  status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP",
+  approvalStatus: ApprovalStatus,
+) {
+  if (approvalStatus === "PENDING") return "orderSecond";
+  if (approvalStatus === "REJECTED" || approvalStatus === "CANCELLED") return "destructive";
+  return orderStatusBadgeVariant(status);
+}
+
 function formatRequestStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
   if (status === "PENDING") return "Wartet auf Freigabe";
   if (status === "APPROVED") return "Freigegeben";
@@ -63,6 +83,15 @@ export default function OrdersPage() {
   });
   const submittedRequestsQuery = api.cart.listMySubmittedRequests.useQuery(undefined, {
     enabled: session?.user.role === "STUDENT",
+  });
+  const utils = api.useUtils();
+  const toast = useToast();
+  const cancelMutation = api.approval.cancelMine.useMutation({
+    onSuccess: async () => {
+      await utils.cart.listMyOrders.invalidate();
+      toast.success("Bestellung zurückgezogen.");
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   return (
@@ -116,7 +145,7 @@ export default function OrdersPage() {
                           <p className="mt-2 text-xs text-slate-600">
                             Status:{" "}
                             <span className="font-medium">
-                              {formatStatus(request.approvedOrder.status)}
+                              {formatOrderProgress(request.approvedOrder.status, request.approvedOrder.approvalStatus)}
                             </span>
                           </p>
                         </div>
@@ -310,11 +339,46 @@ export default function OrdersPage() {
                     </div>
 
                     <div className="justify-self-end">
-                      <Badge variant={orderStatusBadgeVariant(order.status)}>
-                        {formatStatus(order.status)}
+                      <Badge variant={orderProgressBadgeVariant(order.status, order.approvalStatus)}>
+                        {formatOrderProgress(order.status, order.approvalStatus)}
                       </Badge>
                     </div>
                   </div>
+
+                  {order.approvalStatus === "PENDING" ? (
+                    <Card variant="static" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <DetailText variant="kicker">Freigabe durch</DetailText>
+                        <DetailText variant="value">
+                          {order.pendingApprovers.length > 0 ? order.pendingApprovers.join(" oder ") : "-"}
+                        </DetailText>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructiveTransparent"
+                        className="!h-9 !w-auto"
+                        disabled={cancelMutation.isPending}
+                        onClick={() => cancelMutation.mutate({ orderId: order.id })}
+                      >
+                        Zurückziehen
+                      </Button>
+                    </Card>
+                  ) : null}
+
+                  {(order.approvalStatus === "REJECTED" || order.approvalStatus === "APPROVED") &&
+                  (order.approvalNote || order.approvalDecidedBy) ? (
+                    <Card variant={order.approvalStatus === "REJECTED" ? "warning" : "static"} className="mt-4">
+                      <DetailText variant="kicker">
+                        {order.approvalStatus === "REJECTED" ? "Abgelehnt" : "Freigegeben"}
+                        {order.approvalDecidedBy ? ` von ${userLabel(order.approvalDecidedBy)}` : ""}
+                      </DetailText>
+                      {order.approvalNote ? (
+                        <DetailText variant="value" className="whitespace-pre-wrap !font-normal">
+                          {order.approvalNote}
+                        </DetailText>
+                      ) : null}
+                    </Card>
+                  ) : null}
 
                   <div className="mt-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
 

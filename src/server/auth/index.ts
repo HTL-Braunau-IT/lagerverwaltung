@@ -140,8 +140,20 @@ const resolveRoleAndAzureMetadata = async ({
   };
 };
 
+const prismaAdapter = PrismaAdapter(db);
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
+  adapter: {
+    ...prismaAdapter,
+    // Teachers can be provisioned from the Entra directory before their first login (Freigabegruppen).
+    // Match them case-insensitively so the Azure account links to the existing user.
+    getUserByEmail: async (email) => {
+      const user = await db.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+      });
+      return user as Awaited<ReturnType<NonNullable<typeof prismaAdapter.getUserByEmail>>>;
+    },
+  },
   session: { strategy: "database" },
   providers: [
     AzureAD({

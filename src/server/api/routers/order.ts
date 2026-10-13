@@ -10,10 +10,19 @@ import {
   resolveSingleStorageRoomForProductIds,
 } from "~/server/api/routers/utils/storage-access";
 import { notifyOrderStatusChanged, notifyTeacherRequestApproved } from "~/server/mail/order-events";
+import { dispatchOrderPlaced } from "~/server/approval/notifications";
+import { orderTotal } from "~/server/approval/rules";
+import {
+  buildApprovalSnapshot,
+  isReleasedApprovalStatus,
+  releasedOrderWhere,
+  resolveApprovalForOrderer,
+} from "~/server/approval/service";
 
 const backendListOrdersInput = z.object({
   search: z.string().trim().optional(),
   status: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]).optional(),
+  approval: z.enum(["RELEASED", "PENDING", "DECLINED"]).default("RELEASED"),
   limit: z.number().int().min(1).max(300).default(150),
   cursor: z.string().min(1).optional(),
 });
@@ -119,6 +128,23 @@ function ensureRequestIsPending(status: "PENDING" | "APPROVED" | "REJECTED") {
 
 type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
 
+function approvalWhereForFilter(filter: "RELEASED" | "PENDING" | "DECLINED") {
+  if (filter === "PENDING") return { approvalStatus: "PENDING" as const };
+  if (filter === "DECLINED") return { approvalStatus: { in: ["REJECTED" as const, "CANCELLED" as const] } };
+  return releasedOrderWhere;
+}
+
+function assertOrderReleased(approvalStatus: string) {
+  if (isReleasedApprovalStatus(approvalStatus)) return;
+  throw new TRPCError({
+    code: "BAD_REQUEST",
+    message:
+      approvalStatus === "PENDING"
+        ? "Diese Bestellung wartet noch auf Freigabe."
+        : "Diese Bestellung wurde nicht freigegeben.",
+  });
+}
+
 function isTransitionAllowed(currentStatus: OrderStatus, nextStatus: OrderStatus) {
   if (currentStatus === nextStatus) return true;
   if (currentStatus === "READY_FOR_PICKUP" && nextStatus !== "READY_FOR_PICKUP") return false;
@@ -159,14 +185,23 @@ export const orderRouter = createTRPCRouter({
     const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
     const roomWhere = orderRoomWhereForAccess(access);
 
-    const count = await ctx.db.order.count({
-      where: {
-        status: "OPEN",
-        ...(roomWhere ?? {}),
-      },
-    });
+    const [count, pendingApprovalCount] = await Promise.all([
+      ctx.db.order.count({
+        where: {
+          status: "OPEN",
+          ...releasedOrderWhere,
+          ...(roomWhere ?? {}),
+        },
+      }),
+      ctx.db.order.count({
+        where: {
+          approvalStatus: "PENDING",
+          ...(roomWhere ?? {}),
+        },
+      }),
+    ]);
 
-    return { count };
+    return { count, pendingApprovalCount };
   }),
 
   backendList: adminProcedure.input(backendListOrdersInput).query(async ({ ctx, input }) => {
@@ -177,6 +212,7 @@ export const orderRouter = createTRPCRouter({
     const items = await ctx.db.order.findMany({
       where: {
         ...(input.status ? { status: input.status } : {}),
+        ...approvalWhereForFilter(input.approval),
         ...(search
           ? {
               OR: [
@@ -200,6 +236,22 @@ export const orderRouter = createTRPCRouter({
         orderNumber: true,
         workerNote: true,
         status: true,
+        approvalStatus: true,
+        approvalNote: true,
+        approvalDecidedAt: true,
+        approvalDecidedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvalGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
         user: {
@@ -259,6 +311,22 @@ export const orderRouter = createTRPCRouter({
         orderNumber: true,
         workerNote: true,
         status: true,
+        approvalStatus: true,
+        approvalNote: true,
+        approvalDecidedAt: true,
+        approvalDecidedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvalGroup: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
         user: {
@@ -370,6 +438,7 @@ export const orderRouter = createTRPCRouter({
           select: {
             id: true,
             status: true,
+            approvalStatus: true,
             orderNumber: true,
             storageRoomId: true,
             items: {
@@ -399,6 +468,7 @@ export const orderRouter = createTRPCRouter({
         }
 
         assertStorageRoomAllowed(access, order.storageRoomId);
+        assertOrderReleased(order.approvalStatus);
 
         if (order.status !== "READY_FOR_PICKUP") {
           throw new TRPCError({
@@ -520,6 +590,7 @@ export const orderRouter = createTRPCRouter({
           select: {
             id: true,
             status: true,
+            approvalStatus: true,
             storageRoomId: true,
             items: {
               orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -547,6 +618,7 @@ export const orderRouter = createTRPCRouter({
         }
 
         assertStorageRoomAllowed(access, order.storageRoomId);
+        assertOrderReleased(order.approvalStatus);
 
         if (order.status !== "OPEN") {
           throw new TRPCError({
@@ -612,6 +684,7 @@ export const orderRouter = createTRPCRouter({
           select: {
             id: true,
             status: true,
+            approvalStatus: true,
             storageRoomId: true,
             orderNumber: true,
             user: {
@@ -654,6 +727,7 @@ export const orderRouter = createTRPCRouter({
         }
 
         assertStorageRoomAllowed(access, order.storageRoomId);
+        assertOrderReleased(order.approvalStatus);
 
         if (order.status === input.nextStatus) {
           return {
@@ -1123,7 +1197,7 @@ export const orderRouter = createTRPCRouter({
 
         const costCenter = await tx.costCenter.findUnique({
           where: { id: input.costCenterId },
-          select: { id: true },
+          select: { id: true, code: true, name: true },
         });
         if (!costCenter) {
           throw new TRPCError({
@@ -1153,6 +1227,12 @@ export const orderRouter = createTRPCRouter({
         });
         const orderNumber = formatOrderNumber(year, counter.lastNumber);
 
+        const approval = await resolveApprovalForOrderer(
+          tx,
+          { id: ctx.session.user.id, role: ctx.session.user.role },
+          orderTotal(request.items.map((item) => ({ quantity: item.quantity, price: item.product.price }))),
+        );
+
         const order = await tx.order.create({
           data: {
             orderNumber,
@@ -1161,6 +1241,13 @@ export const orderRouter = createTRPCRouter({
             storageRoomId: targetStorageRoom.id,
             workerNote: request.workerNote,
             status: "OPEN",
+            ...(approval.required
+              ? {
+                  approvalStatus: "PENDING" as const,
+                  approvalGroupId: approval.approvalGroupId,
+                  approvalSnapshot: buildApprovalSnapshot({ costCenter, items: request.items }),
+                }
+              : {}),
             items: {
               create: request.items.map((item) => ({
                 productId: item.productId,
@@ -1172,6 +1259,7 @@ export const orderRouter = createTRPCRouter({
             id: true,
             orderNumber: true,
             status: true,
+            approvalStatus: true,
           },
         });
 
@@ -1191,6 +1279,7 @@ export const orderRouter = createTRPCRouter({
           orderId: order.id,
           orderNumber: order.orderNumber,
           status: order.status,
+          approvalStatus: order.approvalStatus,
           requestId: request.id,
           teacherDisplayName: request.teacherDisplayName,
           teacherEmail: request.teacherEmail,
@@ -1218,9 +1307,11 @@ export const orderRouter = createTRPCRouter({
             email: result.studentEmail,
           },
           items: result.items,
+          awaitingFinalApproval: result.approvalStatus === "PENDING",
         }).catch((error) => {
           console.error("[mail.notifyTeacherRequestApproved] approval notification failed", error);
         });
+        dispatchOrderPlaced(ctx.db, result.orderId);
       }
 
       return result;

@@ -13,6 +13,8 @@ import {
   WarehouseIcon,
   ListIcon,
   AdministrationIcon,
+  ApprovalGroupIcon,
+  SettingsIcon,
 } from "~/components/layout/icon-renders";
 import { api } from "~/trpc/react";
 
@@ -50,6 +52,12 @@ export function BackendSidebarNav() {
         heading: "System",
         items: [          
           { href: "/backend/users", label: "Benutzer", icon: <UsersIcon className="h-4 w-4" /> },
+          {
+            href: "/backend/approval-groups",
+            label: "Freigabegruppen",
+            icon: <ApprovalGroupIcon className="h-4 w-4" />,
+          },
+          { href: "/backend/settings", label: "Einstellungen", icon: <SettingsIcon className="h-4 w-4" /> },
           { href: "/backend/info", label: "Info", icon: <AdministrationIcon className="h-4 w-4" /> },
         ],
       },
