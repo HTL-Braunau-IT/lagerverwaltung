@@ -15,6 +15,7 @@ import {
   aggregateProductRequirements,
   assertSufficientStock,
   calculatePartListMaxOrderable,
+  decimalToNumber,
 } from "~/server/api/routers/utils/stock";
 import { resolveSingleStorageRoomForProductIds } from "~/server/api/routers/utils/storage-access";
 import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
@@ -470,6 +471,111 @@ export const cartRouter = createTRPCRouter({
       return { ok: true as const };
     });
   }),
+
+  // Refill the cart from one of the user's past orders (#114). Adds each still-orderable
+  // product (exists, visible, in stock) as a standalone line, capped at current stock.
+  reorder: protectedProcedure
+    .input(sessionInput.extend({ orderId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.$transaction(async (tx) => {
+        const order = await tx.order.findFirst({
+          where: { id: input.orderId, userId: ctx.session.user.id },
+          select: {
+            id: true,
+            items: {
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+              select: {
+                productId: true,
+                quantity: true,
+                product: { select: { id: true, isVisible: true, quantityOnHand: true } },
+              },
+            },
+          },
+        });
+
+        if (!order || order.items.length === 0) {
+          return { ok: false as const, reason: "ORDER_NOT_FOUND" as const };
+        }
+
+        const orderable = order.items.filter(
+          (item) =>
+            item.product && item.product.isVisible && decimalToNumber(item.product.quantityOnHand) > 0,
+        );
+        if (orderable.length === 0) {
+          return { ok: false as const, reason: "NOTHING_AVAILABLE" as const };
+        }
+
+        const cart = await tx.cart.upsert({
+          where: { sessionId: input.sessionId },
+          create: { sessionId: input.sessionId },
+          update: {},
+          select: { id: true },
+        });
+
+        let incomingRoom: { id: string; name: string };
+        try {
+          incomingRoom = await resolveSingleStorageRoomForProductIds(
+            tx,
+            orderable.map((item) => item.productId),
+          );
+        } catch (error) {
+          if (error instanceof TRPCError && error.message === "MIXED_STORAGE_ROOMS_INTERNAL") {
+            return { ok: false as const, reason: "MIXED_STORAGE_ROOMS" as const };
+          }
+          throw error;
+        }
+
+        const currentCartRoom = await resolveCurrentCartStorageRoom(tx, cart.id);
+        if (currentCartRoom && currentCartRoom.id !== incomingRoom.id) {
+          throw createMixedStorageRoomsError(currentCartRoom.name, incomingRoom.name);
+        }
+
+        let addedCount = 0;
+        let adjustedCount = 0;
+        for (const item of orderable) {
+          const available = decimalToNumber(item.product!.quantityOnHand);
+          const wanted = decimalToNumber(item.quantity);
+
+          const existingLine = await tx.cartItem.findFirst({
+            where: { cartId: cart.id, productId: item.productId, sourcePartListId: null },
+            select: { id: true, quantity: true },
+          });
+          const existingQty = existingLine ? decimalToNumber(existingLine.quantity) : 0;
+          const cappedTotal = Math.min(existingQty + wanted, available);
+          const increment = cappedTotal - existingQty;
+          if (increment <= 0) continue;
+          if (cappedTotal < existingQty + wanted) adjustedCount += 1;
+
+          if (existingLine) {
+            await tx.cartItem.update({
+              where: { id: existingLine.id },
+              data: { quantity: { increment: increment.toString() } },
+            });
+          } else {
+            await tx.cartItem.create({
+              data: {
+                cartId: cart.id,
+                productId: item.productId,
+                sourcePartListId: null,
+                quantity: increment.toString(),
+              },
+            });
+          }
+          addedCount += 1;
+        }
+
+        if (addedCount === 0) {
+          return { ok: false as const, reason: "NOTHING_AVAILABLE" as const };
+        }
+
+        return {
+          ok: true as const,
+          addedCount,
+          adjustedCount,
+          skippedCount: order.items.length - orderable.length,
+        };
+      });
+    }),
 
   setItemQuantity: publicProcedure
     .input(

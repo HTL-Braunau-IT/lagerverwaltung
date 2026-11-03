@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Card, DetailText } from "~/components/ui/detail-card";
 import * as TableUI from "~/components/ui/table";
@@ -75,6 +76,17 @@ function userLabel(user: { name: string | null; email: string | null }) {
   return user.name?.trim() || user.email?.trim() || "Unbekannt";
 }
 
+/** Shared with the checkout panel so "Erneut bestellen" fills the same cart session. */
+const CART_SESSION_STORAGE_KEY = "lw_cart_session_id";
+function getOrCreateCartSessionId() {
+  if (typeof window === "undefined") return "";
+  const existing = window.localStorage.getItem(CART_SESSION_STORAGE_KEY);
+  if (existing) return existing;
+  const created = crypto.randomUUID();
+  window.localStorage.setItem(CART_SESSION_STORAGE_KEY, created);
+  return created;
+}
+
 export default function OrdersPage() {
   const { data: session } = useSession();
   const showOwnOrders = !!session?.user.role && session.user.role !== "STUDENT";
@@ -86,12 +98,48 @@ export default function OrdersPage() {
   });
   const utils = api.useUtils();
   const toast = useToast();
+  const router = useRouter();
+  const [cartSessionId] = useState(() =>
+    typeof window === "undefined" ? "" : getOrCreateCartSessionId(),
+  );
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
   const cancelMutation = api.approval.cancelMine.useMutation({
     onSuccess: async () => {
       await utils.cart.listMyOrders.invalidate();
       toast.success("Bestellung zurückgezogen.");
     },
     onError: (error) => toast.error(error.message),
+  });
+  const reorderMutation = api.cart.reorder.useMutation({
+    onSuccess: async (data) => {
+      setReorderingId(null);
+      if (!data.ok) {
+        if (data.reason === "NOTHING_AVAILABLE") {
+          toast.error("Keine Produkte dieser Bestellung sind derzeit verfügbar.");
+        } else if (data.reason === "MIXED_STORAGE_ROOMS") {
+          toast.warning("Die Bestellung enthält Produkte aus mehreren Lagerräumen.");
+        } else {
+          toast.error("Bestellung wurde nicht gefunden.");
+        }
+        return;
+      }
+      await utils.cart.get.invalidate({ sessionId: cartSessionId });
+      const parts = [`${data.addedCount} Produkt${data.addedCount === 1 ? "" : "e"} in den Warenkorb gelegt.`];
+      if (data.adjustedCount > 0) parts.push(`${data.adjustedCount} auf den verfügbaren Bestand reduziert.`);
+      if (data.skippedCount > 0) parts.push(`${data.skippedCount} nicht mehr verfügbar.`);
+      toast.success(parts.join(" "));
+      router.push("/carts");
+    },
+    onError: (error) => {
+      setReorderingId(null);
+      if (error.message.startsWith("MIXED_STORAGE_ROOMS")) {
+        toast.warning(
+          "Dein Warenkorb enthält Produkte aus einem anderen Lagerraum. Bitte zuerst leeren oder bestellen.",
+        );
+      } else {
+        toast.error(error.message);
+      }
+    },
   });
 
   return (
@@ -456,6 +504,24 @@ export default function OrdersPage() {
                         </TableUI.Subtable>
                       </div>
                     </details>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="glass"
+                      className="!h-9 !w-auto"
+                      disabled={reorderMutation.isPending && reorderingId === order.id}
+                      onClick={() => {
+                        if (!cartSessionId) return;
+                        setReorderingId(order.id);
+                        reorderMutation.mutate({ sessionId: cartSessionId, orderId: order.id });
+                      }}
+                    >
+                      {reorderMutation.isPending && reorderingId === order.id
+                        ? "Wird hinzugefügt..."
+                        : "Erneut bestellen"}
+                    </Button>
                   </div>
                   </Card>
                   );
