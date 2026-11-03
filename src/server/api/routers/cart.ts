@@ -721,10 +721,12 @@ export const cartRouter = createTRPCRouter({
       sessionInput.extend({
         costCenterId: z.string().min(1),
         workerNote: workerNoteInput,
+        personalNote: workerNoteInput,
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const workerNote = requireWorkerNoteForStudent(ctx.session.user.role, input.workerNote);
+      const personalNote = input.personalNote?.trim() ? input.personalNote.trim() : null;
       const result = await ctx.db.$transaction(async (tx) => {
         const cart = await tx.cart.findUnique({
           where: { sessionId: input.sessionId },
@@ -820,6 +822,7 @@ export const cartRouter = createTRPCRouter({
             costCenterId: input.costCenterId,
             storageRoomId: targetStorageRoom.id,
             workerNote,
+            personalNote,
             status: "OPEN",
             ...(approval.required
               ? {
@@ -1030,6 +1033,7 @@ export const cartRouter = createTRPCRouter({
         orderNumber: true,
         status: true,
         createdAt: true,
+        personalNote: true,
         approvalStatus: true,
         approvalNote: true,
         approvalDecidedAt: true,

@@ -46,6 +46,7 @@ export function CheckoutPanel(props: {
   const [costCenterId, setCostCenterId] = useState("");
   const [teacherExternalId, setTeacherExternalId] = useState("");
   const [workerNote, setWorkerNote] = useState("");
+  const [personalNote, setPersonalNote] = useState("");
 
   const cartQuery = api.cart.get.useQuery(
     { sessionId },
@@ -247,6 +248,29 @@ export function CheckoutPanel(props: {
         ) : null}
       </div>
 
+      {!isStudentCheckout ? (
+        <div className="mt-4 space-y-2">
+          <DetailText variant="value">Notiz für mich</DetailText>
+          <div className="relative">
+            <Textarea
+              id="personal-note"
+              value={personalNote}
+              onChange={(event) => setPersonalNote(event.target.value)}
+              maxLength={500}
+              rows={3}
+              className="border border-primary/10 pb-8"
+              placeholder="Nur für dich sichtbar in deiner Bestellhistorie – nicht für das Lager."
+            />
+            <span
+              className="pointer-events-none absolute bottom-2 right-4 text-xs tabular-nums text-muted-foreground"
+              aria-live="polite"
+            >
+              {personalNote.trim().length}/500
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <Button
         type="button"
         onClick={() => {
@@ -262,6 +286,7 @@ export function CheckoutPanel(props: {
             sessionId,
             costCenterId,
             workerNote: trimmedWorkerNote || undefined,
+            personalNote: personalNote.trim() || undefined,
           });
         }}
         disabled={!canSubmit}

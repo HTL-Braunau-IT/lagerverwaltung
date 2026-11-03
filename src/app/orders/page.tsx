@@ -428,6 +428,15 @@ export default function OrdersPage() {
                     </Card>
                   ) : null}
 
+                  {order.personalNote ? (
+                    <Card variant="static" className="mt-4">
+                      <DetailText variant="kicker">Notiz für mich</DetailText>
+                      <DetailText variant="value" className="whitespace-pre-wrap !font-normal">
+                        {order.personalNote}
+                      </DetailText>
+                    </Card>
+                  ) : null}
+
                   <div className="mt-4 h-px w-full bg-slate-300/70" aria-hidden="true" />
 
                   <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4">

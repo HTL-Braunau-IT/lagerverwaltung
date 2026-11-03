@@ -193,6 +193,8 @@ model Order {
     storageRoomId String
     sourcePartListId String?
     workerNote   String?
+    /** Private note the orderer writes for themselves; never shown to the warehouse. */
+    personalNote String?
     status       OrderStatus @default(OPEN)
     approvalStatus OrderApprovalStatus @default(NOT_REQUIRED)
     approvalGroupId String?
