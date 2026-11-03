@@ -184,6 +184,12 @@ export function Search() {
     };
   }, []);
 
+  // Must stay above the early `return` below so these hooks run on every render
+  // (Rules of Hooks); they don't depend on `mode`.
+  const shopProductCount = useShopProductCountSnapshot();
+  const hasActiveShopFilters = useShopHasActiveFilters();
+  const resetShopFilters = useShopFiltersReset();
+
   const handleChange = (next: string) => {
     setValue(next);
 
@@ -220,10 +226,7 @@ export function Search() {
       ? "global-product-search"
       : `header-${mode}-search`;
 
-  const shopProductCount = useShopProductCountSnapshot();
   const showShopProductCount = mode === "home" && shopProductCount !== null;
-  const hasActiveShopFilters = useShopHasActiveFilters();
-  const resetShopFilters = useShopFiltersReset();
   const showShopClearButton =
     mode === "home" && (value.trim() !== "" || hasActiveShopFilters);
 
