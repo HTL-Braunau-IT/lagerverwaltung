@@ -468,8 +468,10 @@ export const productRouter = createTRPCRouter({
 
   // Products an admin flagged for restocking, for the backend "Nachbestellliste" (#111).
   backendReorderList: adminProcedure.query(async ({ ctx }) => {
+    const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+    const roomWhere = productRoomWhereForAccess(access);
     return ctx.db.product.findMany({
-      where: { needsReorder: true },
+      where: { needsReorder: true, ...(roomWhere ?? {}) },
       orderBy: [{ name: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -824,6 +826,8 @@ export const productRouter = createTRPCRouter({
   backendSetReorder: adminProcedure
     .input(z.object({ id: z.string().min(1), needsReorder: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
+      const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
+      await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.id]);
       await ctx.db.product.update({
         where: { id: input.id },
         data: { needsReorder: input.needsReorder },
