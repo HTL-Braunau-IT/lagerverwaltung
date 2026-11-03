@@ -553,7 +553,9 @@ export function OrdersAdminPanel() {
                             type="button"
                             size="sm"
                             variant="glass"
-                            className="h-8 w-[13.5rem] max-w-[13.5rem] rounded-sm"
+                            // Mirror the OrderStatusActionButton split-button silhouette so the
+                            // dropdown-only trigger matches the in-progress action buttons (#79).
+                            className="h-8 w-[13.5rem] max-w-[13.5rem] overflow-hidden rounded-sm !items-stretch !justify-start !px-0 !py-0"
                             onClick={(event) => {
                               event.stopPropagation();
                               setMenuOpenOrderId((current) => {
@@ -571,8 +573,15 @@ export function OrdersAdminPanel() {
                               }
                             }}
                           >
-                            Aktionen
-                            <ChevronDownIcon open={isMenuOpen} className="ml-1 h-4 w-4" />
+                            <span className="flex h-full min-w-0 flex-1 items-center justify-center text-center text-xs text-current">
+                              Aktionen
+                            </span>
+                            <span aria-hidden="true" className="shrink-0 self-center text-xs text-border select-none">
+                              |
+                            </span>
+                            <span className="inline-flex h-full shrink-0 items-center px-2 text-current">
+                              <ChevronDownIcon open={isMenuOpen} className="h-4 w-4" />
+                            </span>
                           </Button>
                         ) : (
                           <span
