@@ -88,17 +88,21 @@ export function TableExpandableRow({
 }: TableExpandableRowProps) {
   const baseContentClassName = "w-full overflow-hidden rounded-md border-0 pt-2 pb-1.5 px-2";
   const contentRef = React.useRef<HTMLDivElement | null>(null);
-  const lastOpenChildrenRef = React.useRef<React.ReactNode>(null);
   const prevOpenForExitRef = React.useRef(open);
   const closeRafRef = React.useRef<{ outer?: number; inner?: number }>({});
   const [maxHeight, setMaxHeight] = React.useState<string>("0px");
   const [exitActive, setExitActive] = React.useState(false);
 
-  if (open) {
-    lastOpenChildrenRef.current = children;
+  // Remember the children from the last open render so the panel keeps showing them
+  // during the close animation (parents often pass `null` once `open` is false). This
+  // is React's "store info from previous renders" pattern — the setState during render
+  // is collapsed by React and avoids reading/writing a ref during render.
+  const [lastOpenChildren, setLastOpenChildren] = React.useState<React.ReactNode>(null);
+  if (open && children !== lastOpenChildren) {
+    setLastOpenChildren(children);
   }
 
-  const displayChildren = open ? children : exitActive ? lastOpenChildrenRef.current : null;
+  const displayChildren = open ? children : exitActive ? lastOpenChildren : null;
   const panelOpen = open || exitActive;
 
   React.useLayoutEffect(() => {

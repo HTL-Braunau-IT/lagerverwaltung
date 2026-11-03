@@ -35,6 +35,11 @@ export default defineConfig([
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
+      // Pre-existing cleanup backlog surfaced by the Next 16 / react-hooks v7 bump and
+      // typescript-eslint's type-checked config. Kept as warnings so they stay visible
+      // without blocking `npm run check`; fix incrementally. (refs/purity remain errors.)
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
   {

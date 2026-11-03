@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 
@@ -84,7 +84,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
   const outstandingTotal = sumOutstandingAcrossLoan(loan.items);
   const isActive = outstandingTotal > 0;
 
-  const { activeBorrowedAt, activeDueAt, dueBorderClass, dueTextClass } = useMemo(() => {
+  const { activeBorrowedAt, activeDueAt } = useMemo(() => {
     const items = Array.isArray(loan.items) ? loan.items : [];
     const outstandingItems = items.filter((item: any) => outstandingForLine(item) > 0);
     const relevant = outstandingItems.length > 0 ? outstandingItems : items;
@@ -106,15 +106,27 @@ function LoanRequestCard({ loan }: { loan: any }) {
     const activeDueAt =
       dueAts.length > 0 ? new Date(Math.min(...dueAts.map((d: Date) => d.getTime()))) : null;
 
-    const dueDaysLeft = activeDueAt ? Math.ceil((activeDueAt.getTime() - Date.now()) / 86_400_000) : null;
-   
+    return { activeBorrowedAt, activeDueAt };
+  }, [loan.items]);
+
+  // The due-date tone depends on the wall clock. Read `Date.now()` after mount instead of
+  // during render (render must stay pure); until then the due date shows the neutral tone.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
+
+  const { dueBorderClass, dueTextClass } = useMemo(() => {
+    const dueDaysLeft =
+      activeDueAt && now !== null ? Math.ceil((activeDueAt.getTime() - now) / 86_400_000) : null;
+
     const dueTone = dueDaysLeft === null ? "" : dueDaysLeft <= 0 ? "red" : dueDaysLeft <= 3 ? "amber" : "default";
 
     const dueTextClass = dueTone === "red" ? "text-red-600" : dueTone === "amber" ? "text-amber-600" : "text-slate-900";
     const dueBorderClass = dueTone === "red" ? "border-red-600" : dueTone === "amber" ? "border-amber-600" : "border-border";
 
-    return { activeBorrowedAt, activeDueAt, dueBorderClass, dueTextClass };
-  }, [loan.items]);
+    return { dueBorderClass, dueTextClass };
+  }, [activeDueAt, now]);
 
   return (
 
