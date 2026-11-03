@@ -4,7 +4,7 @@ import path from "node:path";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { adminProcedure, createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 import { getQuantityStepForBaseUnit, isQuantityAlignedToStep } from "~/lib/quantity-rules";
 import {
   assertProductsAccessibleByRoomAccess,
@@ -47,6 +47,7 @@ const listProductsInput = z.object({
   search: z.string().trim().optional(),
   categoryId: z.string().min(1).optional(),
   storageLocationId: z.string().min(1).optional(),
+  favoritesOnly: z.boolean().optional(),
   limit: z.number().int().min(1).max(100).default(24),
   cursor: z.string().min(1).optional(),
 });
@@ -181,6 +182,9 @@ export const productRouter = createTRPCRouter({
     if (input.storageLocationId) {
       andFilters.push({ storageLocationId: input.storageLocationId });
     }
+    if (input.favoritesOnly && ctx.session?.user) {
+      andFilters.push({ favoritedBy: { some: { userId: ctx.session.user.id } } });
+    }
     if (search) {
       andFilters.push({
         OR: [
@@ -269,6 +273,33 @@ export const productRouter = createTRPCRouter({
       totalAvailableCount,
     };
   }),
+
+  // Per-user favourites (#87).
+  listFavoriteIds: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.userFavoriteProduct.findMany({
+      where: { userId: ctx.session.user.id },
+      select: { productId: true },
+    });
+    return rows.map((row) => row.productId);
+  }),
+
+  toggleFavorite: protectedProcedure
+    .input(z.object({ productId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.userFavoriteProduct.findUnique({
+        where: { userId_productId: { userId: ctx.session.user.id, productId: input.productId } },
+        select: { id: true },
+      });
+      if (existing) {
+        await ctx.db.userFavoriteProduct.delete({ where: { id: existing.id } });
+        return { favorited: false as const };
+      }
+      await ctx.db.userFavoriteProduct.create({
+        data: { userId: ctx.session.user.id, productId: input.productId },
+        select: { id: true },
+      });
+      return { favorited: true as const };
+    }),
 
   byId: publicProcedure
     .input(z.object({ id: z.string().min(1) }))

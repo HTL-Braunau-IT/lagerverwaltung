@@ -90,6 +90,7 @@ export function Storefront() {
   );
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const [searchTerm, setSearchTerm] = useState(searchFromUrl.trim());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [activeAddProductId, setActiveAddProductId] = useState<string | null>(null);
   const [quantitiesByProduct, setQuantitiesByProduct] = useState<Record<string, string>>({});
   const [showCartModal, setShowCartModal] = useState(false);
@@ -140,12 +141,26 @@ export function Storefront() {
       search: searchTerm || undefined,
       categoryId: selectedCategoryId,
       storageLocationId: selectedStorageLocationId,
+      favoritesOnly: showFavoritesOnly || undefined,
       limit: 24,
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     },
   );
+  const favoriteIdsQuery = api.product.listFavoriteIds.useQuery(undefined, {
+    enabled: Boolean(session?.user),
+  });
+  const favoriteIds = useMemo(() => new Set(favoriteIdsQuery.data ?? []), [favoriteIdsQuery.data]);
+  const toggleFavoriteMutation = api.product.toggleFavorite.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.product.listFavoriteIds.invalidate(),
+        showFavoritesOnly ? utils.product.list.invalidate() : Promise.resolve(),
+      ]);
+    },
+    onError: () => toast.error("Favorit konnte nicht geändert werden."),
+  });
   const addItemMutation = api.cart.addItem.useMutation({
     onSuccess: async () => {
       await utils.cart.get.invalidate({ sessionId });
@@ -246,6 +261,24 @@ export function Storefront() {
         />
 
         <div className="grid auto-rows-max content-start gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-3 [@media(min-width:2200px)]:grid-cols-5">
+          {session?.user ? (
+            <div className="col-span-full -mb-2 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowFavoritesOnly((value) => !value)}
+                aria-pressed={showFavoritesOnly}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  showFavoritesOnly
+                    ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                    : "bg-card/60 text-muted-foreground hover:bg-card"
+                }`}
+              >
+                <span className={showFavoritesOnly ? "text-amber-500" : ""}>★</span>
+                Nur Favoriten
+              </button>
+            </div>
+          ) : null}
+
           {productQuery.isLoading && (
             <div className="col-span-full p-5 text-muted-foreground">
               <p className="text-sm font-medium text-foreground">Produkte werden geladen...</p>
@@ -336,6 +369,24 @@ export function Storefront() {
                     {storageRoomBadgeLetter}
                   </div>
                 )}
+
+                {session?.user ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleFavoriteMutation.mutate({ productId: product.id });
+                    }}
+                    className="absolute left-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-card/80 text-base leading-none shadow-sm backdrop-blur transition hover:bg-card"
+                    aria-label={favoriteIds.has(product.id) ? "Von Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                    aria-pressed={favoriteIds.has(product.id)}
+                    title={favoriteIds.has(product.id) ? "Favorit entfernen" : "Als Favorit markieren"}
+                  >
+                    <span className={favoriteIds.has(product.id) ? "text-amber-500" : "text-muted-foreground/60"}>
+                      {favoriteIds.has(product.id) ? "★" : "☆"}
+                    </span>
+                  </button>
+                ) : null}
 
                 <div className="flex flex-col">
                   <div className="relative overflow-hidden bg-primary/90">

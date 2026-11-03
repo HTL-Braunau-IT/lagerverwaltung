@@ -139,6 +139,7 @@ model Product {
     orderRequestItems OrderRequestItem[]
     partListItems     PartListItem[]
     stockBookings     ProductStockBooking[]
+    favoritedBy       UserFavoriteProduct[]
     createdAt         DateTime        @default(now())
     updatedAt         DateTime        @updatedAt
 
@@ -559,6 +560,7 @@ model User {
     orderRequestsAsTeacher OrderRequest[] @relation("OrderRequestsAsTeacher")
     stockBookings ProductStockBooking[]
     pinnedPartLists UserPinnedPartList[]
+    favoriteProducts UserFavoriteProduct[]
     loansAsBorrower Loan[] @relation("LoansAsBorrower")
     loansAsTeacher  Loan[] @relation("LoansAsTeacher")
     createdAt     DateTime  @default(now())
@@ -579,6 +581,20 @@ model UserPinnedPartList {
     @@unique([userId, partListId])
     @@index([userId, createdAt])
     @@index([partListId])
+}
+
+model UserFavoriteProduct {
+    id        String   @id @default(cuid())
+    userId    String
+    productId String
+    createdAt DateTime @default(now())
+
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, productId])
+    @@index([userId, createdAt])
+    @@index([productId])
 }
 
 model UserStorageRoomAccess {
