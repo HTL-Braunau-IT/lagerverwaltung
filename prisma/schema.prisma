@@ -42,6 +42,7 @@ enum OrderStatus {
     OPEN
     PREPARING
     READY_FOR_PICKUP
+    REJECTED
 }
 
 enum OrderApprovalStatus {

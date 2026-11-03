@@ -45,9 +45,10 @@ function requestStatusBadgeVariant(status: "PENDING" | "APPROVED" | "REJECTED") 
   return "default";
 }
 
-function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
+function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP" | "REJECTED") {
   if (status === "OPEN") return "Offen";
   if (status === "PREPARING") return "In Vorbereitung";
+  if (status === "REJECTED") return "Abgelehnt";
   return "Abholbereit";
 }
 

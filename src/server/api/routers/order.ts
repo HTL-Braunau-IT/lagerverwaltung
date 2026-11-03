@@ -21,7 +21,7 @@ import {
 
 const backendListOrdersInput = z.object({
   search: z.string().trim().optional(),
-  status: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]).optional(),
+  status: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP", "REJECTED"]).optional(),
   approval: z.enum(["RELEASED", "PENDING", "DECLINED"]).default("RELEASED"),
   limit: z.number().int().min(1).max(300).default(150),
   cursor: z.string().min(1).optional(),
@@ -33,7 +33,7 @@ const backendOrderByIdInput = z.object({
 
 const backendUpdateOrderStatusInput = z.object({
   orderId: z.string().min(1),
-  nextStatus: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP"]),
+  nextStatus: z.enum(["OPEN", "PREPARING", "READY_FOR_PICKUP", "REJECTED"]),
 });
 
 const backendBookOrderReturnInput = z.object({
@@ -126,7 +126,7 @@ function ensureRequestIsPending(status: "PENDING" | "APPROVED" | "REJECTED") {
   });
 }
 
-type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
+type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP" | "REJECTED";
 
 function approvalWhereForFilter(filter: "RELEASED" | "PENDING" | "DECLINED") {
   if (filter === "PENDING") return { approvalStatus: "PENDING" as const };
@@ -147,7 +147,10 @@ function assertOrderReleased(approvalStatus: string) {
 
 function isTransitionAllowed(currentStatus: OrderStatus, nextStatus: OrderStatus) {
   if (currentStatus === nextStatus) return true;
-  if (currentStatus === "READY_FOR_PICKUP" && nextStatus !== "READY_FOR_PICKUP") return false;
+  // REJECTED is terminal and can only be reached from an order that hasn't been fulfilled.
+  if (currentStatus === "REJECTED") return false;
+  if (nextStatus === "REJECTED") return currentStatus === "OPEN" || currentStatus === "PREPARING";
+  if (currentStatus === "READY_FOR_PICKUP") return false;
   return true;
 }
 
@@ -822,7 +825,8 @@ export const orderRouter = createTRPCRouter({
         };
       });
 
-      if (result.changed) {
+      // No fulfillment email for a worker rejection; the orderer sees "Abgelehnt" in their orders.
+      if (result.changed && result.status !== "REJECTED") {
         notifyOrderStatusChanged({
           orderNumber: result.orderNumber,
           status: result.status,

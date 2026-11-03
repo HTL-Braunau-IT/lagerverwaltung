@@ -25,15 +25,19 @@ function formatOrderDate(value: Date | string) {
   }).format(date);
 }
 
-function formatStatus(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP") {
+type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP" | "REJECTED";
+
+function formatStatus(status: OrderStatus) {
   if (status === "OPEN") return "Offen";
   if (status === "PREPARING") return "In Vorbereitung";
+  if (status === "REJECTED") return "Abgelehnt";
   return "Abholbereit";
 }
 
 function orderStatusBadgeVariant(
-  status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP",
-): "orderFirst" | "orderSecond" | "orderThird" {
+  status: OrderStatus,
+): "orderFirst" | "orderSecond" | "orderThird" | "destructive" {
+  if (status === "REJECTED") return "destructive";
   if (status === "READY_FOR_PICKUP") return "orderThird";
   if (status === "OPEN") return "orderFirst";
   return "orderSecond";
@@ -41,7 +45,7 @@ function orderStatusBadgeVariant(
 
 type ApprovalStatus = "NOT_REQUIRED" | "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 
-function formatOrderProgress(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP", approvalStatus: ApprovalStatus) {
+function formatOrderProgress(status: OrderStatus, approvalStatus: ApprovalStatus) {
   if (approvalStatus === "PENDING") return "Wartet auf Freigabe";
   if (approvalStatus === "REJECTED") return "Abgelehnt";
   if (approvalStatus === "CANCELLED") return "Zurückgezogen";
@@ -49,7 +53,7 @@ function formatOrderProgress(status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP", 
 }
 
 function orderProgressBadgeVariant(
-  status: "OPEN" | "PREPARING" | "READY_FOR_PICKUP",
+  status: OrderStatus,
   approvalStatus: ApprovalStatus,
 ) {
   if (approvalStatus === "PENDING") return "orderSecond";

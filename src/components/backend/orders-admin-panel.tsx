@@ -18,7 +18,8 @@ import { useToast } from "~/components/ui/toast";
 import { ChevronDownIcon, PencilEditIcon } from "~/components/layout/icon-renders";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
 
-type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP";
+type OrderStatus = "OPEN" | "PREPARING" | "READY_FOR_PICKUP" | "REJECTED";
+// Status options offered in the transition menu; REJECTED is reached via a separate action.
 const ORDER_STATUSES: OrderStatus[] = ["OPEN", "PREPARING", "READY_FOR_PICKUP"];
 
 type OrderStatusActionVariant = Extract<ButtonVariant, "solid" | "glass">;
@@ -98,6 +99,13 @@ const statusConfig: Record<
   },
   READY_FOR_PICKUP: {
     label: "Abholbereit",
+    pillClassName: "",
+    borderClassName: "",
+    nextStatus: null,
+    advanceActionLabel: null,
+  },
+  REJECTED: {
+    label: "Abgelehnt",
     pillClassName: "",
     borderClassName: "",
     nextStatus: null,
@@ -380,6 +388,7 @@ export function OrdersAdminPanel() {
               { value: "OPEN" as const, label: "Offen" },
               { value: "PREPARING" as const, label: "In Vorbereitung" },
               { value: "READY_FOR_PICKUP" as const, label: "Abholbereit" },
+              { value: "REJECTED" as const, label: "Abgelehnt" },
             ] as const
           ).map((opt) => {
             const active = statusFilter === opt.value;
@@ -487,11 +496,13 @@ export function OrdersAdminPanel() {
                       ) : (
                         <Badge
                           variant={
-                            order.status === "READY_FOR_PICKUP"
-                              ? "orderThird"
-                              : order.status === "OPEN"
-                                ? "orderFirst"
-                                : "orderSecond"
+                            order.status === "REJECTED"
+                              ? "destructive"
+                              : order.status === "READY_FOR_PICKUP"
+                                ? "orderThird"
+                                : order.status === "OPEN"
+                                  ? "orderFirst"
+                                  : "orderSecond"
                           }
                           className={status.pillClassName}
                         >
@@ -835,6 +846,24 @@ export function OrdersAdminPanel() {
                   </button>
                 );
               })}
+              {activeOrderStatus === "OPEN" || activeOrderStatus === "PREPARING" ? (
+                <>
+                  <div className="my-1 h-px bg-border/70" />
+                  <button
+                    type="button"
+                    disabled={updateStatusMutation.isPending}
+                    className="flex w-full items-center justify-between rounded-sm px-2 py-2 text-left text-sm text-destructive transition hover:!bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-30"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      updateStatusMutation.mutate({ orderId: menuOpenOrderId, nextStatus: "REJECTED" });
+                      closeStatusMenu();
+                    }}
+                  >
+                    <span>Bestellung ablehnen</span>
+                    <span className="text-xs text-muted-foreground">kein Bestand</span>
+                  </button>
+                </>
+              ) : null}
               {canBookReturn ? (
                 <>
                   <div className="my-1 h-px bg-border/70" />
