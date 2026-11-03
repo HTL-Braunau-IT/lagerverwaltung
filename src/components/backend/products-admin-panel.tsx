@@ -1443,13 +1443,18 @@ export function ProductsAdminPanel() {
                                         const ratio = minimumQuantity > 0 ? quantityOnHand / minimumQuantity : Number.POSITIVE_INFINITY;
                                         const stockColorClass =
                                           ratio > 1.1 ? "text-primary" : ratio >= 1 ? "text-accent-orange" : "text-destructive";
+                                        const stockValue = String(quantityOnHand);
 
+                                        // Read-only display: use a div (not an input) so large stock values
+                                        // wrap/shrink instead of being clipped by the narrow column (#118).
                                         return (
-                                      <input
-                                        disabled
-                                        value={String(toNumber(product.quantityOnHand))}
-                                        className={`mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm ${stockColorClass} text-center font-semibold`}
-                                      />
+                                      <div
+                                        className={`mt-1 w-full rounded-sm bg-card/40 px-2 py-2 ${
+                                          stockValue.length > 6 ? "text-xs" : "text-sm"
+                                        } ${stockColorClass} break-all text-center font-semibold tabular-nums`}
+                                      >
+                                        {stockValue}
+                                      </div>
                                         );
                                       })()}
                                     </label>
