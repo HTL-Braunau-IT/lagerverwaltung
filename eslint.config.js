@@ -11,6 +11,7 @@ export default defineConfig([
       "**/*.d.ts",
       "eslint.config.js",
       "scripts/import-legacy-catalog.mjs",
+      "scripts/import-legacy-transactions.mjs",
     ],
   },
   ...nextVitals,
