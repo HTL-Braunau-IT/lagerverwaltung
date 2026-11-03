@@ -785,6 +785,15 @@ export function ProductsAdminPanel() {
           imageUrl,
           imageAltText,
         });
+        // Clear this product's edit state so the dirty check re-derives from the freshly
+        // saved product. Otherwise a format difference between the typed value and the
+        // canonical one (e.g. "1,5" vs "1,50") keeps the unsaved-changes bar open (#119).
+        setFormsById((current) => {
+          const next = { ...current };
+          delete next[product.id];
+          return next;
+        });
+        setEditPendingImageById((current) => ({ ...current, [product.id]: null }));
         setImageFieldsTouchedById((current) => ({ ...current, [product.id]: false }));
       } catch {
         // tRPC surfaces toast or error boundary elsewhere
