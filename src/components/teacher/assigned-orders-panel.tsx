@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/toast";
@@ -53,6 +54,7 @@ function approvedOrderStatusLabel(status: "OPEN" | "PREPARING" | "READY_FOR_PICK
 export function AssignedOrdersPanel() {
   const utils = api.useUtils();
   const toast = useToast();
+  const router = useRouter();
   const [costCenterByRequestId, setCostCenterByRequestId] = useState<Record<string, string>>({});
   const [quantityDraftByItemId, setQuantityDraftByItemId] = useState<Record<string, string>>({});
 
@@ -65,6 +67,8 @@ export function AssignedOrdersPanel() {
       utils.cart.listMyOrders.invalidate(),
       utils.cart.listMySubmittedRequests.invalidate(),
     ]);
+    // Header approvals badge is server-rendered in the layout; refresh to update it (#17).
+    router.refresh();
   };
 
   const updateItemQuantityMutation = api.order.updateAssignedRequestItemQuantity.useMutation({
@@ -99,6 +103,8 @@ export function AssignedOrdersPanel() {
       utils.loan.listPendingLoanRequests.invalidate(),
       utils.loan.listMyLoans.invalidate(),
     ]);
+    // Header lending badge is server-rendered in the layout; refresh to update it (#17).
+    router.refresh();
   };
 
   const approveLoanMutation = api.loan.teacherApproveLoan.useMutation({

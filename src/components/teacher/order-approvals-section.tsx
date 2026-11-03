@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { api } from "~/trpc/react";
 import { useToast } from "~/components/ui/toast";
@@ -45,6 +45,7 @@ export function useOrderApprovals() {
 export function OrderApprovalsSection() {
   const utils = api.useUtils();
   const toast = useToast();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const focusOrderId = searchParams.get("freigabe");
   const focusRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +64,9 @@ export function OrderApprovalsSection() {
       utils.approval.listDecidedByMe.invalidate(),
       utils.approval.pendingCount.invalidate(),
     ]);
+    // The header approvals badge is computed in the RSC layout, not a client query,
+    // so refresh the server tree to update it immediately after a decision (#17).
+    router.refresh();
   };
 
   const updateQuantityMutation = api.approval.updateItemQuantity.useMutation({
