@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure, teacherProcedure } from "~/server/api/trpc";
 import { listTeachersFromGraph } from "~/server/graph/teachers";
 import { notifyStudentRequestCreated } from "~/server/mail/order-events";
 import { dispatchOrderPlaced } from "~/server/approval/notifications";
@@ -605,7 +605,9 @@ export const cartRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  checkout: protectedProcedure
+  // Students must route through `submitForTeacherApproval`; only ADMIN/TEACHER may place an
+  // order directly. `teacherProcedure` enforces the {ADMIN, TEACHER} role set.
+  checkout: teacherProcedure
     .input(
       sessionInput.extend({
         costCenterId: z.string().min(1),
