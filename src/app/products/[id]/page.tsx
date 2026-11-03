@@ -116,6 +116,16 @@ export default function ProductDetailPage() {
       toast.error("Produkt konnte nicht in den Warenkorb gelegt werden.");
     },
   });
+  const isAdmin = session?.user.role === "ADMIN";
+  const setReorderMutation = api.product.backendSetReorder.useMutation({
+    onSuccess: async (data) => {
+      await utils.product.byId.invalidate({ id: productId });
+      toast.success(
+        data.needsReorder ? "Zur Nachbestellliste hinzugefügt." : "Von der Nachbestellliste entfernt.",
+      );
+    },
+    onError: () => toast.error("Nachbestell-Status konnte nicht geändert werden."),
+  });
 
   useEffect(() => {
     const updateAppHeaderOffset = () => {
@@ -359,6 +369,25 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </Card>
+
+        {isAdmin ? (
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                setReorderMutation.mutate({ id: product.id, needsReorder: !product.needsReorder })
+              }
+              disabled={setReorderMutation.isPending}
+              className={`inline-flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition disabled:opacity-60 ${
+                product.needsReorder
+                  ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                  : "bg-card/40 text-muted-foreground hover:bg-card/60"
+              }`}
+            >
+              {product.needsReorder ? "✓ Auf Nachbestellliste" : "Zur Nachbestellliste"}
+            </button>
+          </div>
+        ) : null}
 
         <section
           className="overflow-hidden rounded-md bg-card/40"

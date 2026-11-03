@@ -372,6 +372,14 @@ export function ProductsAdminPanel() {
   });
   const categoriesQuery = api.category.list.useQuery();
   const storageRoomsQuery = api.storageRoom.listAccessible.useQuery();
+  const reorderListQuery = api.product.backendReorderList.useQuery();
+  const setReorderMutation = api.product.backendSetReorder.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.product.backendReorderList.invalidate(), utils.product.backendList.invalidate()]);
+      toast.success("Von der Nachbestellliste entfernt.");
+    },
+    onError: () => toast.error("Nachbestell-Status konnte nicht geändert werden."),
+  });
   const storageLocationsQuery = api.storageLocation.listAccessible.useQuery();
 
   const updateMutation = api.product.backendUpdate.useMutation({
@@ -842,6 +850,43 @@ export function ProductsAdminPanel() {
           Neues Produkt
         </Button>
       </div>
+
+      {(reorderListQuery.data?.length ?? 0) > 0 ? (
+        <details className="group mb-4 rounded-md border border-amber-200 bg-amber-50/60">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 select-none">
+            <span className="text-sm font-semibold text-amber-900">
+              Nachbestellliste ({reorderListQuery.data!.length})
+            </span>
+            <span className="text-xs text-amber-800 group-open:hidden">Anzeigen</span>
+            <span className="hidden text-xs text-amber-800 group-open:inline">Ausblenden</span>
+          </summary>
+          <div className="space-y-1 px-3 pb-3">
+            {reorderListQuery.data!.map((product) => (
+              <div
+                key={product.id}
+                className="flex items-center justify-between gap-3 rounded-sm bg-white/60 px-2.5 py-1.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-900">{product.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {product.sku}
+                    {product.storageLocation ? ` · ${product.storageLocation.name}` : ""}
+                    {` · Bestand ${toNumber(product.quantityOnHand)}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReorderMutation.mutate({ id: product.id, needsReorder: false })}
+                  disabled={setReorderMutation.isPending}
+                  className="shrink-0 rounded-sm px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+                >
+                  Entfernen
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       <div className="mb-4 grid grid-cols-1 gap-8 md:grid-cols-[max-content_minmax(0,1fr)_auto] md:items-center">
         <div className="flex min-w-0 max-w-full flex-row flex-nowrap items-center gap-x-2 overflow-x-auto [scrollbar-width:none] md:max-w-none md:overflow-visible [&::-webkit-scrollbar]:hidden">

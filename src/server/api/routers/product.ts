@@ -214,6 +214,7 @@ export const productRouter = createTRPCRouter({
           categoryId: true,
           storageLocationId: true,
           compartment: true,
+          needsReorder: true,
           category: {
             select: {
               id: true,
@@ -286,6 +287,7 @@ export const productRouter = createTRPCRouter({
           baseUnit: true,
           unitStep: true,
           isVisible: true,
+          needsReorder: true,
           category: {
             select: {
               id: true,
@@ -393,6 +395,7 @@ export const productRouter = createTRPCRouter({
           categoryId: true,
           storageLocationId: true,
           compartment: true,
+          needsReorder: true,
           category: {
             select: {
               id: true,
@@ -462,6 +465,22 @@ export const productRouter = createTRPCRouter({
         nextCursor,
       };
     }),
+
+  // Products an admin flagged for restocking, for the backend "Nachbestellliste" (#111).
+  backendReorderList: adminProcedure.query(async ({ ctx }) => {
+    return ctx.db.product.findMany({
+      where: { needsReorder: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        quantityOnHand: true,
+        minimumQuantity: true,
+        storageLocation: { select: { code: true, name: true } },
+      },
+    });
+  }),
 
   backendCategoryCounts: adminProcedure
     .input(backendCategoryCountsInput)
@@ -799,6 +818,18 @@ export const productRouter = createTRPCRouter({
       }
 
       return { ok: true as const };
+    }),
+
+  // Toggle a product's "Nachbestellen" flag (#111).
+  backendSetReorder: adminProcedure
+    .input(z.object({ id: z.string().min(1), needsReorder: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.product.update({
+        where: { id: input.id },
+        data: { needsReorder: input.needsReorder },
+        select: { id: true },
+      });
+      return { ok: true as const, needsReorder: input.needsReorder };
     }),
 
   backendBookStock: adminProcedure

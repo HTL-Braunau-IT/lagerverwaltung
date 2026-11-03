@@ -125,6 +125,8 @@ model Product {
     storageLocationId String?
     /** Optional drawer section / compartment ("Fach") within the storage location, for faster picking. */
     compartment       String?
+    /** Flagged by an admin for restocking; surfaced as the backend "Nachbestellen" list. */
+    needsReorder      Boolean         @default(false)
     category          Category        @relation("PrimaryProductCategory", fields: [categoryId], references: [id], onDelete: Restrict)
     categories        ProductCategory[]
     storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
