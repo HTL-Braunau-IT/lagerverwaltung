@@ -3,6 +3,7 @@ import { cartRouter } from "~/server/api/routers/cart";
 import { categoryRouter } from "~/server/api/routers/category";
 import { costCenterRouter } from "~/server/api/routers/cost-center";
 import { lendableItemRouter } from "~/server/api/routers/lendable-item";
+import { materialTemplateRouter } from "~/server/api/routers/material-template";
 import { orderRouter } from "~/server/api/routers/order";
 import { partsListRouter } from "~/server/api/routers/parts-list";
 import { productRouter } from "~/server/api/routers/product";
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   category: categoryRouter,
   costCenter: costCenterRouter,
   lendableItem: lendableItemRouter,
+  materialTemplate: materialTemplateRouter,
   cart: cartRouter,
   order: orderRouter,
   partsList: partsListRouter,

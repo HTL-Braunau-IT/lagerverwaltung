@@ -100,6 +100,11 @@ const updateProductInput = z.object({
     .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
   compartment: z.string().trim().max(120).nullable(),
+  materialProfile: z.enum(["ROUND_BAR", "RECT_BAR"]).nullable(),
+  diameterMm: z.coerce.number().positive().max(100000).nullable(),
+  widthMm: z.coerce.number().positive().max(100000).nullable(),
+  heightMm: z.coerce.number().positive().max(100000).nullable(),
+  materialTemplateId: z.string().min(1).nullable(),
   /** When set, `imageUrl` / `imageAltText` update this row only; omit to leave images unchanged. */
   editingImageId: z.string().min(1).optional(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
@@ -124,6 +129,11 @@ const createProductInput = z.object({
     .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
   compartment: z.string().trim().max(120).nullable(),
+  materialProfile: z.enum(["ROUND_BAR", "RECT_BAR"]).nullable(),
+  diameterMm: z.coerce.number().positive().max(100000).nullable(),
+  widthMm: z.coerce.number().positive().max(100000).nullable(),
+  heightMm: z.coerce.number().positive().max(100000).nullable(),
+  materialTemplateId: z.string().min(1).nullable(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
     message: "Invalid URL",
   }),
@@ -219,6 +229,11 @@ export const productRouter = createTRPCRouter({
           storageLocationId: true,
           compartment: true,
           needsReorder: true,
+          materialProfile: true,
+          diameterMm: true,
+          widthMm: true,
+          heightMm: true,
+          materialTemplateId: true,
           category: {
             select: {
               id: true,
@@ -427,6 +442,11 @@ export const productRouter = createTRPCRouter({
           storageLocationId: true,
           compartment: true,
           needsReorder: true,
+          materialProfile: true,
+          diameterMm: true,
+          widthMm: true,
+          heightMm: true,
+          materialTemplateId: true,
           category: {
             select: {
               id: true,
@@ -644,6 +664,11 @@ export const productRouter = createTRPCRouter({
             categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
             compartment: input.compartment,
+            materialProfile: input.materialProfile,
+            diameterMm: input.diameterMm,
+            widthMm: input.widthMm,
+            heightMm: input.heightMm,
+            materialTemplateId: input.materialTemplateId,
           },
           select: {
             id: true,
@@ -744,6 +769,11 @@ export const productRouter = createTRPCRouter({
             categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
             compartment: input.compartment,
+            materialProfile: input.materialProfile,
+            diameterMm: input.diameterMm,
+            widthMm: input.widthMm,
+            heightMm: input.heightMm,
+            materialTemplateId: input.materialTemplateId,
           },
           select: {
             id: true,

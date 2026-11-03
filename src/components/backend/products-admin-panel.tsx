@@ -17,6 +17,7 @@ import { ChevronDownIcon, PlusIcon, WastebinIcon } from "~/components/layout/ico
 import { isDirty } from "~/components/backend/dirty";
 import { UnsavedChangesBar } from "~/components/backend/unsaved-changes-bar";
 import { getQuantityStepForBaseUnit } from "~/lib/quantity-rules";
+import { calculateMaterialUnitPrice } from "~/lib/material-price";
 
 const unitKinds = [
   { value: "PIECE", label: "Stück" },
@@ -54,6 +55,11 @@ type ProductFormState = {
   storageRoomId: string;
   storageLocationId: string;
   compartment: string;
+  materialProfile: "" | "ROUND_BAR" | "RECT_BAR";
+  diameterMm: string;
+  widthMm: string;
+  heightMm: string;
+  materialTemplateId: string;
   imageUrl: string;
   imageAltText: string;
 };
@@ -135,6 +141,11 @@ function createInitialForm(product: {
   }>;
   storageLocationId: string | null;
   compartment: string | null;
+  materialProfile: "ROUND_BAR" | "RECT_BAR" | null;
+  diameterMm: unknown;
+  widthMm: unknown;
+  heightMm: unknown;
+  materialTemplateId: string | null;
   storageLocation: {
     storageRoomId: string;
   } | null;
@@ -165,6 +176,11 @@ function createInitialForm(product: {
     storageRoomId: product.storageLocation?.storageRoomId ?? "",
     storageLocationId: product.storageLocationId ?? "",
     compartment: product.compartment ?? "",
+    materialProfile: product.materialProfile ?? "",
+    diameterMm: product.diameterMm != null ? String(toNumber(product.diameterMm)) : "",
+    widthMm: product.widthMm != null ? String(toNumber(product.widthMm)) : "",
+    heightMm: product.heightMm != null ? String(toNumber(product.heightMm)) : "",
+    materialTemplateId: product.materialTemplateId ?? "",
     imageUrl: "",
     imageAltText: "",
   };
@@ -371,6 +387,7 @@ export function ProductsAdminPanel() {
     storageLocationId: storageLocationFilter || undefined,
   });
   const categoriesQuery = api.category.list.useQuery();
+  const materialTemplatesQuery = api.materialTemplate.list.useQuery();
   const storageRoomsQuery = api.storageRoom.listAccessible.useQuery();
   const reorderListQuery = api.product.backendReorderList.useQuery();
   const setReorderMutation = api.product.backendSetReorder.useMutation({
@@ -794,6 +811,11 @@ export function ProductsAdminPanel() {
           categoryIds: form.categoryIds,
           storageLocationId: form.storageLocationId || null,
           compartment: form.compartment.trim() || null,
+          materialProfile: form.materialProfile || null,
+          diameterMm: form.diameterMm.trim() ? Number(form.diameterMm) : null,
+          widthMm: form.widthMm.trim() ? Number(form.widthMm) : null,
+          heightMm: form.heightMm.trim() ? Number(form.heightMm) : null,
+          materialTemplateId: form.materialTemplateId || null,
           editingImageId,
           imageUrl,
           imageAltText,
@@ -1819,6 +1841,158 @@ export function ProductsAdminPanel() {
                                 </div>
                               </div>
                             </div>
+                          </div>
+
+                          <div className="rounded-md bg-card/40 p-3 min-w-0">
+                            <p className="text-lg font-semibold text-slate-900">Materialpreis (optional)</p>
+                            <div className="mt-2 h-px w-full bg-slate-300/70" aria-hidden="true" />
+                            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <label className="block text-sm text-slate-600">
+                                Material
+                                <Select
+                                  value={form.materialTemplateId}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(value) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, materialTemplateId: value },
+                                    }))
+                                  }
+                                  options={[
+                                    { value: "", label: "Kein Material" },
+                                    ...(materialTemplatesQuery.data ?? []).map((material) => ({
+                                      value: material.id,
+                                      label: material.name,
+                                    })),
+                                  ]}
+                                  className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                Profil
+                                <Select
+                                  value={form.materialProfile}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onValueChange={(value) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: {
+                                        ...form,
+                                        materialProfile: value as ProductFormState["materialProfile"],
+                                      },
+                                    }))
+                                  }
+                                  options={[
+                                    { value: "", label: "Kein Profil" },
+                                    { value: "ROUND_BAR", label: "Rundstab (Ø)" },
+                                    { value: "RECT_BAR", label: "Rechteckstab (B×H)" },
+                                  ]}
+                                  className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
+                                />
+                              </label>
+                              {form.materialProfile === "ROUND_BAR" ? (
+                                <label className="block text-sm text-slate-600">
+                                  Durchmesser (mm)
+                                  <Input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={form.diameterMm}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onChange={(event) =>
+                                      setFormsById((current) => ({
+                                        ...current,
+                                        [product.id]: { ...form, diameterMm: event.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
+                                  />
+                                </label>
+                              ) : null}
+                              {form.materialProfile === "RECT_BAR" ? (
+                                <>
+                                  <label className="block text-sm text-slate-600">
+                                    Breite (mm)
+                                    <Input
+                                      type="text"
+                                      inputMode="decimal"
+                                      value={form.widthMm}
+                                      onClick={(event) => event.stopPropagation()}
+                                      onChange={(event) =>
+                                        setFormsById((current) => ({
+                                          ...current,
+                                          [product.id]: { ...form, widthMm: event.target.value },
+                                        }))
+                                      }
+                                      className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+                                  <label className="block text-sm text-slate-600">
+                                    Höhe (mm)
+                                    <Input
+                                      type="text"
+                                      inputMode="decimal"
+                                      value={form.heightMm}
+                                      onClick={(event) => event.stopPropagation()}
+                                      onChange={(event) =>
+                                        setFormsById((current) => ({
+                                          ...current,
+                                          [product.id]: { ...form, heightMm: event.target.value },
+                                        }))
+                                      }
+                                      className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
+                                    />
+                                  </label>
+                                </>
+                              ) : null}
+                            </div>
+                            {(() => {
+                              const template = (materialTemplatesQuery.data ?? []).find(
+                                (material) => material.id === form.materialTemplateId,
+                              );
+                              if (!template || !form.materialProfile) return null;
+                              const suggested = calculateMaterialUnitPrice({
+                                profile: form.materialProfile,
+                                diameterMm: form.diameterMm.trim() ? Number(form.diameterMm) : null,
+                                widthMm: form.widthMm.trim() ? Number(form.widthMm) : null,
+                                heightMm: form.heightMm.trim() ? Number(form.heightMm) : null,
+                                density: toNumber(template.density),
+                                pricePerKg: toNumber(template.pricePerKg),
+                                baseUnit: form.baseUnit,
+                              });
+                              if (suggested === null) {
+                                return (
+                                  <p className="mt-3 text-sm italic text-muted-foreground/80">
+                                    Für die Berechnung: Profilmaße angeben und ein längenbasiertes Basismaß (mm, cm, m) wählen.
+                                  </p>
+                                );
+                              }
+                              const rounded = Math.round(suggested * 100) / 100;
+                              return (
+                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-sm bg-primary/5 px-3 py-2">
+                                  <span className="text-sm text-slate-700">
+                                    Berechneter Preis:{" "}
+                                    <span className="font-semibold tabular-nums">
+                                      {suggested < 0.01 ? suggested.toFixed(6) : suggested.toFixed(2)} €
+                                    </span>{" "}
+                                    / {form.baseUnit.toLowerCase()}
+                                    {rounded === 0 ? " (gerundet 0,00 – ggf. größere Einheit wählen)" : ""}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setFormsById((current) => ({
+                                        ...current,
+                                        [product.id]: { ...form, price: formatMoneyDeAt(rounded) },
+                                      }));
+                                    }}
+                                    className="shrink-0 rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:opacity-90"
+                                  >
+                                    Übernehmen
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           <div className="rounded-md bg-card/40 p-3 min-w-0">

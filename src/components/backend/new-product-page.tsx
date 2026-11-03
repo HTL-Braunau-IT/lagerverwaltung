@@ -207,6 +207,11 @@ export function NewProductPage() {
         categoryIds: form.categoryIds,
         storageLocationId: form.storageLocationId || null,
         compartment: form.compartment.trim() || null,
+        materialProfile: null,
+        diameterMm: null,
+        widthMm: null,
+        heightMm: null,
+        materialTemplateId: null,
         imageUrl,
         imageAltText: form.imageAltText.trim() ? form.imageAltText.trim() : null,
       });

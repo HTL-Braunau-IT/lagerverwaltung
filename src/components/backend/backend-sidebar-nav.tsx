@@ -44,6 +44,7 @@ export function BackendSidebarNav() {
           { href: "/backend/categories", label: "Kategorien", icon: <TagIcon className="h-4 w-4" /> },
           { href: "/backend/parts-list", label: "Teilelisten", icon: <ListIcon className="h-4 w-4" /> },
           { href: "/backend/cost-centers", label: "Kostenstellen", icon: <TagIcon className="h-4 w-4" /> },
+          { href: "/backend/material-templates", label: "Materialvorlagen", icon: <TagIcon className="h-4 w-4" /> },
           { href: "/backend/storage/locations", label: "Lager", icon: <WarehouseIcon className="h-4 w-4" /> },
           { href: "/backend/lendable-items", label: "Leihgeräte", icon: <LendingIcon className="h-4 w-4" /> },
         ],
