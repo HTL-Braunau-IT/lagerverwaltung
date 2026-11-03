@@ -230,7 +230,10 @@ export const cartRouter = createTRPCRouter({
         sessionId: true,
         updatedAt: true,
         items: {
-          orderBy: { createdAt: "asc" },
+          // `id` tiebreaker keeps a stable order: items added together (e.g. from a parts
+          // list) share a `createdAt`, and without it tied rows shuffle on each refetch,
+          // so cart lines visibly jump around after a quantity edit (#108).
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           select: {
             id: true,
             productId: true,
