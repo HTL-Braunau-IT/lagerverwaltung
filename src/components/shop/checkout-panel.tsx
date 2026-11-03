@@ -76,7 +76,7 @@ export function CheckoutPanel(props: {
       }
       switch (data.reason) {
         case "EMPTY_CART":
-          toast.error("Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufügen.");
+          toast.error("Dein Warenkorb ist leer. Bitte zuerst Produkte hinzufügen.");
           break;
         case "INVALID_COST_CENTER":
           toast.error("Die ausgewählte Kostenstelle ist ungültig. Bitte erneut wählen.");

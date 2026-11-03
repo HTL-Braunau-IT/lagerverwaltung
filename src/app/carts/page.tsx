@@ -115,7 +115,7 @@ function SavedCartRow(props: {
           {savedCart.name}
         </p>
         <p className="mt-0.5 whitespace-nowrap text-xs text-slate-500 transition-colors group-hover:text-slate-600">
-          {itemCount} Artikel · {formatPrice(total)}
+          {itemCount} Produkte · {formatPrice(total)}
         </p>
       </div>
       <div className="mt-3 flex gap-2">
@@ -383,7 +383,7 @@ export default function CartsPage() {
         title={savedCartPreview?.name ?? "Gespeicherter Warenkorb"}
         description={
           savedCartPreview
-            ? `${savedCartPreviewTotals.itemCount} Artikel · ${formatPrice(savedCartPreviewTotals.total)}`
+            ? `${savedCartPreviewTotals.itemCount} Produkte · ${formatPrice(savedCartPreviewTotals.total)}`
             : undefined
         }
         headerRight={

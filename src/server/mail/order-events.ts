@@ -154,7 +154,7 @@ export async function notifyStudentRequestCreated(input: StudentRequestCreatedIn
       { label: "Schüler/in", value: `${input.student.name ?? "-"} (${input.student.email ?? "-"})` },
       { label: "Anfrage-ID", value: input.requestId },
     ],
-    itemsTitle: "Angefragte Artikel",
+    itemsTitle: "Angefragte Produkte",
     items: formatLineItems(input.items),
     footer: ["Bitte prüfen und bearbeiten Sie die Anfrage im System."],
   });
@@ -193,7 +193,7 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
       { label: "Anfrage-ID", value: input.requestId },
       { label: "Bestellnummer", value: input.orderNumber },
     ],
-    itemsTitle: "Freigegebene Artikel",
+    itemsTitle: "Freigegebene Produkte",
     items: formatLineItems(input.items),
     footer: ["Du bekommst weitere Updates, wenn sich der Bestellstatus ändert."],
   });
@@ -237,7 +237,7 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
       },
       { label: "Bestellnummer", value: input.orderNumber },
     ],
-    itemsTitle: "Artikel in dieser Bestellung",
+    itemsTitle: "Produkte in dieser Bestellung",
     items: formatLineItems(input.items),
   });
 

@@ -224,7 +224,7 @@ export function AssignedOrdersPanel() {
                       <DetailText variant="value">{formatDate(request.createdAt)}</DetailText>
                     </Card>
                     <Card variant="detail">
-                      <DetailText variant="kicker">Artikel gesamt</DetailText>
+                      <DetailText variant="kicker">Produkte gesamt</DetailText>
                       <DetailText variant="value">{itemCount}</DetailText>
                     </Card>
                   </div>
@@ -426,7 +426,7 @@ export function AssignedOrdersPanel() {
                       {request.teacherDisplayName ?? "-"}
                     </p>
                     <p>
-                      <span className="text-slate-500">Artikel gesamt: </span>
+                      <span className="text-slate-500">Produkte gesamt: </span>
                       {itemCount}
                     </p>
                   </div>

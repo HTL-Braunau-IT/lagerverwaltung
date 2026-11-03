@@ -86,7 +86,7 @@ export async function notifyApprovalRequested(input: {
     ],
     action: { label: "Bestellung prüfen", href: approvalUrl(input.order.id) },
     metaRows: orderMetaRows(input.order, input.orderer, input.student),
-    itemsTitle: "Bestellte Artikel",
+    itemsTitle: "Bestellte Produkte",
     items: formatLineItems(input.order.items),
     footer: [
       "Sie können Mengen anpassen, Positionen entfernen oder die Kostenstelle ändern, bevor Sie freigeben.",
@@ -141,7 +141,7 @@ export async function notifyApprovalDecided(input: {
       ...(note ? [{ label: approved ? "Kommentar" : "Begründung", value: note }] : []),
     ],
     extraLists: approved ? [{ title: "Änderungen durch die Freigabe", items: input.changes }] : [],
-    itemsTitle: approved ? "Freigegebene Artikel" : "Abgelehnte Artikel",
+    itemsTitle: approved ? "Freigegebene Produkte" : "Abgelehnte Produkte",
     items: formatLineItems(input.order.items),
     action: { label: "Bestellhistorie öffnen", href: appUrl("/orders") },
     footer: approved ? ["Sie erhalten eine weitere Nachricht, sobald die Bestellung abholbereit ist."] : [],
@@ -179,7 +179,7 @@ export async function notifyApprovalCancelled(input: {
       `${input.orderer.name?.trim() || "Die Lehrperson"} hat die Bestellung zurückgezogen. Es ist keine Freigabe mehr nötig.`,
     ],
     metaRows: orderMetaRows(input.order, input.orderer),
-    itemsTitle: "Artikel",
+    itemsTitle: "Produkte",
     items: formatLineItems(input.order.items),
   });
 
@@ -246,7 +246,7 @@ export async function notifyOrderReleased(input: {
       ...orderMetaRows(input.order, input.orderer, input.student),
       ...(input.approvedBy ? [{ label: "Freigegeben von", value: userLabel(input.approvedBy) }] : []),
     ],
-    itemsTitle: "Artikel",
+    itemsTitle: "Produkte",
     items: formatLineItems(input.order.items),
   });
 
