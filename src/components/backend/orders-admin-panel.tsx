@@ -724,9 +724,12 @@ export function OrdersAdminPanel() {
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="text-muted-foreground">{item.product.sku}</TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="text-muted-foreground">
-                                    {item.product.storageLocation
-                                      ? `${item.product.storageLocation.name}`
-                                      : "-"}
+                                    {item.product.storageLocation ? item.product.storageLocation.name : "-"}
+                                    {item.product.compartment ? (
+                                      <span className="ml-1.5 inline-block rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                                        Fach {item.product.compartment}
+                                      </span>
+                                    ) : null}
                                   </TableUI.SubtableCell>
                                   <TableUI.SubtableCell className="w-0 whitespace-nowrap tabular-nums">
                                     {canEditQuantity ? (

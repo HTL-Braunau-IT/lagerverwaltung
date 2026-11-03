@@ -53,6 +53,7 @@ type ProductFormState = {
   categoryIds: string[];
   storageRoomId: string;
   storageLocationId: string;
+  compartment: string;
   imageUrl: string;
   imageAltText: string;
 };
@@ -133,6 +134,7 @@ function createInitialForm(product: {
     categoryId: string;
   }>;
   storageLocationId: string | null;
+  compartment: string | null;
   storageLocation: {
     storageRoomId: string;
   } | null;
@@ -162,6 +164,7 @@ function createInitialForm(product: {
     ),
     storageRoomId: product.storageLocation?.storageRoomId ?? "",
     storageLocationId: product.storageLocationId ?? "",
+    compartment: product.compartment ?? "",
     imageUrl: "",
     imageAltText: "",
   };
@@ -684,6 +687,7 @@ export function ProductsAdminPanel() {
         name: f.name.trim(),
         sku: f.sku.trim(),
         description: f.description.trim(),
+        compartment: f.compartment.trim(),
         imageUrl: imageTouched ? f.imageUrl.trim() : "",
         imageAltText: imageTouched ? f.imageAltText.trim() : "",
         categoryIds: [...f.categoryIds].sort(),
@@ -781,6 +785,7 @@ export function ProductsAdminPanel() {
           isVisible: form.isVisible,
           categoryIds: form.categoryIds,
           storageLocationId: form.storageLocationId || null,
+          compartment: form.compartment.trim() || null,
           editingImageId,
           imageUrl,
           imageAltText,
@@ -1419,6 +1424,23 @@ export function ProductsAdminPanel() {
                                     })),
                                   ]}
                                   className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                />
+                              </label>
+                              <label className="block text-sm text-slate-600">
+                                Fach
+                                <input
+                                  type="text"
+                                  value={form.compartment}
+                                  onClick={(event) => event.stopPropagation()}
+                                  onChange={(event) =>
+                                    setFormsById((current) => ({
+                                      ...current,
+                                      [product.id]: { ...form, compartment: event.target.value },
+                                    }))
+                                  }
+                                  maxLength={120}
+                                  placeholder="z. B. C160 Abschnitt 3"
+                                  className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900"
                                 />
                               </label>
                             </div>

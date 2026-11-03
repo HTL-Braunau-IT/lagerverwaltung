@@ -98,6 +98,7 @@ const updateProductInput = z.object({
     .array(z.string().min(1))
     .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
+  compartment: z.string().trim().max(120).nullable(),
   /** When set, `imageUrl` / `imageAltText` update this row only; omit to leave images unchanged. */
   editingImageId: z.string().min(1).optional(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
@@ -121,6 +122,7 @@ const createProductInput = z.object({
     .array(z.string().min(1))
     .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
+  compartment: z.string().trim().max(120).nullable(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
     message: "Invalid URL",
   }),
@@ -211,6 +213,7 @@ export const productRouter = createTRPCRouter({
           isVisible: true,
           categoryId: true,
           storageLocationId: true,
+          compartment: true,
           category: {
             select: {
               id: true,
@@ -389,6 +392,7 @@ export const productRouter = createTRPCRouter({
           isVisible: true,
           categoryId: true,
           storageLocationId: true,
+          compartment: true,
           category: {
             select: {
               id: true,
@@ -587,6 +591,7 @@ export const productRouter = createTRPCRouter({
             isVisible: input.isVisible,
             categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
+            compartment: input.compartment,
           },
           select: {
             id: true,
@@ -686,6 +691,7 @@ export const productRouter = createTRPCRouter({
             isVisible: input.isVisible,
             categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
+            compartment: input.compartment,
           },
           select: {
             id: true,

@@ -50,6 +50,7 @@ type ProductCreateFormState = {
   categoryIds: string[];
   storageRoomId: string;
   storageLocationId: string;
+  compartment: string;
   imageUrl: string;
   imageAltText: string;
 };
@@ -89,6 +90,7 @@ function createEmptyForm(): ProductCreateFormState {
     categoryIds: [],
     storageRoomId: "",
     storageLocationId: "",
+    compartment: "",
     imageUrl: "",
     imageAltText: "",
   };
@@ -204,6 +206,7 @@ export function NewProductPage() {
         isVisible: form.isVisible,
         categoryIds: form.categoryIds,
         storageLocationId: form.storageLocationId || null,
+        compartment: form.compartment.trim() || null,
         imageUrl,
         imageAltText: form.imageAltText.trim() ? form.imageAltText.trim() : null,
       });
@@ -315,6 +318,18 @@ export function NewProductPage() {
                       })),
                     ]}
                     className="mt-1 w-full rounded-sm px-2.5 py-2 text-sm text-slate-900"
+                  />
+                </label>
+                <label className="block text-sm text-slate-600">
+                  Fach
+                  <input
+                    type="text"
+                    value={form.compartment}
+                    onChange={(event) => setForm((c) => ({ ...c, compartment: event.target.value }))}
+                    disabled={uploadPending}
+                    maxLength={120}
+                    placeholder="z. B. C160 Abschnitt 3"
+                    className="mt-1 w-full rounded-sm bg-card/40 px-2.5 py-2 text-sm text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100"
                   />
                 </label>
               </Card>
