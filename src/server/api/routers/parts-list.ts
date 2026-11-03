@@ -10,7 +10,7 @@ const partListItemInput = z.object({
   productId: z.string().min(1),
   quantity: z.coerce
     .number()
-    .positive("Menge muss groesser als 0 sein.")
+    .positive("Menge muss größer als 0 sein.")
     .max(
       PART_LIST_ITEM_QUANTITY_MAX,
       `Menge darf maximal ${PART_LIST_ITEM_QUANTITY_MAX.toLocaleString("de-AT")} sein.`,
@@ -90,7 +90,7 @@ async function ensureProductsExist(
   if (existing.length !== ids.length) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Mindestens ein ausgewaehltes Produkt existiert nicht mehr.",
+      message: "Mindestens ein ausgewähltes Produkt existiert nicht mehr.",
     });
   }
 }
@@ -134,7 +134,7 @@ async function ensureProductsBelongToSingleStorageRoom(
   if (idsWithoutLocation.length > 0) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.",
+      message: "Alle Produkte in einer Teileliste müssen einem Lagerplatz zugeordnet sein.",
     });
   }
 
@@ -146,7 +146,7 @@ async function ensureProductsBelongToSingleStorageRoom(
   if (storageRoomIds.size > 1) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.",
+      message: "Alle Produkte in einer Teileliste müssen im selben Lagerraum liegen.",
     });
   }
 }

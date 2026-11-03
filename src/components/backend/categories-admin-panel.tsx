@@ -72,7 +72,7 @@ export function CategoriesAdminPanel() {
       setExpandedCategoryId(null);
       setForm(createEmptyForm());
       setBaselineForm(createEmptyForm());
-      toast.success("Kategorie geloescht.");
+      toast.success("Kategorie gelöscht.");
     },
   });
 

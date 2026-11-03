@@ -49,7 +49,7 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Ampel wie bei Produkten: Rot 0, Gelb 1–2, Gruen 3+. */
+/** Ampel wie bei Produkten: Rot 0, Gelb 1–2, Grün 3+. */
 function partListAvailabilityDotClass(maxOrderable: number): string {
   if (maxOrderable <= 0) return "bg-red-500";
   if (maxOrderable <= 2) return "bg-amber-400";
@@ -58,12 +58,12 @@ function partListAvailabilityDotClass(maxOrderable: number): string {
 
 function partListAvailabilityTitle(maxOrderable: number): string {
   if (maxOrderable <= 0) {
-    return "Nicht bestellbar: fuer eine komplette Teileliste reicht der Bestand nicht";
+    return "Nicht bestellbar: für eine komplette Teileliste reicht der Bestand nicht";
   }
   if (maxOrderable <= 2) {
-    return "Niedrig: nur wenige komplette Teilelisten sind gleichzeitig aus dem Bestand moeglich";
+    return "Niedrig: nur wenige komplette Teilelisten sind gleichzeitig aus dem Bestand möglich";
   }
-  return "Ausreichend: mehrere komplette Teilelisten sind aus dem Bestand moeglich";
+  return "Ausreichend: mehrere komplette Teilelisten sind aus dem Bestand möglich";
 }
 
 function PartListMaxOrderableLine({
@@ -79,7 +79,7 @@ function PartListMaxOrderableLine({
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(maxOrderable);
-  const srSummary = `${formatted} mal komplett als Teileliste „${partListName}“ aus aktuellem Bestand moeglich. ${title}`;
+  const srSummary = `${formatted} mal komplett als Teileliste „${partListName}“ aus aktuellem Bestand möglich. ${title}`;
 
   return (
     <div className="-mt-1 mb-2 flex items-center gap-1.5 text-sm justify-start">
@@ -133,10 +133,10 @@ export default function PartListDetailPage() {
         return;
       }
 
-      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefügt werden.");
     },
     onError: () => {
-      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefügt werden.");
     },
   });
 
@@ -177,7 +177,7 @@ export default function PartListDetailPage() {
       <main className="mx-auto min-h-screen w-full max-w-[90%] px-2 pt-10 pb-6 sm:px-4 lg:px-6">
         <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-6 text-destructive shadow-sm">
           <p className="text-sm font-semibold">Teileliste konnte nicht geladen werden.</p>
-          <p className="mt-1 text-sm">Bitte pruefe deine Verbindung und versuche es erneut.</p>
+          <p className="mt-1 text-sm">Bitte prüfe deine Verbindung und versuche es erneut.</p>
           <Button onClick={() => void selectedPartListQuery.refetch()} variant="outline" className="mt-3">
             Erneut laden
           </Button>
@@ -192,13 +192,13 @@ export default function PartListDetailPage() {
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <p className="text-sm font-semibold text-foreground">Teileliste nicht gefunden.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Die Teileliste wurde eventuell entfernt oder die URL ist nicht mehr gueltig.
+            Die Teileliste wurde eventuell entfernt oder die URL ist nicht mehr gültig.
           </p>
           <Link
             href="/"
             className="mt-3 inline-flex rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary/40"
           >
-            Zur Produktuebersicht
+            Zur Produktübersicht
           </Link>
         </div>
       </main>
@@ -311,9 +311,9 @@ export default function PartListDetailPage() {
                     min={1}
                     max={maxOrderable > 0 ? maxOrderable : undefined}
                     step={1}
-                    decreaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} reduzieren`}
-                    increaseAriaLabel={`Menge fuer Teileliste ${selectedPartList.name} erhoehen`}
-                    inputAriaLabel={`Menge fuer Teileliste ${selectedPartList.name}`}
+                    decreaseAriaLabel={`Menge für Teileliste ${selectedPartList.name} reduzieren`}
+                    increaseAriaLabel={`Menge für Teileliste ${selectedPartList.name} erhöhen`}
+                    inputAriaLabel={`Menge für Teileliste ${selectedPartList.name}`}
                     className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
                   />
                   <ShopAddToCartButton

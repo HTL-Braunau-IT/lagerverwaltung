@@ -48,7 +48,7 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
   if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
     const [, existingRoom, incomingRoom] = message.split(":");
     if (existingRoom && incomingRoom) {
-      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufuegst.`;
+      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufügst.`;
     }
     return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
   }
@@ -196,7 +196,7 @@ export function ShopPartListsAside({
         return;
       }
 
-      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefügt werden.");
     },
     onError: (error) => {
       const warning = toMixedStorageRoomWarning(error.message);
@@ -204,7 +204,7 @@ export function ShopPartListsAside({
         toast.warning(warning);
         return;
       }
-      toast.error("Teileliste konnte nicht hinzugefuegt werden.");
+      toast.error("Teileliste konnte nicht hinzugefügt werden.");
     },
   });
 
@@ -333,9 +333,9 @@ export function ShopPartListsAside({
                               min={1}
                               max={maxOrderable > 0 ? maxOrderable : undefined}
                               step={1}
-                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
-                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
-                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              decreaseAriaLabel={`Menge für Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge für Teileliste ${partList.name} erhöhen`}
+                              inputAriaLabel={`Menge für Teileliste ${partList.name}`}
                               stopPropagation
                               className="!h-7 min-h-7 [&_button]:!h-7"
                             />
@@ -475,9 +475,9 @@ export function ShopPartListsAside({
                               min={1}
                               max={maxOrderable > 0 ? maxOrderable : undefined}
                               step={1}
-                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
-                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
-                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              decreaseAriaLabel={`Menge für Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge für Teileliste ${partList.name} erhöhen`}
+                              inputAriaLabel={`Menge für Teileliste ${partList.name}`}
                               stopPropagation
                               className="!h-7 min-h-7 [&_button]:!h-7"
                             />
@@ -589,9 +589,9 @@ export function ShopPartListsAside({
                               min={1}
                               max={maxOrderable > 0 ? maxOrderable : undefined}
                               step={1}
-                              decreaseAriaLabel={`Menge fuer Teileliste ${partList.name} reduzieren`}
-                              increaseAriaLabel={`Menge fuer Teileliste ${partList.name} erhoehen`}
-                              inputAriaLabel={`Menge fuer Teileliste ${partList.name}`}
+                              decreaseAriaLabel={`Menge für Teileliste ${partList.name} reduzieren`}
+                              increaseAriaLabel={`Menge für Teileliste ${partList.name} erhöhen`}
+                              inputAriaLabel={`Menge für Teileliste ${partList.name}`}
                               stopPropagation
                               className="!h-7 min-h-7 [&_button]:!h-7"
                             />

@@ -84,7 +84,7 @@ export function valueToText(value: unknown) {
 }
 
 export function formatLineItems(items: OrderLineItem[]) {
-  if (items.length === 0) return ["(keine Positionen uebergeben)"];
+  if (items.length === 0) return ["(keine Positionen übergeben)"];
   return items.map((item) => {
     const quantity = valueToText(item.quantity) || "?";
     const priceRaw = valueToText(item.price);
@@ -149,14 +149,14 @@ export async function notifyStudentRequestCreated(input: StudentRequestCreatedIn
   const subject = `Neue Bestellanfrage ${input.requestId}`;
   const mail = buildOrderEmail({
     title: "Neue Bestellanfrage",
-    intro: [makeGreeting(input.teacher.name), "eine Schuelerin oder ein Schueler hat eine neue Bestellanfrage zur Freigabe eingereicht."],
+    intro: [makeGreeting(input.teacher.name), "eine Schülerin oder ein Schüler hat eine neue Bestellanfrage zur Freigabe eingereicht."],
     metaRows: [
-      { label: "Schueler/in", value: `${input.student.name ?? "-"} (${input.student.email ?? "-"})` },
+      { label: "Schüler/in", value: `${input.student.name ?? "-"} (${input.student.email ?? "-"})` },
       { label: "Anfrage-ID", value: input.requestId },
     ],
     itemsTitle: "Angefragte Artikel",
     items: formatLineItems(input.items),
-    footer: ["Bitte pruefen und bearbeiten Sie die Anfrage im System."],
+    footer: ["Bitte prüfen und bearbeiten Sie die Anfrage im System."],
   });
 
   await sendGraphMail({
@@ -185,7 +185,7 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
     intro: [
       makeGreeting(input.student.name),
       input.awaitingFinalApproval
-        ? "deine Bestellanfrage wurde von der Lehrperson bestaetigt und wartet nun noch auf die finale Freigabe."
+        ? "deine Bestellanfrage wurde von der Lehrperson bestätigt und wartet nun noch auf die finale Freigabe."
         : "deine Bestellanfrage wurde von der Lehrperson freigegeben.",
     ],
     metaRows: [
@@ -195,7 +195,7 @@ export async function notifyTeacherRequestApproved(input: TeacherRequestApproved
     ],
     itemsTitle: "Freigegebene Artikel",
     items: formatLineItems(input.items),
-    footer: ["Du bekommst weitere Updates, wenn sich der Bestellstatus aendert."],
+    footer: ["Du bekommst weitere Updates, wenn sich der Bestellstatus ändert."],
   });
 
   await sendGraphMail({
@@ -225,7 +225,7 @@ export async function notifyOrderStatusChanged(input: OrderStatusChangedInput) {
   const subject = `Statusupdate Bestellung ${input.orderNumber}: ${readableStatus}`;
   const mail = buildOrderEmail({
     title: `Statusupdate: Bestellung ${input.orderNumber}`,
-    intro: [makeGreeting(input.owner.name), "der Status deiner Bestellung hat sich geaendert."],
+    intro: [makeGreeting(input.owner.name), "der Status deiner Bestellung hat sich geändert."],
     status: {
       label: readableStatus,
       tone: input.status === "READY_FOR_PICKUP" ? "success" : "primary",

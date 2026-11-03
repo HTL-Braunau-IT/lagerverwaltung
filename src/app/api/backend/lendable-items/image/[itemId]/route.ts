@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: { params: Promise<{ itemId
     const { itemId: rawItemId } = await context.params;
     const itemId = sanitizeItemId(rawItemId);
     if (!itemId) {
-      return NextResponse.json({ message: "Artikel-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Artikel-ID ist ungültig." }, { status: 400 });
     }
 
     const item = await db.lendableItem.findUnique({

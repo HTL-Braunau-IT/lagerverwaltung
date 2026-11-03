@@ -268,7 +268,7 @@ export const costCenterRouter = createTRPCRouter({
     if (usage) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "Kostenstelle kann nicht geloescht werden, weil bereits Bestellungen existieren.",
+        message: "Kostenstelle kann nicht gelöscht werden, weil bereits Bestellungen existieren.",
       });
     }
 

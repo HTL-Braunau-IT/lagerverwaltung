@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     const productId = sanitizeProductId(productIdValue);
     if (!productId) {
-      return NextResponse.json({ message: "Produkt-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Produkt-ID ist ungültig." }, { status: 400 });
     }
 
     const product = await db.product.findUnique({

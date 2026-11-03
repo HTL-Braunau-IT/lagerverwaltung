@@ -111,7 +111,7 @@ export function StorageLocationsAdminPanel() {
       setExpandedLocationId(null);
       setLocationForm(createEmptyLocationForm());
       setBaselineForm(createEmptyLocationForm());
-      toast.success("Lagerplatz geloescht.");
+      toast.success("Lagerplatz gelöscht.");
     },
   });
 

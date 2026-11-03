@@ -204,7 +204,7 @@ export function PartsListAdminPanel() {
       setSelectedId(null);
       setForm(createEmptyForm());
       setBaselineForm(createEmptyForm());
-      toast.success("Teileliste geloescht.");
+      toast.success("Teileliste gelöscht.");
     },
   });
   const clearImageMutation = api.partsList.backendClearImage.useMutation({
@@ -247,7 +247,7 @@ export function PartsListAdminPanel() {
     const selectedItems = form.items.filter((item) => item.productId.length > 0);
     if (selectedItems.length === 0) return null;
     if (selectedItems.some((item) => !item.storageRoomId)) {
-      return "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.";
+      return "Alle Produkte in einer Teileliste müssen einem Lagerplatz zugeordnet sein.";
     }
 
     const distinctStorageRooms = new Set(
@@ -256,7 +256,7 @@ export function PartsListAdminPanel() {
         .filter((storageRoomId): storageRoomId is string => Boolean(storageRoomId)),
     );
     if (distinctStorageRooms.size > 1) {
-      return "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.";
+      return "Alle Produkte in einer Teileliste müssen im selben Lagerraum liegen.";
     }
     return null;
   }, [form.items]);
@@ -522,13 +522,13 @@ export function PartsListAdminPanel() {
       });
       const result = (await response.json().catch(() => null)) as { message?: string } | null;
       if (!response.ok) {
-        throw new Error(result?.message ?? "Dokument konnte nicht geloescht werden.");
+        throw new Error(result?.message ?? "Dokument konnte nicht gelöscht werden.");
       }
       await utils.partsList.backendById.invalidate({ id: selectedId });
       await selectedPartListQuery.refetch();
-      toast.success("Dokument geloescht.");
+      toast.success("Dokument gelöscht.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Dokument konnte nicht geloescht werden.");
+      toast.error(error instanceof Error ? error.message : "Dokument konnte nicht gelöscht werden.");
     } finally {
       setUploadBusy(false);
     }

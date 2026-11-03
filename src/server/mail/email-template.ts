@@ -84,7 +84,7 @@ export function emailMetaList(rows: Array<{ label: string; value: string }>) {
 
 export function emailItemList(items: string[]) {
   if (items.length === 0) {
-    return `<p style="margin:0;color:${palette.mutedText};font-size:14px;line-height:1.55;">(keine Positionen uebergeben)</p>`;
+    return `<p style="margin:0;color:${palette.mutedText};font-size:14px;line-height:1.55;">(keine Positionen übergeben)</p>`;
   }
 
   const body = items

@@ -49,7 +49,7 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
   if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
     const [, existingRoom, incomingRoom] = message.split(":");
     if (existingRoom && incomingRoom) {
-      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufuegst.`;
+      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufügst.`;
     }
     return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
   }
@@ -157,7 +157,7 @@ export default function ProductDetailPage() {
         <div className="bg-destructive/10 p-6 text-destructive">
           <p className="text-sm font-semibold">Produkt konnte nicht geladen werden.</p>
           <p className="mt-1 text-sm">
-            Bitte pruefe deine Verbindung und versuche es erneut.
+            Bitte prüfe deine Verbindung und versuche es erneut.
           </p>
           <Button onClick={() => void productQuery.refetch()} variant="outline" className="mt-3">
             Erneut laden
@@ -173,13 +173,13 @@ export default function ProductDetailPage() {
         <div className="p-6">
           <p className="text-sm font-semibold text-foreground">Produkt nicht gefunden.</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Das Produkt wurde eventuell entfernt oder die URL ist nicht mehr gueltig.
+            Das Produkt wurde eventuell entfernt oder die URL ist nicht mehr gültig.
           </p>
           <Link
             href="/"
             className="mt-3 inline-flex rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:border-primary/40"
           >
-            Zur Produktuebersicht
+            Zur Produktübersicht
           </Link>
         </div>
       </main>
@@ -292,7 +292,7 @@ export default function ProductDetailPage() {
                 {isAreaProduct ? (
                   <div className="min-w-0 flex-1 rounded-xl border border-border bg-muted/40 p-3">
                     <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                      Flaeche berechnen
+                      Fläche berechnen
                     </p>
                     <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div>
@@ -307,7 +307,7 @@ export default function ProductDetailPage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs text-muted-foreground">Hoehe (mm)</label>
+                        <label className="mb-1 block text-xs text-muted-foreground">Höhe (mm)</label>
                         <input
                           type="number"
                           min={0}
@@ -335,9 +335,9 @@ export default function ProductDetailPage() {
                     min={unitStep}
                     max={stockOnHand}
                     step={unitStep}
-                    decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
-                    increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
-                    inputAriaLabel={`Menge fuer ${product.name}`}
+                    decreaseAriaLabel={`Menge für ${product.name} reduzieren`}
+                    increaseAriaLabel={`Menge für ${product.name} erhöhen`}
+                    inputAriaLabel={`Menge für ${product.name}`}
                     className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
                   />
                 )}

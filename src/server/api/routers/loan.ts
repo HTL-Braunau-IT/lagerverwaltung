@@ -98,7 +98,7 @@ const resolveStorageRoomForLoanItems = async (
   };
 
   if (lendableItemIds.length === 0) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: "Keine Artikel fuer Lagerraumermittlung uebergeben." });
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Keine Artikel für Lagerraumermittlung übergeben." });
   }
 
   const items = await db.lendableItem.findMany({
@@ -633,7 +633,7 @@ export const loanRouter = createTRPCRouter({
         if (entry.handoverQuantity > remainingApproved) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Uebergebungsmenge ist zu hoch.",
+            message: "Übergebungsmenge ist zu hoch.",
           });
         }
         if (entry.handoverQuantity <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Ungültige Menge." });
@@ -815,7 +815,7 @@ export const loanRouter = createTRPCRouter({
       throw new TRPCError({ code: "BAD_REQUEST", message: "Diese Position wurde nicht verliehen." });
     }
     if (!item.borrowedAt || !item.loan.borrower.email) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Rückfrage nicht moeglich (fehlende Zeit/Email)." });
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Rückfrage nicht möglich (fehlende Zeit/Email)." });
     }
 
     const now = new Date();

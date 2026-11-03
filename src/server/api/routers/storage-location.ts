@@ -178,7 +178,7 @@ export const storageLocationRouter = createTRPCRouter({
       if (!room) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Der ausgewaehlte Lagerraum wurde nicht gefunden.",
+          message: "Der ausgewählte Lagerraum wurde nicht gefunden.",
         });
       }
 
@@ -224,7 +224,7 @@ export const storageLocationRouter = createTRPCRouter({
       if (!room) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Der ausgewaehlte Lagerraum wurde nicht gefunden.",
+          message: "Der ausgewählte Lagerraum wurde nicht gefunden.",
         });
       }
 

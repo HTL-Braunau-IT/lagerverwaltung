@@ -125,7 +125,7 @@ export function ProductImageCarousel({ images, productName, href }: ProductImage
             }}
             disabled={!canScrollNext}
             className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-35"
-            aria-label="Naechstes Bild"
+            aria-label="Nächstes Bild"
           >
             ›
           </button>

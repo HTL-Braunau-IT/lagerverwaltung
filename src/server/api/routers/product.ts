@@ -155,7 +155,7 @@ function assertProductQuantitiesAreValid(input: {
   if (input.unitStep !== expectedStep) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `Schrittweite fuer ${normalizedBaseUnit} muss ${expectedStep.toLocaleString("de-AT")} sein.`,
+      message: `Schrittweite für ${normalizedBaseUnit} muss ${expectedStep.toLocaleString("de-AT")} sein.`,
     });
   }
   assertQuantityOnStep(input.minimumQuantity, normalizedBaseUnit, "Mindestbestand");
@@ -554,7 +554,7 @@ export const productRouter = createTRPCRouter({
       if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Produkte muessen einem erlaubten Lagerraum zugeordnet sein.",
+          message: "Produkte müssen einem erlaubten Lagerraum zugeordnet sein.",
         });
       }
 
@@ -566,7 +566,7 @@ export const productRouter = createTRPCRouter({
         if (!location) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Ausgewaehlter Lagerplatz existiert nicht.",
+            message: "Ausgewählter Lagerplatz existiert nicht.",
           });
         }
         assertStorageRoomAllowed(access, location.storageRoomId);
@@ -653,7 +653,7 @@ export const productRouter = createTRPCRouter({
       if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Produkte muessen einem erlaubten Lagerraum zugeordnet sein.",
+          message: "Produkte müssen einem erlaubten Lagerraum zugeordnet sein.",
         });
       }
 
@@ -665,7 +665,7 @@ export const productRouter = createTRPCRouter({
         if (!location) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Ausgewaehlter Lagerplatz existiert nicht.",
+            message: "Ausgewählter Lagerplatz existiert nicht.",
           });
         }
         assertStorageRoomAllowed(access, location.storageRoomId);
@@ -801,7 +801,7 @@ export const productRouter = createTRPCRouter({
       if (!Number.isFinite(input.quantityDelta) || input.quantityDelta === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Die Menge muss eine gueltige Zahl und ungleich 0 sein.",
+          message: "Die Menge muss eine gültige Zahl und ungleich 0 sein.",
         });
       }
 

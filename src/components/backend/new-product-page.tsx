@@ -156,7 +156,7 @@ export function NewProductPage() {
   }, [form, quantityStep, uploadPending]);
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
-    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
+    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswählen.");
     if (file.size > MAX_UPLOAD_BYTES) throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
     const body = new FormData();
     body.append("sku", sku);
@@ -306,7 +306,7 @@ export function NewProductPage() {
                     options={[
                       {
                         value: "",
-                        label: selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum waehlen",
+                        label: selectedRoomId ? "Kein Lagerplatz" : "Bitte zuerst Lagerraum wählen",
                         disabled: !selectedRoomId,
                       },
                       ...filteredLocations.map((loc) => ({
@@ -335,7 +335,7 @@ export function NewProductPage() {
                         step={quantityStep}
                         onChange={(value) => setForm((c) => ({ ...c, startingQuantity: value }))}
                         decreaseAriaLabel="Startbestand verringern"
-                        increaseAriaLabel="Startbestand erhoehen"
+                        increaseAriaLabel="Startbestand erhöhen"
                         inputAriaLabel="Startbestand"
                         className={uploadPending ? "pointer-events-none opacity-80" : ""}
                       />
@@ -350,7 +350,7 @@ export function NewProductPage() {
                         step={quantityStep}
                         onChange={(value) => setForm((c) => ({ ...c, minimumQuantity: value }))}
                         decreaseAriaLabel="Minimum verringern"
-                        increaseAriaLabel="Minimum erhoehen"
+                        increaseAriaLabel="Minimum erhöhen"
                         inputAriaLabel="Minimum"
                         className={uploadPending ? "pointer-events-none opacity-80" : ""}
                       />
@@ -365,7 +365,7 @@ export function NewProductPage() {
                         step={quantityStep}
                         onChange={(value) => setForm((c) => ({ ...c, unitStep: value }))}
                         decreaseAriaLabel="Schritte verringern"
-                        increaseAriaLabel="Schritte erhoehen"
+                        increaseAriaLabel="Schritte erhöhen"
                         inputAriaLabel="Schritte"
                         className={uploadPending ? "pointer-events-none opacity-80" : ""}
                       />

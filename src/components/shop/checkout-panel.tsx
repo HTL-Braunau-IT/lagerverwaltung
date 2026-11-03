@@ -76,17 +76,17 @@ export function CheckoutPanel(props: {
       }
       switch (data.reason) {
         case "EMPTY_CART":
-          toast.error("Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufuegen.");
+          toast.error("Dein Warenkorb ist leer. Bitte zuerst Artikel hinzufügen.");
           break;
         case "INVALID_COST_CENTER":
-          toast.error("Die ausgewaehlte Kostenstelle ist ungueltig. Bitte erneut waehlen.");
+          toast.error("Die ausgewählte Kostenstelle ist ungültig. Bitte erneut wählen.");
           break;
         case "INSUFFICIENT_STOCK":
           toast.error("Nicht genug Lagerbestand vorhanden. Bitte reduziere die Menge im Warenkorb.");
           break;
         case "MIXED_STORAGE_ROOMS":
           toast.warning(
-            "Dein Warenkorb enthaelt Produkte aus mehreren Lagerraeumen. Bitte bestelle pro Lagerraum getrennt.",
+            "Dein Warenkorb enthält Produkte aus mehreren Lagerräumen. Bitte bestelle pro Lagerraum getrennt.",
           );
           break;
       }
@@ -173,7 +173,7 @@ export function CheckoutPanel(props: {
           />
           {teachersQuery.error ? (
             <p className="text-sm text-rose-700">
-              Lehrerliste konnte nicht geladen werden. Bitte spaeter erneut versuchen.
+              Lehrerliste konnte nicht geladen werden. Bitte später erneut versuchen.
             </p>
           ) : null}
         </div>

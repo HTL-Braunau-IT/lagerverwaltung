@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     const partListId = sanitizePartListId(partListIdValue);
     if (!partListId) {
-      return NextResponse.json({ message: "Teilelisten-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Teilelisten-ID ist ungültig." }, { status: 400 });
     }
 
     const partList = await db.partList.findUnique({

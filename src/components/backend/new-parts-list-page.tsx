@@ -179,7 +179,7 @@ export function NewPartsListPage() {
     const selectedItems = form.items.filter((item) => item.productId.length > 0);
     if (selectedItems.length === 0) return null;
     if (selectedItems.some((item) => !item.storageRoomId)) {
-      return "Alle Produkte in einer Teileliste muessen einem Lagerplatz zugeordnet sein.";
+      return "Alle Produkte in einer Teileliste müssen einem Lagerplatz zugeordnet sein.";
     }
 
     const distinctStorageRooms = new Set(
@@ -188,7 +188,7 @@ export function NewPartsListPage() {
         .filter((storageRoomId): storageRoomId is string => Boolean(storageRoomId)),
     );
     if (distinctStorageRooms.size > 1) {
-      return "Alle Produkte in einer Teileliste muessen im selben Lagerraum liegen.";
+      return "Alle Produkte in einer Teileliste müssen im selben Lagerraum liegen.";
     }
     return null;
   }, [form.items]);

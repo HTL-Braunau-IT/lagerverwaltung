@@ -120,7 +120,7 @@ const resolveRoleAndAzureMetadata = async ({
         roleSource = "graph-fallback";
       }
     } catch (error) {
-      console.warn("[auth] Graph-Fallback zur Rollenaufloesung fehlgeschlagen", {
+      console.warn("[auth] Graph-Fallback zur Rollenauflösung fehlgeschlagen", {
         email: emailForLogs,
         azureAdObjectId,
         reason: error instanceof Error ? error.message : "UNKNOWN_ERROR",

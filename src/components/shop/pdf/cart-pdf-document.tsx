@@ -83,7 +83,7 @@ export function CartPdfDocument({
           <>
             {partListGroups.map((group, index) => (
               <View key={group.id} style={shopPdfStyles.card}>
-                <Text style={shopPdfStyles.sectionTitle}>Stueckliste - {group.name}</Text>
+                <Text style={shopPdfStyles.sectionTitle}>Stückliste - {group.name}</Text>
                 <CartTable items={group.items} />
                 {index === partListGroups.length - 1 ? (
                   <View style={shopPdfStyles.totalsRow}>
@@ -98,7 +98,7 @@ export function CartPdfDocument({
           <View style={shopPdfStyles.card}>
             {partListGroups.map((group) => (
               <View key={group.id} style={{ marginBottom: 10 }}>
-                <Text style={shopPdfStyles.sectionTitle}>Stueckliste - {group.name}</Text>
+                <Text style={shopPdfStyles.sectionTitle}>Stückliste - {group.name}</Text>
                 <CartTable items={group.items} />
               </View>
             ))}

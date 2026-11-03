@@ -180,7 +180,7 @@ export async function resolveSingleStorageRoomForProductIds(
   if (productIds.length === 0) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Keine Produkte fuer Lagerraumermittlung uebergeben.",
+      message: "Keine Produkte für Lagerraumermittlung übergeben.",
     });
   }
 

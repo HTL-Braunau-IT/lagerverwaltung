@@ -400,7 +400,7 @@ export function AssignedOrdersPanel() {
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
               <h2 className="text-sm font-semibold text-amber-900">Offene Ausleihfreigaben</h2>
               <p className="mt-1 text-sm text-amber-800">
-                Diese Ausleihanfragen warten auf deine endgueltige Entscheidung.
+                Diese Ausleihanfragen warten auf deine endgültige Entscheidung.
               </p>
             </div>
 

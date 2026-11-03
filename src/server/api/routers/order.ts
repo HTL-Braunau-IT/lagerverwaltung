@@ -151,7 +151,7 @@ function isTransitionAllowed(currentStatus: OrderStatus, nextStatus: OrderStatus
   return true;
 }
 
-const ORDER_RETURN_SUPPLIER = "Bestellrueckgabe";
+const ORDER_RETURN_SUPPLIER = "Bestellrückgabe";
 const ORDER_RETURN_NOTE_PREFIX = "ORDER_RETURN";
 
 function buildOrderReturnNote(orderId: string, orderItemId: string) {
@@ -166,7 +166,7 @@ function assertQuantityFitsStep(quantity: number, step: number, label: string) {
   if (!Number.isFinite(quantity) || !Number.isFinite(step) || step <= 0) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `${label} ist ungueltig.`,
+      message: `${label} ist ungültig.`,
     });
   }
 
@@ -473,7 +473,7 @@ export const orderRouter = createTRPCRouter({
         if (order.status !== "READY_FOR_PICKUP") {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Rueckbuchung ist nur bei 'Abholbereit' moeglich.",
+            message: "Rückbuchung ist nur bei 'Abholbereit' möglich.",
           });
         }
 
@@ -507,7 +507,7 @@ export const orderRouter = createTRPCRouter({
             const returnQuantity = requestedByOrderItemId.get(item.id) ?? 0;
             if (returnQuantity <= 0) return null;
 
-            assertQuantityFitsStep(returnQuantity, Number(item.product.unitStep), "Rueckgabemenge");
+            assertQuantityFitsStep(returnQuantity, Number(item.product.unitStep), "Rückgabemenge");
 
             const orderedQuantity = Number(item.quantity);
             const alreadyReturned = Math.max(0, returnedByProductId.get(item.productId) ?? 0);
@@ -516,7 +516,7 @@ export const orderRouter = createTRPCRouter({
             if (returnQuantity > remaining) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: `Rueckgabemenge fuer '${item.product.name}' ist zu hoch.`,
+                message: `Rückgabemenge für '${item.product.name}' ist zu hoch.`,
               });
             }
 
@@ -532,7 +532,7 @@ export const orderRouter = createTRPCRouter({
         if (updates.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Keine gueltigen Rueckgabepositionen uebermittelt.",
+            message: "Keine gültigen Rückgabepositionen übermittelt.",
           });
         }
 
@@ -655,7 +655,7 @@ export const orderRouter = createTRPCRouter({
             if (parsed) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: "Nicht genug Lagerbestand fuer diese Menge.",
+                message: "Nicht genug Lagerbestand für diese Menge.",
               });
             }
           }
@@ -744,7 +744,7 @@ export const orderRouter = createTRPCRouter({
         if (!isTransitionAllowed(order.status, input.nextStatus)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Rueckwechsel von 'Abholbereit' ist nicht erlaubt.",
+            message: "Rückwechsel von 'Abholbereit' ist nicht erlaubt.",
           });
         }
 
@@ -894,7 +894,7 @@ export const orderRouter = createTRPCRouter({
             if (parsed) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: "Nicht genug Lagerbestand fuer diese Menge.",
+                message: "Nicht genug Lagerbestand für diese Menge.",
               });
             }
           }
@@ -1177,7 +1177,7 @@ export const orderRouter = createTRPCRouter({
         if (request.items.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Anfrage enthaelt keine Positionen mehr. Bitte Anfrage ablehnen.",
+            message: "Anfrage enthält keine Positionen mehr. Bitte Anfrage ablehnen.",
           });
         }
 
@@ -1188,7 +1188,7 @@ export const orderRouter = createTRPCRouter({
             if (error.message.startsWith("INSUFFICIENT_STOCK:")) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: "Nicht genug Lagerbestand fuer mindestens ein Produkt.",
+                message: "Nicht genug Lagerbestand für mindestens ein Produkt.",
               });
             }
           }
@@ -1202,7 +1202,7 @@ export const orderRouter = createTRPCRouter({
         if (!costCenter) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Ungueltige Kostenstelle.",
+            message: "Ungültige Kostenstelle.",
           });
         }
 

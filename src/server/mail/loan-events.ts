@@ -81,7 +81,7 @@ function valueToText(value: unknown) {
 }
 
 function formatLineItems(items: LoanLineItem[]) {
-  if (items.length === 0) return ["(keine Positionen uebergeben)"];
+  if (items.length === 0) return ["(keine Positionen übergeben)"];
   return items.map((item) => {
     const quantity = valueToText(item.quantity) || "?";
     const unit = item.unit?.trim() ? ` ${item.unit}` : "";
@@ -145,7 +145,7 @@ export async function notifyLoanApproved(input: LoanApprovedInput) {
     metaRows: teacher ? [{ label: "Lehrperson", value: teacher.name ?? "-" }] : [],
     itemsTitle: "Artikel",
     items: formatLineItems(input.items),
-    footer: ["Du bekommst weitere Updates, wenn sich der Status aendert."],
+    footer: ["Du bekommst weitere Updates, wenn sich der Status ändert."],
   });
 
   await sendGraphMail({
@@ -187,20 +187,20 @@ export async function notifyLoanHandoverConfirmed(input: LoanHandoverConfirmedIn
   const borrower = recipientFromUser(input.borrower);
   if (!borrower) return { skipped: true as const };
 
-  const subject = `Werkzeug uebergeben (Anfrage ${input.loanId})`;
+  const subject = `Werkzeug übergeben (Anfrage ${input.loanId})`;
   const items = input.items.map((item) => {
     const unitLine = item.unit?.trim() ? ` ${item.unit}` : "";
     const quantity = valueToText(item.quantity) || "?";
-    const duePart = item.dueAt ? ` | Faellig am ${formatDate(item.dueAt)}` : "";
+    const duePart = item.dueAt ? ` | Fällig am ${formatDate(item.dueAt)}` : "";
     return `${item.name}: Menge ${quantity}${unitLine}${duePart}`;
   });
   const mail = buildLoanEmail({
-    title: `Werkzeug ${input.loanId} uebergeben`,
-    intro: [makeGreeting(input.borrower.name), "wir haben dir folgende Artikel uebergeben."],
-    status: { label: "Uebergeben", tone: "primary" },
+    title: `Werkzeug ${input.loanId} übergeben`,
+    intro: [makeGreeting(input.borrower.name), "wir haben dir folgende Artikel übergeben."],
+    status: { label: "Übergeben", tone: "primary" },
     itemsTitle: "Ausgeliehene Artikel",
     items,
-    footer: ["Bitte bring die Artikel rechtzeitig zurueck."],
+    footer: ["Bitte bring die Artikel rechtzeitig zurück."],
   });
 
   await sendGraphMail({
@@ -218,12 +218,12 @@ export async function notifyLoanReturned(input: LoanReturnedInput) {
   const borrower = recipientFromUser(input.borrower);
   if (!borrower) return { skipped: true as const };
 
-  const subject = `Werkzeug zurueckgegeben (Anfrage ${input.loanId})`;
+  const subject = `Werkzeug zurückgegeben (Anfrage ${input.loanId})`;
   const mail = buildLoanEmail({
-    title: `Werkzeug ${input.loanId} zurueckgegeben`,
-    intro: [makeGreeting(input.borrower.name), "wir haben die Rueckgabe verbucht."],
-    status: { label: "Zurueckgegeben", tone: "success" },
-    itemsTitle: "Rueckgegebene Artikel",
+    title: `Werkzeug ${input.loanId} zurückgegeben`,
+    intro: [makeGreeting(input.borrower.name), "wir haben die Rückgabe verbucht."],
+    status: { label: "Zurückgegeben", tone: "success" },
+    itemsTitle: "Rückgegebene Artikel",
     items: formatLineItems(input.items),
     footer: ["Danke!"],
   });
@@ -246,9 +246,9 @@ export async function sendLoanReminder(input: LoanReminderInput) {
   const now = new Date();
   const daysSinceBorrowed = Math.max(0, floorDaysBetween(input.borrowedAt, now));
 
-  const dueText = input.dueAt ? `Faellig am ${formatDate(input.dueAt)}.` : "";
+  const dueText = input.dueAt ? `Fällig am ${formatDate(input.dueAt)}.` : "";
   const overdue = input.dueAt ? now.getTime() > input.dueAt.getTime() : false;
-  const overdueText = overdue ? `Du bist aktuell ueberfaellig.` : `Bitte halte die Rueckgabe im Blick.`;
+  const overdueText = overdue ? `Du bist aktuell überfällig.` : `Bitte halte die Rückgabe im Blick.`;
 
   const subject = `Erinnerung: ${input.itemName}`;
   const mail = buildLoanEmail({
@@ -259,8 +259,8 @@ export async function sendLoanReminder(input: LoanReminderInput) {
       overdueText,
       ...(dueText ? [dueText] : []),
     ],
-    status: { label: overdue ? "Ueberfaellig" : "Erinnerung", tone: overdue ? "destructive" : "primary" },
-    footer: ["Bitte bring den Artikel so bald wie moeglich zurueck."],
+    status: { label: overdue ? "Überfällig" : "Erinnerung", tone: overdue ? "destructive" : "primary" },
+    footer: ["Bitte bring den Artikel so bald wie möglich zurück."],
   });
 
   await sendGraphMail({

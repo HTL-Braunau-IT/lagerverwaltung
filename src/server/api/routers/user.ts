@@ -98,7 +98,7 @@ export const userRouter = createTRPCRouter({
         if (existingRooms.length !== uniqueStorageRoomIds.length) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Mindestens ein ausgewaehlter Lagerraum ist ungueltig.",
+            message: "Mindestens ein ausgewählter Lagerraum ist ungültig.",
           });
         }
       }

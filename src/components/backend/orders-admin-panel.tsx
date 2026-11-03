@@ -223,10 +223,10 @@ export function OrdersAdminPanel() {
       ]);
       setReturnDialogOrderId(null);
       setReturnDraftByItemId({});
-      toast.success("Rueckgabe erfolgreich rueckgebucht.");
+      toast.success("Rückgabe erfolgreich rückgebucht.");
     },
     onError: (error) => {
-      toast.error(error.message || "Rueckgabe konnte nicht gebucht werden.");
+      toast.error(error.message || "Rückgabe konnte nicht gebucht werden.");
     },
   });
 
@@ -627,7 +627,7 @@ export function OrdersAdminPanel() {
                             </DetailText>
                             {expandedOrderQuery.data.sourceRequest?.student ? (
                               <p className="mt-2 text-[9px] text-muted-foreground italic">
-                                Schueler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
+                                Schüler: {userLabel(expandedOrderQuery.data.sourceRequest.student)}
                               </p>
                             ) : null}
                           </Card>
@@ -843,7 +843,7 @@ export function OrdersAdminPanel() {
                       openReturnDialog(menuOpenOrderId);
                     }}
                   >
-                    <span>Rueckbuchung</span>
+                    <span>Rückbuchung</span>
                     <span className="text-xs text-muted-foreground">Menge</span>
                   </button>
                 </>
@@ -908,7 +908,7 @@ export function OrdersAdminPanel() {
                     if (!quantityEditTarget) return;
                     const nextQuantity = decimalToNumber(quantityEditDraft);
                     if (!Number.isFinite(nextQuantity) || nextQuantity <= 0) {
-                      toast.error("Bitte eine gueltige Menge eingeben.");
+                      toast.error("Bitte eine gültige Menge eingeben.");
                       return;
                     }
                     updateItemQuantityMutation.mutate({
@@ -933,14 +933,14 @@ export function OrdersAdminPanel() {
           setReturnDialogOrderId(null);
           setReturnDraftByItemId({});
         }}
-        title="Rueckgabe buchen"
-        description="Positionen koennen teilweise oder komplett zurueck ins Lager gebucht werden."
+        title="Rückgabe buchen"
+        description="Positionen können teilweise oder komplett zurück ins Lager gebucht werden."
       >
         {returnDialogQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">Positionen werden geladen...</p>
         ) : null}
         {returnDialogQuery.error ? (
-          <p className="text-sm text-destructive">Rueckgabedaten konnten nicht geladen werden.</p>
+          <p className="text-sm text-destructive">Rückgabedaten konnten nicht geladen werden.</p>
         ) : null}
         {returnDialogQuery.data ? (
           <div className="space-y-4">
@@ -950,9 +950,9 @@ export function OrdersAdminPanel() {
                   <tr>
                     <TableUI.SubtableHead>Produkt</TableUI.SubtableHead>
                     <TableUI.SubtableHead className="w-24 whitespace-nowrap">Bestellt</TableUI.SubtableHead>
-                    <TableUI.SubtableHead className="w-24 whitespace-nowrap">Schon zurueck</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-24 whitespace-nowrap">Schon zurück</TableUI.SubtableHead>
                     <TableUI.SubtableHead className="w-24 whitespace-nowrap">Offen</TableUI.SubtableHead>
-                    <TableUI.SubtableHead className="w-[12rem]">Rueckgabe</TableUI.SubtableHead>
+                    <TableUI.SubtableHead className="w-[12rem]">Rückgabe</TableUI.SubtableHead>
                   </tr>
                 </TableUI.SubtableHeader>
                 <TableUI.SubtableBody>
@@ -988,9 +988,9 @@ export function OrdersAdminPanel() {
                               min={0}
                               max={remaining}
                               step={step}
-                              decreaseAriaLabel={`Rueckgabe ${item.product.name} verringern`}
-                              increaseAriaLabel={`Rueckgabe ${item.product.name} erhoehen`}
-                              inputAriaLabel={`Rueckgabe ${item.product.name}`}
+                              decreaseAriaLabel={`Rückgabe ${item.product.name} verringern`}
+                              increaseAriaLabel={`Rückgabe ${item.product.name} erhöhen`}
+                              inputAriaLabel={`Rückgabe ${item.product.name}`}
                               disabled={bookReturnMutation.isPending || remaining <= 0}
                             />
                             <Button
@@ -1049,7 +1049,7 @@ export function OrdersAdminPanel() {
                     .filter((item) => item.returnQuantity > 0);
 
                   if (payloadItems.length === 0) {
-                    toast.error("Bitte mindestens eine Rueckgabemenge > 0 eintragen.");
+                    toast.error("Bitte mindestens eine Rückgabemenge > 0 eintragen.");
                     return;
                   }
 
@@ -1059,7 +1059,7 @@ export function OrdersAdminPanel() {
                   });
                 }}
               >
-                Rueckgabe buchen
+                Rückgabe buchen
               </Button>
             </div>
           </div>

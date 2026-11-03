@@ -45,6 +45,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true as const });
   } catch {
-    return NextResponse.json({ message: "Dokument konnte nicht geloescht werden." }, { status: 500 });
+    return NextResponse.json({ message: "Dokument konnte nicht gelöscht werden." }, { status: 500 });
   }
 }

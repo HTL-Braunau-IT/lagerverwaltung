@@ -73,7 +73,7 @@ export function NewLendableItemPage() {
   }, [form.name, form.quantityOnHand, form.storageRoomId, uploadPending]);
 
   const uploadImage = async (itemId: string, file: File) => {
-    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
+    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswählen.");
     if (file.size > MAX_UPLOAD_BYTES) throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
     const body = new FormData();
     body.append("itemId", itemId);

@@ -88,7 +88,7 @@ export function CostCentersAdminPanel() {
       setExpandedCostCenterId(null);
       setForm(createEmptyForm());
       setBaselineForm(createEmptyForm());
-      toast.success("Kostenstelle geloescht.");
+      toast.success("Kostenstelle gelöscht.");
     },
   });
 

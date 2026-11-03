@@ -188,7 +188,7 @@ function assertCartQuantityStep(quantity: number, baseUnit: string) {
   if (!isQuantityAlignedToStep(quantity, step)) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: `Menge muss in ${step.toLocaleString("de-AT")}er-Schritten fuer ${baseUnit} angegeben werden.`,
+      message: `Menge muss in ${step.toLocaleString("de-AT")}er-Schritten für ${baseUnit} angegeben werden.`,
     });
   }
 }

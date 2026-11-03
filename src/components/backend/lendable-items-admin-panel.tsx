@@ -129,7 +129,7 @@ export function LendableItemsAdminPanel() {
   const deleteMutation = api.lendableItem.backendDelete.useMutation({
     onSuccess: async () => {
       await utils.lendableItem.backendList.invalidate();
-      toast.success("Leihgerät geloescht.");
+      toast.success("Leihgerät gelöscht.");
     },
   });
 
@@ -162,7 +162,7 @@ export function LendableItemsAdminPanel() {
   }, [expandedItemId, sortedItems, formsById]);
 
   const uploadImage = async (itemId: string, file: File) => {
-    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswaehlen.");
+    if (!file.type.startsWith("image/")) throw new Error("Bitte eine Bilddatei auswählen.");
     if (file.size > MAX_UPLOAD_BYTES) throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
     const body = new FormData();
     body.append("itemId", itemId);
@@ -292,7 +292,7 @@ export function LendableItemsAdminPanel() {
                                   }
                                   className="mt-1 flex h-10 w-full appearance-none rounded-md bg-card/40 backdrop-blur px-3 py-2 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  <option value="">Lagerraum waehlen</option>
+                                  <option value="">Lagerraum wählen</option>
                                   {(roomsQuery.data ?? []).map((room) => (
                                     <option key={room.id} value={room.id}>
                                       {room.name}

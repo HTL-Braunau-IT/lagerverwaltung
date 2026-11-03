@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: { params: Promise<{ docume
     const { documentId: rawDocumentId } = await context.params;
     const documentId = sanitizeDocumentId(rawDocumentId);
     if (!documentId) {
-      return NextResponse.json({ message: "Dokumenten-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Dokumenten-ID ist ungültig." }, { status: 400 });
     }
 
     const document = await db.productDocument.findUnique({

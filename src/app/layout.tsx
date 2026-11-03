@@ -43,7 +43,7 @@ const inter = Inter({
 const roleLabels: Record<"ADMIN" | "TEACHER" | "STUDENT", string> = {
   ADMIN: "Administrator",
   TEACHER: "Lehrkraft",
-  STUDENT: "Schueler",
+  STUDENT: "Schüler",
 };
 
 export default async function RootLayout({

@@ -61,7 +61,7 @@ function toMixedStorageRoomWarning(message: string | null | undefined): string |
   if (message.startsWith("MIXED_STORAGE_ROOMS:")) {
     const [, existingRoom, incomingRoom] = message.split(":");
     if (existingRoom && incomingRoom) {
-      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufuegst.`;
+      return `Du hast bereits Produkte aus Lagerraum ${existingRoom} im Warenkorb. Bitte entferne diese zuerst oder schliesse die Bestellung ab, bevor du Produkte aus Lagerraum ${incomingRoom} hinzufügst.`;
     }
     return "Warenkorb darf nur Produkte aus einem Lagerraum enthalten.";
   }
@@ -257,7 +257,7 @@ export function Storefront() {
             <div className="col-span-full rounded-2xl border border-destructive/40 bg-destructive/10 p-5 text-destructive">
               <p className="text-sm font-semibold">Produkte konnten nicht geladen werden.</p>
               <p className="mt-1 text-sm">
-                Pruefe die Verbindung und versuche es erneut.
+                Prüfe die Verbindung und versuche es erneut.
               </p>
               <Button
                 onClick={() => void productQuery.refetch()}
@@ -387,9 +387,9 @@ export function Storefront() {
                           min={unitStep}
                           step={unitStep}
                           max={stockOnHand > 0 ? stockOnHand : undefined}
-                          decreaseAriaLabel={`Menge fuer ${product.name} reduzieren`}
-                          increaseAriaLabel={`Menge fuer ${product.name} erhoehen`}
-                          inputAriaLabel={`Menge fuer ${product.name}`}
+                          decreaseAriaLabel={`Menge für ${product.name} reduzieren`}
+                          increaseAriaLabel={`Menge für ${product.name} erhöhen`}
+                          inputAriaLabel={`Menge für ${product.name}`}
                           stopPropagation
                           className="shrink-0 !rounded-sm !border-0 !bg-card/40 !shadow-none [&_button]:!h-9 !h-9"
                         />

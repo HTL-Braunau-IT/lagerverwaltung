@@ -289,7 +289,7 @@ export default function OrdersPage() {
               <div className="rounded-2xl border border-slate-200 bg-white p-5 text-slate-700 shadow-sm">
                 <p className="text-sm font-semibold">Noch keine Bestellungen vorhanden.</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  Sobald du im Checkout bestellst, erscheinen deine Eintraege hier.
+                  Sobald du im Checkout bestellst, erscheinen deine Einträge hier.
                 </p>
               </div>
             )}
@@ -332,7 +332,7 @@ export default function OrdersPage() {
                             </Badge>
                           </div>
                           <p className="mt-2 text-xs text-slate-600">
-                            Schueler: {userLabel(order.sourceRequest.student)}
+                            Schüler: {userLabel(order.sourceRequest.student)}
                           </p>
                         </div>
                       ) : null}

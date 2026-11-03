@@ -210,7 +210,7 @@ export default function CartsPage() {
   const deleteSavedCartMutation = api.cart.deleteSavedCart.useMutation({
     onSuccess: async () => {
       await utils.cart.listSavedCarts.invalidate();
-      toast.success("Warenkorb geloescht.");
+      toast.success("Warenkorb gelöscht.");
     },
   });
 
@@ -487,7 +487,7 @@ export default function CartsPage() {
               </p>
             ) : null}
             <div className="mt-3 space-y-3">
-              {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkoerbe werden geladen...</p>}
+              {savedCartsQuery.isLoading && <p className="text-sm text-slate-600">Warenkörbe werden geladen...</p>}
               {!savedCartsQuery.isLoading && (savedCartsQuery.data?.length ?? 0) === 0 && (
                 <DetailText variant="novalue">Noch keine gespeicherten Warenkörbe.</DetailText>
               )}
@@ -624,9 +624,9 @@ export default function CartsPage() {
                                   min={0}
                                   step={itemStep}
                                   disabled={setQuantityMutation.isPending}
-                                  decreaseAriaLabel={`Menge fuer ${item.product.name} verringern`}
-                                  increaseAriaLabel={`Menge fuer ${item.product.name} erhoehen`}
-                                  inputAriaLabel={`Menge fuer ${item.product.name}`}
+                                  decreaseAriaLabel={`Menge für ${item.product.name} verringern`}
+                                  increaseAriaLabel={`Menge für ${item.product.name} erhöhen`}
+                                  inputAriaLabel={`Menge für ${item.product.name}`}
                                   className="shrink-0 bg-card/40 !h-9"
                                 />
                               );
@@ -702,9 +702,9 @@ export default function CartsPage() {
                             min={0}
                             step={itemStep}
                             disabled={setQuantityMutation.isPending}
-                            decreaseAriaLabel={`Menge fuer ${item.product.name} verringern`}
-                            increaseAriaLabel={`Menge fuer ${item.product.name} erhoehen`}
-                            inputAriaLabel={`Menge fuer ${item.product.name}`}
+                            decreaseAriaLabel={`Menge für ${item.product.name} verringern`}
+                            increaseAriaLabel={`Menge für ${item.product.name} erhöhen`}
+                            inputAriaLabel={`Menge für ${item.product.name}`}
                             className="shrink-0 bg-card/40"
                           />
                         );

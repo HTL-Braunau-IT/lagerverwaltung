@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     const sku = sanitizeSku(skuValue);
     if (!sku) {
-      return NextResponse.json({ message: "SKU ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "SKU ist ungültig." }, { status: 400 });
     }
 
     const ext = allowedMimeToExt[fileValue.type];

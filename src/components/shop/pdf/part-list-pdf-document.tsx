@@ -44,7 +44,7 @@ export function PartListPdfDocument({
           </View>
           {description ? <Text style={{ ...shopPdfStyles.subheading, marginTop: 8 }}>{description}</Text> : null}
           <Text style={{ ...shopPdfStyles.subheading, marginTop: 8 }}>
-            Komplett verfuegbar: {formatPdfNumber(maxOrderable)}x
+            Komplett verfügbar: {formatPdfNumber(maxOrderable)}x
           </Text>
         </View>
 

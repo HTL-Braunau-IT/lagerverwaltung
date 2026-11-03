@@ -9,7 +9,7 @@ const optionalEmail = z
   .string()
   .trim()
   .max(320)
-  .refine((value) => value.length === 0 || z.email().safeParse(value).success, "Ungueltige E-Mail-Adresse.");
+  .refine((value) => value.length === 0 || z.email().safeParse(value).success, "Ungültige E-Mail-Adresse.");
 
 export const appSettingsSchema = z.object({
   approval: z
@@ -39,7 +39,7 @@ export type AppSettings = z.infer<typeof appSettingsSchema>;
 export function parseAppSettings(value: unknown): AppSettings {
   const parsed = appSettingsSchema.safeParse(value ?? {});
   if (parsed.success) return parsed.data;
-  console.warn("[settings] Gespeicherte Einstellungen ungueltig, verwende Standardwerte", parsed.error.issues);
+  console.warn("[settings] Gespeicherte Einstellungen ungültig, verwende Standardwerte", parsed.error.issues);
   return appSettingsSchema.parse({});
 }
 

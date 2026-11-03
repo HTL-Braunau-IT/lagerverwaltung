@@ -84,7 +84,7 @@ export function LoansAdminPanel() {
       await utils.loan.backendListLoans.invalidate();
       await utils.loan.backendOpenCount.invalidate();
       setExpandedLoanId(null);
-      toast.success("Ausleihe zurueckgebucht.");
+      toast.success("Ausleihe zurückgebucht.");
     },
   });
 

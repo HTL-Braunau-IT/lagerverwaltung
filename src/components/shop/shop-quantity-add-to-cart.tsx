@@ -90,7 +90,7 @@ export function ShopAddToCartButton({
         className ?? "",
       ].join(" ")}
     >
-      {pending ? "Wird hinzugefuegt..." : "In Warenkorb"}
+      {pending ? "Wird hinzugefügt..." : "In Warenkorb"}
     </Button>
   );
 }

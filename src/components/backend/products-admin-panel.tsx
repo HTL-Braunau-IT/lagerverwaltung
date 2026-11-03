@@ -261,7 +261,7 @@ function BookingHistory({ productId }: { productId: string }) {
           <p className="select-none text-sm text-slate-600">Abgeschlossene Aufträge</p>
 
           {!bookingsQuery.isLoading && !bookingsQuery.error && completedOrders.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">Keine fertigen Auftraege fuer dieses Produkt.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Keine fertigen Aufträge für dieses Produkt.</p>
           ) : null}
 
           {showCompletedOrdersTable ? (
@@ -590,7 +590,7 @@ export function ProductsAdminPanel() {
 
   const uploadProductImage = async (sku: string, file: File): Promise<string> => {
     if (!file.type.startsWith("image/")) {
-      throw new Error("Bitte eine Bilddatei auswaehlen.");
+      throw new Error("Bitte eine Bilddatei auswählen.");
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       throw new Error("Das Bild ist zu gross. Maximal 8 MB erlaubt.");
@@ -642,7 +642,7 @@ export function ProductsAdminPanel() {
     });
     const result = (await response.json().catch(() => null)) as { message?: string } | null;
     if (!response.ok) {
-      throw new Error(result?.message ?? "Dokument konnte nicht geloescht werden.");
+      throw new Error(result?.message ?? "Dokument konnte nicht gelöscht werden.");
     }
   };
 
@@ -914,7 +914,7 @@ export function ProductsAdminPanel() {
                   <div
                     id={categoryListboxId}
                     role="listbox"
-                    aria-label="Kategorie waehlen"
+                    aria-label="Kategorie wählen"
                     className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
                   >
                     <button
@@ -1020,7 +1020,7 @@ export function ProductsAdminPanel() {
                   <div
                     id={locationListboxId}
                     role="listbox"
-                    aria-label="Lagerplatz waehlen"
+                    aria-label="Lagerplatz wählen"
                     className="absolute left-0 right-0 top-full z-50 mt-0.5 max-h-36 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover py-0.5 shadow-md [scrollbar-gutter:stable]"
                   >
                     <button
@@ -1037,7 +1037,7 @@ export function ProductsAdminPanel() {
                         storageLocationFilter === "" ? "bg-primary/10 font-medium text-foreground" : "hover:bg-muted/70"
                       }`}
                     >
-                      Alle Lagerplaetze
+                      Alle Lagerplätze
                     </button>
                 {filteredListLocations.map((storageLocation) => {
                   const active = storageLocationFilter === storageLocation.id;
@@ -1065,7 +1065,7 @@ export function ProductsAdminPanel() {
                   );
                 })}
                     {(storageLocationsQuery.data?.length ?? 0) === 0 ? (
-                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Lagerplaetze.</p>
+                      <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Lagerplätze.</p>
                     ) : filteredListLocations.length === 0 ? (
                       <p className="px-2 py-1.5 text-xs text-muted-foreground">Keine Treffer.</p>
                     ) : null}
@@ -1474,7 +1474,7 @@ export function ProductsAdminPanel() {
                                             }))
                                           }
                                           decreaseAriaLabel="Minimum verringern"
-                                          increaseAriaLabel="Minimum erhoehen"
+                                          increaseAriaLabel="Minimum erhöhen"
                                           inputAriaLabel="Minimum"
                                         />
                                       </div>
@@ -1495,7 +1495,7 @@ export function ProductsAdminPanel() {
                                             }))
                                           }
                                           decreaseAriaLabel="Schritte verringern"
-                                          increaseAriaLabel="Schritte erhoehen"
+                                          increaseAriaLabel="Schritte erhöhen"
                                           inputAriaLabel="Schritte"
                                         />
                                       </div>
@@ -1714,7 +1714,7 @@ export function ProductsAdminPanel() {
                                   <div
                                     className="min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain px-2.5 py-2 [scrollbar-gutter:stable]"
                                     role="group"
-                                    aria-label="Kategorien auswaehlen"
+                                    aria-label="Kategorien auswählen"
                                   >
                                     <div className="flex flex-col gap-2 ">
                                       {filteredEditCategories.map((category) => (
@@ -1818,7 +1818,7 @@ export function ProductsAdminPanel() {
                                               return;
                                             }
                                             if (!file.type.startsWith("image/")) {
-                                              toast.error("Bitte eine Bilddatei auswaehlen.");
+                                              toast.error("Bitte eine Bilddatei auswählen.");
                                               event.target.value = "";
                                               return;
                                             }
@@ -1905,7 +1905,7 @@ export function ProductsAdminPanel() {
                                         }`}
                                         aria-label={
                                           form.imageUrl.trim() || pendingEditImage?.previewUrl
-                                            ? "Bild in neuem Tab oeffnen"
+                                            ? "Bild in neuem Tab öffnen"
                                             : "Vorschau (noch keine Bild-URL)"
                                         }
                                       >
@@ -2268,12 +2268,12 @@ export function ProductsAdminPanel() {
                                                   }));
                                                   await deleteProductDocument(document.id);
                                                   await utils.product.backendList.invalidate();
-                                                  toast.success("Dokument geloescht.");
+                                                  toast.success("Dokument gelöscht.");
                                                 } catch (error) {
                                                   toast.error(
                                                     error instanceof Error
                                                       ? error.message
-                                                      : "Dokument konnte nicht geloescht werden.",
+                                                      : "Dokument konnte nicht gelöscht werden.",
                                                   );
                                                 } finally {
                                                   setEditDocumentUploadPendingById((current) => ({
@@ -2429,7 +2429,7 @@ export function ProductsAdminPanel() {
                   const supplier = bookingSupplierInput.trim();
 
                   if (!Number.isFinite(quantity) || quantity === 0) {
-                    setBookingError("Bitte eine gueltige Menge ungleich 0 eingeben.");
+                    setBookingError("Bitte eine gültige Menge ungleich 0 eingeben.");
                     return;
                   }
                   if (!supplier) {

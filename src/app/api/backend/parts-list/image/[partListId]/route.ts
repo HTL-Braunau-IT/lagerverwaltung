@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: { params: Promise<{ partLi
     const { partListId: rawPartListId } = await context.params;
     const partListId = sanitizePartListId(rawPartListId);
     if (!partListId) {
-      return NextResponse.json({ message: "Teilelisten-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Teilelisten-ID ist ungültig." }, { status: 400 });
     }
 
     const partList = await db.partList.findUnique({

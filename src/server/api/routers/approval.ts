@@ -191,7 +191,7 @@ export const approvalRouter = createTRPCRouter({
           );
         } catch (error) {
           if (error instanceof TRPCError && error.message.startsWith("INSUFFICIENT_STOCK:")) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "Nicht genug Lagerbestand fuer diese Menge." });
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Nicht genug Lagerbestand für diese Menge." });
           }
           throw error;
         }
@@ -236,7 +236,7 @@ export const approvalRouter = createTRPCRouter({
           select: { id: true, code: true, name: true, isActive: true },
         });
         if (!costCenter?.isActive) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Ungueltige Kostenstelle." });
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Ungültige Kostenstelle." });
         }
 
         const order = await tx.order.findUniqueOrThrow({
@@ -255,7 +255,7 @@ export const approvalRouter = createTRPCRouter({
           if (error instanceof TRPCError && error.message.startsWith("INSUFFICIENT_STOCK:")) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: "Nicht genug Lagerbestand fuer mindestens ein Produkt.",
+              message: "Nicht genug Lagerbestand für mindestens ein Produkt.",
             });
           }
           throw error;
@@ -285,7 +285,7 @@ export const approvalRouter = createTRPCRouter({
     }),
 
   reject: teacherProcedure
-    .input(orderIdInput.extend({ note: approvalNoteInput.min(1, "Bitte eine Begruendung angeben.") }))
+    .input(orderIdInput.extend({ note: approvalNoteInput.min(1, "Bitte eine Begründung angeben.") }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.$transaction(async (tx) => {
         await assertCanDecideOrder(tx, ctx.session.user, input.orderId);
@@ -314,7 +314,7 @@ export const approvalRouter = createTRPCRouter({
     if (updated.count === 0) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "Bestellung kann nicht mehr zurueckgezogen werden.",
+        message: "Bestellung kann nicht mehr zurückgezogen werden.",
       });
     }
 
@@ -419,7 +419,7 @@ export const approvalRouter = createTRPCRouter({
     const memberIds = await resolveUserRefs(ctx.db, input.members);
 
     if (deputyId && deputyId === approverId) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Freigeber und Vertretung muessen verschieden sein." });
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Freigeber und Vertretung müssen verschieden sein." });
     }
 
     const nameTaken = await ctx.db.approvalGroup.findFirst({

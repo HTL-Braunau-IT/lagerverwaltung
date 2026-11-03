@@ -329,9 +329,9 @@ export default function AusleihePage() {
                           min={1}
                           step={1}
                           max={maxAvailable > 0 ? maxAvailable : 1}
-                          decreaseAriaLabel={`Menge fuer ${item.name} reduzieren`}
-                          increaseAriaLabel={`Menge fuer ${item.name} erhoehen`}
-                          inputAriaLabel={`Menge fuer ${item.name}`}
+                          decreaseAriaLabel={`Menge für ${item.name} reduzieren`}
+                          increaseAriaLabel={`Menge für ${item.name} erhöhen`}
+                          inputAriaLabel={`Menge für ${item.name}`}
                           className="shrink-0 bg-card/40 "
                         />
                         <Button

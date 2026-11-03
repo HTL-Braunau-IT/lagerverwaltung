@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     const itemId = sanitizeItemId(itemIdValue);
     if (!itemId) {
-      return NextResponse.json({ message: "Artikel-ID ist ungueltig." }, { status: 400 });
+      return NextResponse.json({ message: "Artikel-ID ist ungültig." }, { status: 400 });
     }
 
     const ext = allowedMimeToExt[fileValue.type];
