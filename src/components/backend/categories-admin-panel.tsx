@@ -136,7 +136,7 @@ export function CategoriesAdminPanel() {
             ) : null}
             {!categoriesQuery.isLoading && !categoriesQuery.error && items.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-sm italic text-muted-foreground/80">
                   Keine Kategorien gefunden.
                 </TableUI.TableCell>
               </tr>

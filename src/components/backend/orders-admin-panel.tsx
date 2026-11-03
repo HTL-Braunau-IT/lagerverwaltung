@@ -434,7 +434,7 @@ export function OrdersAdminPanel() {
 
             {!ordersQuery.isLoading && !ordersQuery.error && sortedOrders.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={7} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={7} className="text-sm italic text-muted-foreground/80">
                   Keine Bestellungen gefunden.
                 </TableUI.TableCell>
               </tr>

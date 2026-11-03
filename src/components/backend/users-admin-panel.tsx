@@ -141,7 +141,7 @@ export function UsersAdminPanel() {
             ) : null}
             {!usersQuery.isLoading && !usersQuery.error && users.length === 0 ? (
               <TableUI.TableRow className="cursor-default">
-                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-sm italic text-muted-foreground/80">
                   Keine Benutzer gefunden.
                 </TableUI.TableCell>
               </TableUI.TableRow>
@@ -225,7 +225,7 @@ export function UsersAdminPanel() {
                               </label>
                             ))}
                             {(storageRoomsQuery.data?.length ?? 0) === 0 ? (
-                              <p className="text-xs text-muted-foreground">Keine Lagerräume vorhanden.</p>
+                              <p className="text-sm italic text-muted-foreground/80">Keine Lagerräume vorhanden.</p>
                             ) : null}
                           </div>
 

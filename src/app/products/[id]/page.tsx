@@ -448,7 +448,7 @@ export default function ProductDetailPage() {
                 className="space-y-2"
               >
                 {product.documents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Keine Dokumente vorhanden.</p>
+                  <p className="text-sm italic text-muted-foreground/80">Keine Dokumente vorhanden.</p>
                 ) : (
                   product.documents.map((document) => (
                     <a

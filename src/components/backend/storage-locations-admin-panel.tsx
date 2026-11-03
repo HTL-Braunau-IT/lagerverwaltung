@@ -193,7 +193,7 @@ export function StorageLocationsAdminPanel() {
             ) : null}
             {!locationsQuery.isLoading && !locationsQuery.error && locationItems.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-sm italic text-muted-foreground/80">
                   Keine Lagerplätze gefunden.
                 </TableUI.TableCell>
               </tr>

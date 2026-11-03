@@ -536,7 +536,7 @@ export function NewProductPage() {
                       </label>
                     ))}
                     {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                      <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                      <p className="text-sm italic text-muted-foreground/80">Keine Kategorien vorhanden.</p>
                     ) : filteredCategories.length === 0 ? (
                       <p className="text-xs text-slate-500">Keine Treffer.</p>
                     ) : null}

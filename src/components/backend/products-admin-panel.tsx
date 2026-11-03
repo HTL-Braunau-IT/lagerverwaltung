@@ -213,7 +213,7 @@ function BookingHistory({ productId }: { productId: string }) {
           <p className="select-none text-sm text-slate-600">Letzte Buchungen</p>
 
           {!bookingsQuery.isLoading && !bookingsQuery.error && bookings.length === 0 ? (
-            <p className="mt-2 text-sm text-muted-foreground">Keine Buchungen vorhanden.</p>
+            <p className="mt-2 text-sm italic text-muted-foreground/80">Keine Buchungen vorhanden.</p>
           ) : null}
 
           {showBookingsTable ? (
@@ -1135,7 +1135,7 @@ export function ProductsAdminPanel() {
 
             {!categoryCountsQuery.isLoading && !categoryCountsQuery.error && categoryRows.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={5} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={5} className="text-sm italic text-muted-foreground/80">
                   Keine Kategorien gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -1743,7 +1743,7 @@ export function ProductsAdminPanel() {
                                         </label>
                                       ))}
                                       {(categoriesQuery.data?.length ?? 0) === 0 ? (
-                                        <p className="text-xs text-slate-500">Keine Kategorien vorhanden.</p>
+                                        <p className="text-sm italic text-muted-foreground/80">Keine Kategorien vorhanden.</p>
                                       ) : filteredEditCategories.length === 0 ? (
                                         <p className="text-xs text-slate-500">Keine Treffer.</p>
                                       ) : null}
@@ -2000,7 +2000,7 @@ export function ProductsAdminPanel() {
                                       <p className="mb-2 text-xs font-medium text-slate-700">Alle Bilder</p>
                                       <div className="max-h-56 overflow-y-auto overscroll-contain pr-0.5 [scrollbar-gutter:stable]">
                                         {(product.images ?? []).length === 0 ? (
-                                          <p className="text-xs text-muted-foreground">Keine Bilder vorhanden.</p>
+                                          <p className="text-sm italic text-muted-foreground/80">Keine Bilder vorhanden.</p>
                                         ) : (
                                           <div className="grid grid-cols-3 gap-2">
                                             {(product.images ?? []).map((image, imageIndex) => {
@@ -2234,7 +2234,7 @@ export function ProductsAdminPanel() {
                                 <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
                                   <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
                                   {(product.documents ?? []).length === 0 ? (
-                                    <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                    <p className="text-sm italic text-muted-foreground/80">Keine Dokumente vorhanden.</p>
                                   ) : (
                                     <div className="grid grid-cols-2 gap-2">
                                       {(product.documents ?? []).map((document) => (

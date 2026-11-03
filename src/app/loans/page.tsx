@@ -149,7 +149,7 @@ function LoanRequestCard({ loan }: { loan: any }) {
       </div>
       <div className="mt-2">
         {loan.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Keine Positionen vorhanden.</p>
+          <p className="text-sm italic text-muted-foreground/80">Keine Positionen vorhanden.</p>
         ) : (
           <TableUI.Subtable className="rounded-sm">
             <TableUI.SubtableHeader className="bg-muted/50 [&_th]:text-muted-foreground">

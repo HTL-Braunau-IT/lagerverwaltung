@@ -211,7 +211,7 @@ export function CostCentersAdminPanel() {
             ) : null}
             {!costCentersQuery.isLoading && !costCentersQuery.error && items.length === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-sm italic text-muted-foreground/80">
                   Keine Kostenstellen gefunden.
                 </TableUI.TableCell>
               </tr>

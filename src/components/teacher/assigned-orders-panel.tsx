@@ -434,7 +434,7 @@ export function AssignedOrdersPanel() {
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p className="text-sm font-medium text-slate-800">Positionen</p>
                     {!hasItems ? (
-                      <p className="mt-2 text-sm text-slate-600">Keine Positionen vorhanden.</p>
+                      <p className="mt-2 text-sm italic text-muted-foreground/80">Keine Positionen vorhanden.</p>
                     ) : (
                       <ul className="mt-2 space-y-2">
                         {request.items.map((item) => (
@@ -573,7 +573,7 @@ export function AssignedOrdersPanel() {
 
                         <div className="hidden group-open:block px-2 pb-2 sm:px-3 sm:pb-3">
                           {request.items.length === 0 ? (
-                            <p className="text-sm text-slate-600">Keine Positionen vorhanden.</p>
+                            <p className="text-sm italic text-muted-foreground/80">Keine Positionen vorhanden.</p>
                           ) : (
                             <TableUI.Subtable className="rounded-sm">
                               <TableUI.SubtableHeader>

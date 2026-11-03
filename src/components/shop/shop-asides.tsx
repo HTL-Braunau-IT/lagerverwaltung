@@ -516,7 +516,7 @@ export function ShopPartListsAside({
                   Alle Teilelisten ({filteredPartListsForModal.length})
                 </p>
                 {filteredPartListsForModal.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">Keine Teilelisten passen zur Suche.</p>
+                  <p className="mt-2 text-sm italic text-muted-foreground/80">Keine Teilelisten passen zur Suche.</p>
                 ) : (
                   <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {filteredPartListsForModal.map((partList) => {

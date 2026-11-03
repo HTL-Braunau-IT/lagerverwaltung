@@ -164,7 +164,7 @@ export function LoansAdminPanel() {
 
             {!loansQuery.isLoading && !loansQuery.error && sortedLoans.length === 0 ? (
               <TableUI.TableRow>
-                <TableUI.TableCell colSpan={4} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={4} className="text-sm italic text-muted-foreground/80">
                   Keine Werkzeuge gefunden.
                 </TableUI.TableCell>
               </TableUI.TableRow>

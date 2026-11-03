@@ -583,7 +583,7 @@ export function PartsListAdminPanel() {
             ) : null}
             {!listsQuery.isLoading && !listsQuery.error && (listsQuery.data?.length ?? 0) === 0 ? (
               <tr>
-                <TableUI.TableCell colSpan={3} className="text-muted-foreground">
+                <TableUI.TableCell colSpan={3} className="text-sm italic text-muted-foreground/80">
                   Keine Teilelisten gefunden.
                 </TableUI.TableCell>
               </tr>
@@ -956,7 +956,7 @@ export function PartsListAdminPanel() {
                                     <div className="mt-auto space-y-1.5 border-t border-slate-300/80 pt-3">
                                       <p className="mb-1 text-xs font-medium text-slate-700">Alle Dokumente</p>
                                       {currentDocuments.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground">Keine Dokumente vorhanden.</p>
+                                        <p className="text-sm italic text-muted-foreground/80">Keine Dokumente vorhanden.</p>
                                       ) : (
                                         <div className="grid grid-cols-2 gap-2">
                                           {currentDocuments.map((document) => (
