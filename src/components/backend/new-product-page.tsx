@@ -176,6 +176,15 @@ export function NewProductPage() {
 
   const handleSubmit = async () => {
     if (!canCreate) return;
+
+    const price = parseMoneyInput(form.price);
+    // Prices store two decimals; reject finer precision here instead of letting the
+    // server silently truncate it (#117).
+    if (Math.abs(price - Math.round(price * 100) / 100) >= 1e-9) {
+      toast.error("Der Preis darf höchstens zwei Nachkommastellen haben.");
+      return;
+    }
+
     setUploadPending(true);
     try {
       let imageUrl = form.imageUrl.trim() || null;
@@ -185,7 +194,7 @@ export function NewProductPage() {
         name: form.name.trim(),
         sku: form.sku.trim(),
         description: form.description.trim() ? form.description.trim() : null,
-        price: parseMoneyInput(form.price),
+        price,
         minimumQuantity: Number(form.minimumQuantity),
         startingQuantity: Number(form.startingQuantity),
         unitKind: form.unitKind,

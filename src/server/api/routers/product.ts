@@ -69,6 +69,16 @@ const backendCategoryCountsInput = z.object({
 const baseUnitSchema = z.enum(["PCS", "MM", "CM", "M", "CM2", "DM2", "MM2", "M2", "G", "KG", "ML", "L"]);
 type BaseUnitValue = z.infer<typeof baseUnitSchema>;
 
+// Prices are stored as Decimal(12,2); more than two decimals would be silently
+// truncated on save (e.g. 0.00048 -> 0.00). Reject that up front with a clear
+// message instead of reporting a false success (#117).
+const priceSchema = z.coerce
+  .number()
+  .min(0)
+  .refine((value) => Math.abs(value - Math.round(value * 100) / 100) < 1e-9, {
+    message: "Der Preis darf höchstens zwei Nachkommastellen haben.",
+  });
+
 function normalizeBaseUnit(baseUnit: BaseUnitValue): BaseUnitValue {
   return baseUnit === "CM2" ? "DM2" : baseUnit;
 }
@@ -78,7 +88,7 @@ const updateProductInput = z.object({
   name: z.string().trim().min(1),
   sku: z.string().trim().min(1),
   description: z.string().trim().nullable(),
-  price: z.coerce.number().min(0),
+  price: priceSchema,
   minimumQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),
   baseUnit: baseUnitSchema,
@@ -98,7 +108,7 @@ const createProductInput = z.object({
   name: z.string().trim().min(1),
   sku: z.string().trim().min(1),
   description: z.string().trim().nullable(),
-  price: z.coerce.number().min(0),
+  price: priceSchema,
   minimumQuantity: z.coerce.number().min(0),
   startingQuantity: z.coerce.number().min(0),
   unitKind: z.enum(["PIECE", "LENGTH", "AREA", "WEIGHT", "VOLUME"]),

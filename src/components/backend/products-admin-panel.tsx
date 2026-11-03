@@ -753,16 +753,22 @@ export function ProductsAdminPanel() {
         }
       }
 
+      const parsedPrice = parseMoneyInput(form.price);
+      const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+      // Prices store two decimals; reject finer precision here instead of letting the
+      // server silently truncate it (#117).
+      if (Math.abs(price - Math.round(price * 100) / 100) >= 1e-9) {
+        toast.error("Der Preis darf höchstens zwei Nachkommastellen haben.");
+        return;
+      }
+
       try {
         await updateMutation.mutateAsync({
           id: product.id,
           name: form.name.trim(),
           sku: form.sku.trim(),
           description: form.description.trim() ? form.description.trim() : null,
-          price: (() => {
-            const p = parseMoneyInput(form.price);
-            return Number.isFinite(p) ? p : 0;
-          })(),
+          price,
           minimumQuantity: Number(form.minimumQuantity),
           unitKind: form.unitKind,
           baseUnit: form.baseUnit,
