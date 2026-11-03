@@ -3,6 +3,24 @@
 import { useCallback, useMemo } from "react";
 import { Button } from "~/components/ui/button";
 
+/**
+ * Normalize decimal text for German input: accept a comma as the decimal separator and
+ * keep only digits plus at most one dot. Typing "0,85" yields "0.85" instead of NaN,
+ * which previously collapsed the value to the step minimum (#116).
+ */
+function sanitizeDecimalInput(raw: string): string {
+  let seenDot = false;
+  let out = "";
+  for (const ch of raw.replace(/,/g, ".")) {
+    if (ch >= "0" && ch <= "9") out += ch;
+    else if (ch === "." && !seenDot) {
+      out += ".";
+      seenDot = true;
+    }
+  }
+  return out;
+}
+
 export function NumberStepper({
   value,
   onChange,
@@ -60,7 +78,7 @@ export function NumberStepper({
         disabled={disabled}
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
-          const current = Math.max(Number(value) || min, min);
+          const current = Math.max(Number(sanitizeDecimalInput(value)) || min, min);
           const next = normalize(current - step);
           onChange(next.toString());
         }}
@@ -80,7 +98,7 @@ export function NumberStepper({
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
         }}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(sanitizeDecimalInput(event.target.value))}
         style={{ width: `calc(${inputChars}ch + 0.5rem)` }}
         className="box-border h-full shrink-0 border-0 bg-transparent px-1 text-center text-sm font-medium tabular-nums text-foreground outline-none"
         aria-label={inputAriaLabel}
@@ -91,7 +109,7 @@ export function NumberStepper({
         disabled={disabled}
         onClick={(event) => {
           if (stopPropagation) event.stopPropagation();
-          const current = Math.max(Number(value) || min, min);
+          const current = Math.max(Number(sanitizeDecimalInput(value)) || min, min);
           const next = Math.min(incrementCap, normalize(current + step));
           onChange(next.toString());
         }}
