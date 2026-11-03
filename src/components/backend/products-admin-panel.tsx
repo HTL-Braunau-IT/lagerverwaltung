@@ -753,6 +753,11 @@ export function ProductsAdminPanel() {
         }
       }
 
+      if (form.categoryIds.length === 0) {
+        toast.error("Bitte mindestens eine Kategorie auswählen.");
+        return;
+      }
+
       const parsedPrice = parseMoneyInput(form.price);
       const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
       // Prices store two decimals; reject finer precision here instead of letting the

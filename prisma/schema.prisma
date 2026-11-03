@@ -121,9 +121,9 @@ model Product {
     unitKind          UnitKind
     baseUnit          BaseUnit
     unitStep          Decimal         @default(1) @db.Decimal(14, 3)
-    categoryId        String?
+    categoryId        String
     storageLocationId String?
-    category          Category?       @relation("PrimaryProductCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+    category          Category        @relation("PrimaryProductCategory", fields: [categoryId], references: [id], onDelete: Restrict)
     categories        ProductCategory[]
     storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
     images            ProductImage[]

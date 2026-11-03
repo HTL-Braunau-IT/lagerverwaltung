@@ -140,6 +140,7 @@ export function NewProductPage() {
     return (
       form.name.trim().length > 0 &&
       form.sku.trim().length > 0 &&
+      form.categoryIds.length > 0 &&
       Number.isFinite(price) &&
       price >= 0 &&
       Number.isFinite(Number(form.minimumQuantity)) &&
@@ -458,8 +459,13 @@ export function NewProductPage() {
           <div className="flex min-h-0 min-w-0 flex-col gap-2 md:h-full md:min-h-0 md:overflow-hidden md:self-stretch">
             <Card variant="product" className="flex min-h-0 flex-1 flex-col gap-3 md:min-h-0 md:overflow-hidden !bg-card/40 !hover:bg-card/40">
               <div className="shrink-0 space-y-3">
-                <DetailText variant="title">Kategorien</DetailText>
+                <DetailText variant="title">
+                  Kategorien<span className="pl-1 text-destructive">*</span>
+                </DetailText>
                 <div className="h-px w-full bg-slate-300/70" aria-hidden="true" />
+                {form.categoryIds.length === 0 ? (
+                  <p className="text-sm text-rose-700">Bitte mindestens eine Kategorie auswählen.</p>
+                ) : null}
                 {form.categoryIds.length > 0 ? (
                   <div className="max-h-20 flex flex-wrap gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
                     {form.categoryIds.map((categoryId) => {

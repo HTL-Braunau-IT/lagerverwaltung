@@ -94,7 +94,9 @@ const updateProductInput = z.object({
   baseUnit: baseUnitSchema,
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean(),
-  categoryIds: z.array(z.string().min(1)).default([]),
+  categoryIds: z
+    .array(z.string().min(1))
+    .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
   /** When set, `imageUrl` / `imageAltText` update this row only; omit to leave images unchanged. */
   editingImageId: z.string().min(1).optional(),
@@ -115,7 +117,9 @@ const createProductInput = z.object({
   baseUnit: baseUnitSchema,
   unitStep: z.coerce.number().gt(0),
   isVisible: z.boolean().default(true),
-  categoryIds: z.array(z.string().min(1)).default([]),
+  categoryIds: z
+    .array(z.string().min(1))
+    .min(1, { message: "Bitte mindestens eine Kategorie auswählen." }),
   storageLocationId: z.string().min(1).nullable(),
   imageUrl: z.string().trim().nullable().refine((value) => value === null || isValidImageUrl(value), {
     message: "Invalid URL",
@@ -537,6 +541,13 @@ export const productRouter = createTRPCRouter({
         unitStep: input.unitStep,
         minimumQuantity: input.minimumQuantity,
       });
+      const primaryCategoryId = input.categoryIds[0];
+      if (!primaryCategoryId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Bitte mindestens eine Kategorie auswählen.",
+        });
+      }
       const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
       await assertProductsAccessibleByRoomAccess(ctx.db, access, [input.id]);
 
@@ -574,7 +585,7 @@ export const productRouter = createTRPCRouter({
             baseUnit: normalizedBaseUnit,
             unitStep: input.unitStep,
             isVisible: input.isVisible,
-            categoryId: input.categoryIds[0] ?? null,
+            categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
           },
           select: {
@@ -630,6 +641,13 @@ export const productRouter = createTRPCRouter({
         minimumQuantity: input.minimumQuantity,
         startingQuantity: input.startingQuantity,
       });
+      const primaryCategoryId = input.categoryIds[0];
+      if (!primaryCategoryId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Bitte mindestens eine Kategorie auswählen.",
+        });
+      }
       const access = await getStorageRoomAccessForUser(ctx.db, ctx.session.user.id);
 
       if (!input.storageLocationId && !access.hasAllStorageRoomAccess) {
@@ -666,7 +684,7 @@ export const productRouter = createTRPCRouter({
             baseUnit: normalizedBaseUnit,
             unitStep: input.unitStep,
             isVisible: input.isVisible,
-            categoryId: input.categoryIds[0] ?? null,
+            categoryId: primaryCategoryId,
             storageLocationId: input.storageLocationId,
           },
           select: {
