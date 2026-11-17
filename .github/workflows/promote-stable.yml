@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: read # look up the CI run of the release commit
 
 jobs:
   promote:
@@ -34,22 +35,37 @@ jobs:
       - name: Retag sha-<commit> as stable and the release tag
         env:
           TAG: ${{ github.event.release.tag_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           SHA=$(git rev-list -n1 "$TAG")
           git merge-base --is-ancestor "$SHA" origin/main \
             || { echo "::error::Release-Tag $TAG zeigt auf einen Commit, der nicht auf main liegt."; exit 1; }
           IMG=ghcr.io/${GITHUB_REPOSITORY,,}
-          # A release published right after a push races CI: wait for its image
-          # (CI takes ~10 min) instead of failing.
+
+          # Only promote what CI built and verified for exactly this commit on
+          # main. A release published right after a push races CI, so wait for
+          # that run (CI takes ~10 min) instead of failing.
           for i in $(seq 1 40); do
-            docker buildx imagetools inspect "$IMG:sha-$SHA" >/dev/null 2>&1 && break
-            [ "$i" = 40 ] && { echo "::error::Image $IMG:sha-$SHA nach 20 Minuten nicht vorhanden. Ist CI für diesen Commit fehlgeschlagen?"; exit 1; }
-            echo "Warte auf $IMG:sha-$SHA (CI läuft noch?) ... $i/40"
+            RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+              --event push --commit "$SHA" --limit 1 --json status,conclusion,url \
+              --jq '.[0] // {}')
+            STATUS=$(jq -r '.status // ""' <<<"$RUN")
+            CONCLUSION=$(jq -r '.conclusion // ""' <<<"$RUN")
+            if [ "$STATUS" = completed ]; then
+              [ "$CONCLUSION" = success ] && break
+              echo "::error::CI für $SHA endete mit '$CONCLUSION' ($(jq -r .url <<<"$RUN")). CI für diesen Commit erneut ausführen, dann diesen Workflow."
+              exit 1
+            fi
+            [ "$i" = 40 ] && { echo "::error::Kein erfolgreicher CI-Lauf für $SHA nach 20 Minuten."; exit 1; }
+            echo "Warte auf CI für $SHA (${STATUS:-noch nicht gestartet}) ... $i/40"
             sleep 30
           done
-          echo "Promoting $IMG:sha-$SHA -> stable, $TAG"
+
+          # Pin by digest so the promoted bits cannot change between check and retag.
+          DIGEST=$(docker buildx imagetools inspect "$IMG:sha-$SHA" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "Promoting $IMG:sha-$SHA ($DIGEST) -> stable, $TAG"
           docker buildx imagetools create \
             -t "$IMG:stable" \
             -t "$IMG:$TAG" \
-            "$IMG:sha-$SHA"
+            "$IMG@$DIGEST"
