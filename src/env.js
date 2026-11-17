@@ -20,6 +20,7 @@ export const env = createEnv({
     MAIL_OPS_BCC_ADDRESS: z.string().email().optional(),
     LOAN_REMINDER_CRON_SECRET: z.string().min(1).optional(),
     CRON_SECRET: z.string().min(1).optional(),
+    SCHOOL_NAME: z.string().trim().min(1).default("HTL Braunau"),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -52,6 +53,8 @@ export const env = createEnv({
     MAIL_OPS_BCC_ADDRESS: process.env.MAIL_OPS_BCC_ADDRESS,
     LOAN_REMINDER_CRON_SECRET: process.env.LOAN_REMINDER_CRON_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
+    // Fallback here too: the Docker image runs with SKIP_ENV_VALIDATION, which skips Zod defaults.
+    SCHOOL_NAME: process.env.SCHOOL_NAME?.trim() || "HTL Braunau",
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

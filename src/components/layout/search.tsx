@@ -32,7 +32,7 @@ const BACKEND_SEARCH_PLACEHOLDERS: ReadonlyArray<readonly [prefix: string, area:
     ["/backend/cost-centers", "Kostenstellen", "Ausbildung, 4AH, Werkstätte..."],
     ["/backend/storage", "Lager", "A-01, Bausatzkasten, Z/1/1..."],
     ["/backend/lendable-items", "Leihgeräte", "Bohrer, Leiter, Gabelschlüssel..."],
-    ["/backend/users", "Benutzer", "Name, muster@htl..."],
+    ["/backend/users", "Benutzer", "Name, muster@schule..."],
     ["/backend/info", "Info", "..."],
   ];
 

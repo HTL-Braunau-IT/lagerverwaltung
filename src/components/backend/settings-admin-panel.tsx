@@ -257,7 +257,7 @@ function SettingsEditor({ initial, entries }: { initial: SettingsForm; entries: 
               type="email"
               value={form.mail.warehouseAddress}
               onChange={(event) => setMail({ warehouseAddress: event.target.value })}
-              placeholder="lager@htl-braunau.at"
+              placeholder="lager@schule.at"
               className="border border-primary/10"
             />
             {!warehouseValid ? <p className="mt-1 text-xs text-destructive">Ungültige E-Mail-Adresse</p> : null}

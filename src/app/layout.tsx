@@ -18,6 +18,7 @@ import {
   LendingIcon,
   OrdersIcon,
 } from "~/components/layout/icon-renders";
+import { env } from "~/env";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import {
@@ -29,11 +30,13 @@ import { DetailText } from "~/components/ui/detail-card";
 import { CountUp } from "~/components/ui/count-up";
 import { pendingApprovalWhereForUser, releasedOrderWhere } from "~/server/approval/service";
 
-export const metadata: Metadata = {
-  title: "HTL Braunau Lagershop",
-  description: "Lagershop für die HTL",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: `${env.SCHOOL_NAME} Lagershop`,
+    description: `Lagershop für ${env.SCHOOL_NAME}`,
+    icons: [{ rel: "icon", url: "/favicon.ico" }],
+  };
+}
 
 const inter = Inter({
   subsets: ["latin"],
@@ -147,7 +150,7 @@ export default async function RootLayout({
                   </span>
                   <span className="flex min-w-0 flex-col items-center text-center leading-tight">
                     <span className="w-full text-center text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
-                      HTL Braunau
+                      {env.SCHOOL_NAME}
                     </span>
                     <span className="w-full text-center text-lg font-bold tracking-tight text-foreground transition-colors sm:text-xl group-hover:text-primary">
                       Lagershop
@@ -214,7 +217,7 @@ export default async function RootLayout({
                       </div>
                       <div className="pointer-events-none absolute right-0 top-full z-[70] mt-1 w-72 max-w-[min(18rem,calc(100vw-1.25rem))] -translate-x-2 rounded-md bg-card/95 backdrop-blur-md backdrop-saturate-150 bg-blur-2xl p-3 opacity-0 transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 text-center">
                         <DetailText variant="value">{session.user.name ?? session.user.email?.split("@")[0] ?? "Benutzer"}</DetailText>
-                        <DetailText variant="subvalue">{session.user.email ?? "vorname.nachname@htl-braunau.at"}</DetailText>
+                        <DetailText variant="subvalue">{session.user.email ?? "–"}</DetailText>
                         <div className="mt-2 flex justify-center">
                           <div className="inline-flex items-center gap-2 px-2 text-muted-foreground">
                             <DetailText variant="kicker" className="!text-muted-foreground/60">Rollen</DetailText>
@@ -263,7 +266,7 @@ export default async function RootLayout({
                     </span>
                     <span className="flex min-w-0 flex-col items-center text-center leading-tight lg:items-center lg:text-center">
                       <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground/80">
-                        HTL Braunau
+                        {env.SCHOOL_NAME}
                       </span>
                       <span className="mt-0.5 text-2xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
                         Lagershop

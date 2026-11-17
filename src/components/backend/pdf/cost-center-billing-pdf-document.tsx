@@ -25,6 +25,7 @@ type BillingPdfOrder = {
 };
 
 type CostCenterBillingPdfDocumentProps = {
+  schoolName: string;
   costCenterName: string;
   periodFrom: Date;
   periodTo: Date;
@@ -204,6 +205,7 @@ function flattenOrders(orders: BillingPdfOrder[]): FlatRow[] {
 }
 
 export function CostCenterBillingPdfDocument({
+  schoolName,
   costCenterName,
   periodFrom,
   periodTo,
@@ -219,7 +221,7 @@ export function CostCenterBillingPdfDocument({
         <View style={billingPdfStyles.logoRow}>
           <BillingPdfLogo />
           <View>
-            <Text style={billingPdfStyles.brandEyebrow}>HTL Braunau</Text>
+            <Text style={billingPdfStyles.brandEyebrow}>{schoolName}</Text>
             <Text style={billingPdfStyles.brandTitle}>Lagershop</Text>
           </View>
         </View>

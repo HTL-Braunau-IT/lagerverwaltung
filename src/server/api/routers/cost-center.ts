@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { env } from "~/env";
 
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 import { decimalToNumber } from "~/server/api/routers/utils/stock";
@@ -257,6 +258,7 @@ export const costCenterRouter = createTRPCRouter({
       },
       orders: exportOrders,
       grandTotal,
+      schoolName: env.SCHOOL_NAME,
     };
   }),
 

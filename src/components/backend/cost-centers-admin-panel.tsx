@@ -118,6 +118,7 @@ export function CostCentersAdminPanel() {
       const periodTo = new Date();
       const blob = await pdf(
         <CostCenterBillingPdfDocument
+          schoolName={data.schoolName}
           costCenterName={data.costCenter.name}
           periodFrom={new Date(data.costCenter.createdAt)}
           periodTo={periodTo}
