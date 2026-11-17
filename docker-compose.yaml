@@ -1,0 +1,110 @@
+# Lagershop stack for self-hosting schools (see README.md).
+#
+# Configuration lives entirely in .env next to this file (template:
+# self-hosting/env.example). The update script replaces this file with the
+# version matching the image channel, so do not edit it: put local changes
+# (e.g. your own login background) in docker-compose.override.yaml instead.
+#
+# Ordering is db -> migrate -> web. `web` only starts once `migrate` exited 0,
+# so a broken migration fails the rollout instead of crash-looping the app.
+
+x-app-image: &app-image ${APP_IMAGE:-ghcr.io/htl-braunau-it/lagerverwaltung:stable}
+
+# The app and the migration job must agree on every value, so both inherit it.
+x-app-env: &app-env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-lager}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}@db:5432/${POSTGRES_DB:-lagerverwaltung}
+
+  SCHOOL_NAME: ${SCHOOL_NAME:-}
+
+  AUTH_URL: ${AUTH_URL:?AUTH_URL fehlt}
+  AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET fehlt}
+
+  # Entra ID app registration (README, Abschnitt 2)
+  AZURE_AD_TENANT_ID: ${AZURE_AD_TENANT_ID:?AZURE_AD_TENANT_ID fehlt}
+  AZURE_AD_CLIENT_ID: ${AZURE_AD_CLIENT_ID:?AZURE_AD_CLIENT_ID fehlt}
+  AZURE_AD_CLIENT_SECRET: ${AZURE_AD_CLIENT_SECRET:?AZURE_AD_CLIENT_SECRET fehlt}
+  ROLE_ADMIN_GROUP_ID: ${ROLE_ADMIN_GROUP_ID:?ROLE_ADMIN_GROUP_ID fehlt}
+  ROLE_TEACHER_GROUP_ID: ${ROLE_TEACHER_GROUP_ID:?ROLE_TEACHER_GROUP_ID fehlt}
+  ROLE_STUDENT_GROUP_ID: ${ROLE_STUDENT_GROUP_ID:?ROLE_STUDENT_GROUP_ID fehlt}
+
+  # Mail via Microsoft Graph; empty = no mails
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+  MAIL_OPS_BCC_ADDRESS: ${MAIL_OPS_BCC_ADDRESS:-}
+
+  # Protect the reminder endpoints called by `scheduler` below
+  CRON_SECRET: ${CRON_SECRET:?CRON_SECRET fehlt}
+  LOAN_REMINDER_CRON_SECRET: ${CRON_SECRET}
+
+  NODE_ENV: production
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lager}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt}
+      POSTGRES_DB: ${POSTGRES_DB:-lagerverwaltung}
+      # German sort order (ICU de-AT) for product and user names. Only applied
+      # when the data directory is empty; changing it later needs dump/restore.
+      POSTGRES_INITDB_ARGS: >-
+        --encoding=UTF8
+        --locale=C.UTF-8
+        --locale-provider=icu
+        --icu-locale=de-AT
+    volumes:
+      - ${DATA_ROOT:?DATA_ROOT fehlt}/postgres:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # One-shot: applies migrations, then exits; `web` waits for a clean exit.
+  migrate:
+    image: *app-image
+    command: ["npx", "prisma", "migrate", "deploy"]
+    restart: "no"
+    environment: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: *app-image
+    restart: unless-stopped
+    environment: *app-env
+    volumes:
+      # Uploaded product images and documents
+      - ${DATA_ROOT:?DATA_ROOT fehlt}/uploads:/app/public/data
+    ports:
+      # Plain HTTP; terminate TLS in a reverse proxy in front of it.
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # Daily reminder mails (overdue loans, pending approvals). The app has no
+  # in-process scheduler, so this container triggers the cron endpoints.
+  scheduler:
+    image: alpine:3.20
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET fehlt}
+      TZ: ${TZ:-Europe/Vienna}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl tzdata >/dev/null
+        cat > /etc/crontabs/root <<EOF
+        0 7 * * * curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://web:3000/api/backend/loans/reminders || echo "[scheduler] loans/reminders fehlgeschlagen"
+        5 7 * * * curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://web:3000/api/backend/orders/approval-reminders || echo "[scheduler] approval-reminders fehlgeschlagen"
+        EOF
+        crond -f -l 8
+    depends_on:
+      - web

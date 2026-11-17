@@ -1,0 +1,24 @@
+import { NextResponse } from "next/server";
+
+import { env } from "~/env";
+import { db } from "~/server/db";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Liveness + database check, polled by the self-hosting update script
+ * (self-hosting/lagershop-update.sh) before it accepts a new image.
+ * Unauthenticated on purpose; returns no data beyond the running commit.
+ */
+export async function GET() {
+  try {
+    await db.$queryRaw`SELECT 1`;
+    return NextResponse.json({ status: "ok", commit: env.APP_COMMIT });
+  } catch (error) {
+    console.error("[health] Datenbank nicht erreichbar", error);
+    return NextResponse.json(
+      { status: "error", message: "Datenbank nicht erreichbar" },
+      { status: 503 },
+    );
+  }
+}

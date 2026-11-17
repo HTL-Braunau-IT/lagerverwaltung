@@ -1,0 +1,7 @@
+[Unit]
+Description=Lagershop: Datenbank-Backup
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/lagershop-backup /srv/lagershop

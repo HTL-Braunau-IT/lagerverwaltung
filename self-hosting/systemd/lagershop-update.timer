@@ -1,0 +1,10 @@
+[Unit]
+Description=Lagershop: nächtliches Update
+
+[Timer]
+# Nach dem nächtlichen Backup (01:30).
+OnCalendar=*-*-* 03:45:00 Europe/Vienna
+Persistent=true
+
+[Install]
+WantedBy=timers.target

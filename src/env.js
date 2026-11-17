@@ -21,6 +21,8 @@ export const env = createEnv({
     LOAN_REMINDER_CRON_SECRET: z.string().min(1).optional(),
     CRON_SECRET: z.string().min(1).optional(),
     SCHOOL_NAME: z.string().trim().min(1).default("HTL Braunau"),
+    // Baked into the Docker image by CI (build arg GIT_SHA); shown by /api/health.
+    APP_COMMIT: z.string().default("unknown"),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -55,6 +57,7 @@ export const env = createEnv({
     CRON_SECRET: process.env.CRON_SECRET,
     // Fallback here too: the Docker image runs with SKIP_ENV_VALIDATION, which skips Zod defaults.
     SCHOOL_NAME: process.env.SCHOOL_NAME?.trim() || "HTL Braunau",
+    APP_COMMIT: process.env.APP_COMMIT ?? "unknown",
     NODE_ENV: process.env.NODE_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

@@ -1,0 +1,47 @@
+name: Promote stable
+
+# Publishing a GitHub release promotes the image CI already built for that
+# commit: :sha-<commit> is retagged as :stable and :<release tag>. No rebuild,
+# so self-hosting schools run exactly the bits our own production ran.
+# Only main builds produce :sha-* tags, so a release tagged on a commit that is
+# not on main fails here instead of shipping unreviewed code.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  promote:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retag sha-<commit> as stable and the release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-list -n1 "$TAG")
+          git merge-base --is-ancestor "$SHA" origin/main \
+            || { echo "::error::Release-Tag $TAG zeigt auf einen Commit, der nicht auf main liegt."; exit 1; }
+          IMG=ghcr.io/${GITHUB_REPOSITORY,,}
+          echo "Promoting $IMG:sha-$SHA -> stable, $TAG"
+          docker buildx imagetools create \
+            -t "$IMG:stable" \
+            -t "$IMG:$TAG" \
+            "$IMG:sha-$SHA"

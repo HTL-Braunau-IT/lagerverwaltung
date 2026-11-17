@@ -12,6 +12,9 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 ENV SKIP_ENV_VALIDATION=1
+# prisma.config.ts requires DATABASE_URL even for `prisma generate`. Build-only
+# placeholder (no DB is contacted); the runtime value comes from the container env.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 
 RUN apk add --no-cache openssl libc6-compat
 
@@ -27,6 +30,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV SKIP_ENV_VALIDATION=1
+# Commit the image was built from (passed by CI), reported by /api/health.
+ARG GIT_SHA=unknown
+ENV APP_COMMIT=$GIT_SHA
 
 RUN apk add --no-cache openssl libc6-compat \
   && addgroup -S nodejs \
