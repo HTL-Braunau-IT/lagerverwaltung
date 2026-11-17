@@ -24,6 +24,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      # Only publish main itself, or release tags that point at a commit on main.
+      - name: Ensure commit is on main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          case "$GITHUB_REF" in refs/tags/v*) ;; *) echo "::error::Nur main oder v*-Tags werden veröffentlicht."; exit 1 ;; esac
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::Tag zeigt auf einen Commit, der nicht auf main liegt."; exit 1; }
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
