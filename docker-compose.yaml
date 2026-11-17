@@ -101,9 +101,13 @@ services:
       - -c
       - |
         apk add --no-cache curl tzdata >/dev/null
-        cat > /etc/crontabs/root <<EOF
-        0 7 * * * curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://web:3000/api/backend/loans/reminders || echo "[scheduler] loans/reminders fehlgeschlagen"
-        5 7 * * * curl -fsS -X POST -H "x-cron-secret: $$CRON_SECRET" http://web:3000/api/backend/orders/approval-reminders || echo "[scheduler] approval-reminders fehlgeschlagen"
+        # Secret goes into a root-only header file, not into the crontab or
+        # curl's argv (visible in `ps`).
+        umask 077
+        printf 'x-cron-secret: %s\n' "$$CRON_SECRET" > /run/cron-secret.header
+        cat > /etc/crontabs/root <<'EOF'
+        0 7 * * * curl -fsS -X POST -H @/run/cron-secret.header http://web:3000/api/backend/loans/reminders || echo "[scheduler] loans/reminders fehlgeschlagen"
+        5 7 * * * curl -fsS -X POST -H @/run/cron-secret.header http://web:3000/api/backend/orders/approval-reminders || echo "[scheduler] approval-reminders fehlgeschlagen"
         EOF
         crond -f -l 8
     depends_on:

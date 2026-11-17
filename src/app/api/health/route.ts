@@ -15,7 +15,14 @@ export async function GET() {
     await db.$queryRaw`SELECT 1`;
     return NextResponse.json({ status: "ok", commit: env.APP_COMMIT });
   } catch (error) {
-    console.error("[health] Datenbank nicht erreichbar", error);
+    // Name/code only: driver errors can echo connection details.
+    const code =
+      error && typeof error === "object" && "code" in error ? String(error.code) : undefined;
+    console.error(
+      "[health] Datenbank nicht erreichbar:",
+      error instanceof Error ? error.name : "unknown",
+      code ?? "",
+    );
     return NextResponse.json(
       { status: "error", message: "Datenbank nicht erreichbar" },
       { status: 503 },
