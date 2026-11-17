@@ -1,0 +1,51 @@
+# Release Drafter config (.github/workflows/release-drafter.yml).
+# Bump to a minor/major version by editing the draft's tag before publishing.
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+version-resolver:
+  major:
+    labels: [breaking]
+  minor:
+    labels: [enhancement, feature]
+  default: patch
+
+filter-by-branch: true
+
+exclude-labels:
+  - automated
+
+categories:
+  - title: "Hinweise für Betreiber"
+    labels: [operator]
+  - title: "Breaking Changes"
+    labels: [breaking]
+  - title: "🚀 Neue Funktionen"
+    labels: [enhancement, feature]
+  - title: "🐛 Fehlerbehebungen"
+    labels: [bug, fix]
+  - title: "🧰 Wartung"
+    labels: [chore, refactor, documentation]
+  - title: "📦 Abhängigkeiten"
+    labels: [dependencies, github_actions]
+
+# Labels PRs from conventional-commit style titles (feat:, fix:, chore: …).
+autolabeler:
+  - label: enhancement
+    title: ["/^feat(\\(.+\\))?!?:/i"]
+  - label: bug
+    title: ["/^fix(\\(.+\\))?!?:/i"]
+  - label: chore
+    title: ["/^(chore|refactor|ci|build)(\\(.+\\))?!?:/i"]
+  - label: documentation
+    title: ["/^docs(\\(.+\\))?!?:/i"]
+  - label: breaking
+    title: ["/^\\w+(\\(.+\\))?!:/"]
+
+change-template: "- $TITLE (#$NUMBER) by @$AUTHOR"
+change-title-escapes: '\<*_&'
+
+template: |
+  ## Änderungen
+
+  $CHANGES

@@ -36,11 +36,19 @@ npm run db:studio
 
 ## Releases and the Docker image
 
-- Every push to `main` builds `ghcr.io/htl-braunau-it/lagerverwaltung:latest` and
-  `:sha-<commit>` (`.github/workflows/docker-publish.yml`).
-- Publishing a GitHub release retags that commit's image as `:stable` and
-  `:<tag>` without rebuilding (`.github/workflows/promote-stable.yml`). Publishing a
+- CI (`.github/workflows/ci.yml`) runs typecheck, tests and lint, then builds the
+  production image. Pull requests build it without publishing; pushes to `main`
+  publish `ghcr.io/htl-braunau-it/lagerverwaltung:latest` and `:sha-<commit>`.
+- Release Drafter keeps a draft of the next release (`v<next patch>`) up to date
+  on every push to `main`. PR labels sort the notes and pick the version:
+  `enhancement`/`feature` → minor, `breaking` → major, otherwise patch. PR titles
+  like `feat: …` / `fix: …` are labelled automatically. Direct pushes without a
+  PR don't show up in the notes; write those lines into the draft by hand.
+- Publishing the draft retags that commit's image as `:stable` and `:<tag>`
+  without rebuilding (`.github/workflows/promote-stable.yml`). Publishing a
   release **is** the rollout to every self-hosting school.
+- Label a PR `operator` when it changes `docker-compose.yaml` or adds a required
+  env var; it then appears under *„Hinweise für Betreiber“* in the notes.
 
 What we owe self-hosting schools (migration rules, release notes, open setup
 steps) is in [`SELF_HOSTING_UPSTREAM.md`](SELF_HOSTING_UPSTREAM.md).

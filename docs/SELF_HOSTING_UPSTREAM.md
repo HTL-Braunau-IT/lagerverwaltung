@@ -16,7 +16,8 @@ Status legend: ☐ open · ☑ done
 | **Repository is public**, so partners fetch `docker-compose.yaml` and `self-hosting/*` from `raw.githubusercontent.com` and the update script can read the latest release. Until then the compose sync only warns and keeps the partner's file. **Blocker first:** `dump-lager.sql` (25 MB dump of the old production DB) and the `scripts/import-legacy-*` reports are in git history. Deleting them is not enough; the history must be rewritten (e.g. `git filter-repo`) or the repo published as a fresh history before going public. | ☐ |
 | **GHCR package is public.** Package visibility is separate from repo visibility: GitHub → org → *Packages* → `lagerverwaltung` → *Package settings* → *Change visibility* → Public. The org must allow public packages (*Org settings → Packages*). Until then `docker compose pull` fails for partners. | ☐ |
 | `stable` channel: `.github/workflows/promote-stable.yml` retags `sha-<commit>` as `stable` + `v<x.y.z>` when a release is published | ☑ |
-| **Publish a first release** once a `main` build has succeeded. `:stable` does not exist until then, and the update script resolves the compose file from the latest release. | ☐ |
+| **Publish a first release** once a `main` build has succeeded: publish the draft Release Drafter keeps. `:stable` does not exist until then, and the update script resolves the compose file from the latest release. | ☐ |
+| Images are only published after typecheck, tests and lint pass (`ci.yml`); PRs build the image without publishing | ☑ |
 | Update script keeps the partner's compose file in sync with the release they run, and refuses a compose file their `.env` cannot satisfy | ☑ |
 | `/api/health` reports DB reachability and the running commit | ☑ |
 
@@ -25,7 +26,8 @@ Status legend: ☐ open · ☑ done
 - Only publish a release once that version has run on our own production for a
   few days. Publishing **is** the rollout to every partner school.
 - Release notes must name any change to `docker-compose.yaml` and any new
-  required env var, under a fixed heading (e.g. *„Hinweise für Betreiber“*). A new
+  required env var under *„Hinweise für Betreiber“* (PR label `operator`, or edit
+  the draft by hand). A new
   `${VAR:?…}` in compose makes the partner's update stop until they add the var.
 - Never retag `stable` by hand; publish a release (or re-run *Promote stable*).
 
