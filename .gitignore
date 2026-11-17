@@ -49,3 +49,6 @@ yarn-error.log*
 
 # idea files
 .idea
+# database dumps (personal data, never commit)
+/*.sql
+/*.dump
