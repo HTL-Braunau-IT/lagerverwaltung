@@ -40,6 +40,14 @@ jobs:
           git merge-base --is-ancestor "$SHA" origin/main \
             || { echo "::error::Release-Tag $TAG zeigt auf einen Commit, der nicht auf main liegt."; exit 1; }
           IMG=ghcr.io/${GITHUB_REPOSITORY,,}
+          # A release published right after a push races CI: wait for its image
+          # (CI takes ~10 min) instead of failing.
+          for i in $(seq 1 40); do
+            docker buildx imagetools inspect "$IMG:sha-$SHA" >/dev/null 2>&1 && break
+            [ "$i" = 40 ] && { echo "::error::Image $IMG:sha-$SHA nach 20 Minuten nicht vorhanden. Ist CI für diesen Commit fehlgeschlagen?"; exit 1; }
+            echo "Warte auf $IMG:sha-$SHA (CI läuft noch?) ... $i/40"
+            sleep 30
+          done
           echo "Promoting $IMG:sha-$SHA -> stable, $TAG"
           docker buildx imagetools create \
             -t "$IMG:stable" \
