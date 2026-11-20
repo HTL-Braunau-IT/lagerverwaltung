@@ -12,7 +12,7 @@
 
 import { lookup } from "node:dns/promises";
 import { existsSync } from "node:fs";
-import { isIP } from "node:net";
+import { BlockList, isIP } from "node:net";
 import {
   copyFile,
   mkdir,
@@ -160,26 +160,49 @@ const report = {
 };
 
 /**
- * True for loopback, private, link-local, CGNAT and unspecified addresses (IPv4 and IPv6).
+ * Non-public address ranges. IPv6 forms that embed an IPv4 address (mapped, compatible,
+ * NAT64, 6to4) are blocked wholesale, so no textual IPv4 encoding can slip through.
+ */
+// One list per family: BlockList also matches IPv4 lookups against IPv4-mapped IPv6 rules.
+const BLOCKED_IPV4 = new BlockList();
+const BLOCKED_IPV6 = new BlockList();
+for (const [network, prefix] of /** @type {Array<[string, number]>} */ ([
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["224.0.0.0", 3],
+])) {
+  BLOCKED_IPV4.addSubnet(network, prefix, "ipv4");
+}
+for (const [network, prefix] of /** @type {Array<[string, number]>} */ ([
+  ["::", 96], // unspecified, loopback, IPv4-compatible
+  ["::ffff:0:0", 96], // IPv4-mapped
+  ["64:ff9b::", 96], // NAT64
+  ["64:ff9b:1::", 48], // local-use NAT64
+  ["2002::", 16], // 6to4
+  ["fc00::", 7], // unique local
+  ["fe80::", 10], // link-local
+  ["ff00::", 8], // multicast
+])) {
+  BLOCKED_IPV6.addSubnet(network, prefix, "ipv6");
+}
+
+/**
+ * True unless `address` is a public unicast IP. Unparseable input counts as non-public.
  * @param {string} address
  */
 function isPrivateAddress(address) {
-  const ip = address.toLowerCase().replace(/^::ffff:/, "");
-  if (isIP(ip) === 4) {
-    const [a = 0, b = 0] = ip.split(".").map(Number);
-    return (
-      a === 0 ||
-      a === 10 ||
-      a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168)
-    );
-  }
-  return (
-    ip === "::" || ip === "::1" || /^f[cd]/.test(ip) || /^fe[89ab]/.test(ip)
-  );
+  const family = isIP(address);
+  if (family === 0) return true;
+  return family === 4
+    ? BLOCKED_IPV4.check(address, "ipv4")
+    : BLOCKED_IPV6.check(address, "ipv6");
 }
 
 /**
