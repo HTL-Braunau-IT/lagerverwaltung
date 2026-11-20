@@ -10,7 +10,9 @@
 //     --room Chemie --location-code chemie --location-name Chemie --sku-prefix CH- \
 //     [--skip-category Alle] [--force-unit PCS] [--no-download-links]
 
+import { lookup } from "node:dns/promises";
 import { existsSync } from "node:fs";
+import { isIP } from "node:net";
 import {
   copyFile,
   mkdir,
@@ -158,6 +160,74 @@ const report = {
 };
 
 /**
+ * True for loopback, private, link-local, CGNAT and unspecified addresses (IPv4 and IPv6).
+ * @param {string} address
+ */
+function isPrivateAddress(address) {
+  const ip = address.toLowerCase().replace(/^::ffff:/, "");
+  if (isIP(ip) === 4) {
+    const [a = 0, b = 0] = ip.split(".").map(Number);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
+  }
+  return (
+    ip === "::" || ip === "::1" || /^f[cd]/.test(ip) || /^fe[89ab]/.test(ip)
+  );
+}
+
+/**
+ * Throws unless `url` is http(s) and every address its host resolves to is public.
+ * Links come from legacy shop content, so they must not reach internal services.
+ * @param {string} url
+ */
+async function assertPublicUrl(url) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error(`blocked protocol ${parsed.protocol}`);
+  }
+  const host = parsed.hostname.replace(/^\[|\]$/g, "");
+  const addresses = isIP(host)
+    ? [host]
+    : (await lookup(host, { all: true })).map((entry) => entry.address);
+  if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
+    throw new Error(`blocked non-public host ${parsed.hostname}`);
+  }
+}
+
+/**
+ * fetch() that validates the target and every redirect hop with assertPublicUrl.
+ * @param {string} url
+ */
+async function fetchPublic(url) {
+  let current = url;
+  for (let hop = 0; hop <= 5; hop += 1) {
+    await assertPublicUrl(current);
+    const response = await fetch(current, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; lagerverwaltung-import/1.0)",
+        Accept: "application/pdf,*/*;q=0.8",
+      },
+    });
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) {
+      return response;
+    }
+    await response.body?.cancel();
+    current = new URL(location, current).toString();
+  }
+  throw new Error("too many redirects");
+}
+
+/**
  * Downloads a URL and returns the bytes if (and only if) it is a PDF.
  * @param {string} url
  * @returns {Promise<{ ok: true, bytes: Buffer } | { ok: false, reason: string }>}
@@ -168,14 +238,7 @@ async function downloadPdf(url) {
     let response;
     // Retry rate-limited responses (429/503), honouring Retry-After when present.
     for (let attempt = 1; attempt <= 4; attempt += 1) {
-      response = await fetch(url, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; lagerverwaltung-import/1.0)",
-          Accept: "application/pdf,*/*;q=0.8",
-        },
-      });
+      response = await fetchPublic(url);
       if ((response.status !== 429 && response.status !== 503) || attempt === 4)
         break;
       const retryAfter = Number.parseInt(

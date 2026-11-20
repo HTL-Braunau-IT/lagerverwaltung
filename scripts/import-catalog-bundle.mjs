@@ -11,7 +11,7 @@
 //   --update-existing      also update name/description/unit/categories of products already in the room
 //                          (stock and price are never overwritten on existing products)
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -64,6 +64,26 @@ const BASE_UNITS = new Set([
   "KG",
   "ML",
   "L",
+]);
+
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+]);
+// Keep in sync with src/app/api/backend/products/upload-document/route.ts.
+const ALLOWED_DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "text/plain",
+  "text/csv",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]);
 
 const report = {
@@ -121,7 +141,34 @@ function validateBundle(bundle) {
     if (!/^\d+(\.\d{1,2})?$/.test(p.price))
       throw new Error(`Invalid price for ${p.sku}: ${p.price}`);
     if (p.categories.length === 0) throw new Error(`No category for ${p.sku}`);
-    for (const ref of [...p.images, ...p.documents]) bundleFile(ref.file);
+    // Images are served straight from public/ by extension, so only allow raster formats
+    // (no SVG/HTML that could run script on the app origin).
+    for (const image of p.images) {
+      bundleFile(image.file);
+      if (
+        !ALLOWED_IMAGE_EXTENSIONS.has(path.extname(image.file).toLowerCase())
+      ) {
+        throw new Error(`Image type not allowed for ${p.sku}: ${image.file}`);
+      }
+    }
+    // Documents are served inline with their stored mimeType: same allowlist as the upload route,
+    // and a PDF must actually be a PDF.
+    for (const document of p.documents) {
+      const source = bundleFile(document.file);
+      if (!ALLOWED_DOCUMENT_MIME_TYPES.has(document.mimeType)) {
+        throw new Error(
+          `Document type not allowed for ${p.sku}: ${document.mimeType}`,
+        );
+      }
+      if (
+        document.mimeType === "application/pdf" &&
+        readFileSync(source).subarray(0, 5).toString("latin1") !== "%PDF-"
+      ) {
+        throw new Error(
+          `Document is not a valid PDF for ${p.sku}: ${document.file}`,
+        );
+      }
+    }
   }
 }
 
