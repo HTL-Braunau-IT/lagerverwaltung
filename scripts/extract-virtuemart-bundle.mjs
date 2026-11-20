@@ -94,7 +94,7 @@ if (!legacyHost || !legacyUser || !legacyDatabase) {
 const t = (table) => `\`${tablePrefix}${table}\``;
 
 /**
- * Legacy unit → app unit. `baseStep` scales the legacy packaging step into the base unit.
+ * Legacy unit → app unit. The quantity step is derived from the base unit (see normalizeStep).
  * @type {Record<string, { unitKind: string, baseUnit: string, baseStep?: number }>}
  */
 const UNIT_MAP = {
@@ -128,15 +128,15 @@ if (forceUnit && !UNIT_KIND_BY_BASE[forceUnit]) {
   );
 }
 
-/** Integer-step units must have integer steps; fractional units use 0.001 resolution. */
 /**
+ * The app enforces a fixed step per base unit (src/lib/quantity-rules.ts): 1 for integer units,
+ * 0.001 for everything else. Any other value makes the product unsaveable in the backend.
  * @param {string} baseUnit
- * @param {number} step
  */
-function normalizeStep(baseUnit, step) {
-  const safe = Number.isFinite(step) && step > 0 ? step : 1;
-  if (baseUnit === "PCS") return String(Math.max(1, Math.round(safe)));
-  return safe.toFixed(3);
+function normalizeStep(baseUnit) {
+  return ["PCS", "MM", "CM", "CM2", "DM2", "MM2"].includes(baseUnit)
+    ? "1.000"
+    : "0.001";
 }
 
 const report = {
@@ -401,10 +401,7 @@ async function main() {
         baseUnit: "PCS",
         baseStep: 1,
       };
-      const unitStep = normalizeStep(
-        unit.baseUnit,
-        toNumber(row.packaging, 1) * (unit.baseStep ?? 1),
-      );
+      const unitStep = normalizeStep(unit.baseUnit);
 
       const categoryNames = (categoryIdsByProduct.get(legacyId) ?? [])
         .map((id) => categories.get(id))
